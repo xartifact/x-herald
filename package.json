@@ -1,0 +1,33 @@
+{
+  "name": "x-llm-gateway",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Modern LLM Gateway with protocol conversion, smart routing, and high availability",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "cd apps/web && bun run dev",
+    "dev:web": "cd apps/web && bun run dev",
+    "build": "bun run build:packages && bun run build:web",
+    "build:packages": "bun run --filter './packages/*' build",
+    "build:web": "cd apps/web && bun run build",
+    "db:generate": "cd packages/database && bun run db:generate",
+    "db:migrate": "cd packages/database && bun run db:migrate",
+    "db:studio": "cd packages/database && bun run db:studio",
+    "typecheck": "bun run --filter './apps/*' typecheck && bun run --filter './packages/*' typecheck",
+    "lint": "bun run --filter './apps/*' lint && bun run --filter './packages/*' lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules apps/*/.turbo packages/*/.turbo"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "prettier": "^3.2.4",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "bun": ">=1.0.0"
+  },
+  "packageManager": "bun@1.0.0"
+}

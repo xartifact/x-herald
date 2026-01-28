@@ -1,5 +1,5 @@
 {
-  "id": "ece439a2-f9ff-4a5e-878e-e632d0041f27",
+  "id": "62b95278-853f-4819-9c79-d5ecdca9a0df",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "5",
   "dialect": "pg",
@@ -15,23 +15,11 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "type": {
-          "name": "type",
-          "type": "varchar(20)",
-          "primaryKey": false,
-          "notNull": true
-        },
         "name": {
           "name": "name",
           "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true
-        },
-        "base_url": {
-          "name": "base_url",
-          "type": "varchar(512)",
-          "primaryKey": false,
-          "notNull": false
         },
         "api_key": {
           "name": "api_key",
@@ -39,38 +27,18 @@
           "primaryKey": false,
           "notNull": false
         },
+        "protocols": {
+          "name": "protocols",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
         "enabled": {
           "name": "enabled",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,
           "default": true
-        },
-        "priority": {
-          "name": "priority",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "weight": {
-          "name": "weight",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 100
-        },
-        "max_requests_per_min": {
-          "name": "max_requests_per_min",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "timeout_ms": {
-          "name": "timeout_ms",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
         },
         "created_at": {
           "name": "created_at",

@@ -3,6 +3,7 @@ import postgres from 'postgres';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import * as schema from './schema/index';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
 let dbClient: ReturnType<typeof drizzle> | null = null;
 let postgresClient: postgres.Sql | null = null;
@@ -101,8 +102,21 @@ async function runMigrations(db: ReturnType<typeof drizzle>): Promise<void> {
   console.log('🔄 开始运行数据库迁移...');
 
   try {
-    // 迁移文件夹路径
-    const migrationsFolder = path.join(__dirname, 'migrations');
+    // 获取迁移文件夹路径
+    // 1. 优先使用环境变量（用于生产环境）
+    // 2. 使用 import.meta.url 解析相对路径（开发环境）
+    let migrationsFolder: string;
+
+    if (process.env.DB_MIGRATIONS_FOLDER) {
+      migrationsFolder = process.env.DB_MIGRATIONS_FOLDER;
+    } else {
+      const __filename = fileURLToPath(import.meta.url);
+      const __dirname = path.dirname(__filename);
+      migrationsFolder = path.join(__dirname, 'migrations');
+    }
+
+    console.log('📁 迁移文件夹:', migrationsFolder);
+
     await migrate(db, { migrationsFolder });
     console.log('✅ 数据库迁移完成');
   } catch (error: any) {
@@ -111,6 +125,7 @@ async function runMigrations(db: ReturnType<typeof drizzle>): Promise<void> {
       console.log('ℹ️  没有新的迁移需要运行');
     } else {
       console.error('❌ 数据库迁移失败:', error);
+      console.error('错误详情:', error.message);
       throw error;
     }
   }
@@ -164,9 +179,9 @@ async function initializeDatabase(options: DatabaseOptions): Promise<void> {
 }
 
 /**
- * 创建数据库连接
+ * 创建数据库连接（异步版本，推荐使用）
  */
-export function createDatabase(options: DatabaseOptions) {
+export async function createDatabase(options: DatabaseOptions) {
   if (dbClient) {
     return dbClient;
   }
@@ -181,14 +196,39 @@ export function createDatabase(options: DatabaseOptions) {
 
   dbClient = drizzle(postgresClient, { schema });
 
-  // 同步初始化数据库（阻塞应用启动，确保数据库就绪）
+  // 同步等待数据库初始化完成
+  await initializeDatabase(options);
+  console.log('🚀 数据库已就绪，应用可以正常运行');
+
+  return dbClient;
+}
+
+/**
+ * 创建数据库连接（同步版本，不推荐）
+ * @deprecated 使用异步版本 createDatabase() 代替
+ */
+export function createDatabaseSync(options: DatabaseOptions) {
+  if (dbClient) {
+    return dbClient;
+  }
+
+  const connectionString = buildConnectionString(options);
+
+  postgresClient = postgres(connectionString, {
+    max: 10,
+    idle_timeout: 20,
+    connect_timeout: 10,
+  });
+
+  dbClient = drizzle(postgresClient, { schema });
+
+  // 异步初始化，不阻塞（旧版行为）
   initializeDatabase(options)
     .then(() => {
       console.log('🚀 数据库已就绪，应用可以正常运行');
     })
     .catch((error) => {
       console.error('❌ 数据库初始化失败，应用可能无法正常工作:', error);
-      // 不退出进程，让应用继续运行，但会在使用数据库时报错
     });
 
   return dbClient;

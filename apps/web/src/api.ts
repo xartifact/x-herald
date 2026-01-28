@@ -10,16 +10,16 @@ import authRoutes from './features/auth/routes';
 import providersRoutes from './features/providers/routes';
 import modelsRoutes from './features/models/routes';
 
-// Create API app
-export const createApiApp = () => {
+// Create API app (异步版本)
+export const createApiApp = async () => {
   const app = new Hono();
 
   // Load and validate configuration
   const config = loadConfig();
   validateConfig(config);
 
-  // Initialize database
-  createDatabase(config.database);
+  // Initialize database (等待初始化完成)
+  await createDatabase(config.database);
   logger.info('Database initialized');
 
   // Global middlewares
@@ -57,11 +57,11 @@ export const createApiApp = () => {
   return app;
 };
 
-// 懒加载 API app
+// 懒加载 API app (异步版本)
 let _apiApp: ReturnType<typeof createApiApp> | null = null;
-export const apiApp = () => {
+export const apiApp = async () => {
   if (!_apiApp) {
-    _apiApp = createApiApp();
+    _apiApp = await createApiApp();
   }
   return _apiApp;
 };

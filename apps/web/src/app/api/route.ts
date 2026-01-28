@@ -4,7 +4,8 @@ import { apiApp } from '@/api';
 export const dynamic = 'force-dynamic';
 
 async function handler(request: Request) {
-  return apiApp().fetch(request);
+  const app = await apiApp();
+  return app.fetch(request);
 }
 
 export const GET = handler;

@@ -1,64 +1,65 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { useAuthMe } from '@/hooks/use-auth';
+import { useRenderCount } from '@/hooks/use-render-count';
+import AdminNav from '@/components/admin/AdminNav';
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  useRenderCount('AdminLayout', true);
+
   const router = useRouter();
   const pathname = usePathname();
-  const [isLoading, setIsLoading] = useState(true);
+  const [shouldVerify, setShouldVerify] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
+
+  // 登录页不需要验证
+  const isLoginPage = pathname === '/admin/login';
+
+  // 使用 useCallback 稳定函数引用
+  const redirectToLogin = useCallback(() => {
+    router.push('/admin/login');
+  }, [router]);
 
   useEffect(() => {
-    // 如果是登录页，跳过验证
-    if (pathname === '/admin/login') {
-      setIsLoading(false);
-      return;
-    }
+    // 只在客户端执行
+    if (typeof window === 'undefined') return;
 
-    // 验证 token
-    const verifyAuth = async () => {
+    if (!isLoginPage) {
       const token = localStorage.getItem('admin_token');
-
       if (!token) {
-        router.push('/admin/login');
-        return;
+        redirectToLogin();
+      } else {
+        setShouldVerify(true);
       }
+    }
+    setIsChecking(false);
+  }, [isLoginPage, redirectToLogin]);
 
-      try {
-        const response = await fetch('/api/auth/me', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+  // 使用 useAuthMe 验证 token
+  const { isLoading, isError } = useAuthMe({
+    enabled: shouldVerify && !isLoginPage,
+  });
 
-        if (!response.ok) {
-          localStorage.removeItem('admin_token');
-          router.push('/admin/login');
-          return;
-        }
-
-        setIsLoading(false);
-      } catch (error) {
-        console.error('Auth verification failed:', error);
-        localStorage.removeItem('admin_token');
-        router.push('/admin/login');
-      }
-    };
-
-    verifyAuth();
-  }, [pathname, router]);
+  useEffect(() => {
+    if (shouldVerify && !isLoginPage && isError) {
+      localStorage.removeItem('admin_token');
+      redirectToLogin();
+    }
+  }, [isError, shouldVerify, isLoginPage, redirectToLogin]);
 
   // 登录页直接渲染
-  if (pathname === '/admin/login') {
+  if (isLoginPage) {
     return <>{children}</>;
   }
 
-  // 其他页面显示加载状态
-  if (isLoading) {
+  // 初始检查或验证中显示加载状态
+  if (isChecking || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -69,5 +70,13 @@ export default function AdminLayout({
     );
   }
 
-  return <>{children}</>;
+  // 已验证用户 - 渲染带导航的布局
+  return (
+    <div className="min-h-screen bg-background">
+      <AdminNav />
+      <main className="container mx-auto py-6 px-4">
+        {children}
+      </main>
+    </div>
+  );
 }

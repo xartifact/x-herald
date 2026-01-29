@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { toast } from "sonner"
+import Link from "next/link"
 import { LogIn } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -17,68 +17,24 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { useLogin } from "@/hooks/use-auth"
 
 export default function AdminLogin() {
   const router = useRouter()
   const [password, setPassword] = useState("")
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [isRedirecting, setIsRedirecting] = useState(false)
+  const login = useLogin()
 
-  // 检查是否已登录（只检查一次）
+  // 检查是否已登录
   useEffect(() => {
     const token = localStorage.getItem("admin_token")
-
-    if (token && !isRedirecting) {
-      setIsRedirecting(true)
+    if (token) {
       router.push("/admin/dashboard")
     }
-  }, [isRedirecting, router])
+  }, [router])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
-    setError(null)
-
-    try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ password }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        const errorMsg = data.error || "登录失败"
-        setError(errorMsg)
-        toast.error(errorMsg)
-        return
-      }
-
-      // 保存 token
-      localStorage.setItem("admin_token", data.token)
-
-      // 显示成功提示
-      toast.success("登录成功，正在跳转...")
-
-      // 设置跳转标志并使用 router.push
-      setIsRedirecting(true)
-
-      // 使用 setTimeout 确保状态更新后再跳转
-      setTimeout(() => {
-        router.push("/admin/dashboard")
-      }, 100)
-    } catch (err) {
-      const errorMsg = "网络错误,请检查连接"
-      setError(errorMsg)
-      toast.error(errorMsg)
-      console.error("登录错误:", err)
-    } finally {
-      setLoading(false)
-    }
+    await login.mutateAsync(password)
   }
 
   return (
@@ -104,18 +60,18 @@ export default function AdminLogin() {
                   placeholder="输入管理员密码"
                   required
                   autoFocus
-                  disabled={loading}
+                  disabled={login.isPending}
                 />
               </div>
 
-              {error && (
+              {login.error && (
                 <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
+                  <AlertDescription>{login.error.message}</AlertDescription>
                 </Alert>
               )}
 
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? (
+              <Button type="submit" className="w-full" disabled={login.isPending}>
+                {login.isPending ? (
                   <>登录中...</>
                 ) : (
                   <>
@@ -132,7 +88,7 @@ export default function AdminLogin() {
               提示：管理员密码在 .env 文件中配置
             </p>
             <Button variant="link" asChild className="text-sm">
-              <a href="/">返回首页</a>
+              <Link href="/">返回首页</Link>
             </Button>
           </CardFooter>
         </Card>

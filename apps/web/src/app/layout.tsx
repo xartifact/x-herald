@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import './styles/globals.css';
-import { Toaster } from '@/components/ui/sonner';
+import { QueryProvider } from '@/components/providers/QueryProvider';
 
 export const metadata: Metadata = {
   title: 'x-llm-gateway - Modern LLM Gateway',
@@ -14,13 +14,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-CN">
-      <head>
-        <meta charSet="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      </head>
       <body>
-        {children}
-        <Toaster />
+        <QueryProvider>{children}</QueryProvider>
       </body>
     </html>
   );

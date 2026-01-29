@@ -8,14 +8,17 @@
   "scripts": {
     "db:generate": "drizzle-kit generate:pg",
     "db:migrate": "bun run src/migrate.ts",
+    "db:push": "drizzle-kit push:pg",
     "db:studio": "drizzle-kit studio",
+    "db:verify": "bun run src/verify.ts",
     "typecheck": "tsc --noEmit",
     "build": "echo 'No build needed for TypeScript source'"
   },
   "dependencies": {
+    "@x-llm-gateway/shared": "workspace:*",
+    "date-fns": "^4.1.0",
     "drizzle-orm": "^0.29.3",
-    "postgres": "^3.4.3",
-    "@x-llm-gateway/shared": "workspace:*"
+    "postgres": "^3.4.3"
   },
   "devDependencies": {
     "drizzle-kit": "^0.20.9",

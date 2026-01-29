@@ -8,6 +8,7 @@
 - TailwindCSS v4
 - React 19
 - Bun.sh (v1.3.6)：https://bun.sh/llms.txt
+- React Query(v5)
 
 ## 项目架构
 
@@ -63,3 +64,7 @@ bunx shadcn@latest add [component-name]
 - 代码使用 TypeScript 严格模式
 - 前端使用 shadcn/ui 组件构建界面
 - API 遵循 RESTful 规范
+- 遵循 Bulletproof React 和 Clean Architecture
+- 使用 React Query(v5) 完成请求
+- 单组件不要超过300行代码，超过需要封装
+- 单函数不要超过150行代码，超过需要封装

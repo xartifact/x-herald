@@ -1,13 +1,14 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import { toast } from "sonner"
 import { Plus, Pencil, Trash2, Search, Eye, EyeOff } from "lucide-react"
 
-import AdminNav from "@/components/admin/AdminNav"
+import { useProviders, useCreateProvider, useUpdateProvider, useDeleteProvider } from "@/hooks/use-providers"
+import { useRenderCount } from "@/hooks/use-render-count"
+import type { ProtocolsConfig } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -47,26 +48,10 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 
-// 协议配置
-interface ProtocolConfig {
+// 协议配置（用于表单）
+interface ProtocolFormConfig {
   baseUrl: string
   enabled: boolean
-}
-
-type ProtocolsConfig = {
-  openai?: ProtocolConfig
-  anthropic?: ProtocolConfig
-  gemini?: ProtocolConfig
-}
-
-interface Provider {
-  id: string
-  name: string
-  protocols: ProtocolsConfig
-  apiKey?: string | null
-  enabled: boolean
-  createdAt: string
-  updatedAt: string
 }
 
 // 协议选项
@@ -107,15 +92,19 @@ const providerSchema = z.object({
 type ProviderFormData = z.infer<typeof providerSchema>
 
 export default function ProvidersPage() {
-  const [providers, setProviders] = useState<Provider[]>([])
-  const [loading, setLoading] = useState(true)
+  useRenderCount('ProvidersPage', true);
+
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [editingProvider, setEditingProvider] = useState<Provider | null>(null)
+  const [editingProviderId, setEditingProviderId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [showApiKey, setShowApiKey] = useState<Record<string, boolean>>({})
   const [showFormApiKey, setShowFormApiKey] = useState(false)
 
-  const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null
+  // 使用 TanStack Query Hooks
+  const { data: providers = [], isLoading: loading } = useProviders()
+  const createProvider = useCreateProvider()
+  const updateProvider = useUpdateProvider()
+  const deleteProvider = useDeleteProvider()
 
   const form = useForm<ProviderFormData>({
     resolver: zodResolver(providerSchema),
@@ -131,89 +120,61 @@ export default function ProvidersPage() {
     },
   })
 
-  const fetchProviders = async () => {
-    try {
-      setLoading(true)
-      const response = await fetch("/api/providers", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setProviders(data.data)
-      } else {
-        toast.error("获取供应商列表失败")
-      }
-    } catch (error) {
-      toast.error("网络错误，请稍后重试")
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchProviders()
-  }, [])
+  // 获取当前编辑的供应商
+  const editingProvider = editingProviderId
+    ? providers.find(p => p.id === editingProviderId)
+    : null
 
   const onSubmit = async (data: ProviderFormData) => {
-    try {
-      // 过滤掉未启用的协议
-      const enabledProtocols: ProtocolsConfig = {}
-      Object.entries(data.protocols).forEach(([key, value]) => {
-        if (value?.enabled && value.baseUrl) {
-          enabledProtocols[key as ProtocolType] = {
-            enabled: true,
-            baseUrl: value.baseUrl,
-          }
+    // 过滤掉未启用的协议
+    const enabledProtocols: ProtocolsConfig = {}
+    Object.entries(data.protocols).forEach(([key, value]) => {
+      if (value?.enabled && value.baseUrl) {
+        enabledProtocols[key as ProtocolType] = {
+          baseUrl: value.baseUrl,
+          enabled: true, // 后端需要 enabled 字段
         }
-      })
-
-      const payload = {
-        name: data.name,
-        apiKey: data.apiKey || null,
-        protocols: enabledProtocols,
-        enabled: data.enabled,
       }
+    })
 
-      const url = editingProvider
-        ? `/api/providers/${editingProvider.id}`
-        : "/api/providers"
-      const method = editingProvider ? "PUT" : "POST"
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      })
-
-      if (response.ok) {
-        toast.success(editingProvider ? "供应商已更新" : "供应商已创建")
-        setDialogOpen(false)
-        setEditingProvider(null)
-        form.reset()
-        fetchProviders()
-      } else {
-        const error = await response.json()
-        toast.error(error.error || "操作失败")
-      }
-    } catch (error) {
-      toast.error("网络错误，请稍后重试")
+    const payload = {
+      name: data.name,
+      apiKey: data.apiKey || undefined,
+      protocols: enabledProtocols,
+      enabled: data.enabled,
     }
+
+    if (editingProviderId) {
+      await updateProvider.mutateAsync({
+        id: editingProviderId,
+        data: payload,
+      })
+    } else {
+      await createProvider.mutateAsync(payload)
+    }
+
+    setDialogOpen(false)
+    setEditingProviderId(null)
+    form.reset()
   }
 
-  const handleEdit = (provider: Provider) => {
-    setEditingProvider(provider)
+  const handleEdit = (providerId: string) => {
+    const provider = providers.find(p => p.id === providerId)
+    if (!provider) return
+
+    setEditingProviderId(providerId)
 
     // 准备协议数据
     const protocols: ProviderFormData["protocols"] = {
-      openai: provider.protocols.openai || { enabled: false, baseUrl: "https://api.openai.com/v1" },
-      anthropic: provider.protocols.anthropic || { enabled: false, baseUrl: "https://api.anthropic.com/v1" },
-      gemini: provider.protocols.gemini || { enabled: false, baseUrl: "https://generativelanguage.googleapis.com/v1" },
+      openai: provider.protocols.openai
+        ? { enabled: true, baseUrl: provider.protocols.openai.baseUrl }
+        : { enabled: false, baseUrl: "https://api.openai.com/v1" },
+      anthropic: provider.protocols.anthropic
+        ? { enabled: true, baseUrl: provider.protocols.anthropic.baseUrl }
+        : { enabled: false, baseUrl: "https://api.anthropic.com/v1" },
+      gemini: provider.protocols.gemini
+        ? { enabled: true, baseUrl: provider.protocols.gemini.baseUrl }
+        : { enabled: false, baseUrl: "https://generativelanguage.googleapis.com/v1" },
     }
 
     form.reset({
@@ -231,28 +192,11 @@ export default function ProvidersPage() {
       return
     }
 
-    try {
-      const response = await fetch(`/api/providers/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      if (response.ok) {
-        toast.success("供应商已删除")
-        fetchProviders()
-      } else {
-        const error = await response.json()
-        toast.error(error.error || "删除失败")
-      }
-    } catch (error) {
-      toast.error("网络错误，请稍后重试")
-    }
+    await deleteProvider.mutateAsync(id)
   }
 
   const handleAddNew = () => {
-    setEditingProvider(null)
+    setEditingProviderId(null)
     setShowFormApiKey(false)
     form.reset({
       name: "",
@@ -273,92 +217,86 @@ export default function ProvidersPage() {
 
   // 获取供应商支持的协议列表
   const getEnabledProtocols = (protocols: ProtocolsConfig) => {
-    return Object.entries(protocols)
-      .filter(([_, config]) => config.enabled)
-      .map(([protocol]) => protocol)
+    return Object.keys(protocols).filter(key => protocols[key as keyof ProtocolsConfig])
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <AdminNav />
+    <div className="space-y-6">
+      {/* 页面标题和操作栏 */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">供应商管理</h2>
+          <p className="text-muted-foreground">
+            管理所有 LLM 供应商配置
+          </p>
+        </div>
+        <Button onClick={handleAddNew}>
+          <Plus className="mr-2 h-4 w-4" />
+          添加供应商
+        </Button>
+      </div>
 
-      <main className="container mx-auto py-6 px-4">
-        <div className="space-y-6">
-          {/* 页面标题和操作栏 */}
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h2 className="text-3xl font-bold tracking-tight">供应商管理</h2>
+      {/* 搜索栏 */}
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="搜索供应商..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-8"
+          />
+        </div>
+      </div>
+
+      {/* 供应商列表 */}
+      {loading ? (
+        <Card>
+          <CardContent className="py-12">
+            <div className="text-center text-muted-foreground">
+              加载中...
+            </div>
+          </CardContent>
+        </Card>
+      ) : filteredProviders.length === 0 ? (
+        <Card>
+          <CardContent className="py-12">
+            <div className="text-center space-y-4">
               <p className="text-muted-foreground">
-                管理所有 LLM 供应商配置
+                {searchQuery ? "没有找到匹配的供应商" : "还没有供应商"}
               </p>
+              {!searchQuery && (
+                <Button onClick={handleAddNew} variant="outline">
+                  <Plus className="mr-2 h-4 w-4" />
+                  添加第一个供应商
+                </Button>
+              )}
             </div>
-            <Button onClick={handleAddNew}>
-              <Plus className="mr-2 h-4 w-4" />
-              添加供应商
-            </Button>
-          </div>
-
-          {/* 搜索栏 */}
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="搜索供应商..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8"
-              />
-            </div>
-          </div>
-
-          {/* 供应商列表 */}
-          {loading ? (
-            <Card>
-              <CardContent className="py-12">
-                <div className="text-center text-muted-foreground">
-                  加载中...
-                </div>
-              </CardContent>
-            </Card>
-          ) : filteredProviders.length === 0 ? (
-            <Card>
-              <CardContent className="py-12">
-                <div className="text-center space-y-4">
-                  <p className="text-muted-foreground">
-                    {searchQuery ? "没有找到匹配的供应商" : "还没有供应商"}
-                  </p>
-                  {!searchQuery && (
-                    <Button onClick={handleAddNew} variant="outline">
-                      <Plus className="mr-2 h-4 w-4" />
-                      添加第一个供应商
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>名称</TableHead>
-                      <TableHead>API 密钥</TableHead>
-                      <TableHead>支持协议</TableHead>
-                      <TableHead>状态</TableHead>
-                      <TableHead>创建时间</TableHead>
-                      <TableHead className="text-right">操作</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredProviders.map((provider) => {
-                      const enabledProtocols = getEnabledProtocols(provider.protocols)
-                      return (
-                        <TableRow key={provider.id}>
-                          <TableCell>
-                            <div className="font-medium">{provider.name}</div>
-                          </TableCell>
-                          <TableCell>
+          </CardContent>
+      </Card>
+    ) : (
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>名称</TableHead>
+                <TableHead>API 密钥</TableHead>
+                <TableHead>支持协议</TableHead>
+                <TableHead>状态</TableHead>
+                <TableHead>创建时间</TableHead>
+                <TableHead className="text-right">操作</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredProviders.map((provider) => {
+                const enabledProtocols = getEnabledProtocols(provider.protocols)
+                return (
+                  <TableRow key={provider.id}>
+                    <TableCell>
+                      <div className="font-medium">{provider.name}</div>
+                    </TableCell>
+                    <TableCell>
                             <div className="flex items-center gap-2">
                               {provider.apiKey ? (
                                 <>
@@ -414,7 +352,7 @@ export default function ProvidersPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleEdit(provider)}
+                                onClick={() => handleEdit(provider.id)}
                               >
                                 <Pencil className="h-4 w-4" />
                               </Button>
@@ -435,18 +373,16 @@ export default function ProvidersPage() {
               </CardContent>
             </Card>
           )}
-        </div>
-      </main>
 
       {/* 添加/编辑对话框 */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingProvider ? "编辑供应商" : "添加供应商"}
+              {editingProviderId ? "编辑供应商" : "添加供应商"}
             </DialogTitle>
             <DialogDescription>
-              {editingProvider
+              {editingProviderId
                 ? "修改供应商配置信息"
                 : "配置新的 LLM 供应商"}
             </DialogDescription>
@@ -596,8 +532,10 @@ export default function ProvidersPage() {
                 >
                   取消
                 </Button>
-                <Button type="submit">
-                  {editingProvider ? "保存更改" : "创建"}
+                <Button type="submit" disabled={createProvider.isPending || updateProvider.isPending}>
+                  {createProvider.isPending || updateProvider.isPending
+                    ? "保存中..."
+                    : editingProviderId ? "保存更改" : "创建"}
                 </Button>
               </DialogFooter>
             </form>

@@ -5,6 +5,9 @@ export const dynamic = 'force-dynamic';
 
 async function handler(request: Request) {
   const app = await apiApp();
+  if (!app) {
+    return new Response('API not initialized', { status: 500 });
+  }
   return app.fetch(request);
 }
 

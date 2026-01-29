@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { useAuthMe } from '@/hooks/use-auth';
+import { useAuthMe } from '@/features/auth/useAuth';
 import { useRenderCount } from '@/hooks/use-render-count';
 import AdminNav from '@/components/admin/AdminNav';
 

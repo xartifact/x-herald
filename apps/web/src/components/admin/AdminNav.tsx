@@ -3,16 +3,16 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { useLogout } from '@/hooks/use-auth';
-import { Button } from '@/components/ui/button';
+import { useLogout } from '@/features/auth/useAuth';
+import { Button } from '@/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '@/ui/dropdown-menu';
 import { LogOut, ChevronDown, LayoutDashboard, Server, Brain, Key, FileText, BarChart3, Settings, Layers } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/core/lib/utils';
 
 // 导航项类型
 interface NavItem {
@@ -42,7 +42,6 @@ const navGroups: NavGroup[] = [
     items: [
       { href: '/admin/providers', label: '供应商', icon: <Server className="h-4 w-4" /> },
       { href: '/admin/model-groups', label: '模型组', icon: <Layers className="h-4 w-4" /> },
-      { href: '/admin/models', label: '模型(旧)', icon: <Brain className="h-4 w-4" /> },
       { href: '/admin/keys', label: '密钥', icon: <Key className="h-4 w-4" /> },
     ],
   },

@@ -1,7 +1,9 @@
 # Phase 2 开发进度总结
 
-**日期**: 2026-01-26
-**当前阶段**: Phase 2.3 模型管理 (已完成)
+**日期**: 2026-01-29
+**当前阶段**: Phase 2.3 模型组管理 (已迁移到新系统)
+
+> **重要更新**: 旧的模型系统（`models` 表 + `model_routes` 表）已废弃，现在统一使用模型组系统（`model_groups` + `model_instances`）。详细使用说明请参考 `docs/MODEL-GROUP-USAGE.md`。
 
 ---
 
@@ -46,22 +48,28 @@
 
 ---
 
-### Phase 2.3: 模型管理 (100%)
+### Phase 2.3: 模型组管理 (已迁移)
 
-**后端 API**:
-- ✅ `GET /api/models` - 列出所有模型
-- ✅ `GET /api/models/:id` - 获取模型详情
-- ✅ `POST /api/models` - 创建模型
-- ✅ `PUT /api/models/:id` - 更新模型
-- ✅ `DELETE /api/models/:id` - 删除模型
+> **迁移说明**: 原有的模型管理系统（Phase 2.3）已完全迁移到新的模型组系统。旧的 `models` 和 `model_routes` 表已被删除，相关的前后端代码也已清理。
 
-**前端页面**:
-- ✅ `/admin/models` - 模型列表页面
-- ✅ 添加模型表单（弹窗）
-- ✅ 模型列表展示
-- ✅ 删除模型功能
-- ✅ 路由配置（策略、故障转移）
-- ✅ 协议转换配置
+**新系统后端 API**:
+- ✅ `GET /api/model-groups` - 列出所有模型组
+- ✅ `GET /api/model-groups/:id` - 获取模型组详情
+- ✅ `POST /api/model-groups` - 创建模型组
+- ✅ `PUT /api/model-groups/:id` - 更新模型组
+- ✅ `DELETE /api/model-groups/:id` - 删除模型组
+
+**新系统前端页面**:
+- ✅ `/admin/model-groups` - 模型组列表页面
+- ✅ 基础的模型组展示功能
+- ⏳ 模型组创建/编辑表单（待完善）
+- ⏳ 模型实例管理界面（待完善）
+
+**已清理的旧系统**:
+- ❌ `/api/models` - API 路由已删除
+- ❌ `/admin/models` - 前端页面已删除
+- ❌ `models` 表 - 数据库表已删除
+- ❌ `model_routes` 表 - 数据库表已删除
 
 ---
 
@@ -75,8 +83,8 @@ features/
 │   └── routes.ts              ✅ 认证 API
 ├── providers/
 │   └── routes.ts              ✅ 供应商 API
-├── models/
-│   └── routes.ts              ✅ 模型 API
+├── model-groups/
+│   └── routes.ts              ✅ 模型组 API (新系统)
 └── health/
     └── routes.ts              ✅ 健康检查
 
@@ -97,7 +105,7 @@ admin/
 ├── login.tsx                  ✅ 登录页面
 ├── dashboard.tsx              ✅ 管理后台首页
 ├── providers.tsx              ✅ 供应商管理页面
-└── models.tsx                 ✅ 模型管理页面
+└── model-groups.tsx           ✅ 模型组管理页面 (新系统)
 
 index.tsx                      ✅ 首页（已更新）
 test-api.tsx                   ✅ API 测试页面
@@ -114,7 +122,7 @@ test-api.tsx                   ✅ API 测试页面
    ↓
 ✅ 3. 添加供应商
    ↓
-✅ 4. 配置模型
+🔄 4. 配置模型组 (新系统)
    ↓
 ⏸️ 5. 生成虚拟密钥
    ↓
@@ -129,12 +137,12 @@ test-api.tsx                   ✅ API 测试页面
 Phase 2: 核心实体管理
 ├── 2.1 管理员认证  ✅ 100% 完成
 ├── 2.2 供应商管理  🔄 80% 完成
-├── 2.3 模型管理    ✅ 100% 完成
+├── 2.3 模型组管理  🔄 70% 完成 (已迁移到新系统)
 ├── 2.4 虚拟密钥    ⏸️  0% 待开始
 ├── 2.5 基础代理    ⏸️  0% 待开始
 └── 2.6 测试文档    ⏸️  0% 待开始
 
-总体进度: ████████████░░░░░░░░ 60%
+总体进度: ████████████░░░░░░░░ 62%
 ```
 
 ---
@@ -157,25 +165,24 @@ bun run dev
 ADMIN_PASSWORD=change-me-in-production
 ```
 
-### 3. 测试模型管理
+### 3. 测试模型组管理
 
-**添加模型**:
-1. 登录后访问 `/admin/models`
-2. 点击"+ 添加模型"
+**添加模型组**:
+1. 登录后访问 `/admin/model-groups`
+2. 点击"+ 添加模型组"
 3. 填写表单：
    - 模型名称: gpt-4
-   - 显示名称: GPT-4
-   - 实际模型名称: gpt-4-turbo-preview
-   - 供应商: 选择已添加的供应商
+   - 虚拟名称: my-gpt-4
    - 路由策略: 轮询
    - 启用故障转移: ✓
-4. 点击"创建"
+4. 添加模型实例并选择供应商和实际模型名称
+5. 点击"创建"
 
-**查看模型**:
-- 列表会显示所有已添加的模型
-- 包含模型信息、供应商、路由策略、状态、创建时间
+**查看模型组**:
+- 列表会显示所有已添加的模型组
+- 包含模型信息、实例数量、状态、创建时间
 
-**删除模型**:
+**删除模型组**:
 - 点击"删除"按钮
 - 确认后即可删除
 
@@ -230,32 +237,33 @@ curl -X POST http://localhost:3000/api/providers \
 curl -X DELETE http://localhost:3000/api/providers/<provider-id> \
   -H "Authorization: Bearer $TOKEN"
 
-# 列出模型
-curl http://localhost:3000/api/models \
+# 列出模型组
+curl http://localhost:3000/api/model-groups \
   -H "Authorization: Bearer $TOKEN"
 
-# 创建模型
-curl -X POST http://localhost:3000/api/models \
+# 创建模型组
+curl -X POST http://localhost:3000/api/model-groups \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
   -d '{
-    "name": "gpt-4",
-    "displayName": "GPT-4",
-    "actualModelName": "gpt-4-turbo-preview",
-    "providerId": "<provider-id>",
+    "modelName": "gpt-4",
+    "virtualName": "my-gpt-4",
     "enabled": true,
-    "routingConfig": {
-      "strategy": "round_robin",
-      "fallbackEnabled": true
-    },
-    "protocolConversion": {
-      "enabled": false,
-      "targetProtocol": "openai"
-    }
+    "routingStrategy": "round_robin",
+    "fallbackEnabled": true,
+    "instances": [
+      {
+        "providerId": "<provider-id>",
+        "actualModelName": "gpt-4-turbo-preview",
+        "weight": 1,
+        "priority": 1,
+        "enabled": true
+      }
+    ]
   }'
 
-# 删除模型
-curl -X DELETE http://localhost:3000/api/models/<model-id> \
+# 删除模型组
+curl -X DELETE http://localhost:3000/api/model-groups/<model-group-id> \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -268,6 +276,13 @@ curl -X DELETE http://localhost:3000/api/models/<model-id> \
 - [ ] 实现编辑供应商功能
 - [ ] 添加 API Key 测试功能
 - [ ] 完善表单验证
+
+### Phase 2.3 完善 (剩余工作)
+
+- [ ] 完善模型组创建/编辑表单
+- [ ] 实现模型实例管理界面
+- [ ] 添加模型组详情页面
+- [ ] 添加性能统计功能
 
 ### Phase 2.4: 虚拟密钥
 
@@ -300,12 +315,14 @@ curl -X DELETE http://localhost:3000/api/models/<model-id> \
 - [x] 登录功能正常
 - [x] 供应商 CRUD API 正常
 - [x] 供应商管理页面正常
-- [x] 模型 CRUD API 正常
-- [x] 模型管理页面正常
+- [x] 模型组 CRUD API 正常
+- [x] 模型组管理页面正常
 - [x] JWT 认证保护生效
+- [x] 旧模型系统已完全清理
+- [x] 数据库迁移成功
 
 ---
 
 **当前状态**: 🟢 进展顺利
 **下次更新**: Phase 2.4 虚拟密钥完成后
-**文档更新**: 2026-01-26
+**文档更新**: 2026-01-29

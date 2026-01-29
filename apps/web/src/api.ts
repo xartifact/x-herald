@@ -1,20 +1,18 @@
 import { Hono } from 'hono';
 import { loadConfig, validateConfig } from '@x-llm-gateway/config';
-import { createDatabase } from '@x-llm-gateway/database';
-import { createCorsMiddleware } from './middleware/cors';
-import { errorHandler } from './middleware/error';
-import { requestLogger } from './middleware/logger';
-import { startAutoCleanup } from './lib/log-cleanup';
-import logger from './lib/logger';
-import healthRoutes from './features/health/routes';
-import authRoutes from './features/auth/routes';
-import providersRoutes from './features/providers/routes';
-import modelsRoutes from './features/models/routes';
-import modelGroupsRoutes from './features/model-groups/routes';
-import keysRoutes from './features/keys/routes';
-import logsRoutes from './features/logs/routes';
-import gatewayRoutes from './features/gateway/routes';
-import { registerDefaultTransformers } from './transformer';
+import { createDatabase } from '@/core/db/client';
+import { createCorsMiddleware } from './core/middleware/cors';
+import { errorHandler } from './core/middleware/error';
+import { requestLogger } from './core/middleware/logger';
+import { startAutoCleanup } from '@/features/logs/log-cleanup';
+import logger from './core/lib/logger';
+import { healthRoutes } from './features/health';
+import { authRoutes } from './features/auth';
+import { providersRoutes } from './features/providers';
+import { modelGroupsRoutes } from './features/model-groups';
+import { keysRoutes } from './features/keys';
+import { logsRoutes } from './features/logs';
+import { gatewayRoutes, registerDefaultTransformers } from './features/gateway';
 
 // Create API app (异步版本)
 export const createApiApp = async () => {
@@ -47,7 +45,6 @@ export const createApiApp = async () => {
   app.route('/api/health', healthRoutes);
   app.route('/api/auth', authRoutes);
   app.route('/api/providers', providersRoutes);
-  app.route('/api/models', modelsRoutes);
   app.route('/api/model-groups', modelGroupsRoutes);
   app.route('/api/keys', keysRoutes);
   app.route('/api/logs', logsRoutes);

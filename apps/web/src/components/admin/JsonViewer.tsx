@@ -4,7 +4,7 @@ import { useState } from "react"
 import Editor from "@monaco-editor/react"
 import { Copy, Check } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/ui/button"
 
 interface JsonViewerProps {
   data: unknown

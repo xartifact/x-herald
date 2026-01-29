@@ -33,7 +33,7 @@ export default function AdminDashboard() {
         </Link>
 
         <Link
-          href="/admin/models"
+          href="/admin/model-groups"
           className="block bg-white rounded-lg shadow-sm p-6 hover:shadow-lg transition"
         >
           <div className="flex items-center">
@@ -44,10 +44,10 @@ export default function AdminDashboard() {
             </div>
             <div className="ml-4">
               <h3 className="text-lg font-medium text-gray-900">
-                模型管理
+                模型组管理
               </h3>
               <p className="mt-1 text-sm text-gray-500">
-                配置 GPT-4、Claude 等模型
+                配置模型组和路由策略
               </p>
             </div>
           </div>
@@ -85,7 +85,7 @@ export default function AdminDashboard() {
             <strong>添加供应商</strong> - 前往"供应商管理"，添加 OpenAI、Anthropic 等 LLM 提供商
           </li>
           <li>
-            <strong>配置模型</strong> - 在"模型管理"中配置可用的模型(如 GPT-4、Claude-3)
+            <strong>配置模型组</strong> - 在"模型组管理"中创建模型组和配置路由策略
           </li>
           <li>
             <strong>生成密钥</strong> - 在"密钥管理"中为终端用户生成虚拟密钥

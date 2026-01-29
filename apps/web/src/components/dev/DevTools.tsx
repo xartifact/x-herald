@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import RenderMonitor from './RenderMonitor';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/ui/button';
 
 /**
  * 开发工具栏

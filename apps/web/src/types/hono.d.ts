@@ -1,4 +1,4 @@
-import type { VirtualKey } from '@x-llm-gateway/database';
+import type { VirtualKey } from '@/features/keys/db';
 
 declare module 'hono' {
   interface ContextVariableMap {

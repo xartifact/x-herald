@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { getRenderStats, printRenderStats, resetRenderStats } from '@/hooks/use-render-count';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card';
 import { X, RefreshCw, Printer } from 'lucide-react';
 
 interface RenderMonitorProps {

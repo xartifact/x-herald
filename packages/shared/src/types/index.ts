@@ -115,3 +115,7 @@ export interface HealthRun {
   errorType: string | null;
   errorMessage: string | null;
 }
+
+// Re-export LLM and Transformer types
+export * from './llm';
+export * from './transformer';

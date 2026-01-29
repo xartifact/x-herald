@@ -11,7 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { LogOut, ChevronDown, LayoutDashboard, Server, Brain, Key, FileText, BarChart3, Settings } from 'lucide-react';
+import { LogOut, ChevronDown, LayoutDashboard, Server, Brain, Key, FileText, BarChart3, Settings, Layers } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // 导航项类型
@@ -41,7 +41,8 @@ const navGroups: NavGroup[] = [
     icon: <Settings className="h-4 w-4" />,
     items: [
       { href: '/admin/providers', label: '供应商', icon: <Server className="h-4 w-4" /> },
-      { href: '/admin/models', label: '模型', icon: <Brain className="h-4 w-4" /> },
+      { href: '/admin/model-groups', label: '模型组', icon: <Layers className="h-4 w-4" /> },
+      { href: '/admin/models', label: '模型(旧)', icon: <Brain className="h-4 w-4" /> },
       { href: '/admin/keys', label: '密钥', icon: <Key className="h-4 w-4" /> },
     ],
   },

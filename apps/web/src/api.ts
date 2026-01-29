@@ -10,13 +10,19 @@ import healthRoutes from './features/health/routes';
 import authRoutes from './features/auth/routes';
 import providersRoutes from './features/providers/routes';
 import modelsRoutes from './features/models/routes';
+import modelGroupsRoutes from './features/model-groups/routes';
 import keysRoutes from './features/keys/routes';
 import logsRoutes from './features/logs/routes';
 import gatewayRoutes from './features/gateway/routes';
+import { registerDefaultTransformers } from './transformer';
 
 // Create API app (异步版本)
 export const createApiApp = async () => {
   const app = new Hono();
+
+  // Register default transformers
+  registerDefaultTransformers();
+  logger.info('Transformers registered');
 
   // Load and validate configuration
   const config = loadConfig();
@@ -42,6 +48,7 @@ export const createApiApp = async () => {
   app.route('/api/auth', authRoutes);
   app.route('/api/providers', providersRoutes);
   app.route('/api/models', modelsRoutes);
+  app.route('/api/model-groups', modelGroupsRoutes);
   app.route('/api/keys', keysRoutes);
   app.route('/api/logs', logsRoutes);
 

@@ -1,8 +1,15 @@
 import { Hono } from 'hono';
 import { eq } from 'drizzle-orm';
-import { getDatabase, models, providers, requestLogs, type VirtualKey } from '@x-llm-gateway/database';
+import { getDatabase, modelGroups, requestLogs, type VirtualKey } from '@x-llm-gateway/database';
 import { virtualKeyMiddleware } from '../../middleware/virtual-key';
 import logger from '../../lib/logger';
+import {
+  TransformerChain,
+  createTransformerContext,
+  getTransformer,
+} from '../../transformer';
+import { modelGroupRouter, ModelNotFoundError, ModelDisabledError, NoAvailableInstanceError, NoSuitableInstanceError } from '../../services/model-group-router';
+import type { StandardRequest, TransformerContext } from '@x-llm-gateway/shared';
 
 const gatewayRoutes = new Hono<{
   Variables: {
@@ -10,7 +17,6 @@ const gatewayRoutes = new Hono<{
   };
 }>();
 
-// 所有路由都需要虚拟密钥认证
 gatewayRoutes.use('*', virtualKeyMiddleware);
 
 /**
@@ -70,18 +76,75 @@ async function logRequest(params: {
 }
 
 /**
- * Anthropic Messages API 兼容端点
- * POST /v1/messages
+ * 检测请求协议类型
  */
-gatewayRoutes.post('/messages', async (c) => {
+function detectProtocol(path: string, body: unknown): 'openai' | 'anthropic' {
+  // 根据路径判断
+  if (path.includes('/chat/completions')) return 'openai';
+  if (path.includes('/messages')) return 'anthropic';
+
+  // 根据请求体判断
+  const req = body as Record<string, unknown>;
+  if (req && typeof req === 'object') {
+    // Anthropic 特有字段
+    if ('max_tokens' in req && !('max_completion_tokens' in req) && !('seed' in req)) {
+      return 'anthropic';
+    }
+  }
+
+  // 默认 OpenAI
+  return 'openai';
+}
+
+/**
+ * 获取 Provider 的协议类型
+ */
+function getProviderProtocol(provider: { protocols?: Record<string, { enabled?: boolean }> }): 'openai' | 'anthropic' {
+  // 优先使用启用的协议
+  if (provider.protocols?.openai?.enabled) return 'openai';
+  if (provider.protocols?.anthropic?.enabled) return 'anthropic';
+
+  // 默认 OpenAI
+  return 'openai';
+}
+
+/**
+ * 获取 Provider 的 API URL
+ */
+function getProviderUrl(
+  provider: { protocols?: Record<string, { enabled?: boolean; baseUrl?: string }> },
+  protocol: 'openai' | 'anthropic',
+): string | null {
+  const config = provider.protocols?.[protocol];
+  if (!config?.enabled || !config.baseUrl) return null;
+  return config.baseUrl;
+}
+
+/**
+ * 主处理函数
+ */
+async function handleChatCompletion(
+  c: {
+    get: (key: 'virtualKey') => VirtualKey;
+    req: {
+      path: string;
+      method: string;
+      header: (name: string) => string | undefined;
+      json: () => Promise<unknown>;
+      raw: { headers: Headers };
+    };
+    json: (body: unknown, status?: number) => Response;
+  },
+  isStreaming: boolean,
+) {
   const startTime = Date.now();
+  const requestId = crypto.randomUUID();
   const virtualKey = c.get('virtualKey');
   const clientIp = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown';
   const userAgent = c.req.header('user-agent') || 'unknown';
   const requestPath = c.req.path;
   const requestMethod = c.req.method;
 
-  // 收集请求头
   const requestHeaders: Record<string, string> = {};
   c.req.raw.headers.forEach((value, key) => {
     if (!key.toLowerCase().includes('authorization') && !key.toLowerCase().includes('cookie')) {
@@ -90,476 +153,228 @@ gatewayRoutes.post('/messages', async (c) => {
   });
 
   try {
-    const body = await c.req.json();
+    const rawBody = (await c.req.json()) as { model?: string; [key: string]: unknown };
+    const incomingProtocol = detectProtocol(requestPath, rawBody);
 
-    // 验证必需字段
-    if (!body.model) {
-      const latencyMs = Date.now() - startTime;
-      await logRequest({
-        virtualKey,
-        modelName: 'unknown',
-        status: 'failure',
-        statusCode: 400,
-        latencyMs,
-        requestHeaders,
-        requestBody: body,
-        errorMessage: 'Missing required field: model',
-        errorType: 'validation_error',
-        clientIp,
-        userAgent,
-        requestPath,
-        requestMethod,
-        streaming: false,
-      });
+    logger.info(
+      { requestId, model: rawBody.model, protocol: incomingProtocol },
+      'Processing chat completion',
+    );
 
-      return c.json({
-        type: 'error',
-        error: {
-          type: 'invalid_request_error',
-          message: 'Missing required field: model',
-        },
-      }, 400 as const);
+    // 1. 请求标准化 (外部协议 -> 标准格式)
+    const ingressTransformer = getTransformer(incomingProtocol);
+    if (!ingressTransformer?.normalizeRequest) {
+      throw new Error(`No transformer found for protocol: ${incomingProtocol}`);
     }
 
-    if (!body.messages || !Array.isArray(body.messages) || body.messages.length === 0) {
-      const latencyMs = Date.now() - startTime;
-      await logRequest({
-        virtualKey,
-        modelName: body.model || 'unknown',
-        status: 'failure',
-        statusCode: 400,
-        latencyMs,
-        requestHeaders,
-        requestBody: body,
-        errorMessage: 'Missing or invalid field: messages',
-        errorType: 'validation_error',
-        clientIp,
-        userAgent,
-        requestPath,
-        requestMethod,
-        streaming: false,
-      });
+    const ctx = createTransformerContext(requestId);
+    const standardReq = await ingressTransformer.normalizeRequest(rawBody, ctx);
 
-      return c.json({
-        type: 'error',
-        error: {
-          type: 'invalid_request_error',
-          message: 'Missing or invalid field: messages',
-        },
-      }, 400 as const);
-    }
-
-    if (!body.max_tokens || typeof body.max_tokens !== 'number') {
-      const latencyMs = Date.now() - startTime;
-      await logRequest({
-        virtualKey,
-        modelName: body.model || 'unknown',
-        status: 'failure',
-        statusCode: 400,
-        latencyMs,
-        requestHeaders,
-        requestBody: body,
-        errorMessage: 'Missing or invalid field: max_tokens',
-        errorType: 'validation_error',
-        clientIp,
-        userAgent,
-        requestPath,
-        requestMethod,
-        streaming: false,
-      });
-
-      return c.json({
-        type: 'error',
-        error: {
-          type: 'invalid_request_error',
-          message: 'Missing or invalid field: max_tokens',
-        },
-      }, 400 as const);
-    }
-
-    const db = getDatabase();
-
-    // 查找模型配置
-    const modelList = await db
-      .select()
-      .from(models)
-      .where(eq(models.name, body.model))
-      .limit(1);
-
-    if (!modelList || modelList.length === 0) {
-      const latencyMs = Date.now() - startTime;
-      await logRequest({
-        virtualKey,
-        modelName: body.model,
-        status: 'failure',
-        statusCode: 404,
-        latencyMs,
-        requestHeaders,
-        requestBody: body,
-        errorMessage: `Model '${body.model}' not found`,
-        errorType: 'not_found_error',
-        clientIp,
-        userAgent,
-        requestPath,
-        requestMethod,
-        streaming: false,
-      });
-
-      return c.json({
-        type: 'error',
-        error: {
-          type: 'not_found_error',
-          message: `Model '${body.model}' not found`,
-        },
-      }, 404 as const);
-    }
-
-    const model = modelList[0];
-
-    // 检查模型是否启用
-    if (!model.enabled) {
-      const latencyMs = Date.now() - startTime;
-      await logRequest({
-        virtualKey,
-        modelName: body.model,
-        status: 'failure',
-        statusCode: 400,
-        latencyMs,
-        requestHeaders,
-        requestBody: body,
-        errorMessage: `Model '${body.model}' is disabled`,
-        errorType: 'model_disabled',
-        clientIp,
-        userAgent,
-        requestPath,
-        requestMethod,
-        streaming: false,
-      });
-
-      return c.json({
-        type: 'error',
-        error: {
-          type: 'invalid_request_error',
-          message: `Model '${body.model}' is disabled`,
-        },
-      }, 400 as const);
-    }
-
-    // 检查虚拟密钥的模型权限
-    if (virtualKey.allowedModels && virtualKey.allowedModels.length > 0) {
-      if (!virtualKey.allowedModels.includes(body.model)) {
-        const latencyMs = Date.now() - startTime;
-        await logRequest({
-          virtualKey,
-          modelName: body.model,
-          status: 'failure',
-          statusCode: 403,
-          latencyMs,
-          requestHeaders,
-          requestBody: body,
-          errorMessage: 'Your API key does not have permission to use this model',
-          errorType: 'permission_error',
-          clientIp,
-          userAgent,
-          requestPath,
-          requestMethod,
-          streaming: false,
-        });
-
-        return c.json({
-          type: 'error',
+    // 2. 检查虚拟密钥的模型权限
+    if (virtualKey.allowedModels?.length && !virtualKey.allowedModels.includes(standardReq.model)) {
+      return c.json(
+        {
           error: {
             type: 'permission_error',
             message: 'Your API key does not have permission to use this model',
           },
-        }, 403 as const);
-      }
-    }
-
-    // 获取供应商信息
-    const providerList = await db
-      .select()
-      .from(providers)
-      .where(eq(providers.id, model.providerId))
-      .limit(1);
-
-    if (!providerList || providerList.length === 0) {
-      const latencyMs = Date.now() - startTime;
-      await logRequest({
-        virtualKey,
-        modelName: body.model,
-        status: 'failure',
-        statusCode: 500,
-        latencyMs,
-        requestHeaders,
-        requestBody: body,
-        errorMessage: 'Provider not found for this model',
-        errorType: 'provider_not_found',
-        clientIp,
-        userAgent,
-        requestPath,
-        requestMethod,
-        streaming: false,
-      });
-
-      return c.json({
-        type: 'error',
-        error: {
-          type: 'internal_error',
-          message: 'Provider not found for this model',
         },
-      }, 500 as const);
+        403,
+      );
     }
 
-    const provider = providerList[0];
+    // 3. 使用模型组路由器选择实例
+    const routeResult = await modelGroupRouter.route({
+      requestedModel: standardReq.model,
+      streaming: standardReq.stream || false,
+      hasTools: !!standardReq.tools?.length,
+      hasVision: standardReq.messages.some((m) =>
+        Array.isArray(m.content) && m.content.some((c) => c.type === 'image_url')
+      ),
+      virtualKeyId: virtualKey.id,
+    });
 
-    // 检查供应商是否启用
-    if (!provider.enabled) {
-      const latencyMs = Date.now() - startTime;
-      await logRequest({
-        virtualKey,
-        modelName: body.model,
-        providerId: provider.id,
-        providerName: provider.name,
-        status: 'failure',
-        statusCode: 400,
-        latencyMs,
-        requestHeaders,
-        requestBody: body,
-        errorMessage: 'Provider for this model is disabled',
-        errorType: 'provider_disabled',
-        clientIp,
-        userAgent,
-        requestPath,
-        requestMethod,
-        streaming: false,
-      });
+    const { instance, provider, group, decision } = routeResult;
 
-      return c.json({
-        type: 'error',
-        error: {
-          type: 'invalid_request_error',
-          message: 'Provider for this model is disabled',
+    logger.debug(
+      {
+        requestId,
+        groupName: group.name,
+        provider: provider.name,
+        actualModel: instance.actualModelName,
+        strategy: decision.strategy,
+        reason: decision.reason,
+      },
+      'Model routed via group',
+    );
+
+    // 4. 确定目标协议
+    const targetProtocol = getProviderProtocol(provider);
+    const providerUrl = getProviderUrl(provider, targetProtocol);
+
+    if (!providerUrl) {
+      return c.json(
+        {
+          error: {
+            type: 'protocol_error',
+            message: `Protocol '${targetProtocol}' not configured for provider`,
+          },
         },
-      }, 400 as const);
+        400,
+      );
     }
 
-    // 构建请求体
-    const requestBody: Record<string, unknown> = {
-      model: model.actualModelName,
-      messages: body.messages,
-      max_tokens: body.max_tokens,
-      stream: body.stream ?? false,
+    // 5. 更新请求模型为实际模型名
+    standardReq.model = instance.actualModelName;
+
+    // 6. 请求适配 (标准格式 -> Provider 协议)
+    const egressTransformer = getTransformer(targetProtocol);
+    if (!egressTransformer?.adaptRequest) {
+      throw new Error(`No adapter found for protocol: ${targetProtocol}`);
+    }
+
+    ctx.provider = {
+      name: provider.name,
+      baseUrl: providerUrl,
+      apiKey: provider.apiKey || '',
+      protocol: targetProtocol,
+      models: [],
     };
 
-    // 可选参数
-    if (body.temperature !== undefined) requestBody.temperature = body.temperature;
-    if (body.top_p !== undefined) requestBody.top_p = body.top_p;
-    if (body.top_k !== undefined) requestBody.top_k = body.top_k;
-    if (body.system !== undefined) requestBody.system = body.system;
-    if (body.stop_sequences !== undefined) requestBody.stop_sequences = body.stop_sequences;
+    const adapted = await egressTransformer.adaptRequest(standardReq, ctx);
 
-    // 获取供应商的 Anthropic 协议配置
-    const anthropicConfig = provider.protocols?.anthropic;
-    if (!anthropicConfig?.enabled || !anthropicConfig?.baseUrl) {
+    // 7. 发送请求到 Provider
+    const targetUrl = adapted.url || `${providerUrl}${getEndpoint(targetProtocol, isStreaming)}`;
+
+    logger.debug(
+      { requestId, targetUrl, targetProtocol, model: standardReq.model },
+      'Forwarding to provider',
+    );
+
+    const response = await fetch(targetUrl, {
+      method: 'POST',
+      headers: {
+        ...adapted.headers,
+        Authorization: `Bearer ${provider.apiKey}`,
+      },
+      body: JSON.stringify(adapted.body),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
       const latencyMs = Date.now() - startTime;
+
       await logRequest({
         virtualKey,
-        modelName: body.model,
+        modelName: rawBody.model || 'unknown',
         providerId: provider.id,
         providerName: provider.name,
         status: 'failure',
-        statusCode: 400,
+        statusCode: response.status,
         latencyMs,
         requestHeaders,
-        requestBody: body,
-        errorMessage: 'Anthropic protocol is not configured for this provider',
-        errorType: 'protocol_not_configured',
+        requestBody: rawBody,
+        responseBody: errorData,
+        errorMessage: errorData.error?.message || 'Provider request failed',
+        errorType: 'provider_error',
         clientIp,
         userAgent,
         requestPath,
         requestMethod,
-        streaming: false,
+        streaming: isStreaming,
       });
 
-      return c.json({
-        type: 'error',
-        error: {
-          type: 'invalid_request_error',
-          message: 'Anthropic protocol is not configured for this provider',
+      return c.json(
+        {
+          error: {
+            type: 'provider_error',
+            message: errorData.error?.message || 'Provider request failed',
+            provider: provider.name,
+          },
         },
-      }, 400 as const);
+        response.status as 400 | 401 | 403 | 429 | 500,
+      );
     }
 
-    // 转发请求到供应商
-    const providerUrl = `${anthropicConfig.baseUrl}/messages`;
-
-    logger.info({
-      model: body.model,
-      provider: provider.name,
-      virtualKeyId: virtualKey.id,
-      stream: requestBody.stream,
-    }, 'Forwarding request to provider');
-
-    // 根据是否流式处理不同响应
-    if (requestBody.stream) {
-      // 流式响应
-      const response = await fetch(providerUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${provider.apiKey}`,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        logger.error({ error: errorData, status: response.status }, 'Provider stream error');
-        const latencyMs = Date.now() - startTime;
-        const status = response.status as 400 | 401 | 403 | 404 | 429 | 500 | 502 | 503;
-
-        await logRequest({
-          virtualKey,
-          modelName: body.model,
-          providerId: provider.id,
-          providerName: provider.name,
-          status: 'failure',
-          statusCode: response.status,
-          latencyMs,
-          requestHeaders,
-          requestBody: body,
-          responseBody: errorData,
-          errorMessage: errorData.error?.message || 'Provider request failed',
-          errorType: 'provider_error',
-          clientIp,
-          userAgent,
-          requestPath,
-          requestMethod,
-          streaming: true,
-        });
-
-        return c.json({
-          type: 'error',
-          error: {
-            type: 'api_error',
-            message: errorData.error?.message || 'Provider request failed',
-          },
-        }, status);
-      }
-
-      // 记录成功的流式请求（异步，不阻塞响应）
-      const latencyMs = Date.now() - startTime;
-      logRequest({
+    // 8. 处理响应
+    const modelName = rawBody.model || 'unknown';
+    if (isStreaming) {
+      return handleStreamingResponse(
+        c,
+        response,
+        ctx,
+        incomingProtocol,
+        targetProtocol,
         virtualKey,
-        modelName: body.model,
-        providerId: provider.id,
-        providerName: provider.name,
-        status: 'success',
-        statusCode: 200,
-        latencyMs,
+        provider,
+        modelName,
+        startTime,
         requestHeaders,
-        requestBody: body,
+        rawBody,
         clientIp,
         userAgent,
         requestPath,
         requestMethod,
-        streaming: true,
-      });
-
-      // 返回 SSE 流
-      return new Response(response.body, {
-        headers: {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          'Connection': 'keep-alive',
-        },
-      });
+      );
     } else {
-      // 非流式响应
-      const response = await fetch(providerUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${provider.apiKey}`,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      // 收集响应头
-      const responseHeaders: Record<string, string> = {};
-      response.headers.forEach((value, key) => {
-        responseHeaders[key] = value;
-      });
-
-      const latencyMs = Date.now() - startTime;
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        logger.error({ error: errorData, status: response.status }, 'Provider error');
-        const status = response.status as 400 | 401 | 403 | 404 | 429 | 500 | 502 | 503;
-
-        await logRequest({
-          virtualKey,
-          modelName: body.model,
-          providerId: provider.id,
-          providerName: provider.name,
-          status: 'failure',
-          statusCode: response.status,
-          latencyMs,
-          requestHeaders,
-          requestBody: body,
-          responseHeaders,
-          responseBody: errorData,
-          errorMessage: errorData.error?.message || 'Provider request failed',
-          errorType: 'provider_error',
-          clientIp,
-          userAgent,
-          requestPath,
-          requestMethod,
-          streaming: false,
-        });
-
-        return c.json({
-          type: 'error',
-          error: {
-            type: 'api_error',
-            message: errorData.error?.message || 'Provider request failed',
-          },
-        }, status);
-      }
-
-      const data = await response.json();
-
-      // 记录成功的请求
-      await logRequest({
+      return handleNonStreamingResponse(
+        c,
+        response,
+        ctx,
+        incomingProtocol,
+        targetProtocol,
         virtualKey,
-        modelName: body.model,
-        providerId: provider.id,
-        providerName: provider.name,
-        status: 'success',
-        statusCode: 200,
-        latencyMs,
-        inputTokens: data.usage?.input_tokens,
-        outputTokens: data.usage?.output_tokens,
+        provider,
+        modelName,
+        startTime,
         requestHeaders,
-        requestBody: body,
-        responseHeaders,
-        responseBody: data,
+        rawBody,
         clientIp,
         userAgent,
         requestPath,
         requestMethod,
-        streaming: false,
-      });
-
-      return c.json(data);
+      );
     }
   } catch (error) {
     const latencyMs = Date.now() - startTime;
-    logger.error({ error }, 'Gateway error');
+    logger.error({ error, requestId }, 'Gateway error');
+
+    // 处理特定错误类型
+    if (error instanceof ModelNotFoundError) {
+      return c.json(
+        {
+          error: {
+            type: 'not_found_error',
+            message: error.message,
+          },
+        },
+        404,
+      );
+    }
+
+    if (error instanceof ModelDisabledError) {
+      return c.json(
+        {
+          error: {
+            type: 'invalid_request_error',
+            message: error.message,
+          },
+        },
+        400,
+      );
+    }
+
+    if (error instanceof NoAvailableInstanceError || error instanceof NoSuitableInstanceError) {
+      return c.json(
+        {
+          error: {
+            type: 'service_unavailable',
+            message: error.message,
+          },
+        },
+        503,
+      );
+    }
 
     await logRequest({
       virtualKey,
@@ -574,56 +389,199 @@ gatewayRoutes.post('/messages', async (c) => {
       userAgent,
       requestPath,
       requestMethod,
-      streaming: false,
+      streaming: isStreaming,
     });
 
-    return c.json({
-      type: 'error',
-      error: {
-        type: 'internal_error',
-        message: error instanceof Error ? error.message : 'Internal server error',
+    return c.json(
+      {
+        error: {
+          type: 'internal_error',
+          message: error instanceof Error ? error.message : 'Internal server error',
+        },
       },
-    }, 500 as const);
+      500,
+    );
   }
+}
+
+/**
+ * 处理非流式响应
+ */
+async function handleNonStreamingResponse(
+  c: any,
+  response: Response,
+  ctx: TransformerContext,
+  incomingProtocol: string,
+  targetProtocol: string,
+  virtualKey: VirtualKey,
+  provider: { id: string; name: string },
+  originalModelName: string,
+  startTime: number,
+  requestHeaders: Record<string, string>,
+  rawBody: unknown,
+  clientIp: string,
+  userAgent: string,
+  requestPath: string,
+  requestMethod: string,
+) {
+  // 标准化响应
+  const ingressTransformer = getTransformer(targetProtocol);
+  if (!ingressTransformer?.normalizeResponse) {
+    throw new Error(`No response normalizer for protocol: ${targetProtocol}`);
+  }
+
+  const standardRes = await ingressTransformer.normalizeResponse(response, ctx);
+
+  // 适配到用户协议
+  const egressTransformer = getTransformer(incomingProtocol);
+  if (!egressTransformer?.adaptResponse) {
+    throw new Error(`No response adapter for protocol: ${incomingProtocol}`);
+  }
+
+  const adaptedRes = await egressTransformer.adaptResponse(standardRes, ctx);
+  const responseData = await adaptedRes.json();
+
+  const latencyMs = Date.now() - startTime;
+
+  // 记录日志
+  await logRequest({
+    virtualKey,
+    modelName: originalModelName,
+    providerId: provider.id,
+    providerName: provider.name,
+    status: 'success',
+    statusCode: 200,
+    latencyMs,
+    inputTokens: standardRes.usage?.prompt_tokens,
+    outputTokens: standardRes.usage?.completion_tokens,
+    requestHeaders,
+    requestBody: rawBody,
+    responseBody: responseData,
+    clientIp,
+    userAgent,
+    requestPath,
+    requestMethod,
+    streaming: false,
+  });
+
+  return c.json(responseData);
+}
+
+/**
+ * 处理流式响应
+ */
+async function handleStreamingResponse(
+  c: any,
+  response: Response,
+  ctx: TransformerContext,
+  incomingProtocol: string,
+  targetProtocol: string,
+  virtualKey: VirtualKey,
+  provider: { id: string; name: string },
+  originalModelName: string,
+  startTime: number,
+  requestHeaders: Record<string, string>,
+  rawBody: unknown,
+  clientIp: string,
+  userAgent: string,
+  requestPath: string,
+  requestMethod: string,
+): Promise<Response> {
+  const latencyMs = Date.now() - startTime;
+
+  // 记录流式请求开始
+  logRequest({
+    virtualKey,
+    modelName: originalModelName,
+    providerId: provider.id,
+    providerName: provider.name,
+    status: 'success',
+    statusCode: 200,
+    latencyMs,
+    requestHeaders,
+    requestBody: rawBody,
+    clientIp,
+    userAgent,
+    requestPath,
+    requestMethod,
+    streaming: true,
+  });
+
+  // 返回 SSE 流
+  return new Response(response.body, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      Connection: 'keep-alive',
+    },
+  });
+}
+
+/**
+ * 获取协议对应的端点
+ */
+function getEndpoint(protocol: string, isStreaming: boolean): string {
+  switch (protocol) {
+    case 'openai':
+      return '/v1/chat/completions';
+    case 'anthropic':
+      return '/v1/messages';
+    default:
+      return '/v1/chat/completions';
+  }
+}
+
+/**
+ * OpenAI 兼容端点 - 非流式
+ */
+gatewayRoutes.post('/chat/completions', async (c) => {
+  return handleChatCompletion(c, false);
 });
 
 /**
- * Anthropic Models API 兼容端点
- * GET /v1/models
+ * Anthropic 兼容端点 - 非流式
+ */
+gatewayRoutes.post('/messages', async (c) => {
+  return handleChatCompletion(c, false);
+});
+
+/**
+ * OpenAI 流式端点
+ */
+gatewayRoutes.post('/chat/completions/stream', async (c) => {
+  return handleChatCompletion(c, true);
+});
+
+/**
+ * Anthropic 流式端点
+ */
+gatewayRoutes.post('/messages/stream', async (c) => {
+  return handleChatCompletion(c, true);
+});
+
+/**
+ * 模型列表端点 - 返回模型组列表
  */
 gatewayRoutes.get('/models', async (c) => {
   const startTime = Date.now();
   const virtualKey = c.get('virtualKey');
   const clientIp = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown';
   const userAgent = c.req.header('user-agent') || 'unknown';
-  const requestPath = c.req.path;
-  const requestMethod = c.req.method;
 
   try {
     const db = getDatabase();
 
-    // 查询所有启用的模型
-    const allModels = await db.select().from(models).where(eq(models.enabled, true));
+    // 查询所有启用的模型组
+    const allGroups = await db.select().from(modelGroups).where(eq(modelGroups.enabled, true));
 
-    // 过滤用户有权限访问的模型
-    const accessibleModels = allModels.filter(model => {
-      if (!virtualKey.allowedModels || virtualKey.allowedModels.length === 0) {
-        return true;
-      }
-      return virtualKey.allowedModels.includes(model.name);
+    // 过滤用户有权限访问的模型组
+    const accessibleGroups = allGroups.filter((group) => {
+      if (!virtualKey.allowedModels?.length) return true;
+      return virtualKey.allowedModels.includes(group.name);
     });
-
-    // 转换为 Anthropic 格式
-    const anthropicModels = accessibleModels.map(model => ({
-      type: 'model',
-      id: model.name,
-      display_name: model.displayName,
-      created_at: new Date(model.createdAt).toISOString(),
-    }));
 
     const latencyMs = Date.now() - startTime;
 
-    // 记录成功的请求
     await logRequest({
       virtualKey,
       modelName: 'list',
@@ -632,43 +590,33 @@ gatewayRoutes.get('/models', async (c) => {
       latencyMs,
       clientIp,
       userAgent,
-      requestPath,
-      requestMethod,
+      requestPath: c.req.path,
+      requestMethod: 'GET',
       streaming: false,
     });
 
+    // OpenAI 格式
     return c.json({
-      data: anthropicModels,
-      has_more: false,
-      first_id: anthropicModels[0]?.id || null,
-      last_id: anthropicModels[anthropicModels.length - 1]?.id || null,
+      object: 'list',
+      data: accessibleGroups.map((group) => ({
+        id: group.name,
+        object: 'model',
+        created: Math.floor(new Date(group.createdAt).getTime() / 1000),
+        owned_by: 'x-llm-gateway',
+        capabilities: group.capabilities,
+      })),
     });
   } catch (error) {
-    const latencyMs = Date.now() - startTime;
     logger.error({ error }, 'Models list error');
-
-    await logRequest({
-      virtualKey,
-      modelName: 'list',
-      status: 'failure',
-      statusCode: 500,
-      latencyMs,
-      errorMessage: 'Failed to list models',
-      errorType: 'internal_error',
-      clientIp,
-      userAgent,
-      requestPath,
-      requestMethod,
-      streaming: false,
-    });
-
-    return c.json({
-      type: 'error',
-      error: {
-        type: 'internal_error',
-        message: 'Failed to list models',
+    return c.json(
+      {
+        error: {
+          type: 'internal_error',
+          message: 'Failed to list models',
+        },
       },
-    }, 500 as const);
+      500,
+    );
   }
 });
 

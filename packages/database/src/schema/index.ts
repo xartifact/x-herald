@@ -1,5 +1,7 @@
 export * from './providers';
 export * from './models';
+export * from './model-groups';
+export * from './model-instances';
 export * from './model-routes';
 export * from './virtual-keys';
 export * from './request-logs';

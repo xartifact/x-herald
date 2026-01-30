@@ -39,7 +39,7 @@ export { OpenAITransformer } from './protocols/openai';
 export { AnthropicTransformer } from './protocols/anthropic';
 
 // 导出工具函数
-export function createTransformerContext(requestId: string): import('@x-llm-gateway/shared').TransformerContext {
+export function createTransformerContext(requestId: string): import('@/types').TransformerContext {
   return {
     requestId,
     startTime: Date.now(),

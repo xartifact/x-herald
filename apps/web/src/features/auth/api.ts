@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { sign, verify } from 'hono/jwt';
-import { loadConfig } from '@x-llm-gateway/config';
+import { loadConfig } from '@/core/config';
 import logger from '@/core/lib/logger';
 
 const authRoutes = new Hono();

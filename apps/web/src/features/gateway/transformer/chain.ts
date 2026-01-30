@@ -9,7 +9,7 @@ import type {
   Transformer,
   TransformerContext,
   TransformerChainConfig,
-} from '@x-llm-gateway/shared';
+} from '@/types';
 import { getTransformer } from './registry';
 import logger from '@/core/lib/logger';
 

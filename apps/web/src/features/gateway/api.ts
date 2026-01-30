@@ -11,7 +11,7 @@ import {
   getTransformer,
 } from './transformer';
 import { modelGroupRouter, ModelNotFoundError, ModelDisabledError, NoAvailableInstanceError, NoSuitableInstanceError } from './services/model-group-router';
-import type { StandardRequest, TransformerContext } from '@x-llm-gateway/shared';
+import type { StandardRequest, TransformerContext } from '@/types';
 
 const gatewayRoutes = new Hono<{
   Variables: {

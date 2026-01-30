@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { loadConfig, validateConfig } from '@x-llm-gateway/config';
+import { loadConfig, validateConfig } from '@/core/config';
 import { createDatabase } from '@/core/db/client';
 import { createCorsMiddleware } from './core/middleware/cors';
 import { errorHandler } from './core/middleware/error';

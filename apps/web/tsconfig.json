@@ -10,8 +10,7 @@
       "@/*": ["./src/*"],
       "@/features/*": ["./src/features/*"],
       "@/core/*": ["./src/core/*"],
-      "@/ui/*": ["./src/ui/*"],
-      "@x-llm-gateway/shared": ["../../packages/shared/src"]
+      "@/ui/*": ["./src/ui/*"]
     },
     "plugins": [
       {

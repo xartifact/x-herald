@@ -13,7 +13,7 @@ import type {
   ToolCall,
   StreamChunk,
   MessageContent,
-} from '@x-llm-gateway/shared';
+} from '@/types';
 import logger from '@/core/lib/logger';
 
 // OpenAI 特定类型

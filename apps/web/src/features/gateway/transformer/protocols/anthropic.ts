@@ -11,7 +11,7 @@ import type {
   StandardMessage,
   ToolDefinition,
   MessageContent,
-} from '@x-llm-gateway/shared';
+} from '@/types';
 import logger from '@/core/lib/logger';
 
 // Anthropic 特定类型

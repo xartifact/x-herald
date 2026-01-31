@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useLogs, useDeleteLog, useLogStats, useLogStorage, useCleanupLogs } from '@/hooks/use-logs'
 import { useQueryClient } from '@tanstack/react-query'
 
@@ -46,19 +46,23 @@ export function useLogPage() {
   const [cleanupDialogOpen, setCleanupDialogOpen] = useState(false)
   const [retentionDays, setRetentionDays] = useState('30')
 
-  // 计算时间范围参数
-  const timeParams = getTimeRange(timeRange)
+  // 计算时间范围参数（使用 useMemo 避免每次渲染都创建新对象）
+  const timeParams = useMemo(() => getTimeRange(timeRange), [timeRange])
 
-  // 构建查询参数
-  const queryParams: Record<string, string> = {
-    page: String(currentPage),
-    pageSize: String(PAGE_SIZE),
-    ...timeParams,
-  }
+  // 构建查询参数（使用 useMemo 避免每次渲染都创建新对象）
+  const queryParams = useMemo(() => {
+    const params: Record<string, string> = {
+      page: String(currentPage),
+      pageSize: String(PAGE_SIZE),
+      ...timeParams,
+    }
 
-  if (statusFilter !== 'all') {
-    queryParams.status = statusFilter
-  }
+    if (statusFilter !== 'all') {
+      params.status = statusFilter
+    }
+
+    return params
+  }, [currentPage, timeParams, statusFilter])
 
   const { data: logsData, isLoading: loading, isFetching } = useLogs(queryParams)
   const { data: statsData } = useLogStats(timeParams)

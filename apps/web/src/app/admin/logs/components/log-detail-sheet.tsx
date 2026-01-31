@@ -4,26 +4,17 @@ import { useState } from 'react'
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
 } from '@/components/ui/sheet'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
+import { Separator } from '@/components/ui/separator'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Copy,
   Check,
-  Clock,
-  Zap,
-  Server,
-  Key,
-  Activity,
-  AlertCircle,
-  CheckCircle,
-  ArrowUpRight,
-  ArrowDownRight,
-  ChevronDown,
-  ChevronRight
+  X,
+  ExternalLink,
+  ChevronRight,
 } from 'lucide-react'
 import { JsonViewer, HeadersViewer } from '@/components/admin/JsonViewer'
 import { cn } from '@/core/lib/utils'
@@ -37,69 +28,121 @@ interface LogDetailSheetProps {
   formatTokens: (tokens: number) => string
 }
 
-interface MetricCardProps {
-  icon: React.ReactNode
+interface InfoRowProps {
   label: string
   value: string | React.ReactNode
-  subValue?: string
-  variant?: 'default' | 'success' | 'error' | 'warning'
-  className?: string
+  copyable?: boolean
+  mono?: boolean
 }
 
-function MetricCard({ icon, label, value, subValue, variant = 'default', className }: MetricCardProps) {
-  const variants = {
-    default: 'border-border/50 bg-card/30',
-    success: 'border-green-500/30 bg-green-500/5',
-    error: 'border-red-500/30 bg-red-500/5',
-    warning: 'border-amber-500/30 bg-amber-500/5',
+function InfoRow({ label, value, copyable = false, mono = false }: InfoRowProps) {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = () => {
+    if (typeof value === 'string') {
+      navigator.clipboard.writeText(value)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
   }
 
   return (
-    <div className={cn(
-      'relative overflow-hidden rounded-lg border backdrop-blur-sm transition-all hover:border-primary/50',
-      variants[variant],
-      className
-    )}>
-      <div className="p-3">
-        <div className="flex items-center gap-2 mb-1">
-          <div className="text-muted-foreground">{icon}</div>
-          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            {label}
-          </span>
-        </div>
-        <div className="font-mono text-lg font-bold leading-none">{value}</div>
-        {subValue && (
-          <div className="text-xs text-muted-foreground mt-1 font-mono">{subValue}</div>
-        )}
+    <div className="flex items-start py-2.5 px-4 hover:bg-accent/50 transition-colors group">
+      <div className="w-32 flex-shrink-0 text-sm text-muted-foreground font-medium">
+        {label}
       </div>
-      <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+      <div className={cn(
+        "flex-1 text-sm",
+        mono && "font-mono"
+      )}>
+        {value}
+      </div>
+      {copyable && typeof value === 'string' && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 px-2 opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={handleCopy}
+        >
+          {copied ? (
+            <Check className="h-3 w-3" />
+          ) : (
+            <Copy className="h-3 w-3" />
+          )}
+        </Button>
+      )}
     </div>
   )
 }
 
-interface CollapsibleSectionProps {
+interface SectionProps {
   title: string
   children: React.ReactNode
-  defaultOpen?: boolean
+  badge?: React.ReactNode
+  action?: React.ReactNode
 }
 
-function CollapsibleSection({ title, children, defaultOpen = false }: CollapsibleSectionProps) {
-  const [isOpen, setIsOpen] = useState(defaultOpen)
+function Section({ title, children, badge, action }: SectionProps) {
+  return (
+    <div className="border-b last:border-b-0">
+      <div className="px-4 py-3 bg-muted/30 flex items-center justify-between sticky top-0 z-10">
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-semibold">{title}</h3>
+          {badge}
+        </div>
+        {action}
+      </div>
+      <div>{children}</div>
+    </div>
+  )
+}
+
+interface PanelProps {
+  title: string
+  icon?: React.ReactNode
+  bodyContent: React.ReactNode
+  headers: Record<string, string> | null
+  className?: string
+}
+
+function Panel({ title, icon, bodyContent, headers, className }: PanelProps) {
+  const [activeTab, setActiveTab] = useState<'body' | 'headers'>('body')
 
   return (
-    <div className="border-b border-border/50 last:border-b-0">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-3 flex items-center justify-between hover:bg-accent/50 transition-colors"
-      >
-        <span className="text-sm font-semibold">{title}</span>
-        {isOpen ? (
-          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+    <div className={cn("flex flex-col border-r last:border-r-0 bg-background", className)}>
+      <div className="px-4 py-3 border-b bg-muted/20 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {icon}
+          <h3 className="font-semibold text-sm">{title}</h3>
+        </div>
+        <div className="flex items-center gap-1">
+          <Button
+            variant={activeTab === 'body' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setActiveTab('body')}
+            className="h-7 px-3 text-xs"
+          >
+            Body
+          </Button>
+          <Button
+            variant={activeTab === 'headers' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setActiveTab('headers')}
+            className="h-7 px-3 text-xs"
+          >
+            Headers
+          </Button>
+        </div>
+      </div>
+      <ScrollArea className="flex-1">
+        {activeTab === 'body' ? (
+          bodyContent
         ) : (
-          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          <div className="p-4">
+            <HeadersViewer headers={headers} />
+          </div>
         )}
-      </button>
-      {isOpen && <div className="px-4 pb-4">{children}</div>}
+      </ScrollArea>
     </div>
   )
 }
@@ -111,252 +154,248 @@ export function LogDetailSheet({
   formatDuration,
   formatTokens,
 }: LogDetailSheetProps) {
-  const [copiedField, setCopiedField] = useState<string | null>(null)
-
   if (!log) return null
 
   const isSuccess = log.status === 'success'
-  const statusVariant = isSuccess ? 'success' : 'error'
-
-  const handleCopy = (text: string, field: string) => {
-    navigator.clipboard.writeText(text)
-    setCopiedField(field)
-    setTimeout(() => setCopiedField(null), 2000)
-  }
-
-  const CopyButton = ({ text, field }: { text: string; field: string }) => (
-    <Button
-      variant="ghost"
-      size="sm"
-      onClick={() => handleCopy(text, field)}
-      className="h-6 px-2 text-xs"
-    >
-      {copiedField === field ? (
-        <>
-          <Check className="h-3 w-3 mr-1" />
-          已复制
-        </>
-      ) : (
-        <>
-          <Copy className="h-3 w-3 mr-1" />
-          复制
-        </>
-      )}
-    </Button>
-  )
-
-  const latencyColor = log.latencyMs < 1000 ? 'text-green-500' : log.latencyMs < 3000 ? 'text-amber-500' : 'text-red-500'
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="w-full sm:max-w-[95vw] p-0 flex flex-col bg-background/95 backdrop-blur-xl"
+        className="w-full max-w-[98vw] p-0 flex flex-col gap-0"
       >
-        {/* 头部 - 紧凑且信息密集 */}
-        <SheetHeader className="px-6 py-4 border-b border-border/50 bg-gradient-to-b from-background to-muted/20">
-          <div className="flex items-start justify-between">
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <div className={cn(
-                  "flex items-center gap-2 px-3 py-1.5 rounded-md font-mono text-sm font-bold",
-                  isSuccess ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"
-                )}>
-                  {isSuccess ? (
-                    <CheckCircle className="h-4 w-4" />
-                  ) : (
-                    <AlertCircle className="h-4 w-4" />
-                  )}
-                  {log.status.toUpperCase()}
-                  {log.statusCode && (
-                    <span className="ml-2 opacity-70">{log.statusCode}</span>
-                  )}
-                </div>
-                <Badge variant="outline" className="font-mono">
-                  {log.requestMethod || 'UNKNOWN'}
-                </Badge>
-              </div>
-              <div className="font-mono text-2xl font-bold tracking-tight">
-                {log.modelName}
-              </div>
-              <div className="text-xs text-muted-foreground font-mono">
-                {new Date(log.createdAt).toLocaleString('zh-CN', {
-                  year: 'numeric',
-                  month: '2-digit',
-                  day: '2-digit',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  second: '2-digit',
-                  fractionalSecondDigits: 3,
-                })}
-              </div>
+        {/* 顶部工具栏 */}
+        <div className="flex items-center justify-between px-6 py-4 border-b bg-background">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              {isSuccess ? (
+                <div className="h-2 w-2 rounded-full bg-green-500" />
+              ) : (
+                <div className="h-2 w-2 rounded-full bg-red-500" />
+              )}
+              <span className="text-sm font-semibold">
+                {log.requestMethod || 'REQUEST'}
+              </span>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">{log.modelName}</span>
             </div>
+            <Badge variant={isSuccess ? 'default' : 'destructive'} className="font-mono">
+              {log.statusCode || log.status}
+            </Badge>
           </div>
-        </SheetHeader>
-
-        {/* 关键指标网格 */}
-        <div className="px-6 py-4 border-b border-border/50 bg-muted/30">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <MetricCard
-              icon={<Clock className="h-4 w-4" />}
-              label="延迟"
-              value={<span className={latencyColor}>{formatDuration(log.latencyMs)}</span>}
-              variant={log.latencyMs < 1000 ? 'success' : log.latencyMs < 3000 ? 'warning' : 'error'}
-            />
-
-            <MetricCard
-              icon={<Activity className="h-4 w-4" />}
-              label="Token 使用"
-              value={formatTokens(log.totalTokens)}
-              subValue={`↑${formatTokens(log.inputTokens)} ↓${formatTokens(log.outputTokens)}`}
-            />
-
-            <MetricCard
-              icon={<Server className="h-4 w-4" />}
-              label="供应商"
-              value={log.providerName || '-'}
-              subValue={log.streaming ? '流式传输' : '普通请求'}
-            />
-
-            <MetricCard
-              icon={<Key className="h-4 w-4" />}
-              label="虚拟密钥"
-              value={
-                <span className="truncate block" title={log.virtualKeyName || '-'}>
-                  {log.virtualKeyName || '-'}
-                </span>
-              }
-            />
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground font-mono">
+              {new Date(log.createdAt).toLocaleString('zh-CN')}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onOpenChange(false)}
+              className="h-8 w-8"
+            >
+              <X className="h-4 w-4" />
+            </Button>
           </div>
         </div>
 
-        {/* 元数据部分 */}
-        <div className="border-b border-border/50 bg-card/20">
-          <CollapsibleSection title="请求元数据" defaultOpen={false}>
-            <div className="space-y-3 text-sm">
-              <div className="grid grid-cols-[120px_1fr] gap-x-4 gap-y-2 font-mono">
-                <div className="text-muted-foreground">请求路径</div>
-                <div className="flex items-center justify-between group">
-                  <code className="text-xs break-all bg-muted/50 px-2 py-1 rounded">
-                    {log.requestPath || '-'}
-                  </code>
-                  {log.requestPath && (
-                    <CopyButton text={log.requestPath} field="path" />
-                  )}
-                </div>
-
-                <div className="text-muted-foreground">客户端 IP</div>
-                <div className="flex items-center justify-between group">
-                  <code className="text-xs bg-muted/50 px-2 py-1 rounded">
-                    {log.clientIp || '-'}
-                  </code>
-                  {log.clientIp && (
-                    <CopyButton text={log.clientIp} field="ip" />
-                  )}
-                </div>
-
-                <div className="text-muted-foreground">请求 ID</div>
-                <div className="flex items-center justify-between group">
-                  <code className="text-xs break-all bg-muted/50 px-2 py-1 rounded">
-                    {log.id}
-                  </code>
-                  <CopyButton text={log.id} field="id" />
-                </div>
-              </div>
-            </div>
-          </CollapsibleSection>
-
-          {log.errorMessage && (
-            <CollapsibleSection title="错误详情" defaultOpen={true}>
-              <div className="space-y-3">
-                <div className="p-4 rounded-lg border-2 border-red-500/30 bg-red-500/5">
-                  <div className="flex items-start gap-3">
-                    <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-                    <div className="flex-1 space-y-2">
-                      <div className="font-medium text-red-500">
-                        {log.errorMessage}
-                      </div>
-                      {log.errorType && (
-                        <div className="text-xs text-muted-foreground font-mono">
-                          类型: {log.errorType}
-                        </div>
+        {/* 主体三栏布局 */}
+        <div className="flex-1 grid grid-cols-[300px_1fr_1fr] overflow-hidden">
+          {/* 左侧面板：元数据 */}
+          <div className="flex flex-col border-r bg-muted/20 overflow-hidden">
+            <ScrollArea className="flex-1">
+              <Section title="基本信息">
+                <InfoRow
+                  label="状态"
+                  value={
+                    <div className="flex items-center gap-2">
+                      <span className={isSuccess ? 'text-green-600' : 'text-red-600'}>
+                        {isSuccess ? '成功' : '失败'}
+                      </span>
+                      {log.statusCode && (
+                        <code className="text-xs bg-muted px-1.5 py-0.5 rounded">
+                          {log.statusCode}
+                        </code>
                       )}
                     </div>
-                  </div>
-                </div>
-              </div>
-            </CollapsibleSection>
-          )}
-        </div>
+                  }
+                />
+                <InfoRow
+                  label="模型"
+                  value={log.modelName}
+                  mono
+                />
+                <InfoRow
+                  label="供应商"
+                  value={log.providerName || '-'}
+                />
+                <InfoRow
+                  label="虚拟密钥"
+                  value={log.virtualKeyName || '-'}
+                  copyable
+                  mono
+                />
+              </Section>
 
-        {/* 请求/响应主体 - 并排布局 */}
-        <div className="flex-1 grid grid-cols-2 divide-x divide-border/50 overflow-hidden">
-          {/* 请求面板 */}
-          <div className="flex flex-col overflow-hidden bg-gradient-to-br from-blue-500/5 to-transparent">
-            <div className="px-4 py-3 border-b border-border/50 bg-card/50 backdrop-blur-sm">
-              <div className="flex items-center gap-2">
-                <ArrowUpRight className="h-4 w-4 text-blue-500" />
-                <h3 className="font-semibold text-sm">请求 (Request)</h3>
-              </div>
-            </div>
-            <ScrollArea className="flex-1">
-              <Tabs defaultValue="body" className="p-4">
-                <TabsList className="grid w-full grid-cols-2 bg-muted/50">
-                  <TabsTrigger value="headers">Headers</TabsTrigger>
-                  <TabsTrigger value="body">Body</TabsTrigger>
-                </TabsList>
+              <Section title="性能指标">
+                <InfoRow
+                  label="延迟"
+                  value={
+                    <span className={cn(
+                      "font-semibold",
+                      log.latencyMs < 1000 ? "text-green-600" :
+                      log.latencyMs < 3000 ? "text-amber-600" :
+                      "text-red-600"
+                    )}>
+                      {formatDuration(log.latencyMs)}
+                    </span>
+                  }
+                />
+                <InfoRow
+                  label="流式传输"
+                  value={log.streaming ? '是' : '否'}
+                />
+                <InfoRow
+                  label="输入 Token"
+                  value={formatTokens(log.inputTokens)}
+                  mono
+                />
+                <InfoRow
+                  label="输出 Token"
+                  value={formatTokens(log.outputTokens)}
+                  mono
+                />
+                <InfoRow
+                  label="总 Token"
+                  value={
+                    <span className="font-semibold">
+                      {formatTokens(log.totalTokens)}
+                    </span>
+                  }
+                  mono
+                />
+              </Section>
 
-                <TabsContent value="headers" className="mt-4">
-                  <div className="rounded-lg border border-border/50 bg-card/30 p-4">
-                    <HeadersViewer headers={log.requestHeaders} />
-                  </div>
-                </TabsContent>
+              <Section title="请求信息">
+                <InfoRow
+                  label="方法"
+                  value={log.requestMethod || '-'}
+                  mono
+                />
+                <InfoRow
+                  label="路径"
+                  value={
+                    <span className="text-xs break-all">
+                      {log.requestPath || '-'}
+                    </span>
+                  }
+                  copyable
+                  mono
+                />
+                <InfoRow
+                  label="客户端 IP"
+                  value={log.clientIp || '-'}
+                  copyable
+                  mono
+                />
+                <InfoRow
+                  label="请求 ID"
+                  value={
+                    <span className="text-xs break-all">
+                      {log.id}
+                    </span>
+                  }
+                  copyable
+                  mono
+                />
+              </Section>
 
-                <TabsContent value="body" className="mt-4">
-                  {log.requestBody !== null && log.requestBody !== undefined ? (
-                    <JsonViewer data={log.requestBody} height="calc(100vh - 450px)" />
-                  ) : (
-                    <div className="text-sm text-muted-foreground text-center py-12 border border-dashed rounded-lg">
-                      无请求体
+              {log.errorMessage && (
+                <Section
+                  title="错误详情"
+                  badge={
+                    <Badge variant="destructive" className="text-xs">
+                      Error
+                    </Badge>
+                  }
+                >
+                  <div className="p-4 space-y-2">
+                    <div className="text-sm font-medium text-red-600">
+                      {log.errorMessage}
                     </div>
-                  )}
-                </TabsContent>
-              </Tabs>
+                    {log.errorType && (
+                      <div className="text-xs text-muted-foreground font-mono">
+                        类型: {log.errorType}
+                      </div>
+                    )}
+                  </div>
+                </Section>
+              )}
+
+              <Section title="时间戳">
+                <InfoRow
+                  label="创建时间"
+                  value={new Date(log.createdAt).toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                  })}
+                  mono
+                />
+              </Section>
             </ScrollArea>
           </div>
 
-          {/* 响应面板 */}
-          <div className="flex flex-col overflow-hidden bg-gradient-to-br from-green-500/5 to-transparent">
-            <div className="px-4 py-3 border-b border-border/50 bg-card/50 backdrop-blur-sm">
-              <div className="flex items-center gap-2">
-                <ArrowDownRight className="h-4 w-4 text-green-500" />
-                <h3 className="font-semibold text-sm">响应 (Response)</h3>
-              </div>
-            </div>
-            <ScrollArea className="flex-1">
-              <Tabs defaultValue="body" className="p-4">
-                <TabsList className="grid w-full grid-cols-2 bg-muted/50">
-                  <TabsTrigger value="headers">Headers</TabsTrigger>
-                  <TabsTrigger value="body">Body</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="headers" className="mt-4">
-                  <div className="rounded-lg border border-border/50 bg-card/30 p-4">
-                    <HeadersViewer headers={log.responseHeaders} />
+          {/* 中间面板：请求 */}
+          <Panel
+            title="Request"
+            icon={<div className="h-1.5 w-1.5 rounded-full bg-blue-500" />}
+            headers={log.requestHeaders}
+            bodyContent={
+              <div className="p-4">
+                {log.requestBody !== null && log.requestBody !== undefined ? (
+                  <JsonViewer data={log.requestBody} height="calc(100vh - 200px)" />
+                ) : (
+                  <div className="flex items-center justify-center h-[200px] text-sm text-muted-foreground">
+                    无请求体
                   </div>
-                </TabsContent>
+                )}
+              </div>
+            }
+          />
 
-                <TabsContent value="body" className="mt-4">
-                  {log.responseBody !== null && log.responseBody !== undefined ? (
-                    <JsonViewer data={log.responseBody} height="calc(100vh - 450px)" />
-                  ) : (
-                    <div className="text-sm text-muted-foreground text-center py-12 border border-dashed rounded-lg">
-                      无响应体
-                    </div>
-                  )}
-                </TabsContent>
-              </Tabs>
-            </ScrollArea>
+          {/* 右侧面板：响应 */}
+          <Panel
+            title="Response"
+            icon={<div className="h-1.5 w-1.5 rounded-full bg-green-500" />}
+            headers={log.responseHeaders}
+            bodyContent={
+              <div className="p-4">
+                {log.responseBody !== null && log.responseBody !== undefined ? (
+                  <JsonViewer data={log.responseBody} height="calc(100vh - 200px)" />
+                ) : (
+                  <div className="flex items-center justify-center h-[200px] text-sm text-muted-foreground">
+                    无响应体
+                  </div>
+                )}
+              </div>
+            }
+          />
+        </div>
+
+        {/* 底部状态栏 */}
+        <div className="flex items-center justify-between px-6 py-2 border-t bg-muted/20 text-xs text-muted-foreground font-mono">
+          <div className="flex items-center gap-4">
+            <span>延迟: {formatDuration(log.latencyMs)}</span>
+            <Separator orientation="vertical" className="h-4" />
+            <span>Token: {formatTokens(log.totalTokens)}</span>
+            <Separator orientation="vertical" className="h-4" />
+            <span>{isSuccess ? '成功' : '失败'}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span>{new Date(log.createdAt).toLocaleTimeString('zh-CN')}</span>
           </div>
         </div>
       </SheetContent>

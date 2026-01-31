@@ -85,7 +85,7 @@ interface SectionProps {
 function Section({ title, children, badge, action }: SectionProps) {
   return (
     <div className="border-b last:border-b-0">
-      <div className="px-4 py-3 bg-muted/30 flex items-center justify-between sticky top-0 z-10">
+      <div className="px-4 py-2.5 bg-muted/30 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-semibold">{title}</h3>
           {badge}
@@ -110,7 +110,7 @@ function Panel({ title, icon, bodyContent, headers, className }: PanelProps) {
 
   return (
     <div className={cn("flex flex-col border-r last:border-r-0 bg-background", className)}>
-      <div className="px-4 py-3 border-b bg-muted/20 flex items-center justify-between">
+      <div className="px-4 py-2.5 border-b bg-muted/20 flex items-center justify-between">
         <div className="flex items-center gap-2">
           {icon}
           <h3 className="font-semibold text-sm">{title}</h3>
@@ -162,10 +162,10 @@ export function LogDetailSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="w-full max-w-[98vw] p-0 flex flex-col gap-0"
+        className="w-[66vw] max-w-[66vw] p-0 flex flex-col gap-0 sm:max-w-[66vw]"
       >
         {/* 顶部工具栏 */}
-        <div className="flex items-center justify-between px-6 py-4 border-b bg-background">
+        <div className="flex items-center justify-between px-6 py-3.5 border-b bg-background">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               {isSuccess ? (
@@ -179,7 +179,7 @@ export function LogDetailSheet({
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm font-medium">{log.modelName}</span>
             </div>
-            <Badge variant={isSuccess ? 'default' : 'destructive'} className="font-mono">
+            <Badge variant={isSuccess ? 'default' : 'destructive'} className="font-mono text-xs">
               {log.statusCode || log.status}
             </Badge>
           </div>
@@ -199,7 +199,7 @@ export function LogDetailSheet({
         </div>
 
         {/* 主体三栏布局 */}
-        <div className="flex-1 grid grid-cols-[300px_1fr_1fr] overflow-hidden">
+        <div className="flex-1 grid grid-cols-[minmax(400px,30%)_1fr_1fr] overflow-hidden">
           {/* 左侧面板：元数据 */}
           <div className="flex flex-col border-r bg-muted/20 overflow-hidden">
             <ScrollArea className="flex-1">

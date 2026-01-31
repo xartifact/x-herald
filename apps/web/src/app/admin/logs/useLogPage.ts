@@ -122,8 +122,8 @@ export function useLogPage() {
   }
 
   const formatDuration = (ms: number) => {
-    if (ms < 1000) return `${ms}ms`
-    return `${(ms / 1000).toFixed(2)}s`
+    if (ms < 1000) return `${ms.toFixed(2).replace(/\.00$/, '')}ms`
+    return `${(ms / 1000).toFixed(2).replace(/\.00$/, '')}s`
   }
 
   const formatTokens = (tokens: number) => {

@@ -81,6 +81,36 @@ interface OpenAIStreamChunk {
   };
 }
 
+interface OpenAIChoice {
+  index: number;
+  message?: {
+    role: string;
+    content?: string;
+    tool_calls?: Array<{
+      id: string;
+      type: 'function';
+      function: {
+        name: string;
+        arguments: string;
+      };
+    }>;
+  };
+  finish_reason: string | null;
+}
+
+interface OpenAIResponse {
+  id: string;
+  object: string;
+  created: number;
+  model: string;
+  choices: OpenAIChoice[];
+  usage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
+}
+
 export class OpenAITransformer implements Transformer {
   readonly name = 'openai';
   readonly supportedProtocols: ('openai' | 'anthropic' | 'gemini' | 'vertex' | 'custom')[] = ['openai'];
@@ -173,7 +203,7 @@ export class OpenAITransformer implements Transformer {
       object: data.object || 'chat.completion',
       created: data.created || Math.floor(Date.now() / 1000),
       model: data.model,
-      choices: data.choices?.map((choice: any) => ({
+      choices: (data.choices as OpenAIChoice[])?.map((choice) => ({
         index: choice.index,
         message: choice.message
           ? {

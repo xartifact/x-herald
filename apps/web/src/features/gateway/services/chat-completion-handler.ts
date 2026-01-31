@@ -201,6 +201,8 @@ export async function handleChatCompletion(
     }
 
     // 8. 处理响应
+    // 根据请求体中的 stream 字段动态决定是否使用流式处理
+    const actualStreaming = standardReq.stream === true;
     const modelName = rawBody.model || 'unknown';
     const handlerParams = {
       c,
@@ -220,7 +222,7 @@ export async function handleChatCompletion(
       requestMethod,
     };
 
-    if (isStreaming) {
+    if (actualStreaming) {
       return handleStreamingResponse(handlerParams);
     } else {
       return handleNonStreamingResponse(handlerParams);

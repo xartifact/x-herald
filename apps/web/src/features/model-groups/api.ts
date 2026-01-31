@@ -27,6 +27,32 @@ modelGroupRoutes.get('/', async (c) => {
   });
 });
 
+// ==================== 模型实例管理（必须在 /:id 之前）====================
+
+/**
+ * 获取所有模型实例列表（跨所有模型组）
+ */
+modelGroupRoutes.get('/instances', async (c) => {
+  const db = getDatabase();
+
+  try {
+    const instances = await db.select().from(modelInstances);
+
+    return c.json({
+      success: true,
+      data: instances,
+    });
+  } catch (error) {
+    logger.error({ error }, 'Failed to list model instances');
+    return c.json(
+      { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
+      500
+    );
+  }
+});
+
+// ==================== 模型组详情（放在 /instances 之后）====================
+
 /**
  * 获取单个模型组详情（包含实例）
  */
@@ -56,6 +82,7 @@ modelGroupRoutes.post('/', async (c) => {
       .insert(modelGroups)
       .values({
         name: data.name,
+        aliases: data.aliases || [],
         displayName: data.displayName,
         description: data.description,
         category: data.category || 'chat',
@@ -101,6 +128,7 @@ modelGroupRoutes.put('/:id', async (c) => {
       .update(modelGroups)
       .set({
         name: data.name,
+        aliases: data.aliases,
         displayName: data.displayName,
         description: data.description,
         category: data.category,

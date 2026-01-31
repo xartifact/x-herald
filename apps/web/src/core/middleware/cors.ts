@@ -1,9 +1,10 @@
 import { cors } from 'hono/cors';
+import type { Context, Next } from 'hono';
 import type { GatewayConfig } from '@/core/config';
 
 export function createCorsMiddleware(config: GatewayConfig) {
   if (!config.server.cors.enabled) {
-    return async (_c: any, next: any) => next();
+    return async (_c: Context, next: Next) => next();
   }
 
   return cors({

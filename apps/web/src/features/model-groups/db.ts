@@ -63,6 +63,9 @@ export const modelGroups = pgTable('model_groups', {
   // 模型组标识 (唯一的模型名称,如 "gpt-4", "claude-3-opus")
   name: varchar('name', { length: 255 }).notNull().unique(),
 
+  // 别名列表 (如 ["gpt4", "openai-gpt-4"])
+  aliases: jsonb('aliases').$type<string[]>().default([]),
+
   // 显示名称
   displayName: varchar('display_name', { length: 255 }).notNull(),
 

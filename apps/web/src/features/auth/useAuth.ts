@@ -24,8 +24,9 @@ export function useLogin() {
         router.push('/admin/dashboard')
       }, 100)
     },
-    onError: (error: any) => {
-      toast.error(error.data?.error || '登录失败')
+    onError: (error: unknown) => {
+      const apiError = error as { data?: { error?: string } }
+      toast.error(apiError.data?.error || '登录失败')
     },
   })
 }

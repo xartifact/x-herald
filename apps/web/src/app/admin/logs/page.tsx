@@ -2,7 +2,6 @@
 
 import { Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   LogStatsCards,
   LogSearchFilter,
@@ -71,40 +70,37 @@ export default function LogsPage() {
         isRefreshing={isRefreshing}
       />
 
-      <Card>
-        <CardHeader className="pb-0">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base font-medium">日志列表</CardTitle>
-            {pagination && pagination.total > 0 && (
-              <span className="text-sm text-muted-foreground">共 {pagination.total} 条记录</span>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          {loading ? (
-            <div className="py-12 text-center text-muted-foreground">加载中...</div>
-          ) : logs.length === 0 ? (
-            <div className="py-12 text-center text-muted-foreground">
-              {searchQuery || statusFilter !== 'all' ? '没有找到匹配的日志' : '还没有请求日志'}
-            </div>
-          ) : (
-            <>
-              <LogTable
-                logs={logs}
-                onViewDetail={handleViewDetail}
-                onDelete={handleDelete}
-                formatDuration={formatDuration}
-                formatTokens={formatTokens}
-              />
-              <LogPagination
-                currentPage={currentPage}
-                totalPages={pagination?.totalPages || 1}
-                onPageChange={setCurrentPage}
-              />
-            </>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-medium">日志列表</h3>
+          {pagination && pagination.total > 0 && (
+            <span className="text-sm text-muted-foreground">共 {pagination.total} 条记录</span>
           )}
-        </CardContent>
-      </Card>
+        </div>
+
+        {loading ? (
+          <div className="py-12 text-center text-muted-foreground border rounded-lg">加载中...</div>
+        ) : logs.length === 0 ? (
+          <div className="py-12 text-center text-muted-foreground border rounded-lg">
+            {searchQuery || statusFilter !== 'all' ? '没有找到匹配的日志' : '还没有请求日志'}
+          </div>
+        ) : (
+          <>
+            <LogTable
+              logs={logs}
+              onViewDetail={handleViewDetail}
+              onDelete={handleDelete}
+              formatDuration={formatDuration}
+              formatTokens={formatTokens}
+            />
+            <LogPagination
+              currentPage={currentPage}
+              totalPages={pagination?.totalPages || 1}
+              onPageChange={setCurrentPage}
+            />
+          </>
+        )}
+      </div>
 
       <LogDetailSheet
         log={selectedLog}

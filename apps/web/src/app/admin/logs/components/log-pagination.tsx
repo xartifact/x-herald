@@ -13,7 +13,7 @@ export function LogPagination({ currentPage, totalPages, onPageChange }: LogPagi
   if (totalPages <= 1) return null
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 border-t">
+    <div className="flex items-center justify-between px-4 py-3 border rounded-lg bg-muted/20">
       <div className="text-sm text-muted-foreground">
         第 {currentPage} / {totalPages} 页
       </div>

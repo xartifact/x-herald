@@ -11,3 +11,13 @@ export interface VirtualKey {
   createdAt: string
   updatedAt: string
 }
+
+export interface KeyFormData {
+  name: string
+  allowedModels: string
+  rateLimitRpm: number | undefined
+  rateLimitRpd: number | undefined
+  tokenLimitDaily: number | undefined
+  enabled: boolean
+  expiresAt: string
+}

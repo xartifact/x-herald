@@ -57,8 +57,9 @@ export function useCreateKey() {
       queryClient.invalidateQueries({ queryKey: keyKeys.lists() })
       toast.success('密钥创建成功')
     },
-    onError: (error: any) => {
-      toast.error(error.data?.error || '创建失败')
+    onError: (error: unknown) => {
+      const apiError = error as { data?: { error?: string } }
+      toast.error(apiError.data?.error || '创建失败')
     },
   })
 }
@@ -87,8 +88,9 @@ export function useUpdateKey() {
       queryClient.invalidateQueries({ queryKey: keyKeys.detail(variables.id) })
       toast.success('密钥更新成功')
     },
-    onError: (error: any) => {
-      toast.error(error.data?.error || '更新失败')
+    onError: (error: unknown) => {
+      const apiError = error as { data?: { error?: string } }
+      toast.error(apiError.data?.error || '更新失败')
     },
   })
 }
@@ -105,8 +107,9 @@ export function useDeleteKey() {
       queryClient.invalidateQueries({ queryKey: keyKeys.lists() })
       toast.success('密钥删除成功')
     },
-    onError: (error: any) => {
-      toast.error(error.data?.error || '删除失败')
+    onError: (error: unknown) => {
+      const apiError = error as { data?: { error?: string } }
+      toast.error(apiError.data?.error || '删除失败')
     },
   })
 }
@@ -124,8 +127,9 @@ export function useResetKey() {
       queryClient.invalidateQueries({ queryKey: keyKeys.detail(data.id) })
       toast.success('密钥已重置，请保存新的密钥值')
     },
-    onError: (error: any) => {
-      toast.error(error.data?.error || '重置失败')
+    onError: (error: unknown) => {
+      const apiError = error as { data?: { error?: string } }
+      toast.error(apiError.data?.error || '重置失败')
     },
   })
 }

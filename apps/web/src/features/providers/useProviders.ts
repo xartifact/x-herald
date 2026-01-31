@@ -54,8 +54,9 @@ export function useCreateProvider() {
       queryClient.invalidateQueries({ queryKey: providerKeys.lists() })
       toast.success('供应商创建成功')
     },
-    onError: (error: any) => {
-      toast.error(error.data?.error || '创建失败')
+    onError: (error: unknown) => {
+      const apiError = error as { data?: { error?: string } }
+      toast.error(apiError.data?.error || '创建失败')
     },
   })
 }
@@ -74,8 +75,9 @@ export function useUpdateProvider() {
       queryClient.invalidateQueries({ queryKey: providerKeys.detail(variables.id) })
       toast.success('供应商更新成功')
     },
-    onError: (error: any) => {
-      toast.error(error.data?.error || '更新失败')
+    onError: (error: unknown) => {
+      const apiError = error as { data?: { error?: string } }
+      toast.error(apiError.data?.error || '更新失败')
     },
   })
 }
@@ -92,8 +94,9 @@ export function useDeleteProvider() {
       queryClient.invalidateQueries({ queryKey: providerKeys.lists() })
       toast.success('供应商删除成功')
     },
-    onError: (error: any) => {
-      toast.error(error.data?.error || '删除失败')
+    onError: (error: unknown) => {
+      const apiError = error as { data?: { error?: string } }
+      toast.error(apiError.data?.error || '删除失败')
     },
   })
 }

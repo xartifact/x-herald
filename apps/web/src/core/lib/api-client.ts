@@ -6,7 +6,7 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     public statusText: string,
-    public data?: any
+    public data?: unknown
   ) {
     super(`API Error: ${status} ${statusText}`)
     this.name = 'ApiError'
@@ -99,7 +99,7 @@ export function get<T>(endpoint: string, options?: RequestOptions): Promise<T> {
  */
 export function post<T>(
   endpoint: string,
-  body?: any,
+  body?: Record<string, unknown>,
   options?: RequestOptions
 ): Promise<T> {
   return request<T>(endpoint, {
@@ -114,7 +114,7 @@ export function post<T>(
  */
 export function put<T>(
   endpoint: string,
-  body?: any,
+  body?: Record<string, unknown>,
   options?: RequestOptions
 ): Promise<T> {
   return request<T>(endpoint, {
@@ -139,7 +139,7 @@ export function del<T>(
  */
 export function patch<T>(
   endpoint: string,
-  body?: any,
+  body?: Record<string, unknown>,
   options?: RequestOptions
 ): Promise<T> {
   return request<T>(endpoint, {

@@ -1,18 +1,20 @@
 import { Hono } from 'hono';
+
 import { loadConfig, validateConfig } from '@/core/config';
 import { createDatabase } from '@/core/db/client';
+import { startAutoCleanup } from '@/features/logs/log-cleanup';
+
+import logger from './core/lib/logger';
 import { createCorsMiddleware } from './core/middleware/cors';
 import { errorHandler } from './core/middleware/error';
 import { requestLogger } from './core/middleware/logger';
-import { startAutoCleanup } from '@/features/logs/log-cleanup';
-import logger from './core/lib/logger';
-import { healthRoutes } from './features/health';
 import { authRoutes } from './features/auth';
-import { providersRoutes } from './features/providers';
-import { modelGroupsRoutes } from './features/model-groups';
+import { gatewayRoutes, registerDefaultTransformers } from './features/gateway';
+import { healthRoutes } from './features/health';
 import { keysRoutes } from './features/keys';
 import { logsRoutes } from './features/logs';
-import { gatewayRoutes, registerDefaultTransformers } from './features/gateway';
+import { modelGroupsRoutes } from './features/model-groups';
+import { providersRoutes } from './features/providers';
 
 // Create API app (异步版本)
 export const createApiApp = async () => {
@@ -31,7 +33,8 @@ export const createApiApp = async () => {
   logger.info('Database initialized');
 
   // 启动日志自动清理（每24小时检查一次，保留30天）
-  if (process.env.NODE_ENV === 'production') {
+  // 生产环境始终启用，开发环境可通过 ENABLE_LOG_CLEANUP=true 启用
+  if (process.env.NODE_ENV === 'production' || process.env.ENABLE_LOG_CLEANUP === 'true') {
     startAutoCleanup(24, 30);
     logger.info('Auto log cleanup scheduler started (retention: 30 days)');
   }
@@ -84,4 +87,3 @@ export const apiApp = async () => {
   }
   return _apiApp;
 };
-

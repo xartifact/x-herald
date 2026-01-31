@@ -65,9 +65,9 @@ async function createDatabaseIfNotExists(options: DatabaseOptions): Promise<void
     // 使用 unsafe 执行 CREATE DATABASE（不能使用参数化查询）
     await createClient.unsafe(`CREATE DATABASE "${options.database}"`);
     console.log(`✅ 数据库 "${options.database}" 创建成功`);
-  } catch (error: any) {
+  } catch (error) {
     // 如果数据库已存在，忽略错误
-    if (error.code === '42P04') {
+    if (error instanceof Error && 'code' in error && error.code === '42P04') {
       console.log(`ℹ️  数据库 "${options.database}" 已存在`);
     } else {
       throw error;
@@ -119,13 +119,16 @@ async function runMigrations(db: ReturnType<typeof drizzle>): Promise<void> {
 
     await migrate(db, { migrationsFolder });
     console.log('✅ 数据库迁移完成');
-  } catch (error: any) {
+  } catch (error) {
     // 如果是 "No migrations to run" 错误，忽略
-    if (error.message?.includes('No migrations')) {
+    if (error instanceof Error && error.message?.includes('No migrations')) {
       console.log('ℹ️  没有新的迁移需要运行');
-    } else {
+    } else if (error instanceof Error) {
       console.error('❌ 数据库迁移失败:', error);
       console.error('错误详情:', error.message);
+      throw error;
+    } else {
+      console.error('❌ 数据库迁移失败:', error);
       throw error;
     }
   }

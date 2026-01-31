@@ -64,9 +64,11 @@ export default function AdminLogin() {
                 />
               </div>
 
-              {login.error && (
+              {!!login.error && (
                 <Alert variant="destructive">
-                  <AlertDescription>{login.error.message}</AlertDescription>
+                  <AlertDescription>
+                    {login.error instanceof Error ? login.error.message : '登录失败'}
+                  </AlertDescription>
                 </Alert>
               )}
 

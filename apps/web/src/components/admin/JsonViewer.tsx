@@ -1,10 +1,14 @@
 "use client"
 
 import { useState } from "react"
-import Editor from "@monaco-editor/react"
+import Editor, { loader } from "@monaco-editor/react"
+import * as monaco from "monaco-editor"
 import { Copy, Check } from "lucide-react"
 
 import { Button } from "@/ui/button"
+
+// 配置 Monaco Editor 使用本地文件而不是 CDN
+loader.config({ monaco })
 
 interface JsonViewerProps {
   data: unknown

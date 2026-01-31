@@ -30,10 +30,10 @@ export interface Log {
   inputTokens: number
   outputTokens: number
   totalTokens: number
-  requestHeaders: Record<string, any> | null
-  requestBody: Record<string, any> | null
-  responseHeaders: Record<string, any> | null
-  responseBody: Record<string, any> | null
+  requestHeaders: Record<string, string> | null
+  requestBody: Record<string, unknown> | null
+  responseHeaders: Record<string, string> | null
+  responseBody: Record<string, unknown> | null
   errorMessage: string | null
   errorType: string | null
   clientIp: string | null
@@ -119,7 +119,7 @@ export function useLogs(filters?: Record<string, string>) {
   const queryString = filters ? '?' + new URLSearchParams(filters).toString() : ''
   return useQuery({
     queryKey: logKeys.list(queryString),
-    queryFn: () => get<LogsListResponse>(`/api/logs${queryString}`),
+    queryFn: () => get<LogsListResponse>(`/api/logs${queryString}`, { extractData: false }),
   })
 }
 
@@ -129,7 +129,7 @@ export function useLogs(filters?: Record<string, string>) {
 export function useLog(id: string) {
   return useQuery({
     queryKey: logKeys.detail(id),
-    queryFn: () => get<LogResponse>(`/api/logs/${id}`),
+    queryFn: () => get<LogResponse>(`/api/logs/${id}`, { extractData: false }),
     enabled: !!id,
   })
 }
@@ -141,7 +141,7 @@ export function useLogStats(filters?: Record<string, string>) {
   const queryString = filters ? '?' + new URLSearchParams(filters).toString() : ''
   return useQuery({
     queryKey: [...logKeys.stats(), queryString],
-    queryFn: () => get<LogStatsResponse>(`/api/logs/stats/overview${queryString}`),
+    queryFn: () => get<LogStatsResponse>(`/api/logs/stats/overview${queryString}`, { extractData: false }),
   })
 }
 
@@ -151,7 +151,7 @@ export function useLogStats(filters?: Record<string, string>) {
 export function useLogStorage() {
   return useQuery({
     queryKey: logKeys.storage(),
-    queryFn: () => get<LogStorageResponse>('/api/logs/stats/storage'),
+    queryFn: () => get<LogStorageResponse>('/api/logs/stats/storage', { extractData: false }),
   })
 }
 
@@ -167,8 +167,9 @@ export function useDeleteLog() {
       queryClient.invalidateQueries({ queryKey: logKeys.lists() })
       toast.success('日志删除成功')
     },
-    onError: (error: any) => {
-      toast.error(error.data?.error || '删除失败')
+    onError: (error: unknown) => {
+      const apiError = error as { data?: { error?: string } }
+      toast.error(apiError.data?.error || '删除失败')
     },
   })
 }
@@ -181,14 +182,15 @@ export function useCleanupLogs() {
 
   return useMutation({
     mutationFn: (retentionDays: number) =>
-      post<CleanupResponse>('/api/logs/cleanup', { retentionDays }),
+      post<CleanupResponse>('/api/logs/cleanup', { retentionDays }, { extractData: false }),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: logKeys.lists() })
       queryClient.invalidateQueries({ queryKey: logKeys.storage() })
       toast.success(`已清理 ${data.data.deletedCount} 条过期日志`)
     },
-    onError: (error: any) => {
-      toast.error(error.data?.error || '清理失败')
+    onError: (error: unknown) => {
+      const apiError = error as { data?: { error?: string } }
+      toast.error(apiError.data?.error || '清理失败')
     },
   })
 }

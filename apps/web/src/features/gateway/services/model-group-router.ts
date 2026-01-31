@@ -160,15 +160,20 @@ export class ModelGroupRouter {
       return exactMatch[0];
     }
 
-    // 尝试按别名查找 (metadata.aliases)
+    // 尝试按别名查找 (独立 aliases 字段)
     const withAlias = await db
       .select()
       .from(modelGroups)
       .where(eq(modelGroups.enabled, true));
 
     return withAlias.find((g) => {
-      const aliases = g.metadata?.aliases as string[] | undefined;
-      return aliases?.includes(name);
+      // 优先检查独立的 aliases 字段
+      if (g.aliases?.includes(name)) {
+        return true;
+      }
+      // 兼容旧数据：检查 metadata.aliases
+      const metadataAliases = g.metadata?.aliases as string[] | undefined;
+      return metadataAliases?.includes(name);
     }) || null;
   }
 

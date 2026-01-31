@@ -17,6 +17,7 @@ export type { ModelCapabilities, ModelGroupRoutingConfig, RoutingStrategy, Insta
 // Extended types for frontend use
 export interface ModelGroup extends DbModelGroup {
   // Frontend 可能需要的额外字段
+  instances?: ModelInstance[];
 }
 
 export interface ModelInstance extends DbModelInstance {
@@ -43,6 +44,7 @@ export interface ModelGroupDetail {
 // Create Model Group Payload
 export interface CreateModelGroupPayload {
   name: string;
+  aliases?: string[];
   displayName: string;
   description?: string;
   category?: string;
@@ -55,6 +57,7 @@ export interface CreateModelGroupPayload {
 // Update Model Group Payload
 export interface UpdateModelGroupPayload {
   name?: string;
+  aliases?: string[];
   displayName?: string;
   description?: string;
   category?: string;

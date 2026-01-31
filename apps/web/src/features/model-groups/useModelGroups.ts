@@ -10,6 +10,7 @@ export const modelGroupKeys = {
   list: (filters: string) => [...modelGroupKeys.lists(), { filters }] as const,
   details: () => [...modelGroupKeys.all, 'detail'] as const,
   detail: (id: string) => [...modelGroupKeys.details(), id] as const,
+  instances: () => [...modelGroupKeys.all, 'instances'] as const,
 }
 
 // 获取所有模型组
@@ -17,11 +18,11 @@ export function useModelGroups() {
   return useQuery({
     queryKey: modelGroupKeys.lists(),
     queryFn: async () => {
-      const data = await get<ApiResponse<ModelGroup[]>>('/api/model-groups')
-      if (!data.success) {
-        throw new Error(data.error || '获取模型组失败')
+      const response = await get<ApiResponse<ModelGroup[]>>('/api/model-groups', { extractData: false })
+      if (!response.success) {
+        throw new Error(response.error || '获取模型组失败')
       }
-      return data.data
+      return response.data
     },
   })
 }
@@ -31,13 +32,27 @@ export function useModelGroup(id: string) {
   return useQuery({
     queryKey: modelGroupKeys.detail(id),
     queryFn: async () => {
-      const data = await get<ApiResponse<ModelGroupDetail>>(`/api/model-groups/${id}`)
-      if (!data.success) {
-        throw new Error(data.error || '获取模型组详情失败')
+      const response = await get<ApiResponse<ModelGroupDetail>>(`/api/model-groups/${id}`, { extractData: false })
+      if (!response.success) {
+        throw new Error(response.error || '获取模型组详情失败')
       }
-      return data.data
+      return response.data
     },
     enabled: !!id,
+  })
+}
+
+// 获取所有模型实例列表
+export function useModelInstances() {
+  return useQuery({
+    queryKey: modelGroupKeys.instances(),
+    queryFn: async () => {
+      const response = await get<ApiResponse<ModelInstance[]>>('/api/model-groups/instances', { extractData: false })
+      if (!response.success) {
+        throw new Error(response.error || '获取模型实例列表失败')
+      }
+      return response.data
+    },
   })
 }
 
@@ -56,7 +71,7 @@ export function useCreateModelGroup() {
       supportedProtocols?: string[]
       metadata?: Record<string, unknown>
     }) => {
-      const response = await post<ApiResponse<ModelGroup>>('/api/model-groups', data)
+      const response = await post<ApiResponse<ModelGroup>>('/api/model-groups', data, { extractData: false })
       if (!response.success) {
         throw new Error(response.error || '创建模型组失败')
       }
@@ -93,7 +108,7 @@ export function useUpdateModelGroup() {
         metadata: Record<string, unknown>
       }>
     }) => {
-      const response = await put<ApiResponse<ModelGroup>>(`/api/model-groups/${id}`, data)
+      const response = await put<ApiResponse<ModelGroup>>(`/api/model-groups/${id}`, data, { extractData: false })
       if (!response.success) {
         throw new Error(response.error || '更新模型组失败')
       }
@@ -116,7 +131,7 @@ export function useDeleteModelGroup() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const response = await deleteRequest<ApiResponse<ModelGroup>>(`/api/model-groups/${id}`)
+      const response = await deleteRequest<ApiResponse<ModelGroup>>(`/api/model-groups/${id}`, { extractData: false })
       if (!response.success) {
         throw new Error(response.error || '删除模型组失败')
       }
@@ -138,7 +153,7 @@ export function useToggleModelGroup() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const response = await patch<ApiResponse<ModelGroup>>(`/api/model-groups/${id}/toggle`)
+      const response = await patch<ApiResponse<ModelGroup>>(`/api/model-groups/${id}/toggle`, undefined, { extractData: false })
       if (!response.success) {
         throw new Error(response.error || '切换状态失败')
       }
@@ -175,14 +190,14 @@ export function useCreateModelInstance() {
       }
       config?: ModelInstance['config']
     }) => {
-      const response = await post<ApiResponse<ModelInstance>>('/api/model-groups/instances', data)
+      const response = await post<ApiResponse<ModelInstance>>('/api/model-groups/instances', data, { extractData: false })
       if (!response.success) {
         throw new Error(response.error || '创建模型实例失败')
       }
       return response.data
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: modelGroupKeys.detail(variables.groupId) })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: modelGroupKeys.instances() })
       toast.success('模型实例创建成功')
     },
     onError: (error: Error) => {
@@ -216,14 +231,14 @@ export function useUpdateModelInstance() {
         config: ModelInstance['config']
       }>
     }) => {
-      const response = await put<ApiResponse<ModelInstance>>(`/api/model-groups/instances/${id}`, data)
+      const response = await put<ApiResponse<ModelInstance>>(`/api/model-groups/instances/${id}`, data, { extractData: false })
       if (!response.success) {
         throw new Error(response.error || '更新模型实例失败')
       }
       return response.data
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: modelGroupKeys.detail(variables.groupId) })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: modelGroupKeys.instances() })
       toast.success('模型实例更新成功')
     },
     onError: (error: Error) => {
@@ -237,15 +252,15 @@ export function useDeleteModelInstance() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ id, groupId }: { id: string; groupId: string }) => {
-      const response = await deleteRequest<ApiResponse<ModelInstance>>(`/api/model-groups/instances/${id}`)
+    mutationFn: async ({ id }: { id: string; groupId: string }) => {
+      const response = await deleteRequest<ApiResponse<ModelInstance>>(`/api/model-groups/instances/${id}`, { extractData: false })
       if (!response.success) {
         throw new Error(response.error || '删除模型实例失败')
       }
       return response.data
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: modelGroupKeys.detail(variables.groupId) })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: modelGroupKeys.instances() })
       toast.success('模型实例删除成功')
     },
     onError: (error: Error) => {
@@ -259,15 +274,15 @@ export function useToggleModelInstance() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ id, groupId }: { id: string; groupId: string }) => {
-      const response = await patch<ApiResponse<ModelInstance>>(`/api/model-groups/instances/${id}/toggle`)
+    mutationFn: async ({ id }: { id: string; groupId: string }) => {
+      const response = await patch<ApiResponse<ModelInstance>>(`/api/model-groups/instances/${id}/toggle`, undefined, { extractData: false })
       if (!response.success) {
         throw new Error(response.error || '切换状态失败')
       }
       return response.data
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: modelGroupKeys.detail(variables.groupId) })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: modelGroupKeys.instances() })
     },
     onError: (error: Error) => {
       toast.error(error.message)

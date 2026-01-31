@@ -24,6 +24,7 @@ build/
 
 # Logs
 logs/
+!apps/web/src/app/admin/logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -50,9 +51,6 @@ Thumbs.db
 # Bun
 .bun/
 bun.lockb
-
-# Drizzle
-**/migrations/**/*.sql
 
 # TanStack Start / Vinxi
 .vinxi/

@@ -8,6 +8,20 @@
       "when": 1769735507932,
       "tag": "0000_curly_quasimodo",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1769858554987,
+      "tag": "0001_dizzy_mesmero",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1738336800000,
+      "tag": "0002_add_protocol_columns",
+      "breakpoints": true
     }
   ]
 }

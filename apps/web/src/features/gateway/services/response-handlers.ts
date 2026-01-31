@@ -17,10 +17,30 @@ interface ResponseHandlerParams {
   startTime: number;
   requestHeaders: Record<string, string>;
   rawBody: unknown;
+  transformedBody?: unknown;
   clientIp: string;
   userAgent: string;
   requestPath: string;
   requestMethod: string;
+}
+
+/**
+ * 提取响应头信息（排除敏感信息）
+ */
+function extractResponseHeaders(response: Response): Record<string, string> {
+  const headers: Record<string, string> = {};
+  response.headers.forEach((value, key) => {
+    // 排除敏感信息和二进制内容
+    if (
+      !key.toLowerCase().includes('authorization') &&
+      !key.toLowerCase().includes('cookie') &&
+      !key.toLowerCase().includes('set-cookie') &&
+      key.toLowerCase() !== 'content-encoding'
+    ) {
+      headers[key] = value;
+    }
+  });
+  return headers;
 }
 
 /**
@@ -58,6 +78,7 @@ export async function handleNonStreamingResponse(
     );
 
     const latencyMs = Date.now() - startTime;
+    const responseHeaders = extractResponseHeaders(response);
 
     // 记录日志（流式）
     logRequest({
@@ -70,11 +91,15 @@ export async function handleNonStreamingResponse(
       latencyMs,
       requestHeaders,
       requestBody: rawBody,
+      transformedRequestBody: params.transformedBody,
+      responseHeaders,
       clientIp,
       userAgent,
       requestPath,
       requestMethod,
       streaming: true,
+      incomingProtocol,
+      targetProtocol,
     });
 
     // 返回 SSE 流
@@ -105,6 +130,7 @@ export async function handleNonStreamingResponse(
   const responseData = await adaptedRes.json();
 
   const latencyMs = Date.now() - startTime;
+  const responseHeaders = extractResponseHeaders(response);
 
   // 记录日志
   await logRequest({
@@ -119,15 +145,56 @@ export async function handleNonStreamingResponse(
     outputTokens: standardRes.usage?.completion_tokens,
     requestHeaders,
     requestBody: rawBody,
+    transformedRequestBody: params.transformedBody,
+    responseHeaders,
     responseBody: responseData,
     clientIp,
     userAgent,
     requestPath,
     requestMethod,
     streaming: false,
+    incomingProtocol,
+    targetProtocol,
   });
 
   return c.json(responseData);
+}
+
+/**
+ * 从 SSE chunk 中提取 usage 信息
+ * 支持 OpenAI 和 Anthropic 格式
+ */
+function extractUsageFromChunk(data: string): { prompt_tokens?: number; completion_tokens?: number } | null {
+  try {
+    const json = JSON.parse(data);
+
+    // OpenAI 格式: usage 在最后一个 chunk
+    if (json.usage) {
+      return {
+        prompt_tokens: json.usage.prompt_tokens,
+        completion_tokens: json.usage.completion_tokens,
+      };
+    }
+
+    // Anthropic 格式: message_delta 事件中的 usage
+    if (json.type === 'message_delta' && json.usage) {
+      return {
+        prompt_tokens: undefined, // Anthropic 通常在 message_start 中提供
+        completion_tokens: json.usage.output_tokens,
+      };
+    }
+
+    // Anthropic 格式: message_start 事件中的 usage (input tokens)
+    if (json.type === 'message_start' && json.message?.usage) {
+      return {
+        prompt_tokens: json.message.usage.input_tokens,
+        completion_tokens: undefined,
+      };
+    }
+  } catch {
+    // 解析失败，忽略
+  }
+  return null;
 }
 
 /**
@@ -148,30 +215,75 @@ export async function handleStreamingResponse(
     userAgent,
     requestPath,
     requestMethod,
+    incomingProtocol,
+    targetProtocol,
   } = params;
 
-  const latencyMs = Date.now() - startTime;
+  // 用于收集 usage 信息
+  let promptTokens: number | undefined;
+  let completionTokens: number | undefined;
 
-  // 记录流式请求开始
-  logRequest({
-    virtualKey,
-    modelName: originalModelName,
-    providerId: provider.id,
-    providerName: provider.name,
-    status: 'success',
-    statusCode: 200,
-    latencyMs,
-    requestHeaders,
-    requestBody: rawBody,
-    clientIp,
-    userAgent,
-    requestPath,
-    requestMethod,
-    streaming: true,
+  // 提前提取响应头（流式响应在开始时即可获取）
+  const responseHeaders = extractResponseHeaders(response);
+
+  // 创建 TransformStream 解析 SSE
+  const transformStream = new TransformStream<Uint8Array, Uint8Array>({
+    transform(chunk, controller) {
+      // 解析 SSE chunk
+      const text = new TextDecoder().decode(chunk);
+      const lines = text.split('\n');
+
+      for (const line of lines) {
+        if (line.startsWith('data:')) {
+          const data = line.slice(5).trim();
+          if (data === '[DONE]') continue;
+
+          const usage = extractUsageFromChunk(data);
+          if (usage) {
+            // 合并 usage 信息（可能来自不同的事件）
+            if (usage.prompt_tokens !== undefined) {
+              promptTokens = usage.prompt_tokens;
+            }
+            if (usage.completion_tokens !== undefined) {
+              completionTokens = usage.completion_tokens;
+            }
+          }
+        }
+      }
+
+      controller.enqueue(chunk);
+    },
+    flush() {
+      // 流结束时记录日志
+      const latencyMs = Date.now() - startTime;
+      logRequest({
+        virtualKey,
+        modelName: originalModelName,
+        providerId: provider.id,
+        providerName: provider.name,
+        status: 'success',
+        statusCode: 200,
+        latencyMs,
+        inputTokens: promptTokens,
+        outputTokens: completionTokens,
+        requestHeaders,
+        requestBody: rawBody,
+        transformedRequestBody: params.transformedBody,
+        responseHeaders,
+        clientIp,
+        userAgent,
+        requestPath,
+        requestMethod,
+        streaming: true,
+        incomingProtocol,
+        targetProtocol,
+      });
+    },
   });
 
-  // 返回 SSE 流
-  return new Response(response.body, {
+  // 通过 TransformStream 返回响应
+  const transformedBody = response.body?.pipeThrough(transformStream);
+  return new Response(transformedBody, {
     headers: {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',

@@ -32,6 +32,7 @@ export interface Log {
   totalTokens: number
   requestHeaders: Record<string, string> | null
   requestBody: Record<string, unknown> | null
+  transformedRequestBody: Record<string, unknown> | null
   responseHeaders: Record<string, string> | null
   responseBody: Record<string, unknown> | null
   errorMessage: string | null
@@ -41,6 +42,8 @@ export interface Log {
   requestPath: string | null
   requestMethod: string | null
   streaming: string
+  incomingProtocol: string | null
+  targetProtocol: string | null
   createdAt: string
 }
 

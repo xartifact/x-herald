@@ -15,6 +15,7 @@ export interface LogRequestParams {
   outputTokens?: number;
   requestHeaders?: Record<string, string>;
   requestBody?: unknown;
+  transformedRequestBody?: unknown;
   responseHeaders?: Record<string, string>;
   responseBody?: unknown;
   errorMessage?: string;
@@ -24,6 +25,8 @@ export interface LogRequestParams {
   requestPath: string;
   requestMethod: string;
   streaming: boolean;
+  incomingProtocol?: string;
+  targetProtocol?: string;
 }
 
 /**
@@ -46,6 +49,7 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
       totalTokens: (params.inputTokens || 0) + (params.outputTokens || 0),
       requestHeaders: params.requestHeaders,
       requestBody: params.requestBody,
+      transformedRequestBody: params.transformedRequestBody,
       responseHeaders: params.responseHeaders,
       responseBody: params.responseBody,
       errorMessage: params.errorMessage,
@@ -55,6 +59,8 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
       requestPath: params.requestPath,
       requestMethod: params.requestMethod,
       streaming: params.streaming ? 'true' : 'false',
+      incomingProtocol: params.incomingProtocol,
+      targetProtocol: params.targetProtocol,
     });
     logger.debug({ modelName: params.modelName, status: params.status }, 'Request logged successfully');
   } catch (error) {

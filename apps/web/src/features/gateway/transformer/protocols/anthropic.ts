@@ -415,8 +415,15 @@ export class AnthropicTransformer implements Transformer {
       }
     }
 
+    // 确定 role：Anthropic 的 tool_result 使用 user 角色，但在标准格式中应为 tool 角色
+    let role: 'user' | 'assistant' | 'system' | 'tool' = msg.role;
+    if (toolCallId && !toolCalls) {
+      // 这是一个 tool_result 消息，在标准格式中应使用 tool 角色
+      role = 'tool';
+    }
+
     return {
-      role: msg.role,
+      role,
       content,
       tool_calls: toolCalls,
       tool_call_id: toolCallId,
@@ -510,8 +517,13 @@ export class AnthropicTransformer implements Transformer {
         }
       }
 
+      // 处理 role 转换：Anthropic 不支持 'system' 和 'tool' 角色
+      // system 消息通过顶层 system 字段处理
+      // tool 消息在 Anthropic 中是 user 角色的 tool_result
+      let role: 'user' | 'assistant' = msg.role === 'assistant' ? 'assistant' : 'user';
+
       return {
-        role: msg.role === 'system' ? 'user' : msg.role,
+        role,
         content,
       };
     });

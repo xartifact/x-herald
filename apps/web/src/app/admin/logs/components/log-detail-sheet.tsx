@@ -101,12 +101,14 @@ interface PanelProps {
   title: string
   icon?: React.ReactNode
   bodyContent: React.ReactNode
+  transformedContent?: React.ReactNode
   headers: Record<string, string> | null
   className?: string
 }
 
-function Panel({ title, icon, bodyContent, headers, className }: PanelProps) {
-  const [activeTab, setActiveTab] = useState<'body' | 'headers'>('body')
+function Panel({ title, icon, bodyContent, transformedContent, headers, className }: PanelProps) {
+  const [activeTab, setActiveTab] = useState<'body' | 'transformed' | 'headers'>('body')
+  const hasTransformed = transformedContent !== undefined
 
   return (
     <div className={cn("flex flex-col border-r last:border-r-0 bg-background", className)}>
@@ -124,6 +126,16 @@ function Panel({ title, icon, bodyContent, headers, className }: PanelProps) {
           >
             Body
           </Button>
+          {hasTransformed && (
+            <Button
+              variant={activeTab === 'transformed' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setActiveTab('transformed')}
+              className="h-7 px-3 text-xs"
+            >
+              Transformed
+            </Button>
+          )}
           <Button
             variant={activeTab === 'headers' ? 'secondary' : 'ghost'}
             size="sm"
@@ -135,9 +147,9 @@ function Panel({ title, icon, bodyContent, headers, className }: PanelProps) {
         </div>
       </div>
       <ScrollArea className="flex-1">
-        {activeTab === 'body' ? (
-          bodyContent
-        ) : (
+        {activeTab === 'body' && bodyContent}
+        {activeTab === 'transformed' && transformedContent}
+        {activeTab === 'headers' && (
           <div className="p-4">
             <HeadersViewer headers={headers} />
           </div>
@@ -228,12 +240,44 @@ export function LogDetailSheet({
                   label="供应商"
                   value={log.providerName || '-'}
                 />
+                {log.providerId && (
+                  <InfoRow
+                    label="供应商ID"
+                    value={log.providerId}
+                    copyable
+                    mono
+                  />
+                )}
                 <InfoRow
                   label="虚拟密钥"
                   value={log.virtualKeyName || '-'}
                   copyable
                   mono
                 />
+                {log.virtualKeyId && (
+                  <InfoRow
+                    label="密钥ID"
+                    value={log.virtualKeyId}
+                    copyable
+                    mono
+                  />
+                )}
+                {log.incomingProtocol && log.targetProtocol && (
+                  <InfoRow
+                    label="协议转换"
+                    value={
+                      <div className="flex items-center gap-1.5">
+                        <Badge variant="outline" className="text-[10px] font-mono">
+                          {log.incomingProtocol}
+                        </Badge>
+                        <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                        <Badge variant="outline" className="text-[10px] font-mono">
+                          {log.targetProtocol}
+                        </Badge>
+                      </div>
+                    }
+                  />
+                )}
               </Section>
 
               <Section title="性能指标">
@@ -295,6 +339,15 @@ export function LogDetailSheet({
                   label="客户端 IP"
                   value={log.clientIp || '-'}
                   copyable
+                  mono
+                />
+                <InfoRow
+                  label="User Agent"
+                  value={
+                    <span className="text-xs break-all">
+                      {log.userAgent || '-'}
+                    </span>
+                  }
                   mono
                 />
                 <InfoRow
@@ -360,6 +413,17 @@ export function LogDetailSheet({
                 ) : (
                   <div className="flex items-center justify-center h-[200px] text-sm text-muted-foreground">
                     无请求体
+                  </div>
+                )}
+              </div>
+            }
+            transformedContent={
+              <div className="p-4">
+                {log.transformedRequestBody !== null && log.transformedRequestBody !== undefined ? (
+                  <JsonViewer data={log.transformedRequestBody} height="calc(100vh - 200px)" />
+                ) : (
+                  <div className="flex items-center justify-center h-[200px] text-sm text-muted-foreground">
+                    无转换后请求体
                   </div>
                 )}
               </div>

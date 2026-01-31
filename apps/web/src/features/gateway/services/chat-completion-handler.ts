@@ -64,9 +64,15 @@ export async function handleChatCompletion(
     }
   });
 
+  // 声明变量以便在 catch 块中访问
+  let rawBody: { model?: string; [key: string]: unknown } | undefined;
+  let transformedBody: unknown;
+  let incomingProtocol: 'openai' | 'anthropic' | undefined;
+  let targetProtocol: 'openai' | 'anthropic' | undefined;
+
   try {
-    const rawBody = (await c.req.json()) as { model?: string; [key: string]: unknown };
-    const incomingProtocol = detectProtocol(requestPath, rawBody);
+    rawBody = (await c.req.json()) as { model?: string; [key: string]: unknown };
+    incomingProtocol = detectProtocol(requestPath, rawBody);
 
     logger.info(
       { requestId, model: rawBody.model, protocol: incomingProtocol },
@@ -121,7 +127,7 @@ export async function handleChatCompletion(
     );
 
     // 4. 确定目标协议（智能匹配）
-    const targetProtocol = getProviderProtocol(incomingProtocol, provider);
+    targetProtocol = getProviderProtocol(incomingProtocol, provider);
     const providerUrl = getProviderUrl(provider, targetProtocol);
 
     logger.debug(
@@ -164,6 +170,7 @@ export async function handleChatCompletion(
     };
 
     const adapted = await egressTransformer.adaptRequest(standardReq, ctx);
+    transformedBody = adapted.body;
 
     // 7. 发送请求到 Provider
     const targetUrl = adapted.url || joinUrl(providerUrl, getEndpoint(targetProtocol, isStreaming));
@@ -197,6 +204,9 @@ export async function handleChatCompletion(
         requestMethod,
         isStreaming,
         startTime,
+        transformedBody,
+        incomingProtocol,
+        targetProtocol,
       );
     }
 
@@ -216,6 +226,7 @@ export async function handleChatCompletion(
       startTime,
       requestHeaders,
       rawBody,
+      transformedBody,
       clientIp,
       userAgent,
       requestPath,
@@ -241,6 +252,9 @@ export async function handleChatCompletion(
       requestMethod,
       isStreaming,
       startTime,
+      transformedBody,
+      incomingProtocol,
+      targetProtocol,
     });
   }
 }

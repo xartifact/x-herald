@@ -19,6 +19,28 @@ interface ErrorHandlerParams {
   requestMethod: string;
   isStreaming: boolean;
   startTime: number;
+  transformedBody?: unknown;
+  incomingProtocol?: string;
+  targetProtocol?: string;
+}
+
+/**
+ * 提取响应头信息（排除敏感信息）
+ */
+function extractResponseHeaders(response: Response): Record<string, string> {
+  const headers: Record<string, string> = {};
+  response.headers.forEach((value, key) => {
+    // 排除敏感信息和二进制内容
+    if (
+      !key.toLowerCase().includes('authorization') &&
+      !key.toLowerCase().includes('cookie') &&
+      !key.toLowerCase().includes('set-cookie') &&
+      key.toLowerCase() !== 'content-encoding'
+    ) {
+      headers[key] = value;
+    }
+  });
+  return headers;
 }
 
 /**
@@ -86,6 +108,7 @@ export async function handleGatewayError(
     statusCode: 500,
     latencyMs,
     requestHeaders,
+    transformedRequestBody: params.transformedBody,
     errorMessage: error instanceof Error ? error.message : 'Internal server error',
     errorType: 'internal_error',
     clientIp,
@@ -93,6 +116,8 @@ export async function handleGatewayError(
     requestPath,
     requestMethod,
     streaming: isStreaming,
+    incomingProtocol: params.incomingProtocol,
+    targetProtocol: params.targetProtocol,
   });
 
   return c.json(
@@ -156,9 +181,13 @@ export async function handleProviderError(
   requestMethod: string,
   isStreaming: boolean,
   startTime: number,
+  transformedBody?: unknown,
+  incomingProtocol?: string,
+  targetProtocol?: string,
 ): Promise<Response> {
   const errorData = await parseProviderError(response);
   const latencyMs = Date.now() - startTime;
+  const responseHeaders = extractResponseHeaders(response);
 
   await logRequest({
     virtualKey,
@@ -170,6 +199,8 @@ export async function handleProviderError(
     latencyMs,
     requestHeaders,
     requestBody: rawBody,
+    transformedRequestBody: transformedBody,
+    responseHeaders,
     responseBody: errorData,
     errorMessage: errorData.error?.message || 'Provider request failed',
     errorType: 'provider_error',
@@ -178,6 +209,8 @@ export async function handleProviderError(
     requestPath,
     requestMethod,
     streaming: isStreaming,
+    incomingProtocol,
+    targetProtocol,
   });
 
   return c.json(

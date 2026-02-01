@@ -3,6 +3,7 @@
  * 处理 Anthropic 格式与标准格式之间的转换
  */
 
+import logger from '@/core/lib/logger';
 import type {
   Transformer,
   TransformerContext,
@@ -11,8 +12,10 @@ import type {
   StandardMessage,
   ToolDefinition,
   MessageContent,
+  StreamChunk,
 } from '@/types';
-import logger from '@/core/lib/logger';
+
+import { cleanSchemaForOpenAI } from '../utils/schema-cleaner';
 
 // Anthropic 特定类型
 interface AnthropicMessage {
@@ -340,6 +343,24 @@ export class AnthropicTransformer implements Transformer {
    * 处理 Anthropic 流式响应
    */
   async transformStream(stream: ReadableStream, ctx: TransformerContext): Promise<ReadableStream> {
+    const direction = ctx.state.get('streamDirection') as 'normalize' | 'adapt' | undefined;
+
+    if (direction === 'adapt') {
+      // 标准格式 → Anthropic SSE
+      return this.adaptStreamToAnthropic(stream, ctx);
+    } else {
+      // Anthropic SSE → 标准格式（normalize）
+      return this.normalizeAnthropicStream(stream, ctx);
+    }
+  }
+
+  /**
+   * Anthropic SSE → 标准格式
+   */
+  private async normalizeAnthropicStream(
+    stream: ReadableStream,
+    ctx: TransformerContext,
+  ): Promise<ReadableStream> {
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
 
@@ -347,6 +368,7 @@ export class AnthropicTransformer implements Transformer {
       start: async (controller) => {
         const reader = stream.getReader();
         let buffer = '';
+        let currentEvent: string | null = null;
 
         try {
           while (true) {
@@ -358,23 +380,222 @@ export class AnthropicTransformer implements Transformer {
             buffer = lines.pop() || '';
 
             for (const line of lines) {
-              if (!line.startsWith('event: ')) continue;
+              const trimmedLine = line.trim();
+              
+              // 空行表示事件结束
+              if (trimmedLine === '') {
+                currentEvent = null;
+                continue;
+              }
 
-              const eventLine = line.slice(7);
-              const dataLine = lines.find((l) => l.startsWith('data: '));
-              if (!dataLine) continue;
+              // 解析 event 行
+              if (trimmedLine.startsWith('event: ')) {
+                currentEvent = trimmedLine.slice(7).trim();
+                continue;
+              }
 
-              const data = dataLine.slice(6);
+              // 解析 data 行
+              if (trimmedLine.startsWith('data: ')) {
+                const data = trimmedLine.slice(6);
+                
+                try {
+                  const eventData: AnthropicStreamEvent = JSON.parse(data);
+                  // 如果有 currentEvent，使用它；否则使用 eventData.type
+                  if (currentEvent) {
+                    eventData.type = currentEvent as any;
+                  }
+                  
+                  const converted = this.convertStreamEvent(eventData);
+                  if (converted) {
+                    // 输出标准格式 SSE
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify(converted)}\n\n`));
+                  }
+                } catch (error) {
+                  logger.debug({ error, data }, 'Failed to parse Anthropic stream event');
+                }
+              }
+            }
+          }
+
+          // 发送 [DONE] 信号
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+        } catch (error) {
+          controller.error(error);
+        } finally {
+          reader.releaseLock();
+          controller.close();
+        }
+      },
+    });
+  }
+
+  /**
+   * 标准格式 → Anthropic SSE
+   */
+  private async adaptStreamToAnthropic(
+    stream: ReadableStream,
+    ctx: TransformerContext,
+  ): Promise<ReadableStream> {
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+
+    return new ReadableStream({
+      start: async (controller) => {
+        const reader = stream.getReader();
+        let buffer = '';
+        const messageId = `msg_${crypto.randomUUID()}`;
+        let sentMessageStart = false;
+        let sentContentStart = false;
+        const toolCallsMap = new Map<number, { id?: string; name?: string; arguments: string }>();
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+              if (!line.startsWith('data: ')) continue;
+
+              const data = line.slice(6).trim();
+              if (data === '[DONE]') {
+                // 发送 message_stop
+                const messageStop = { type: 'message_stop' };
+                controller.enqueue(encoder.encode(`event: message_stop\n`));
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify(messageStop)}\n\n`));
+                continue;
+              }
 
               try {
-                const event: AnthropicStreamEvent = JSON.parse(data);
-                const converted = this.convertStreamEvent(event);
-                if (converted) {
-                  controller.enqueue(encoder.encode(`event: ${event.type}\n`));
-                  controller.enqueue(encoder.encode(`data: ${JSON.stringify(converted)}\n\n`));
+                const chunk = JSON.parse(data) as StreamChunk;
+                const delta = chunk.choices[0]?.delta;
+
+                // 首次收到 chunk 时发送 message_start
+                if (!sentMessageStart) {
+                  const messageStart = {
+                    type: 'message_start',
+                    message: {
+                      id: messageId,
+                      type: 'message',
+                      role: 'assistant',
+                      content: [],
+                      model: chunk.model || '',
+                      usage: { input_tokens: chunk.usage?.prompt_tokens || 0, output_tokens: 0 },
+                    },
+                  };
+                  controller.enqueue(encoder.encode(`event: message_start\n`));
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify(messageStart)}\n\n`));
+                  sentMessageStart = true;
+                }
+
+                // 文本内容
+                if (delta?.content) {
+                  if (!sentContentStart) {
+                    const contentBlockStart = {
+                      type: 'content_block_start',
+                      index: 0,
+                      content_block: { type: 'text', text: '' },
+                    };
+                    controller.enqueue(encoder.encode(`event: content_block_start\n`));
+                    controller.enqueue(
+                      encoder.encode(`data: ${JSON.stringify(contentBlockStart)}\n\n`),
+                    );
+                    sentContentStart = true;
+                  }
+
+                  const contentDelta = {
+                    type: 'content_block_delta',
+                    index: 0,
+                    delta: { type: 'text_delta', text: delta.content },
+                  };
+                  controller.enqueue(encoder.encode(`event: content_block_delta\n`));
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify(contentDelta)}\n\n`));
+                }
+
+                // 工具调用
+                if (delta?.tool_calls) {
+                  for (const toolCall of delta.tool_calls) {
+                    const index = toolCall.index || 0;
+                    let existingCall = toolCallsMap.get(index);
+
+                    if (!existingCall) {
+                      existingCall = { arguments: '' };
+                      toolCallsMap.set(index, existingCall);
+                    }
+
+                    // 工具调用开始
+                    if (toolCall.id) {
+                      existingCall.id = toolCall.id;
+                      existingCall.name = toolCall.function?.name || '';
+
+                      const toolStart = {
+                        type: 'content_block_start',
+                        index,
+                        content_block: {
+                          type: 'tool_use',
+                          id: toolCall.id,
+                          name: existingCall.name,
+                        },
+                      };
+                      controller.enqueue(encoder.encode(`event: content_block_start\n`));
+                      controller.enqueue(encoder.encode(`data: ${JSON.stringify(toolStart)}\n\n`));
+                    }
+
+                    // 工具参数增量
+                    if (toolCall.function?.arguments) {
+                      existingCall.arguments += toolCall.function.arguments;
+
+                      const toolDelta = {
+                        type: 'content_block_delta',
+                        index,
+                        delta: {
+                          type: 'input_json_delta',
+                          partial_json: toolCall.function.arguments,
+                        },
+                      };
+                      controller.enqueue(encoder.encode(`event: content_block_delta\n`));
+                      controller.enqueue(encoder.encode(`data: ${JSON.stringify(toolDelta)}\n\n`));
+                    }
+                  }
+                }
+
+                // finish_reason
+                if (chunk.choices[0]?.finish_reason) {
+                  // 先发送 content_block_stop（如果有内容块）
+                  if (sentContentStart || toolCallsMap.size > 0) {
+                    const maxIndex = Math.max(
+                      sentContentStart ? 0 : -1,
+                      ...Array.from(toolCallsMap.keys()),
+                    );
+                    for (let i = 0; i <= maxIndex; i++) {
+                      const contentBlockStop = {
+                        type: 'content_block_stop',
+                        index: i,
+                      };
+                      controller.enqueue(encoder.encode(`event: content_block_stop\n`));
+                      controller.enqueue(
+                        encoder.encode(`data: ${JSON.stringify(contentBlockStop)}\n\n`),
+                      );
+                    }
+                  }
+
+                  const messageDelta = {
+                    type: 'message_delta',
+                    delta: {
+                      stop_reason: this.mapToAnthropicStopReason(chunk.choices[0].finish_reason),
+                    },
+                    usage: {
+                      output_tokens: chunk.usage?.completion_tokens || 0,
+                    },
+                  };
+                  controller.enqueue(encoder.encode(`event: message_delta\n`));
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify(messageDelta)}\n\n`));
                 }
               } catch (error) {
-                logger.error({ error, data }, 'Failed to parse Anthropic stream event');
+                logger.error({ error, data }, 'Failed to parse standard stream chunk');
               }
             }
           }
@@ -468,7 +689,8 @@ export class AnthropicTransformer implements Transformer {
       function: {
         name: tool.name,
         description: tool.description,
-        parameters: tool.input_schema,
+        // 清理 Schema 元数据字段
+        parameters: cleanSchemaForOpenAI(tool.input_schema) as ToolDefinition['function']['parameters'],
       },
     };
   }
@@ -559,10 +781,15 @@ export class AnthropicTransformer implements Transformer {
   }
 
   private convertToAnthropicTool(tool: ToolDefinition): AnthropicTool {
+    // 清理 Schema（保持一致性）
+    const cleanedParams = tool.function.parameters
+      ? cleanSchemaForOpenAI(tool.function.parameters)
+      : { type: 'object' };
+
     return {
       name: tool.function.name,
       description: tool.function.description || '',
-      input_schema: tool.function.parameters || { type: 'object' },
+      input_schema: cleanedParams as AnthropicTool['input_schema'],
     };
   }
 
@@ -594,6 +821,8 @@ export class AnthropicTransformer implements Transformer {
     }
   }
 
+
+
   private mapToAnthropicStopReason(
     reason: string | null,
   ): AnthropicResponse['stop_reason'] {
@@ -612,8 +841,134 @@ export class AnthropicTransformer implements Transformer {
     }
   }
 
-  private convertStreamEvent(event: AnthropicStreamEvent): unknown {
-    // 简化的流事件转换
-    return event;
+  private convertStreamEvent(event: AnthropicStreamEvent): StreamChunk | null {
+    switch (event.type) {
+      case 'message_start':
+        return {
+          id: event.message?.id || '',
+          object: 'chat.completion.chunk',
+          created: Math.floor(Date.now() / 1000),
+          model: event.message?.model || '',
+          choices: [
+            {
+              index: 0,
+              delta: { role: 'assistant' },
+              finish_reason: null,
+            },
+          ],
+          usage: event.message?.usage
+            ? {
+                prompt_tokens: event.message.usage.input_tokens,
+                completion_tokens: 0,
+                total_tokens: event.message.usage.input_tokens,
+              }
+            : undefined,
+        };
+
+      case 'content_block_start':
+        // 工具调用开始
+        if (event.content_block?.type === 'tool_use') {
+          return {
+            id: '',
+            object: 'chat.completion.chunk',
+            created: Math.floor(Date.now() / 1000),
+            model: '',
+            choices: [
+              {
+                index: event.index || 0,
+                delta: {
+                  tool_calls: [
+                    {
+                      index: event.index || 0,
+                      id: event.content_block.id,
+                      type: 'function',
+                      function: {
+                        name: event.content_block.name || '',
+                        arguments: '',
+                      },
+                    },
+                  ],
+                },
+                finish_reason: null,
+              },
+            ],
+          };
+        }
+        // 文本内容开始 - 不输出事件
+        return null;
+
+      case 'content_block_delta':
+        // 文本增量
+        if (event.delta?.type === 'text_delta') {
+          return {
+            id: '',
+            object: 'chat.completion.chunk',
+            created: Math.floor(Date.now() / 1000),
+            model: '',
+            choices: [
+              {
+                index: event.index || 0,
+                delta: { content: event.delta.text },
+                finish_reason: null,
+              },
+            ],
+          };
+        }
+        // 工具调用参数增量
+        if (event.delta?.type === 'input_json_delta') {
+          return {
+            id: '',
+            object: 'chat.completion.chunk',
+            created: Math.floor(Date.now() / 1000),
+            model: '',
+            choices: [
+              {
+                index: event.index || 0,
+                delta: {
+                  tool_calls: [
+                    {
+                      index: event.index || 0,
+                      function: { arguments: event.delta.partial_json },
+                    },
+                  ],
+                },
+                finish_reason: null,
+              },
+            ],
+          };
+        }
+        return null;
+
+      case 'message_delta':
+        return {
+          id: '',
+          object: 'chat.completion.chunk',
+          created: Math.floor(Date.now() / 1000),
+          model: '',
+          choices: [
+            {
+              index: 0,
+              delta: {},
+              finish_reason: this.mapFinishReason(event.delta?.stop_reason ?? null),
+            },
+          ],
+          usage: event.usage
+            ? {
+                prompt_tokens: 0,
+                completion_tokens: event.usage.output_tokens,
+                total_tokens: event.usage.output_tokens,
+              }
+            : undefined,
+        };
+
+      case 'content_block_stop':
+      case 'message_stop':
+        // 这些事件不需要转换，因为它们不携带数据
+        return null;
+
+      default:
+        logger.warn({ eventType: event.type }, 'Unknown Anthropic stream event');
+        return null;
+    }
   }
 }

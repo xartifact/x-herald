@@ -237,6 +237,55 @@ describe('OpenAITransformer', () => {
       expect(body.tool_choice).toBe('auto');
     });
 
+    it('应该保留 tool parameters 中的 additionalProperties（OpenAI 要求）', async () => {
+      const standardRequest: StandardRequest = {
+        model: 'gpt-4o',
+        messages: [{ role: 'user', content: 'What is the weather?' }],
+        tools: [
+          {
+            type: 'function',
+            function: {
+              name: 'get_weather',
+              description: 'Get weather info',
+              parameters: {
+                type: 'object',
+                properties: {
+                  location: { type: 'string' },
+                  units: {
+                    type: 'string',
+                    enum: ['celsius', 'fahrenheit'],
+                  },
+                },
+                required: ['location', 'units'],
+                additionalProperties: false, // OpenAI 要求保留此字段
+              },
+            },
+          },
+        ],
+      };
+
+      const result = await transformer.adaptRequest(standardRequest, ctx);
+      const body = result.body as Record<string, unknown>;
+      const tools = body.tools as Array<{
+        type: string;
+        function: {
+          name: string;
+          description: string;
+          parameters: Record<string, unknown>;
+        };
+      }>;
+
+      expect(tools).toHaveLength(1);
+      const params = tools[0].function.parameters;
+
+      // 验证 additionalProperties 被保留
+      expect(params.additionalProperties).toBe(false);
+      // 验证其他字段也正确保留
+      expect(params.type).toBe('object');
+      expect(params.required).toEqual(['location', 'units']);
+      expect(params.properties).toBeDefined();
+    });
+
     it('应该转换多模态内容', async () => {
       const standardRequest: StandardRequest = {
         model: 'gpt-4o',
@@ -566,6 +615,114 @@ describe('OpenAITransformer', () => {
       const result = await transformer.normalizeRequest(openaiRequest, ctx);
 
       expect(result.seed).toBe(42);
+    });
+
+    it('应该保持 tool_calls 的 arguments 为 JSON 字符串（OpenAI 标准）', async () => {
+      // 模拟包含 tool_calls 的多轮对话场景
+      const standardRequest: StandardRequest = {
+        model: 'gpt-4o',
+        messages: [
+          { role: 'user', content: 'Get weather in SF' },
+          {
+            role: 'assistant',
+            content: '',
+            tool_calls: [
+              {
+                id: 'call_abc123',
+                type: 'function',
+                function: {
+                  name: 'get_weather',
+                  arguments: '{"location":"SF","unit":"celsius"}', // 标准格式中是 JSON 字符串
+                },
+              },
+            ],
+          },
+          {
+            role: 'tool',
+            tool_call_id: 'call_abc123',
+            content: '{"temperature":20,"condition":"sunny"}',
+          },
+        ],
+        tools: [
+          {
+            type: 'function',
+            function: {
+              name: 'get_weather',
+              description: 'Get weather',
+              parameters: { type: 'object', properties: { location: { type: 'string' } } },
+            },
+          },
+        ],
+      };
+
+      const result = await transformer.adaptRequest(standardRequest, ctx);
+      const body = result.body as Record<string, unknown>;
+      const messages = body.messages as Array<{
+        role: string;
+        content?: string;
+        tool_calls?: Array<{
+          id: string;
+          type: string;
+          function: {
+            name: string;
+            arguments: string; // OpenAI 标准：应该是 JSON 字符串
+          };
+        }>;
+      }>;
+
+      // 验证 assistant 消息中的 tool_calls
+      const assistantMsg = messages[1];
+      expect(assistantMsg.role).toBe('assistant');
+      expect(assistantMsg.tool_calls).toBeDefined();
+      expect(assistantMsg.tool_calls).toHaveLength(1);
+
+      const toolCall = assistantMsg.tool_calls![0];
+      expect(toolCall.id).toBe('call_abc123');
+      expect(toolCall.function.name).toBe('get_weather');
+
+      // 关键验证：arguments 应该保持为 JSON 字符串（OpenAI 标准）
+      expect(typeof toolCall.function.arguments).toBe('string');
+      expect(toolCall.function.arguments).toBe('{"location":"SF","unit":"celsius"}');
+      // 验证字符串是有效的 JSON
+      expect(() => JSON.parse(toolCall.function.arguments)).not.toThrow();
+    });
+
+    it('应该将对象类型的 arguments 转换为 JSON 字符串（兼容非标准客户端）', async () => {
+      // 某些客户端可能发送对象而不是字符串，需要兼容处理
+      const openaiRequest = {
+        model: 'gpt-4o',
+        messages: [
+          { role: 'user' as const, content: 'Get weather' },
+          {
+            role: 'assistant' as const,
+            content: '',
+            tool_calls: [
+              {
+                id: 'call_123',
+                type: 'function' as const,
+                function: {
+                  name: 'get_weather',
+                  // 错误：某些客户端可能发送对象而不是字符串
+                  arguments: { location: 'SF', unit: 'celsius' } as unknown as string,
+                },
+              },
+            ],
+          },
+        ],
+      };
+
+      const result = await transformer.normalizeRequest(openaiRequest, ctx);
+
+      // 验证 arguments 被正确转换为字符串
+      const assistantMsg = result.messages[1];
+      expect(assistantMsg.tool_calls).toBeDefined();
+      expect(assistantMsg.tool_calls).toHaveLength(1);
+
+      const toolCall = assistantMsg.tool_calls![0];
+      expect(typeof toolCall.function.arguments).toBe('string');
+      expect(toolCall.function.arguments).toBe('{"location":"SF","unit":"celsius"}');
+      // 验证是有效的 JSON
+      expect(() => JSON.parse(toolCall.function.arguments)).not.toThrow();
     });
   });
 });

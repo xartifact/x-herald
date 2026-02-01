@@ -175,9 +175,23 @@ export async function handleChatCompletion(
     // 7. 发送请求到 Provider
     const targetUrl = adapted.url || joinUrl(providerUrl, getEndpoint(targetProtocol, isStreaming));
 
+    const requestBody = JSON.stringify(adapted.body);
+
     logger.debug(
       { requestId, targetUrl, targetProtocol, model: standardReq.model },
       'Forwarding to provider',
+    );
+
+    // 调试日志：记录发送给 Provider 的完整请求体
+    logger.debug(
+      {
+        requestId,
+        provider: provider.name,
+        targetProtocol,
+        bodyPreview: requestBody.slice(0, 1000), // 只记录前1000字符
+        hasToolCalls: requestBody.includes('tool_calls'),
+      },
+      'Request body sent to provider',
     );
 
     const response = await fetch(targetUrl, {
@@ -186,7 +200,7 @@ export async function handleChatCompletion(
         ...adapted.headers,
         Authorization: `Bearer ${provider.apiKey}`,
       },
-      body: JSON.stringify(adapted.body),
+      body: requestBody,
     });
 
     if (!response.ok) {

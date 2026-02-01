@@ -17,6 +17,7 @@ describe('AnthropicTransformer', () => {
       requestId: 'test-request-id',
       provider: { id: 'test-provider', name: 'Test Provider' },
       metadata: {},
+      state: new Map<string, unknown>(), // 添加 state 属性
     };
   });
 
@@ -664,9 +665,17 @@ describe('AnthropicTransformer', () => {
 
       const transformed = await transformer.transformStream(stream, ctx);
       const reader = transformed.getReader();
+      const decoder = new TextDecoder();
 
-      const { done } = await reader.read();
-      expect(done).toBe(true);
+      let output = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        output += decoder.decode(value);
+      }
+
+      // 空流应该输出 [DONE] 标记
+      expect(output).toContain('[DONE]');
     });
 
     it('应该透传有效的流式事件', async () => {
@@ -699,11 +708,149 @@ describe('AnthropicTransformer', () => {
         output += decoder.decode(value);
       }
 
-      // 验证输出包含预期的事件
-      expect(output).toContain('event: message_start');
-      expect(output).toContain('event: content_block_delta');
-      expect(output).toContain('Hello');
-      expect(output).toContain('event: message_stop');
+      // 验证输出已转换为标准格式（默认 normalize 方向）
+      expect(output).toContain('data:'); // 标准格式使用 data:
+      expect(output).toContain('chat.completion.chunk'); // 标准对象类型
+      expect(output).toContain('Hello'); // 内容应该保留
+      expect(output).toContain('[DONE]'); // 标准流结束标记
+    });
+  });
+
+  describe('Schema 清理', () => {
+    it('应该从工具定义中移除 $schema 元数据字段', async () => {
+      const anthropicRequest = {
+        model: 'claude-sonnet-4-5-20250929',
+        messages: [{ role: 'user' as const, content: 'Use the tool' }],
+        max_tokens: 100,
+        tools: [
+          {
+            name: 'test_tool',
+            description: 'A test tool',
+            input_schema: {
+              $schema: 'http://json-schema.org/draft-07/schema#',
+              type: 'object' as const,
+              properties: {
+                param1: { type: 'string' },
+              },
+              required: ['param1'],
+            },
+          },
+        ],
+      };
+
+      const result = await transformer.normalizeRequest(anthropicRequest, ctx);
+
+      expect(result.tools).toHaveLength(1);
+      const params = result.tools![0].function.parameters as Record<string, unknown>;
+      expect(params.$schema).toBeUndefined();
+      expect(params.type).toBe('object');
+      expect(params.properties).toBeDefined();
+    });
+
+    it('应该保留工具定义中的 additionalProperties 字段（OpenAI 要求）', async () => {
+      const anthropicRequest = {
+        model: 'claude-sonnet-4-5-20250929',
+        messages: [{ role: 'user' as const, content: 'Use the tool' }],
+        max_tokens: 100,
+        tools: [
+          {
+            name: 'test_tool',
+            description: 'A test tool',
+            input_schema: {
+              type: 'object' as const,
+              properties: {
+                param1: { type: 'string' },
+              },
+              additionalProperties: false,
+            },
+          },
+        ],
+      };
+
+      const result = await transformer.normalizeRequest(anthropicRequest, ctx);
+
+      const params = result.tools![0].function.parameters as Record<string, unknown>;
+      // additionalProperties 应该被保留（OpenAI 标准要求）
+      expect(params.additionalProperties).toBe(false);
+    });
+
+    it('应该保留工具定义中的有效约束字段', async () => {
+      const anthropicRequest = {
+        model: 'claude-sonnet-4-5-20250929',
+        messages: [{ role: 'user' as const, content: 'Use the tool' }],
+        max_tokens: 100,
+        tools: [
+          {
+            name: 'test_tool',
+            description: 'A test tool',
+            input_schema: {
+              type: 'object' as const,
+              properties: {
+                color: {
+                  type: 'string',
+                  enum: ['red', 'green', 'blue'],
+                  description: 'Color choice',
+                },
+                email: {
+                  type: 'string',
+                  format: 'email',
+                  pattern: '^[a-z]+@[a-z]+\\.[a-z]+$',
+                },
+              },
+              required: ['color'],
+            },
+          },
+        ],
+      };
+
+      const result = await transformer.normalizeRequest(anthropicRequest, ctx);
+
+      const params = result.tools![0].function.parameters as Record<string, unknown>;
+      const properties = params.properties as Record<string, Record<string, unknown>>;
+
+      expect(properties.color.enum).toEqual(['red', 'green', 'blue']);
+      expect(properties.color.description).toBe('Color choice');
+      expect(properties.email.format).toBe('email');
+      expect(properties.email.pattern).toBe('^[a-z]+@[a-z]+\\.[a-z]+$');
+    });
+
+    it('应该递归清理嵌套的工具参数 Schema', async () => {
+      const anthropicRequest = {
+        model: 'claude-sonnet-4-5-20250929',
+        messages: [{ role: 'user' as const, content: 'Use the tool' }],
+        max_tokens: 100,
+        tools: [
+          {
+            name: 'complex_tool',
+            description: 'A complex tool',
+            input_schema: {
+              $schema: 'http://json-schema.org/draft-07/schema#',
+              type: 'object' as const,
+              properties: {
+                nested: {
+                  type: 'object',
+                  $id: 'nested-schema',
+                  properties: {
+                    field: { type: 'string' },
+                  },
+                  additionalProperties: false,
+                },
+              },
+            },
+          },
+        ],
+      };
+
+      const result = await transformer.normalizeRequest(anthropicRequest, ctx);
+
+      const params = result.tools![0].function.parameters as Record<string, unknown>;
+      const nested = (params.properties as Record<string, Record<string, unknown>>).nested;
+
+      expect(params.$schema).toBeUndefined();
+      expect(nested.$id).toBeUndefined();
+      // additionalProperties 应该被保留（OpenAI 要求）
+      expect(nested.additionalProperties).toBe(false);
+      expect(nested.type).toBe('object');
     });
   });
 

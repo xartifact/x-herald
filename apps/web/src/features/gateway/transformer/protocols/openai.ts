@@ -3,6 +3,7 @@
  * 处理 OpenAI 格式与标准格式之间的转换
  */
 
+import logger from '@/core/lib/logger';
 import type {
   Transformer,
   TransformerContext,
@@ -14,7 +15,8 @@ import type {
   StreamChunk,
   MessageContent,
 } from '@/types';
-import logger from '@/core/lib/logger';
+
+import { cleanSchemaForOpenAI } from '../utils/schema-cleaner';
 
 // OpenAI 特定类型
 interface OpenAIMessage {
@@ -169,7 +171,17 @@ export class OpenAITransformer implements Transformer {
 
     // 添加可选字段
     if (request.tools?.length) {
-      openaiReq.tools = request.tools;
+      // 防御性清理：确保 Schema 符合规范
+      openaiReq.tools = request.tools.map(tool => ({
+        ...tool,
+        function: {
+          ...tool.function,
+          parameters: tool.function.parameters
+            ? cleanSchemaForOpenAI(tool.function.parameters) as typeof tool.function.parameters
+            : tool.function.parameters,
+        },
+      }));
+
       if (request.tool_choice) {
         openaiReq.tool_choice = request.tool_choice;
       }
@@ -311,9 +323,28 @@ export class OpenAITransformer implements Transformer {
     return messages.map((msg) => ({
       role: msg.role,
       content: this.convertContent(msg.content),
-      tool_calls: msg.tool_calls,
+      tool_calls: msg.tool_calls ? this.normalizeToolCalls(msg.tool_calls) : undefined,
       tool_call_id: msg.tool_call_id,
       name: msg.name,
+    }));
+  }
+
+  /**
+   * 规范化 tool_calls，确保 arguments 始终是 JSON 字符串
+   * 某些客户端可能发送对象而不是字符串，需要统一处理
+   */
+  private normalizeToolCalls(toolCalls: OpenAIMessage['tool_calls']): ToolCall[] {
+    if (!toolCalls) return [];
+
+    return toolCalls.map((tc) => ({
+      id: tc.id,
+      type: tc.type,
+      function: {
+        name: tc.function.name,
+        arguments: typeof tc.function.arguments === 'string'
+          ? tc.function.arguments
+          : JSON.stringify(tc.function.arguments),
+      },
     }));
   }
 
@@ -359,7 +390,8 @@ export class OpenAITransformer implements Transformer {
       }
 
       if (msg.tool_calls) {
-        openaiMsg.tool_calls = msg.tool_calls;
+        // 确保 arguments 始终是 JSON 字符串
+        openaiMsg.tool_calls = this.normalizeToolCalls(msg.tool_calls);
       }
 
       if (msg.tool_call_id) {
@@ -404,4 +436,5 @@ export class OpenAITransformer implements Transformer {
     }
     return null;
   }
+
 }

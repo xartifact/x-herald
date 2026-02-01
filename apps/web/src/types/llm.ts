@@ -164,6 +164,7 @@ export interface StreamChunk {
     };
     finish_reason: string | null;
   }>;
+  usage?: Usage;
 }
 
 // ==================== Provider 相关 ====================

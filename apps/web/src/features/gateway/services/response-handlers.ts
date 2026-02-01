@@ -162,29 +162,37 @@ export async function handleNonStreamingResponse(
 
 /**
  * 从 SSE chunk 中提取 usage 信息
- * 支持 OpenAI 和 Anthropic 格式
+ * 优先从标准 StreamChunk 提取（转换后的流），后备支持原始 Provider 格式
  */
 function extractUsageFromChunk(data: string): { prompt_tokens?: number; completion_tokens?: number } | null {
   try {
     const json = JSON.parse(data);
 
-    // OpenAI 格式: usage 在最后一个 chunk
-    if (json.usage) {
+    // 优先：标准 StreamChunk 格式（转换后的流）
+    if (json.object === 'chat.completion.chunk' && json.usage) {
       return {
         prompt_tokens: json.usage.prompt_tokens,
         completion_tokens: json.usage.completion_tokens,
       };
     }
 
-    // Anthropic 格式: message_delta 事件中的 usage
+    // 后备：OpenAI 原始格式（同协议场景）
+    if (json.usage && json.choices) {
+      return {
+        prompt_tokens: json.usage.prompt_tokens,
+        completion_tokens: json.usage.completion_tokens,
+      };
+    }
+
+    // 后备：Anthropic 原始格式 - message_delta 事件中的 usage
     if (json.type === 'message_delta' && json.usage) {
       return {
-        prompt_tokens: undefined, // Anthropic 通常在 message_start 中提供
+        prompt_tokens: undefined,
         completion_tokens: json.usage.output_tokens,
       };
     }
 
-    // Anthropic 格式: message_start 事件中的 usage (input tokens)
+    // 后备：Anthropic 原始格式 - message_start 事件中的 usage (input tokens)
     if (json.type === 'message_start' && json.message?.usage) {
       return {
         prompt_tokens: json.message.usage.input_tokens,
@@ -205,6 +213,7 @@ export async function handleStreamingResponse(
 ): Promise<Response> {
   const {
     response,
+    ctx,
     virtualKey,
     provider,
     originalModelName,
@@ -226,12 +235,55 @@ export async function handleStreamingResponse(
   // 提前提取响应头（流式响应在开始时即可获取）
   const responseHeaders = extractResponseHeaders(response);
 
-  // 创建 TransformStream 解析 SSE
-  const transformStream = new TransformStream<Uint8Array, Uint8Array>({
+  let transformedStream = response.body;
+
+  // 检查是否需要协议转换
+  const needsTransformation = targetProtocol !== incomingProtocol;
+
+  if (needsTransformation && transformedStream) {
+    logger.debug(
+      { from: targetProtocol, to: incomingProtocol },
+      'Stream protocol transformation required'
+    );
+
+    // Ingress: Provider 协议 → 标准格式
+    ctx.state.set('streamDirection', 'normalize');
+    const ingressTransformer = getTransformer(targetProtocol);
+    if (ingressTransformer?.transformStream) {
+      logger.debug({ from: targetProtocol, to: 'standard' }, 'Normalizing stream');
+      transformedStream = await ingressTransformer.transformStream(transformedStream, ctx);
+    } else {
+      logger.warn(
+        { protocol: targetProtocol },
+        'No stream normalizer available, skipping ingress transformation'
+      );
+    }
+
+    // Egress: 标准格式 → 客户端协议
+    ctx.state.set('streamDirection', 'adapt');
+    const egressTransformer = getTransformer(incomingProtocol);
+    if (egressTransformer?.transformStream) {
+      logger.debug({ from: 'standard', to: incomingProtocol }, 'Adapting stream');
+      transformedStream = await egressTransformer.transformStream(transformedStream, ctx);
+    } else {
+      logger.warn(
+        { protocol: incomingProtocol },
+        'No stream adapter available, skipping egress transformation'
+      );
+    }
+  } else {
+    logger.debug(
+      { protocol: incomingProtocol },
+      'Same protocol, skipping stream transformation'
+    );
+  }
+
+  // 创建 TransformStream 提取 usage 信息并记录日志
+  const usageExtractor = new TransformStream<Uint8Array, Uint8Array>({
     transform(chunk, controller) {
-      // 解析 SSE chunk
+      // 解析 SSE chunk 提取 usage
       const text = new TextDecoder().decode(chunk);
-      const lines = text.split('\n');
+      const lines = text.split('\\n');
 
       for (const line of lines) {
         if (line.startsWith('data:')) {
@@ -281,9 +333,10 @@ export async function handleStreamingResponse(
     },
   });
 
-  // 通过 TransformStream 返回响应
-  const transformedBody = response.body?.pipeThrough(transformStream);
-  return new Response(transformedBody, {
+  // 通过 usage 提取器返回最终流
+  const finalStream = transformedStream?.pipeThrough(usageExtractor);
+
+  return new Response(finalStream, {
     headers: {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',

@@ -56,3 +56,6 @@ bun.lockb
 
 # Route generation
 **/routeTree.gen.ts
+
+# build
+*.tsbuildinfo

@@ -17,6 +17,7 @@ import type {
 } from '@/types';
 
 import { cleanSchemaForOpenAI } from '../utils/schema-cleaner';
+import { parseToolArguments } from '../utils/tool-arguments-parser';
 
 // OpenAI 特定类型
 interface OpenAIMessage {
@@ -300,6 +301,23 @@ export class OpenAITransformer implements Transformer {
 
               try {
                 const chunk: OpenAIStreamChunk = JSON.parse(data);
+                
+                // 验证工具调用参数（如果存在）
+                if (chunk.choices?.[0]?.finish_reason === 'tool_calls') {
+                  chunk.choices.forEach(choice => {
+                    if (choice.delta?.tool_calls) {
+                      choice.delta.tool_calls.forEach(tc => {
+                        if (tc.function?.arguments) {
+                          tc.function.arguments = parseToolArguments(
+                            tc.function.arguments,
+                            logger
+                          );
+                        }
+                      });
+                    }
+                  });
+                }
+                
                 const standardChunk = this.convertStreamChunk(chunk);
                 controller.enqueue(encoder.encode(`data: ${JSON.stringify(standardChunk)}\n\n`));
               } catch (error) {
@@ -332,20 +350,33 @@ export class OpenAITransformer implements Transformer {
   /**
    * 规范化 tool_calls，确保 arguments 始终是 JSON 字符串
    * 某些客户端可能发送对象而不是字符串，需要统一处理
+   * 使用三层解析策略验证和修复 JSON 格式
    */
   private normalizeToolCalls(toolCalls: OpenAIMessage['tool_calls']): ToolCall[] {
     if (!toolCalls) return [];
 
-    return toolCalls.map((tc) => ({
-      id: tc.id,
-      type: tc.type,
-      function: {
-        name: tc.function.name,
-        arguments: typeof tc.function.arguments === 'string'
-          ? tc.function.arguments
-          : JSON.stringify(tc.function.arguments),
-      },
-    }));
+    return toolCalls.map((tc) => {
+      let argsString: string;
+
+      // 确保 arguments 是字符串
+      if (typeof tc.function.arguments === 'string') {
+        argsString = tc.function.arguments;
+      } else {
+        argsString = JSON.stringify(tc.function.arguments);
+      }
+
+      // 验证并修复 JSON 格式
+      const validatedArgs = parseToolArguments(argsString, logger);
+
+      return {
+        id: tc.id,
+        type: tc.type,
+        function: {
+          name: tc.function.name,
+          arguments: validatedArgs,
+        },
+      };
+    });
   }
 
   private convertContent(

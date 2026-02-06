@@ -16,6 +16,7 @@ import type {
 } from '@/types';
 
 import { cleanSchemaForOpenAI } from '../utils/schema-cleaner';
+import { parseToolArguments } from '../utils/tool-arguments-parser';
 
 // Anthropic 特定类型
 interface AnthropicMessage {
@@ -249,12 +250,18 @@ export class AnthropicTransformer implements Transformer {
       if (block.type === 'text' && block.text) {
         content += block.text;
       } else if (block.type === 'tool_use' && block.id) {
+        // 使用安全的 JSON 序列化和验证
+        const argsString = parseToolArguments(
+          JSON.stringify(block.input || {}),
+          logger
+        );
+        
         toolCalls.push({
           id: block.id,
           type: 'function',
           function: {
             name: block.name || '',
-            arguments: JSON.stringify(block.input || {}),
+            arguments: argsString,
           },
         });
       }
@@ -622,12 +629,19 @@ export class AnthropicTransformer implements Transformer {
       for (const item of msg.content) {
         if (item.type === 'tool_use') {
           if (!toolCalls) toolCalls = [];
+          
+          // 使用安全的 JSON 序列化和验证
+          const argsString = parseToolArguments(
+            JSON.stringify(item.input || {}),
+            logger
+          );
+          
           toolCalls.push({
             id: item.id || '',
             type: 'function' as const,
             function: {
               name: item.name || '',
-              arguments: JSON.stringify(item.input || {}),
+              arguments: argsString,
             },
           });
         } else if (item.type === 'tool_result') {
@@ -718,11 +732,22 @@ export class AnthropicTransformer implements Transformer {
       if (msg.tool_calls) {
         for (const tc of msg.tool_calls) {
           if (Array.isArray(content)) {
+            let parsedInput = {};
+            try {
+              const argumentsStr = tc.function.arguments || '{}';
+              // 先验证 JSON 格式
+              const validatedArgs = parseToolArguments(argumentsStr, logger);
+              parsedInput = JSON.parse(validatedArgs);
+            } catch (error) {
+              logger.warn({ error, toolCall: tc }, 'Failed to parse tool arguments');
+              parsedInput = { text: tc.function.arguments || '' };
+            }
+
             content.push({
               type: 'tool_use',
               id: tc.id,
               name: tc.function.name,
-              input: JSON.parse(tc.function.arguments || '{}'),
+              input: parsedInput,
             });
           }
         }

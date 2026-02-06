@@ -59,3 +59,7 @@ bun.lockb
 
 # build
 *.tsbuildinfo
+
+# templates
+packages/llms
+

@@ -32,6 +32,8 @@
     "drizzle-kit": "^0.31.8",
     "drizzle-orm": "^0.45.1",
     "hono": "^4.0.0",
+    "json5": "^2.2.3",
+    "jsonrepair": "^3.13.2",
     "lucide-react": "^0.563.0",
     "monaco-editor": "^0.55.1",
     "next": "^16.1.4",

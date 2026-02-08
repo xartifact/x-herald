@@ -17,11 +17,13 @@ interface ResponseHandlerParams {
   startTime: number;
   requestHeaders: Record<string, string>;
   rawBody: unknown;
+  standardRequestBody?: unknown;
   transformedBody?: unknown;
   clientIp: string;
   userAgent: string;
   requestPath: string;
   requestMethod: string;
+  conversationId?: string;
 }
 
 /**
@@ -100,6 +102,7 @@ export async function handleNonStreamingResponse(
       streaming: true,
       incomingProtocol,
       targetProtocol,
+      conversationId: params.conversationId,
     });
 
     // 返回 SSE 流
@@ -112,7 +115,11 @@ export async function handleNonStreamingResponse(
     });
   }
 
-  // 标准化响应
+  // 1. 获取 Provider 原始响应
+  const providerResponseClone = response.clone();
+  const providerResponseData = await providerResponseClone.json();
+
+  // 2. 标准化响应
   const ingressTransformer = getTransformer(targetProtocol);
   if (!ingressTransformer?.normalizeResponse) {
     throw new Error(`No response normalizer for protocol: ${targetProtocol}`);
@@ -120,7 +127,7 @@ export async function handleNonStreamingResponse(
 
   const standardRes = await ingressTransformer.normalizeResponse(response, ctx);
 
-  // 适配到用户协议
+  // 3. 适配到用户协议
   const egressTransformer = getTransformer(incomingProtocol);
   if (!egressTransformer?.adaptResponse) {
     throw new Error(`No response adapter for protocol: ${incomingProtocol}`);
@@ -132,7 +139,7 @@ export async function handleNonStreamingResponse(
   const latencyMs = Date.now() - startTime;
   const responseHeaders = extractResponseHeaders(response);
 
-  // 记录日志
+  // 记录日志 - 包含完整的响应链路
   await logRequest({
     virtualKey,
     modelName: originalModelName,
@@ -145,9 +152,12 @@ export async function handleNonStreamingResponse(
     outputTokens: standardRes.usage?.completion_tokens,
     requestHeaders,
     requestBody: rawBody,
+    standardRequestBody: params.standardRequestBody,
     transformedRequestBody: params.transformedBody,
     responseHeaders,
-    responseBody: responseData,
+    providerResponseBody: providerResponseData,      // Provider 原始响应
+    standardResponseBody: standardRes,                // 标准格式
+    responseBody: responseData,                       // 客户端最终响应
     clientIp,
     userAgent,
     requestPath,
@@ -155,9 +165,105 @@ export async function handleNonStreamingResponse(
     streaming: false,
     incomingProtocol,
     targetProtocol,
+    conversationId: params.conversationId,
   });
 
   return c.json(responseData);
+}
+
+/**
+ * 流式响应摘要收集器
+ * 收集流式响应的关键信息用于日志记录
+ */
+class StreamResponseCollector {
+  private eventCount = 0;
+  private contentChunks: string[] = [];
+  private contentLength = 0;
+  private firstChunk: unknown = null;
+  private lastChunk: unknown = null;
+  private hasToolCalls = false;
+  private finishReason: string | null = null;
+  private readonly maxContentLength = 500; // 只保留前 500 字符
+
+  /**
+   * 处理一个 SSE 事件
+   */
+  processEvent(data: string): void {
+    this.eventCount++;
+
+    try {
+      const json = JSON.parse(data);
+
+      // 记录第一个事件
+      if (!this.firstChunk) {
+        this.firstChunk = json;
+      }
+
+      // 更新最后一个事件
+      this.lastChunk = json;
+
+      // 提取内容（如果还没达到长度限制）
+      if (this.contentLength < this.maxContentLength) {
+        const content = this.extractContent(json);
+        if (content) {
+          const remaining = this.maxContentLength - this.contentLength;
+          const toAdd = content.slice(0, remaining);
+          this.contentChunks.push(toAdd);
+          this.contentLength += toAdd.length;
+        }
+      }
+
+      // 检测工具调用
+      if (
+        json.choices?.[0]?.delta?.tool_calls ||
+        (json.type === 'content_block_start' && json.content_block?.type === 'tool_use')
+      ) {
+        this.hasToolCalls = true;
+      }
+
+      // 记录结束原因
+      if (json.choices?.[0]?.finish_reason) {
+        this.finishReason = json.choices[0].finish_reason;
+      } else if (json.delta?.stop_reason) {
+        this.finishReason = json.delta.stop_reason;
+      }
+    } catch {
+      // 解析失败，忽略
+    }
+  }
+
+  /**
+   * 从事件中提取文本内容
+   */
+  private extractContent(json: any): string | null {
+    // OpenAI 格式
+    if (json.choices?.[0]?.delta?.content) {
+      return json.choices[0].delta.content;
+    }
+    // Anthropic 格式
+    if (json.type === 'content_block_delta' && json.delta?.type === 'text_delta') {
+      return json.delta.text;
+    }
+
+    return null;
+  }
+
+  /**
+   * 生成响应摘要
+   */
+  getSummary(protocol: string): unknown {
+    return {
+      type: 'stream_summary',
+      protocol,
+      eventCount: this.eventCount,
+      contentPreview: this.contentChunks.join(''),
+      contentLength: this.contentLength,
+      firstChunk: this.firstChunk,
+      lastChunk: this.lastChunk,
+      hasToolCalls: this.hasToolCalls,
+      finishReason: this.finishReason,
+    };
+  }
 }
 
 /**
@@ -199,8 +305,12 @@ function extractUsageFromChunk(data: string): { prompt_tokens?: number; completi
         completion_tokens: undefined,
       };
     }
-  } catch {
-    // 解析失败，忽略
+
+    // 调试日志：记录未提取到 usage 的事件类型
+    logger.debug({ eventType: json.type || json.object || 'unknown' }, 'No usage found in chunk');
+  } catch (error) {
+    // 解析失败，记录调试日志
+    logger.debug({ error }, 'Failed to parse chunk for usage extraction');
   }
   return null;
 }
@@ -232,6 +342,11 @@ export async function handleStreamingResponse(
   let promptTokens: number | undefined;
   let completionTokens: number | undefined;
 
+  // 创建三个收集器，分别收集响应链路的三个阶段
+  const providerCollector = new StreamResponseCollector();
+  const standardCollector = new StreamResponseCollector();
+  const clientCollector = new StreamResponseCollector();
+
   // 提前提取响应头（流式响应在开始时即可获取）
   const responseHeaders = extractResponseHeaders(response);
 
@@ -246,6 +361,25 @@ export async function handleStreamingResponse(
       'Stream protocol transformation required'
     );
 
+    // 收集 Provider 原始响应（第一次转换前）
+    transformedStream = transformedStream.pipeThrough(
+      new TransformStream({
+        transform(chunk, controller) {
+          const text = new TextDecoder().decode(chunk);
+          const lines = text.split('\n');
+          for (const line of lines) {
+            if (line.startsWith('data:')) {
+              const data = line.slice(5).trim();
+              if (data !== '[DONE]') {
+                providerCollector.processEvent(data);
+              }
+            }
+          }
+          controller.enqueue(chunk);
+        },
+      })
+    );
+
     // Ingress: Provider 协议 → 标准格式
     ctx.state.set('streamDirection', 'normalize');
     const ingressTransformer = getTransformer(targetProtocol);
@@ -258,6 +392,25 @@ export async function handleStreamingResponse(
         'No stream normalizer available, skipping ingress transformation'
       );
     }
+
+    // 收集标准格式响应（两次转换之间）
+    transformedStream = transformedStream.pipeThrough(
+      new TransformStream({
+        transform(chunk, controller) {
+          const text = new TextDecoder().decode(chunk);
+          const lines = text.split('\n');
+          for (const line of lines) {
+            if (line.startsWith('data:')) {
+              const data = line.slice(5).trim();
+              if (data !== '[DONE]') {
+                standardCollector.processEvent(data);
+              }
+            }
+          }
+          controller.enqueue(chunk);
+        },
+      })
+    );
 
     // Egress: 标准格式 → 客户端协议
     ctx.state.set('streamDirection', 'adapt');
@@ -278,18 +431,19 @@ export async function handleStreamingResponse(
     );
   }
 
-  // 创建 TransformStream 提取 usage 信息并记录日志
+  // 创建 TransformStream 提取 usage 信息、收集客户端响应并记录日志
   const usageExtractor = new TransformStream<Uint8Array, Uint8Array>({
     transform(chunk, controller) {
-      // 解析 SSE chunk 提取 usage
+      // 解析 SSE chunk 提取 usage 和收集响应
       const text = new TextDecoder().decode(chunk);
-      const lines = text.split('\\n');
+      const lines = text.split('\n');
 
       for (const line of lines) {
         if (line.startsWith('data:')) {
           const data = line.slice(5).trim();
           if (data === '[DONE]') continue;
 
+          // 提取 usage 信息
           const usage = extractUsageFromChunk(data);
           if (usage) {
             // 合并 usage 信息（可能来自不同的事件）
@@ -299,15 +453,34 @@ export async function handleStreamingResponse(
             if (usage.completion_tokens !== undefined) {
               completionTokens = usage.completion_tokens;
             }
+
+            // 添加调试日志
+            logger.debug({
+              promptTokens,
+              completionTokens,
+              source: 'stream_chunk'
+            }, 'Usage extracted from stream');
           }
+
+          // 收集客户端响应
+          clientCollector.processEvent(data);
         }
       }
 
       controller.enqueue(chunk);
     },
     flush() {
-      // 流结束时记录日志
+      // 流结束时记录日志 - 包含完整的响应链路
       const latencyMs = Date.now() - startTime;
+
+      // 添加 usage 验证日志
+      if (!promptTokens && !completionTokens) {
+        logger.warn({
+          modelName: originalModelName,
+          provider: provider.name
+        }, 'No usage information extracted from stream');
+      }
+
       logRequest({
         virtualKey,
         modelName: originalModelName,
@@ -320,8 +493,12 @@ export async function handleStreamingResponse(
         outputTokens: completionTokens,
         requestHeaders,
         requestBody: rawBody,
+        standardRequestBody: params.standardRequestBody,
         transformedRequestBody: params.transformedBody,
         responseHeaders,
+        providerResponseBody: providerCollector.getSummary(targetProtocol),
+        standardResponseBody: standardCollector.getSummary('standard'),
+        responseBody: clientCollector.getSummary(incomingProtocol),
         clientIp,
         userAgent,
         requestPath,
@@ -329,6 +506,7 @@ export async function handleStreamingResponse(
         streaming: true,
         incomingProtocol,
         targetProtocol,
+        conversationId: params.conversationId,
       });
     },
   });

@@ -22,6 +22,27 @@
       "when": 1738336800000,
       "tag": "0002_add_protocol_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1770389515334,
+      "tag": "0003_light_brother_voodoo",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1770398073650,
+      "tag": "0004_organic_avengers",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1770521414030,
+      "tag": "0005_chief_iron_lad",
+      "breakpoints": true
     }
   ]
 }

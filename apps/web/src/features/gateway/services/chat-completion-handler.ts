@@ -64,6 +64,9 @@ export async function handleChatCompletion(
     }
   });
 
+  // 提取或生成 conversationId
+  const conversationId = c.req.header('x-conversation-id') || undefined;
+
   // 声明变量以便在 catch 块中访问
   let rawBody: { model?: string; [key: string]: unknown } | undefined;
   let transformedBody: unknown;
@@ -87,6 +90,9 @@ export async function handleChatCompletion(
 
     const ctx = createTransformerContext(requestId);
     const standardReq = await ingressTransformer.normalizeRequest(rawBody, ctx);
+
+    // 保存标准格式请求数据（用于日志记录）
+    const standardRequestBody = standardReq;
 
     // 2. 检查虚拟密钥的模型权限
     if (virtualKey.allowedModels?.length && !virtualKey.allowedModels.includes(standardReq.model)) {
@@ -240,11 +246,13 @@ export async function handleChatCompletion(
       startTime,
       requestHeaders,
       rawBody,
+      standardRequestBody,
       transformedBody,
       clientIp,
       userAgent,
       requestPath,
       requestMethod,
+      conversationId,
     };
 
     if (actualStreaming) {

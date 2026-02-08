@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Copy,
   Check,
@@ -154,6 +155,146 @@ function Panel({ title, icon, bodyContent, transformedContent, headers, classNam
             <HeadersViewer headers={headers} />
           </div>
         )}
+      </ScrollArea>
+    </div>
+  )
+}
+
+interface RequestPanelProps {
+  log: Log
+  className?: string
+}
+
+function RequestPanel({ log, className }: RequestPanelProps) {
+  return (
+    <div className={cn("flex flex-col border-r last:border-r-0 bg-background", className)}>
+      <div className="px-4 py-2.5 border-b bg-muted/20 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+          <h3 className="font-semibold text-sm">Request</h3>
+        </div>
+      </div>
+      <ScrollArea className="flex-1">
+        <Tabs defaultValue="client" className="w-full">
+          <div className="px-4 pt-3 pb-2 border-b bg-muted/10">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="client">客户端请求</TabsTrigger>
+              <TabsTrigger value="provider">Provider 请求</TabsTrigger>
+              <TabsTrigger value="standard">标准格式</TabsTrigger>
+              <TabsTrigger value="headers">Headers</TabsTrigger>
+            </TabsList>
+          </div>
+
+          <TabsContent value="client" className="p-4 m-0">
+            {log.requestBody ? (
+              <JsonViewer data={log.requestBody} height="calc(100vh - 280px)" />
+            ) : (
+              <div className="flex items-center justify-center h-[200px] text-sm text-muted-foreground">
+                无客户端请求数据
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="provider" className="p-4 m-0">
+            {log.transformedRequestBody ? (
+              <JsonViewer data={log.transformedRequestBody} height="calc(100vh - 280px)" />
+            ) : (
+              <div className="flex items-center justify-center h-[200px] text-sm text-muted-foreground">
+                无 Provider 请求数据
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="standard" className="p-4 m-0">
+            {log.standardRequestBody ? (
+              <JsonViewer data={log.standardRequestBody} height="calc(100vh - 280px)" />
+            ) : (
+              <div className="flex items-center justify-center h-[200px] text-sm text-muted-foreground">
+                无标准格式请求数据
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="headers" className="p-4 m-0">
+            {log.requestHeaders ? (
+              <HeadersViewer headers={log.requestHeaders} />
+            ) : (
+              <div className="flex items-center justify-center h-[200px] text-sm text-muted-foreground">
+                无请求头数据
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+      </ScrollArea>
+    </div>
+  )
+}
+
+interface ResponsePanelProps {
+  log: Log
+  className?: string
+}
+
+function ResponsePanel({ log, className }: ResponsePanelProps) {
+  return (
+    <div className={cn("flex flex-col border-r last:border-r-0 bg-background", className)}>
+      <div className="px-4 py-2.5 border-b bg-muted/20 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
+          <h3 className="font-semibold text-sm">Response</h3>
+        </div>
+      </div>
+      <ScrollArea className="flex-1">
+        <Tabs defaultValue="client" className="w-full">
+          <div className="px-4 pt-3 pb-2 border-b bg-muted/10">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="client">客户端响应</TabsTrigger>
+              <TabsTrigger value="provider">Provider 响应</TabsTrigger>
+              <TabsTrigger value="standard">标准格式</TabsTrigger>
+              <TabsTrigger value="headers">Headers</TabsTrigger>
+            </TabsList>
+          </div>
+
+          <TabsContent value="client" className="p-4 m-0">
+            {log.responseBody ? (
+              <JsonViewer data={log.responseBody} height="calc(100vh - 280px)" />
+            ) : (
+              <div className="flex items-center justify-center h-[200px] text-sm text-muted-foreground">
+                无客户端响应数据
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="provider" className="p-4 m-0">
+            {log.providerResponseBody ? (
+              <JsonViewer data={log.providerResponseBody} height="calc(100vh - 280px)" />
+            ) : (
+              <div className="flex items-center justify-center h-[200px] text-sm text-muted-foreground">
+                无 Provider 响应数据
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="standard" className="p-4 m-0">
+            {log.standardResponseBody ? (
+              <JsonViewer data={log.standardResponseBody} height="calc(100vh - 280px)" />
+            ) : (
+              <div className="flex items-center justify-center h-[200px] text-sm text-muted-foreground">
+                无标准格式数据
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="headers" className="p-4 m-0">
+            {log.responseHeaders ? (
+              <HeadersViewer headers={log.responseHeaders} />
+            ) : (
+              <div className="flex items-center justify-center h-[200px] text-sm text-muted-foreground">
+                无响应头数据
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </ScrollArea>
     </div>
   )
@@ -398,55 +539,106 @@ export function LogDetailSheet({
                   mono
                 />
               </Section>
+
+              {/* 工具调用信息 */}
+              {log.toolCallsCount && log.toolCallsCount > 0 && (
+                <Section title="工具调用" badge={log.toolCallsCount.toString()}>
+                  <InfoRow
+                    label="调用次数"
+                    value={log.toolCallsCount}
+                  />
+                  {log.metadata?.toolCalls?.pattern && (
+                    <InfoRow
+                      label="调用模式"
+                      value={
+                        <Badge variant="outline">
+                          {log.metadata.toolCalls.pattern === 'single' ? '单次' :
+                           log.metadata.toolCalls.pattern === 'parallel' ? '并行' : '顺序'}
+                        </Badge>
+                      }
+                    />
+                  )}
+                  {log.metadata?.toolCalls?.tools && log.metadata.toolCalls.tools.length > 0 && (
+                    <InfoRow
+                      label="工具列表"
+                      value={
+                        <div className="flex flex-wrap gap-1">
+                          {log.metadata.toolCalls.tools.map((tool: string, idx: number) => (
+                            <Badge key={idx} variant="secondary" className="text-xs">
+                              {tool}
+                            </Badge>
+                          ))}
+                        </div>
+                      }
+                    />
+                  )}
+                </Section>
+              )}
+
+              {/* 对话上下文 */}
+              {log.conversationId && (
+                <Section title="对话上下文">
+                  <InfoRow
+                    label="对话ID"
+                    value={log.conversationId}
+                    copyable
+                    mono
+                  />
+                </Section>
+              )}
+
+              {/* 内容特征 */}
+              {log.metadata?.content && (
+                <Section title="内容特征">
+                  {log.metadata.content.types && log.metadata.content.types.length > 0 && (
+                    <InfoRow
+                      label="内容类型"
+                      value={
+                        <div className="flex flex-wrap gap-1">
+                          {(log.metadata.content.types as string[]).map((type: string, idx: number) => (
+                            <Badge key={idx} variant="outline" className="text-xs">
+                              {type}
+                            </Badge>
+                          ))}
+                        </div>
+                      }
+                    />
+                  )}
+                  {log.metadata.content.hasFunctionCalling && (
+                    <InfoRow
+                      label="函数调用"
+                      value={<Badge variant="secondary">是</Badge>}
+                    />
+                  )}
+                  {/* 使用工具 */}
+                  {log.metadata.content.toolNames && log.metadata.content.toolNames.length > 0 && (
+                    <InfoRow
+                      label="使用工具"
+                      value={
+                        <div className="flex flex-wrap gap-1">
+                          {log.metadata.content.toolNames.map((tool: string, idx: number) => (
+                            <Badge
+                              key={idx}
+                              variant="secondary"
+                              className="text-xs font-mono bg-blue-50 text-blue-700 border-blue-200"
+                            >
+                              {tool}
+                            </Badge>
+                          ))}
+                        </div>
+                      }
+                    />
+                  )}
+                </Section>
+              )}
             </ScrollArea>
           </div>
 
           {/* 中间面板：请求 */}
-          <Panel
-            title="Request"
-            icon={<div className="h-1.5 w-1.5 rounded-full bg-blue-500" />}
-            headers={log.requestHeaders}
-            bodyContent={
-              <div className="p-4">
-                {log.requestBody !== null && log.requestBody !== undefined ? (
-                  <JsonViewer data={log.requestBody} height="calc(100vh - 200px)" />
-                ) : (
-                  <div className="flex items-center justify-center h-[200px] text-sm text-muted-foreground">
-                    无请求体
-                  </div>
-                )}
-              </div>
-            }
-            transformedContent={
-              <div className="p-4">
-                {log.transformedRequestBody !== null && log.transformedRequestBody !== undefined ? (
-                  <JsonViewer data={log.transformedRequestBody} height="calc(100vh - 200px)" />
-                ) : (
-                  <div className="flex items-center justify-center h-[200px] text-sm text-muted-foreground">
-                    无转换后请求体
-                  </div>
-                )}
-              </div>
-            }
-          />
+          <RequestPanel log={log} />
 
           {/* 右侧面板：响应 */}
-          <Panel
-            title="Response"
-            icon={<div className="h-1.5 w-1.5 rounded-full bg-green-500" />}
-            headers={log.responseHeaders}
-            bodyContent={
-              <div className="p-4">
-                {log.responseBody !== null && log.responseBody !== undefined ? (
-                  <JsonViewer data={log.responseBody} height="calc(100vh - 200px)" />
-                ) : (
-                  <div className="flex items-center justify-center h-[200px] text-sm text-muted-foreground">
-                    无响应体
-                  </div>
-                )}
-              </div>
-            }
-          />
+          <ResponsePanel log={log} />
         </div>
 
         {/* 底部状态栏 */}

@@ -1,4 +1,71 @@
 import { pgTable, varchar, integer, timestamp, text, uuid, jsonb, index } from 'drizzle-orm/pg-core';
+
+/**
+ * 日志元数据结构
+ * 用于存储灵活的业务标记和自定义元数据
+ */
+export interface LogMetadata {
+  // 工具调用追踪
+  toolCalls?: {
+    pattern?: 'sequential' | 'parallel' | 'single';  // 调用模式
+    tools?: string[];                                 // 工具名称列表
+    details?: Array<{                                 // 详细信息
+      name: string;
+      arguments?: unknown;
+      result?: unknown;
+    }>;
+  };
+
+  // 对话上下文
+  conversation?: {
+    messageId?: string;
+    parentMessageId?: string;
+    turnNumber?: number;
+    role?: string;
+  };
+
+  // 内容特征
+  content?: {
+    types?: string[];                                 // text, image, audio, video
+    hasFunctionCalling?: boolean;
+    responseFormat?: string;
+    language?: string;
+    toolNames?: string[];                             // 工具调用名称列表
+  };
+
+  // 性能和成本
+  performance?: {
+    cacheHit?: boolean;
+    estimatedCostUsd?: number;
+    latencyTier?: 'fast' | 'normal' | 'slow';
+    ttfbMs?: number;                                  // Time to first byte
+  };
+
+  // 请求特征
+  request?: {
+    type?: string;
+    useCase?: string;
+    temperature?: number;
+    maxTokens?: number;
+    topP?: number;
+  };
+
+  // 错误和重试
+  error?: {
+    retryCount?: number;
+    retryReason?: string;
+    category?: string;
+    recoverable?: boolean;
+  };
+
+  // 业务标记
+  business?: {
+    userId?: string;
+    organizationId?: string;
+    tags?: string[];
+    customFields?: Record<string, unknown>;
+  };
+}
 import { virtualKeys } from '@/features/keys/db';
 import { providers } from '@/features/providers/db';
 
@@ -16,10 +83,15 @@ export const requestLogs = pgTable('request_logs', {
   outputTokens: integer('output_tokens').default(0).notNull(),
   totalTokens: integer('total_tokens').default(0).notNull(),
   requestHeaders: jsonb('request_headers'),
-  requestBody: jsonb('request_body'),
-  transformedRequestBody: jsonb('transformed_request_body'),
+  // 请求链路追踪
+  requestBody: jsonb('request_body'),                         // 客户端原始请求
+  standardRequestBody: jsonb('standard_request_body'),        // 标准格式请求
+  transformedRequestBody: jsonb('transformed_request_body'),  // Provider 请求
   responseHeaders: jsonb('response_headers'),
-  responseBody: jsonb('response_body'),
+  // 响应链路追踪
+  providerResponseBody: jsonb('provider_response_body'),      // Provider 原始响应
+  standardResponseBody: jsonb('standard_response_body'),      // 标准格式（可选）
+  responseBody: jsonb('response_body'),                       // 客户端最终响应
   errorMessage: text('error_message'),
   errorType: varchar('error_type', { length: 50 }),
   clientIp: varchar('client_ip', { length: 45 }),
@@ -29,6 +101,10 @@ export const requestLogs = pgTable('request_logs', {
   streaming: varchar('streaming', { length: 10 }).default('false').notNull(),
   incomingProtocol: varchar('incoming_protocol', { length: 50 }),
   targetProtocol: varchar('target_protocol', { length: 50 }),
+  // 新增字段：标记系统
+  metadata: jsonb('metadata').$type<LogMetadata>(),              // 灵活的元数据标记
+  toolCallsCount: integer('tool_calls_count').default(0),        // 工具调用计数
+  conversationId: uuid('conversation_id'),                       // 对话追踪 ID
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => ({
   // 添加常用查询索引
@@ -38,6 +114,10 @@ export const requestLogs = pgTable('request_logs', {
   statusIdx: index('idx_request_logs_status').on(table.status),
   createdAtIdx: index('idx_request_logs_created_at').on(table.createdAt),
   streamingIdx: index('idx_request_logs_streaming').on(table.streaming),
+  // 新增索引：标记系统
+  toolCallsCountIdx: index('idx_request_logs_tool_calls_count').on(table.toolCallsCount),
+  conversationIdIdx: index('idx_request_logs_conversation_id').on(table.conversationId),
+  statusCreatedAtIdx: index('idx_request_logs_status_created_at').on(table.status, table.createdAt),
 }));
 
 export type RequestLog = typeof requestLogs.$inferSelect;

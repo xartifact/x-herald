@@ -31,9 +31,14 @@ export interface Log {
   outputTokens: number
   totalTokens: number
   requestHeaders: Record<string, string> | null
+  // 请求链路追踪
   requestBody: Record<string, unknown> | null
+  standardRequestBody: Record<string, unknown> | null
   transformedRequestBody: Record<string, unknown> | null
   responseHeaders: Record<string, string> | null
+  // 响应链路追踪
+  providerResponseBody: Record<string, unknown> | null
+  standardResponseBody: Record<string, unknown> | null
   responseBody: Record<string, unknown> | null
   errorMessage: string | null
   errorType: string | null
@@ -44,6 +49,10 @@ export interface Log {
   streaming: string
   incomingProtocol: string | null
   targetProtocol: string | null
+  // 新增字段：标记系统
+  metadata: Record<string, unknown> | null
+  toolCallsCount: number | null
+  conversationId: string | null
   createdAt: string
 }
 

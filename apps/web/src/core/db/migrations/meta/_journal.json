@@ -43,6 +43,13 @@
       "when": 1770521414030,
       "tag": "0005_chief_iron_lad",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1770738389788,
+      "tag": "0006_last_shriek",
+      "breakpoints": true
     }
   ]
 }

@@ -1,4 +1,4 @@
-import { pgTable, varchar, integer, timestamp, text, uuid, jsonb, index } from 'drizzle-orm/pg-core';
+import { pgTable, varchar, integer, timestamp, text, uuid, jsonb, index, boolean } from 'drizzle-orm/pg-core';
 
 /**
  * 日志元数据结构
@@ -39,6 +39,7 @@ export interface LogMetadata {
     estimatedCostUsd?: number;
     latencyTier?: 'fast' | 'normal' | 'slow';
     ttfbMs?: number;                                  // Time to first byte
+    usageEstimated?: boolean;                         // 标记 token 是否为估算
   };
 
   // 请求特征
@@ -65,6 +66,24 @@ export interface LogMetadata {
     tags?: string[];
     customFields?: Record<string, unknown>;
   };
+}
+
+/**
+ * 流进度信息
+ */
+export interface StreamProgress {
+  chunksProcessed: number;
+  bytesReceived: number;
+  lastChunkAt: number;
+}
+
+/**
+ * 流内容信息
+ */
+export interface StreamContent {
+  thinkingBlocks: string[];
+  contentChunks: string[];
+  allChunks: unknown[];
 }
 import { virtualKeys } from '@/features/keys/db';
 import { providers } from '@/features/providers/db';
@@ -105,6 +124,26 @@ export const requestLogs = pgTable('request_logs', {
   metadata: jsonb('metadata').$type<LogMetadata>(),              // 灵活的元数据标记
   toolCallsCount: integer('tool_calls_count').default(0),        // 工具调用计数
   conversationId: uuid('conversation_id'),                       // 对话追踪 ID
+  
+  // Phase 1 新增字段：流状态管理
+  streamStatus: varchar('stream_status', { length: 20 })
+    .$type<'pending' | 'streaming' | 'completed' | 'failed' | 'aborted'>()
+    .default('pending'),
+  
+  // 流处理进度
+  streamProgress: jsonb('stream_progress').$type<StreamProgress>(),
+  
+  // 完整的流内容
+  streamContent: jsonb('stream_content').$type<StreamContent>(),
+  
+  // 时间戳
+  streamStartedAt: timestamp('stream_started_at'),
+  streamCompletedAt: timestamp('stream_completed_at'),
+  lastUpdatedAt: timestamp('last_updated_at').defaultNow(),
+  
+  // 完成标记（用于查询优化）
+  isComplete: boolean('is_complete').default(false).notNull(),
+  
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => ({
   // 添加常用查询索引
@@ -118,6 +157,13 @@ export const requestLogs = pgTable('request_logs', {
   toolCallsCountIdx: index('idx_request_logs_tool_calls_count').on(table.toolCallsCount),
   conversationIdIdx: index('idx_request_logs_conversation_id').on(table.conversationId),
   statusCreatedAtIdx: index('idx_request_logs_status_created_at').on(table.status, table.createdAt),
+  
+  // Phase 1 新增索引：流状态追踪
+  streamStatusIdx: index('idx_request_logs_stream_status').on(table.streamStatus),
+  isCompleteIdx: index('idx_request_logs_is_complete').on(table.isComplete),
+  streamStatusIsCompleteIdx: index('idx_stream_status_complete')
+    .on(table.streamStatus, table.isComplete),
+  lastUpdatedAtIdx: index('idx_request_logs_last_updated_at').on(table.lastUpdatedAt),
 }));
 
 export type RequestLog = typeof requestLogs.$inferSelect;

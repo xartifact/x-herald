@@ -108,6 +108,36 @@ interface AnthropicStreamEvent {
   };
 }
 
+/**
+ * 清理文本内容中的控制标签
+ * 移除 Claude Code CLI 相关的 XML/HTML 控制标签
+ *
+ * 已知需要过滤的标签：
+ * - <is_displaying_contents>
+ * - <filepaths>
+ * - 其他潜在的控制标签
+ */
+function sanitizeStreamContent(text: string): string {
+  if (!text) return text;
+
+  // 移除已知的控制标签及其内容
+  const controlTagPatterns = [
+    /<is_displaying_contents>[\s\S]*?<\/is_displaying_contents>/gi,
+    /<filepaths>[\s\S]*?<\/filepaths>/gi,
+    // 可扩展：其他控制标签
+  ];
+
+  let cleaned = text;
+  for (const pattern of controlTagPatterns) {
+    cleaned = cleaned.replace(pattern, '');
+  }
+
+  // 清理多余的空白行（可选，保持格式整洁）
+  cleaned = cleaned.replace(/\n{3,}/g, '\n\n').trim();
+
+  return cleaned;
+}
+
 export class AnthropicTransformer implements Transformer {
   readonly name = 'anthropic';
   readonly supportedProtocols: ('openai' | 'anthropic' | 'gemini' | 'vertex' | 'custom')[] = ['anthropic'];
@@ -249,9 +279,15 @@ export class AnthropicTransformer implements Transformer {
 
     for (const block of data.content) {
       if (block.type === 'text' && block.text) {
-        content += block.text;
+        const cleanedText = sanitizeStreamContent(block.text);  // ✅ 清理内容
+        if (cleanedText) {
+          content += cleanedText;
+        }
       } else if (block.type === 'thinking' && block.thinking) {
-        reasoning_content += block.thinking;
+        const cleanedThinking = sanitizeStreamContent(block.thinking);  // ✅ 清理内容
+        if (cleanedThinking) {
+          reasoning_content += cleanedThinking;
+        }
         logger.debug(
           { requestId: ctx.requestId, thinkingLength: block.thinking.length },
           'Extracted thinking content from Anthropic response'
@@ -472,7 +508,10 @@ export class AnthropicTransformer implements Transformer {
         let buffer = '';
         const messageId = `msg_${crypto.randomUUID()}`;
         let sentMessageStart = false;
+        let sentThinkingStart = false;  // 追踪 thinking 块是否已开始
         let sentContentStart = false;
+        let thinkingBlockIndex = 0;     // thinking 块的索引
+        let textBlockIndex = 1;         // text 块的索引（与 thinking 分开）
         const toolCallsMap = new Map<number, { id?: string; name?: string; arguments: string }>();
 
         try {
@@ -521,9 +560,22 @@ export class AnthropicTransformer implements Transformer {
 
                 // 思考内容（reasoning_content）
                 if (delta?.reasoning_content) {
+                  // 首次发送 thinking 内容时，先发送 content_block_start
+                  if (!sentThinkingStart) {
+                    const thinkingBlockStart = {
+                      type: 'content_block_start',
+                      index: thinkingBlockIndex,
+                      content_block: { type: 'thinking', thinking: '' },
+                    };
+                    controller.enqueue(encoder.encode(`event: content_block_start\n`));
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify(thinkingBlockStart)}\n\n`));
+                    sentThinkingStart = true;
+                  }
+
+                  // 发送 thinking 增量
                   const thinkingDelta = {
                     type: 'content_block_delta',
-                    index: 0,
+                    index: thinkingBlockIndex,
                     delta: { type: 'thinking', thinking: delta.reasoning_content },
                   };
                   controller.enqueue(encoder.encode(`event: content_block_delta\n`));
@@ -532,10 +584,20 @@ export class AnthropicTransformer implements Transformer {
 
                 // 文本内容
                 if (delta?.content) {
+                  // 如果之前有 thinking 块且还未关闭，先关闭它
+                  if (sentThinkingStart && !sentContentStart) {
+                    const thinkingBlockStop = {
+                      type: 'content_block_stop',
+                      index: thinkingBlockIndex,
+                    };
+                    controller.enqueue(encoder.encode(`event: content_block_stop\n`));
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify(thinkingBlockStop)}\n\n`));
+                  }
+
                   if (!sentContentStart) {
                     const contentBlockStart = {
                       type: 'content_block_start',
-                      index: 0,
+                      index: textBlockIndex,
                       content_block: { type: 'text', text: '' },
                     };
                     controller.enqueue(encoder.encode(`event: content_block_start\n`));
@@ -547,7 +609,7 @@ export class AnthropicTransformer implements Transformer {
 
                   const contentDelta = {
                     type: 'content_block_delta',
-                    index: 0,
+                    index: textBlockIndex,
                     delta: { type: 'text_delta', text: delta.content },
                   };
                   controller.enqueue(encoder.encode(`event: content_block_delta\n`));
@@ -557,12 +619,14 @@ export class AnthropicTransformer implements Transformer {
                 // 工具调用
                 if (delta?.tool_calls) {
                   for (const toolCall of delta.tool_calls) {
-                    const index = toolCall.index || 0;
-                    let existingCall = toolCallsMap.get(index);
+                    const originalIndex = toolCall.index || 0;
+                    // 工具调用的索引应该从 2 开始（0=thinking, 1=text）
+                    const toolIndex = originalIndex + 2;
+                    let existingCall = toolCallsMap.get(originalIndex);
 
                     if (!existingCall) {
                       existingCall = { arguments: '' };
-                      toolCallsMap.set(index, existingCall);
+                      toolCallsMap.set(originalIndex, existingCall);
                     }
 
                     // 工具调用开始
@@ -572,7 +636,7 @@ export class AnthropicTransformer implements Transformer {
 
                       const toolStart = {
                         type: 'content_block_start',
-                        index,
+                        index: toolIndex,
                         content_block: {
                           type: 'tool_use',
                           id: toolCall.id,
@@ -589,7 +653,7 @@ export class AnthropicTransformer implements Transformer {
 
                       const toolDelta = {
                         type: 'content_block_delta',
-                        index,
+                        index: toolIndex,
                         delta: {
                           type: 'input_json_delta',
                           partial_json: toolCall.function.arguments,
@@ -603,22 +667,31 @@ export class AnthropicTransformer implements Transformer {
 
                 // finish_reason
                 if (chunk.choices[0]?.finish_reason) {
-                  // 先发送 content_block_stop（如果有内容块）
-                  if (sentContentStart || toolCallsMap.size > 0) {
-                    const maxIndex = Math.max(
-                      sentContentStart ? 0 : -1,
-                      ...Array.from(toolCallsMap.keys()),
+                  // 关闭所有打开的内容块
+                  const blocksToClose: number[] = [];
+
+                  if (sentThinkingStart) {
+                    blocksToClose.push(thinkingBlockIndex);
+                  }
+                  if (sentContentStart) {
+                    blocksToClose.push(textBlockIndex);
+                  }
+
+                  // 添加工具调用块
+                  toolCallsMap.forEach((_, originalIndex) => {
+                    blocksToClose.push(originalIndex + 2);  // 工具调用从索引 2 开始
+                  });
+
+                  // 发送所有 content_block_stop 事件
+                  for (const index of blocksToClose) {
+                    const contentBlockStop = {
+                      type: 'content_block_stop',
+                      index,
+                    };
+                    controller.enqueue(encoder.encode(`event: content_block_stop\n`));
+                    controller.enqueue(
+                      encoder.encode(`data: ${JSON.stringify(contentBlockStop)}\n\n`),
                     );
-                    for (let i = 0; i <= maxIndex; i++) {
-                      const contentBlockStop = {
-                        type: 'content_block_stop',
-                        index: i,
-                      };
-                      controller.enqueue(encoder.encode(`event: content_block_stop\n`));
-                      controller.enqueue(
-                        encoder.encode(`data: ${JSON.stringify(contentBlockStop)}\n\n`),
-                      );
-                    }
                   }
 
                   const messageDelta = {
@@ -957,6 +1030,13 @@ export class AnthropicTransformer implements Transformer {
       case 'content_block_delta':
         // 文本增量
         if (event.delta?.type === 'text_delta') {
+          const cleanedText = event.delta.text ? sanitizeStreamContent(event.delta.text) : '';  // ✅ 清理内容
+
+          // 如果清理后为空，跳过这个事件
+          if (!cleanedText) {
+            return null;
+          }
+
           return {
             id: '',
             object: 'chat.completion.chunk',
@@ -965,7 +1045,7 @@ export class AnthropicTransformer implements Transformer {
             choices: [
               {
                 index: event.index || 0,
-                delta: { content: event.delta.text },
+                delta: { content: cleanedText },  // ✅ 使用清理后的内容
                 finish_reason: null,
               },
             ],
@@ -973,6 +1053,13 @@ export class AnthropicTransformer implements Transformer {
         }
         // 思考内容增量
         if (event.delta?.type === 'thinking') {
+          const cleanedThinking = event.delta.thinking ? sanitizeStreamContent(event.delta.thinking) : '';  // ✅ 清理内容
+
+          // 如果清理后为空，跳过这个事件
+          if (!cleanedThinking) {
+            return null;
+          }
+
           return {
             id: '',
             object: 'chat.completion.chunk',
@@ -981,7 +1068,7 @@ export class AnthropicTransformer implements Transformer {
             choices: [
               {
                 index: event.index || 0,
-                delta: { reasoning_content: event.delta.thinking },
+                delta: { reasoning_content: cleanedThinking },  // ✅ 使用清理后的内容
                 finish_reason: null,
               },
             ],

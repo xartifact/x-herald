@@ -3,12 +3,23 @@ import type { Context } from 'hono';
 import type { TransformerContext } from '@/types';
 import logger from '@/core/lib/logger';
 import type { VirtualKey } from '@/features/keys/db';
+import type { StreamProgress, StreamContent } from '@/features/logs/db';
 
 import { getTransformer } from '../transformer';
-import { logRequest } from './log-service';
+import {
+  logRequest,
+  logStreamStart,
+  updateStreamProgress,
+  finalizeStreamLog,
+  markStreamFailed,
+  markStreamAborted,
+} from './log-service';
+import { estimateTokens } from './token-estimator';
+import { extractMetadata } from './metadata-extractor';
 
 interface ResponseHandlerParams {
   c: Context;
+  request?: Request;
   response: Response;
   ctx: TransformerContext;
   incomingProtocol: string;
@@ -209,59 +220,74 @@ export async function handleNonStreamingResponse(
 }
 
 /**
- * 流式响应摘要收集器
- * 收集流式响应的关键信息用于日志记录
+ * 流式响应摘要收集器（Phase 1 增强版）
+ * 完整收集流式响应的所有数据用于日志记录
  */
 class StreamResponseCollector {
   private eventCount = 0;
+  private bytesReceived = 0;
+
+  // Phase 1: 完整内容存储（移除截断限制）
+  private thinkingBlocks: string[] = [];
   private contentChunks: string[] = [];
-  private reasoningChunks: string[] = [];
-  private contentLength = 0;
-  private reasoningLength = 0;
-  private firstChunk: unknown = null;
-  private lastChunk: unknown = null;
+  private allChunks: unknown[] = [];  // 小规模：存储所有 chunks
+
+  // 时间戳
+  private firstChunkTime: number | null = null;
+  private lastChunkTime: number | null = null;
+
+  // 真实 usage（从流中提取）
+  private realUsage: { prompt_tokens?: number; completion_tokens?: number } | null = null;
+
+  // 保留原有字段
   private hasToolCalls = false;
   private finishReason: string | null = null;
-  private readonly maxContentLength = 500; // 只保留前 500 字符
 
   /**
    * 处理一个 SSE 事件
    */
   processEvent(data: string): void {
     this.eventCount++;
+    const now = Date.now();
+
+    if (!this.firstChunkTime) {
+      this.firstChunkTime = now;
+    }
+    this.lastChunkTime = now;
 
     try {
       const json = JSON.parse(data);
 
-      // 记录第一个事件
-      if (!this.firstChunk) {
-        this.firstChunk = json;
+      // Phase 1: 存储所有原始 chunks（小规模完整存储）
+      this.allChunks.push(json);
+
+      // Phase 1: 提取完整 thinking content（无截断）
+      const thinking = this.extractReasoning(json);
+      if (thinking) {
+        this.thinkingBlocks.push(thinking);
       }
 
-      // 更新最后一个事件
-      this.lastChunk = json;
+      // Phase 1: 提取完整 content（无截断）
+      const content = this.extractContent(json);
+      if (content) {
+        this.contentChunks.push(content);
+      }
 
-      // 提取内容（如果还没达到长度限制）
-      if (this.contentLength < this.maxContentLength) {
-        const content = this.extractContent(json);
-        if (content) {
-          const remaining = this.maxContentLength - this.contentLength;
-          const toAdd = content.slice(0, remaining);
-          this.contentChunks.push(toAdd);
-          this.contentLength += toAdd.length;
+      // Phase 1: 提取真实 usage
+      const usage = extractUsageFromChunk(data);
+      if (usage) {
+        if (!this.realUsage) {
+          this.realUsage = {};
+        }
+        if (usage.prompt_tokens !== undefined) {
+          this.realUsage.prompt_tokens = usage.prompt_tokens;
+        }
+        if (usage.completion_tokens !== undefined) {
+          this.realUsage.completion_tokens = usage.completion_tokens;
         }
       }
 
-      // 提取 reasoning 内容
-      if (this.reasoningLength < this.maxContentLength) {
-        const reasoning = this.extractReasoning(json);
-        if (reasoning) {
-          const remaining = this.maxContentLength - this.reasoningLength;
-          const toAdd = reasoning.slice(0, remaining);
-          this.reasoningChunks.push(toAdd);
-          this.reasoningLength += toAdd.length;
-        }
-      }
+      this.bytesReceived += data.length;
 
       // 检测工具调用
       if (
@@ -287,16 +313,23 @@ class StreamResponseCollector {
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private extractContent(json: any): string | null {
+    let content: string | null = null;
+
     // OpenAI 格式
     if (json.choices?.[0]?.delta?.content) {
-      return json.choices[0].delta.content;
+      content = json.choices[0].delta.content;
     }
     // Anthropic 格式
-    if (json.type === 'content_block_delta' && json.delta?.type === 'text_delta') {
-      return json.delta.text;
+    else if (json.type === 'content_block_delta' && json.delta?.type === 'text_delta') {
+      content = json.delta.text;
     }
 
-    return null;
+    // 双重保护：在收集器层也清理内容
+    if (content) {
+      content = this.sanitizeContent(content);
+    }
+
+    return content;
   }
 
   /**
@@ -304,31 +337,103 @@ class StreamResponseCollector {
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private extractReasoning(json: any): string | null {
+    let reasoning: string | null = null;
+
     // OpenAI 格式（阿里云百炼）
     if (json.choices?.[0]?.delta?.reasoning_content) {
-      return json.choices[0].delta.reasoning_content;
+      reasoning = json.choices[0].delta.reasoning_content;
     }
     // Anthropic 格式
-    if (json.type === 'content_block_delta' && json.delta?.type === 'thinking') {
-      return json.delta.thinking;
+    else if (json.type === 'content_block_delta' && json.delta?.type === 'thinking') {
+      reasoning = json.delta.thinking;
     }
-    return null;
+
+    // 双重保护：清理 reasoning 内容
+    if (reasoning) {
+      reasoning = this.sanitizeContent(reasoning);
+    }
+
+    return reasoning;
   }
 
   /**
-   * 生成响应摘要
+   * 清理内容中的控制标签（双重保护）
+   */
+  private sanitizeContent(text: string): string {
+    if (!text) return text;
+
+    // 移除控制标签
+    return text
+      .replace(/<is_displaying_contents>[\s\S]*?<\/is_displaying_contents>/gi, '')
+      .replace(/<filepaths>[\s\S]*?<\/filepaths>/gi, '')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  }
+
+  /**
+   * Phase 1 新增：获取当前进度
+   */
+  getProgress(): StreamProgress {
+    return {
+      chunksProcessed: this.eventCount,
+      bytesReceived: this.bytesReceived,
+      lastChunkAt: this.lastChunkTime || Date.now(),
+    };
+  }
+
+  /**
+   * Phase 1 新增：获取完整内容
+   */
+  getFullContent(): StreamContent {
+    return {
+      thinkingBlocks: this.thinkingBlocks,
+      contentChunks: this.contentChunks,
+      allChunks: this.allChunks,
+    };
+  }
+
+  /**
+   * Phase 1 新增：获取真实 usage 或基于完整内容的估算
+   */
+  getUsage(): { inputTokens: number; outputTokens: number; estimated: boolean } {
+    if (
+      this.realUsage?.prompt_tokens !== undefined &&
+      this.realUsage?.completion_tokens !== undefined
+    ) {
+      return {
+        inputTokens: this.realUsage.prompt_tokens,
+        outputTokens: this.realUsage.completion_tokens,
+        estimated: false,
+      };
+    }
+
+    // 回退：基于完整内容估算
+    const fullContent = this.contentChunks.join('');
+    const fullThinking = this.thinkingBlocks.join('');
+
+    const estimatedOutput = estimateTokens(fullContent);
+    const estimatedThinking = estimateTokens(fullThinking);
+
+    return {
+      inputTokens: this.realUsage?.prompt_tokens ?? 0,
+      outputTokens:
+        (this.realUsage?.completion_tokens ?? 0) + estimatedOutput + estimatedThinking,
+      estimated: true,
+    };
+  }
+
+  /**
+   * 生成响应摘要（Phase 1 修改：返回完整内容而非预览）
    */
   getSummary(protocol: string): unknown {
     return {
       type: 'stream_summary',
       protocol,
       eventCount: this.eventCount,
-      contentPreview: this.contentChunks.join(''),
-      contentLength: this.contentLength,
-      reasoningPreview: this.reasoningChunks.join(''),
-      reasoningLength: this.reasoningLength,
-      firstChunk: this.firstChunk,
-      lastChunk: this.lastChunk,
+      // Phase 1: 完整内容（非截断预览）
+      thinkingContent: this.thinkingBlocks.join(''),
+      contentText: this.contentChunks.join(''),
+      bytesReceived: this.bytesReceived,
       hasToolCalls: this.hasToolCalls,
       finishReason: this.finishReason,
     };
@@ -407,14 +512,33 @@ export async function handleStreamingResponse(
     targetProtocol,
   } = params;
 
-  // 用于收集 usage 信息
-  let promptTokens: number | undefined;
-  let completionTokens: number | undefined;
+  // Phase 2: 流开始时创建初始日志
+  const logId = await logStreamStart({
+    virtualKey,
+    modelName: originalModelName,
+    providerId: provider.id,
+    providerName: provider.name,
+    requestHeaders,
+    requestBody: rawBody,
+    standardRequestBody: params.standardRequestBody,
+    transformedRequestBody: params.transformedBody,
+    clientIp,
+    userAgent,
+    requestPath,
+    requestMethod,
+    incomingProtocol,
+    targetProtocol,
+    conversationId: params.conversationId,
+  });
 
   // 创建三个收集器，分别收集响应链路的三个阶段
   const providerCollector = new StreamResponseCollector();
   const standardCollector = new StreamResponseCollector();
   const clientCollector = new StreamResponseCollector();
+
+  // Phase 2: 定期更新配置
+  let lastUpdateTime = Date.now();
+  const UPDATE_INTERVAL = parseInt(process.env.LOG_UPDATE_INTERVAL_MS || '5000', 10); // 默认 5 秒
 
   // 提前提取响应头（流式响应在开始时即可获取）
   const responseHeaders = extractResponseHeaders(response);
@@ -500,7 +624,7 @@ export async function handleStreamingResponse(
     );
   }
 
-  // 创建 TransformStream 提取 usage 信息、收集客户端响应并记录日志
+  // Phase 2: 创建 TransformStream 提取 usage、收集响应并定期更新日志
   const usageExtractor = new TransformStream<Uint8Array, Uint8Array>({
     transform(chunk, controller) {
       // 解析 SSE chunk 提取 usage 和收集响应
@@ -512,76 +636,91 @@ export async function handleStreamingResponse(
           const data = line.slice(5).trim();
           if (data === '[DONE]') continue;
 
-          // 提取 usage 信息
-          const usage = extractUsageFromChunk(data);
-          if (usage) {
-            // 合并 usage 信息（可能来自不同的事件）
-            if (usage.prompt_tokens !== undefined) {
-              promptTokens = usage.prompt_tokens;
-            }
-            if (usage.completion_tokens !== undefined) {
-              completionTokens = usage.completion_tokens;
-            }
-
-            // 添加调试日志
-            logger.debug({
-              promptTokens,
-              completionTokens,
-              source: 'stream_chunk'
-            }, 'Usage extracted from stream');
-          }
-
-          // 收集客户端响应
+          // Phase 1: 完整收集（无截断）
           clientCollector.processEvent(data);
+
+          // Phase 2: 定期更新日志
+          const now = Date.now();
+          if (now - lastUpdateTime > UPDATE_INTERVAL) {
+            const progress = clientCollector.getProgress();
+            const partialContent = clientCollector.getFullContent();
+
+            // 异步更新，不阻塞流
+            updateStreamProgress(logId, progress, {
+              thinkingBlocks: partialContent.thinkingBlocks,
+              contentChunks: partialContent.contentChunks,
+              // 不在增量更新中发送所有 chunks（节省写入成本）
+            }).catch((err) => {
+              logger.warn({ error: err, logId }, 'Stream progress update failed');
+            });
+
+            lastUpdateTime = now;
+          }
         }
       }
 
       controller.enqueue(chunk);
     },
-    flush() {
-      // 流结束时记录日志 - 包含完整的响应链路
-      const latencyMs = Date.now() - startTime;
+    async flush() {
+      // Phase 2: 流结束，最终日志
+      try {
+        const usage = clientCollector.getUsage();
+        const fullContent = clientCollector.getFullContent();
+        const progress = clientCollector.getProgress();
 
-      // 添加 usage 验证日志
-      if (!promptTokens && !completionTokens) {
-        logger.warn({
-          modelName: originalModelName,
-          provider: provider.name
-        }, 'No usage information extracted from stream');
+        const metadata = extractMetadata({
+          requestBody: rawBody,
+          standardRequestBody: params.standardRequestBody,
+          standardResponseBody: standardCollector.getFullContent(),
+          responseBody: fullContent,
+          latencyMs: Date.now() - startTime,
+          conversationId: params.conversationId,
+        });
+
+        await finalizeStreamLog(logId, {
+          status: 'success',
+          statusCode: 200,
+          startTime,
+          inputTokens: usage.inputTokens,
+          outputTokens: usage.outputTokens,
+          usageEstimated: usage.estimated,
+          responseHeaders,
+          providerResponseBody: {
+            ...(providerCollector.getSummary(targetProtocol) as Record<string, unknown>),
+            streamContent: providerCollector.getFullContent(),
+            streamProgress: providerCollector.getProgress(),
+          },
+          standardResponseBody: standardCollector.getFullContent(),
+          responseBody: {
+            ...(clientCollector.getSummary(incomingProtocol) as Record<string, unknown>),
+            streamContent: fullContent,
+            streamProgress: progress,
+          },
+          streamContent: fullContent,
+          streamProgress: progress,
+          metadata,
+          toolCallsCount: metadata.toolCalls?.tools?.length,
+        });
+      } catch (error) {
+        logger.error({ error, logId }, 'Failed to finalize stream log');
+        await markStreamFailed(logId, {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          type: 'log_finalization_error',
+        });
       }
-
-      logRequest({
-        virtualKey,
-        modelName: originalModelName,
-        providerId: provider.id,
-        providerName: provider.name,
-        status: 'success',
-        statusCode: 200,
-        latencyMs,
-        inputTokens: promptTokens,
-        outputTokens: completionTokens,
-        requestHeaders,
-        requestBody: rawBody,
-        standardRequestBody: params.standardRequestBody,
-        transformedRequestBody: params.transformedBody,
-        responseHeaders,
-        providerResponseBody: providerCollector.getSummary(targetProtocol),
-        standardResponseBody: standardCollector.getSummary('standard'),
-        responseBody: clientCollector.getSummary(incomingProtocol),
-        clientIp,
-        userAgent,
-        requestPath,
-        requestMethod,
-        streaming: true,
-        incomingProtocol,
-        targetProtocol,
-        conversationId: params.conversationId,
-      });
     },
   });
 
   // 通过 usage 提取器返回最终流
   const finalStream = transformedStream?.pipeThrough(usageExtractor);
+
+  // Phase 2: 监听客户端断开
+  if (params.request?.signal) {
+    params.request.signal.addEventListener('abort', async () => {
+      logger.info({ logId }, 'Client disconnected, marking stream as aborted');
+      await markStreamAborted(logId);
+    });
+  }
 
   return new Response(finalStream, {
     headers: {

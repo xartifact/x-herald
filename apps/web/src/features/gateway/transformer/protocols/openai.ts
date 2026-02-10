@@ -230,21 +230,19 @@ export class OpenAITransformer implements Transformer {
       throw new Error(`Invalid JSON response from provider: ${text.slice(0, 100)}`);
     }
 
-    const isAlibaba = this.isAlibabaDashscope(ctx);
-
     return {
       id: data.id,
       object: data.object || 'chat.completion',
       created: data.created || Math.floor(Date.now() / 1000),
       model: data.model,
       choices: (data.choices as OpenAIChoice[])?.map((choice) => {
-        // 提取 reasoning_content（阿里云特有）
+        // 提取 reasoning_content（支持所有 OpenAI 兼容提供商）
         let reasoning_content: string | undefined;
-        if (isAlibaba && choice.message?.reasoning_content) {
+        if (choice.message?.reasoning_content) {
           reasoning_content = choice.message.reasoning_content;
           logger.debug(
             { requestId: ctx.requestId, reasoningLength: reasoning_content.length },
-            'Extracted reasoning_content from Alibaba DashScope response'
+            'Extracted reasoning_content from OpenAI-compatible response'
           );
         }
 
@@ -276,8 +274,6 @@ export class OpenAITransformer implements Transformer {
    * 将标准响应转换为 OpenAI 格式
    */
   async adaptResponse(response: StandardResponse, ctx: TransformerContext): Promise<Response> {
-    const isAlibaba = this.isAlibabaDashscope(ctx);
-
     const openaiResponse = {
       id: response.id,
       object: response.object,
@@ -293,9 +289,13 @@ export class OpenAITransformer implements Transformer {
             }
           : undefined;
 
-        // 添加 reasoning_content（如果是阿里云且存在）
-        if (isAlibaba && choice.message?.reasoning_content) {
+        // 添加 reasoning_content（如果存在）
+        if (choice.message?.reasoning_content) {
           message.reasoning_content = choice.message.reasoning_content;
+          logger.debug(
+            { requestId: ctx.requestId, reasoningLength: choice.message.reasoning_content.length },
+            'Including reasoning_content in OpenAI response'
+          );
         }
 
         return {
@@ -321,7 +321,6 @@ export class OpenAITransformer implements Transformer {
   async transformStream(stream: ReadableStream, ctx: TransformerContext): Promise<ReadableStream> {
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
-    const isAlibaba = this.isAlibabaDashscope(ctx);
 
     return new ReadableStream({
       start: async (controller) => {
@@ -365,8 +364,8 @@ export class OpenAITransformer implements Transformer {
                   });
                 }
 
-                // 记录阿里云 reasoning_content
-                if (isAlibaba && chunk.choices?.[0]?.delta?.reasoning_content) {
+                // 记录 reasoning_content（所有提供商）
+                if (chunk.choices?.[0]?.delta?.reasoning_content) {
                   logger.debug(
                     { requestId: ctx.requestId, hasReasoning: true },
                     'Stream chunk contains reasoning_content'

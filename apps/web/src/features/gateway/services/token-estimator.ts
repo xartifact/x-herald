@@ -52,9 +52,17 @@ export function estimateUsageFromContent(
     if (responseBody && typeof responseBody === 'object') {
       const res = responseBody as any;
 
-      // 处理流式响应摘要
-      if (res.type === 'stream_summary' && res.contentPreview) {
-        outputTokens = estimateTokens(res.contentPreview);
+      // Phase 1: 处理流式响应摘要（使用完整内容）
+      if (res.type === 'stream_summary') {
+        // 新格式：thinkingContent + contentText
+        if (res.thinkingContent || res.contentText) {
+          outputTokens += estimateTokens(res.thinkingContent || '');
+          outputTokens += estimateTokens(res.contentText || '');
+        }
+        // 后备：旧格式 contentPreview
+        else if (res.contentPreview) {
+          outputTokens = estimateTokens(res.contentPreview);
+        }
       }
       // 处理标准响应
       else if (res.choices && Array.isArray(res.choices)) {

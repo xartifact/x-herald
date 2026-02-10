@@ -33,6 +33,7 @@ interface OpenAIMessage {
     };
   }>;
   tool_call_id?: string;
+  reasoning_content?: string; // 阿里云百炼特有
 }
 
 interface OpenAIRequest {
@@ -65,6 +66,7 @@ interface OpenAIStreamChunk {
     delta: {
       role?: string;
       content?: string;
+      reasoning_content?: string; // 阿里云百炼特有
       tool_calls?: Array<{
         index: number;
         id?: string;
@@ -89,6 +91,7 @@ interface OpenAIChoice {
   message?: {
     role: string;
     content?: string;
+    reasoning_content?: string; // 阿里云百炼特有
     tool_calls?: Array<{
       id: string;
       type: 'function';
@@ -101,18 +104,6 @@ interface OpenAIChoice {
   finish_reason: string | null;
 }
 
-interface OpenAIResponse {
-  id: string;
-  object: string;
-  created: number;
-  model: string;
-  choices: OpenAIChoice[];
-  usage?: {
-    prompt_tokens: number;
-    completion_tokens: number;
-    total_tokens: number;
-  };
-}
 
 export class OpenAITransformer implements Transformer {
   readonly name = 'openai';
@@ -192,8 +183,19 @@ export class OpenAITransformer implements Transformer {
       openaiReq.response_format = request.response_format;
     }
 
+    // 阿里云百炼特殊参数
+    const isAlibaba = this.isAlibabaDashscope(ctx);
+    if (isAlibaba && request.reasoning?.enabled) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (openaiReq as any).enable_thinking = request.reasoning.enable_thinking ?? true;
+      logger.debug(
+        { requestId: ctx.requestId, enable_thinking: true },
+        'Added Alibaba DashScope enable_thinking parameter'
+      );
+    }
+
     logger.debug(
-      { requestId: ctx.requestId, model: request.model },
+      { requestId: ctx.requestId, model: request.model, isAlibaba },
       'Adapted to OpenAI format',
     );
 
@@ -209,24 +211,56 @@ export class OpenAITransformer implements Transformer {
    * 将 OpenAI 响应转换为标准格式
    */
   async normalizeResponse(response: Response, ctx: TransformerContext): Promise<StandardResponse> {
-    const data = await response.json();
+    // 添加空响应检查
+    if (!response.body) {
+      logger.error({ requestId: ctx.requestId }, 'Provider returned empty response body');
+      throw new Error('Provider returned empty response body');
+    }
+
+    // 添加 JSON 解析保护
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      const text = await response.text();
+      logger.error(
+        { requestId: ctx.requestId, statusCode: response.status, bodyPreview: text.slice(0, 500) },
+        'Failed to parse provider response as JSON'
+      );
+      throw new Error(`Invalid JSON response from provider: ${text.slice(0, 100)}`);
+    }
+
+    const isAlibaba = this.isAlibabaDashscope(ctx);
 
     return {
       id: data.id,
       object: data.object || 'chat.completion',
       created: data.created || Math.floor(Date.now() / 1000),
       model: data.model,
-      choices: (data.choices as OpenAIChoice[])?.map((choice) => ({
-        index: choice.index,
-        message: choice.message
-          ? {
-              role: choice.message.role as StandardMessage['role'],
-              content: choice.message.content || '',
-              tool_calls: choice.message.tool_calls,
-            }
-          : undefined,
-        finish_reason: this.mapFinishReason(choice.finish_reason),
-      })),
+      choices: (data.choices as OpenAIChoice[])?.map((choice) => {
+        // 提取 reasoning_content（阿里云特有）
+        let reasoning_content: string | undefined;
+        if (isAlibaba && choice.message?.reasoning_content) {
+          reasoning_content = choice.message.reasoning_content;
+          logger.debug(
+            { requestId: ctx.requestId, reasoningLength: reasoning_content.length },
+            'Extracted reasoning_content from Alibaba DashScope response'
+          );
+        }
+
+        return {
+          index: choice.index,
+          message: choice.message
+            ? {
+                role: choice.message.role as StandardMessage['role'],
+                content: choice.message.content || '',
+                tool_calls: choice.message.tool_calls,
+                reasoning_content,
+              }
+            : undefined,
+          finish_reason: this.mapFinishReason(choice.finish_reason),
+        };
+      }),
       usage: data.usage
         ? {
             prompt_tokens: data.usage.prompt_tokens || 0,
@@ -242,22 +276,34 @@ export class OpenAITransformer implements Transformer {
    * 将标准响应转换为 OpenAI 格式
    */
   async adaptResponse(response: StandardResponse, ctx: TransformerContext): Promise<Response> {
+    const isAlibaba = this.isAlibabaDashscope(ctx);
+
     const openaiResponse = {
       id: response.id,
       object: response.object,
       created: response.created,
       model: response.model,
-      choices: response.choices?.map((choice) => ({
-        index: choice.index,
-        message: choice.message
+      choices: response.choices?.map((choice) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const message: any = choice.message
           ? {
               role: choice.message.role,
               content: choice.message.content,
               tool_calls: choice.message.tool_calls,
             }
-          : undefined,
-        finish_reason: choice.finish_reason,
-      })),
+          : undefined;
+
+        // 添加 reasoning_content（如果是阿里云且存在）
+        if (isAlibaba && choice.message?.reasoning_content) {
+          message.reasoning_content = choice.message.reasoning_content;
+        }
+
+        return {
+          index: choice.index,
+          message,
+          finish_reason: choice.finish_reason,
+        };
+      }),
       usage: response.usage,
     };
 
@@ -275,6 +321,7 @@ export class OpenAITransformer implements Transformer {
   async transformStream(stream: ReadableStream, ctx: TransformerContext): Promise<ReadableStream> {
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
+    const isAlibaba = this.isAlibabaDashscope(ctx);
 
     return new ReadableStream({
       start: async (controller) => {
@@ -301,7 +348,7 @@ export class OpenAITransformer implements Transformer {
 
               try {
                 const chunk: OpenAIStreamChunk = JSON.parse(data);
-                
+
                 // 验证工具调用参数（如果存在）
                 if (chunk.choices?.[0]?.finish_reason === 'tool_calls') {
                   chunk.choices.forEach(choice => {
@@ -317,7 +364,15 @@ export class OpenAITransformer implements Transformer {
                     }
                   });
                 }
-                
+
+                // 记录阿里云 reasoning_content
+                if (isAlibaba && chunk.choices?.[0]?.delta?.reasoning_content) {
+                  logger.debug(
+                    { requestId: ctx.requestId, hasReasoning: true },
+                    'Stream chunk contains reasoning_content'
+                  );
+                }
+
                 const standardChunk = this.convertStreamChunk(chunk);
                 controller.enqueue(encoder.encode(`data: ${JSON.stringify(standardChunk)}\n\n`));
               } catch (error) {
@@ -448,6 +503,7 @@ export class OpenAITransformer implements Transformer {
         delta: {
           role: choice.delta.role as StandardMessage['role'] | undefined,
           content: choice.delta.content,
+          reasoning_content: choice.delta.reasoning_content,
           tool_calls: choice.delta.tool_calls?.map((tc) => ({
             index: tc.index,
             id: tc.id,
@@ -457,6 +513,7 @@ export class OpenAITransformer implements Transformer {
         },
         finish_reason: choice.finish_reason,
       })),
+      usage: chunk.usage,
     };
   }
 
@@ -466,6 +523,17 @@ export class OpenAITransformer implements Transformer {
       return reason as 'stop' | 'length' | 'tool_calls' | 'content_filter';
     }
     return null;
+  }
+
+  /**
+   * 检测是否为阿里云百炼 Provider
+   */
+  private isAlibabaDashscope(ctx: TransformerContext): boolean {
+    const provider = ctx.provider;
+    if (!provider) return false;
+
+    // 通过 baseUrl 判断
+    return provider.baseUrl?.includes('dashscope.aliyuncs.com') ?? false;
   }
 
 }

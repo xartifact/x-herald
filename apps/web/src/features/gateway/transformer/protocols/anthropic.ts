@@ -238,8 +238,9 @@ export class AnthropicTransformer implements Transformer {
   async normalizeResponse(response: Response, ctx: TransformerContext): Promise<StandardResponse> {
     const data: AnthropicResponse = await response.json();
 
-    // 提取文本内容和工具调用
+    // 提取文本内容、工具调用和思考内容
     let content = '';
+    let reasoning_content = '';
     const toolCalls: Array<{
       id: string;
       type: 'function';
@@ -249,13 +250,19 @@ export class AnthropicTransformer implements Transformer {
     for (const block of data.content) {
       if (block.type === 'text' && block.text) {
         content += block.text;
+      } else if (block.type === 'thinking' && block.thinking) {
+        reasoning_content += block.thinking;
+        logger.debug(
+          { requestId: ctx.requestId, thinkingLength: block.thinking.length },
+          'Extracted thinking content from Anthropic response'
+        );
       } else if (block.type === 'tool_use' && block.id) {
         // 使用安全的 JSON 序列化和验证
         const argsString = parseToolArguments(
           JSON.stringify(block.input || {}),
           logger
         );
-        
+
         toolCalls.push({
           id: block.id,
           type: 'function',
@@ -279,6 +286,7 @@ export class AnthropicTransformer implements Transformer {
             role: 'assistant',
             content,
             tool_calls: toolCalls.length > 0 ? toolCalls : undefined,
+            reasoning_content: reasoning_content || undefined,
           },
           finish_reason: this.mapFinishReason(data.stop_reason),
         },
@@ -305,6 +313,18 @@ export class AnthropicTransformer implements Transformer {
 
     // 构建 Anthropic 内容块
     const content: AnthropicContentBlock[] = [];
+
+    // 添加 thinking 块（如果有 reasoning_content）
+    if (choice.message?.reasoning_content) {
+      content.push({
+        type: 'thinking',
+        thinking: choice.message.reasoning_content,
+      });
+      logger.debug(
+        { requestId: ctx.requestId, reasoningLength: choice.message.reasoning_content.length },
+        'Converting reasoning_content to thinking block'
+      );
+    }
 
     if (choice.message?.content) {
       const text = typeof choice.message.content === 'string' ? choice.message.content : '';
@@ -366,7 +386,7 @@ export class AnthropicTransformer implements Transformer {
    */
   private async normalizeAnthropicStream(
     stream: ReadableStream,
-    ctx: TransformerContext,
+    _ctx: TransformerContext,
   ): Promise<ReadableStream> {
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
@@ -441,7 +461,7 @@ export class AnthropicTransformer implements Transformer {
    */
   private async adaptStreamToAnthropic(
     stream: ReadableStream,
-    ctx: TransformerContext,
+    _ctx: TransformerContext,
   ): Promise<ReadableStream> {
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
@@ -477,6 +497,7 @@ export class AnthropicTransformer implements Transformer {
               }
 
               try {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const chunk = JSON.parse(data) as StreamChunk;
                 const delta = chunk.choices[0]?.delta;
 
@@ -496,6 +517,17 @@ export class AnthropicTransformer implements Transformer {
                   controller.enqueue(encoder.encode(`event: message_start\n`));
                   controller.enqueue(encoder.encode(`data: ${JSON.stringify(messageStart)}\n\n`));
                   sentMessageStart = true;
+                }
+
+                // 思考内容（reasoning_content）
+                if (delta?.reasoning_content) {
+                  const thinkingDelta = {
+                    type: 'content_block_delta',
+                    index: 0,
+                    delta: { type: 'thinking', thinking: delta.reasoning_content },
+                  };
+                  controller.enqueue(encoder.encode(`event: content_block_delta\n`));
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify(thinkingDelta)}\n\n`));
                 }
 
                 // 文本内容
@@ -767,7 +799,7 @@ export class AnthropicTransformer implements Transformer {
       // 处理 role 转换：Anthropic 不支持 'system' 和 'tool' 角色
       // system 消息通过顶层 system 字段处理
       // tool 消息在 Anthropic 中是 user 角色的 tool_result
-      let role: 'user' | 'assistant' = msg.role === 'assistant' ? 'assistant' : 'user';
+      const role: 'user' | 'assistant' = msg.role === 'assistant' ? 'assistant' : 'user';
 
       return {
         role,
@@ -934,6 +966,22 @@ export class AnthropicTransformer implements Transformer {
               {
                 index: event.index || 0,
                 delta: { content: event.delta.text },
+                finish_reason: null,
+              },
+            ],
+          };
+        }
+        // 思考内容增量
+        if (event.delta?.type === 'thinking') {
+          return {
+            id: '',
+            object: 'chat.completion.chunk',
+            created: Math.floor(Date.now() / 1000),
+            model: '',
+            choices: [
+              {
+                index: event.index || 0,
+                delta: { reasoning_content: event.delta.thinking },
                 finish_reason: null,
               },
             ],

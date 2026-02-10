@@ -43,6 +43,8 @@ export interface StandardMessage {
   tool_calls?: ToolCall[];
   tool_call_id?: string;
   name?: string;
+  // 推理/思考内容（统一 Anthropic thinking 和阿里云 reasoning_content）
+  reasoning_content?: string;
 }
 
 // ==================== 工具定义 ====================
@@ -69,6 +71,8 @@ export interface ReasoningConfig {
   effort?: 'low' | 'medium' | 'high';
   max_tokens?: number;
   enabled?: boolean;
+  // 阿里云百炼的 enable_thinking 参数
+  enable_thinking?: boolean;
 }
 
 // ==================== 统一请求 ====================
@@ -152,6 +156,7 @@ export interface StreamChunk {
     delta: {
       role?: MessageRole;
       content?: string;
+      reasoning_content?: string;
       tool_calls?: Array<{
         index: number;
         id?: string;

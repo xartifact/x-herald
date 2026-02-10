@@ -1,9 +1,11 @@
-import { getTransformer } from '../transformer';
-import { logRequest, type LogRequestParams } from './log-service';
-import logger from '@/core/lib/logger';
-import type { TransformerContext } from '@/types';
-import type { VirtualKey } from '@/features/keys/db';
 import type { Context } from 'hono';
+
+import type { TransformerContext } from '@/types';
+import logger from '@/core/lib/logger';
+import type { VirtualKey } from '@/features/keys/db';
+
+import { getTransformer } from '../transformer';
+import { logRequest } from './log-service';
 
 interface ResponseHandlerParams {
   c: Context;
@@ -115,9 +117,44 @@ export async function handleNonStreamingResponse(
     });
   }
 
-  // 1. 获取 Provider 原始响应
+  // 检查响应体是否存在
+  if (!response.body) {
+    logger.error(
+      { requestId: ctx.requestId, provider: provider.name },
+      'Provider returned response without body'
+    );
+    throw new Error('Provider returned empty response body');
+  }
+
+  // 1. 获取 Provider 原始响应（添加错误处理）
   const providerResponseClone = response.clone();
-  const providerResponseData = await providerResponseClone.json();
+  let providerResponseData;
+  try {
+    providerResponseData = await providerResponseClone.json();
+  } catch {
+    const text = await response.text();
+    logger.error(
+      {
+        requestId: ctx.requestId,
+        provider: provider.name,
+        statusCode: response.status,
+        bodyPreview: text.slice(0, 500)
+      },
+      'Failed to parse provider response as JSON'
+    );
+    throw new Error(`Invalid JSON response from provider: ${text.slice(0, 100)}`);
+  }
+
+  // 检查阿里云特定错误格式
+  if (providerResponseData.error) {
+    logger.error(
+      { requestId: ctx.requestId, provider: provider.name, error: providerResponseData.error },
+      'Provider returned error response'
+    );
+    throw new Error(
+      `Provider error: ${providerResponseData.error.message || JSON.stringify(providerResponseData.error)}`
+    );
+  }
 
   // 2. 标准化响应
   const ingressTransformer = getTransformer(targetProtocol);
@@ -178,7 +215,9 @@ export async function handleNonStreamingResponse(
 class StreamResponseCollector {
   private eventCount = 0;
   private contentChunks: string[] = [];
+  private reasoningChunks: string[] = [];
   private contentLength = 0;
+  private reasoningLength = 0;
   private firstChunk: unknown = null;
   private lastChunk: unknown = null;
   private hasToolCalls = false;
@@ -213,6 +252,17 @@ class StreamResponseCollector {
         }
       }
 
+      // 提取 reasoning 内容
+      if (this.reasoningLength < this.maxContentLength) {
+        const reasoning = this.extractReasoning(json);
+        if (reasoning) {
+          const remaining = this.maxContentLength - this.reasoningLength;
+          const toAdd = reasoning.slice(0, remaining);
+          this.reasoningChunks.push(toAdd);
+          this.reasoningLength += toAdd.length;
+        }
+      }
+
       // 检测工具调用
       if (
         json.choices?.[0]?.delta?.tool_calls ||
@@ -235,6 +285,7 @@ class StreamResponseCollector {
   /**
    * 从事件中提取文本内容
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private extractContent(json: any): string | null {
     // OpenAI 格式
     if (json.choices?.[0]?.delta?.content) {
@@ -249,6 +300,22 @@ class StreamResponseCollector {
   }
 
   /**
+   * 从事件中提取推理内容
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private extractReasoning(json: any): string | null {
+    // OpenAI 格式（阿里云百炼）
+    if (json.choices?.[0]?.delta?.reasoning_content) {
+      return json.choices[0].delta.reasoning_content;
+    }
+    // Anthropic 格式
+    if (json.type === 'content_block_delta' && json.delta?.type === 'thinking') {
+      return json.delta.thinking;
+    }
+    return null;
+  }
+
+  /**
    * 生成响应摘要
    */
   getSummary(protocol: string): unknown {
@@ -258,6 +325,8 @@ class StreamResponseCollector {
       eventCount: this.eventCount,
       contentPreview: this.contentChunks.join(''),
       contentLength: this.contentLength,
+      reasoningPreview: this.reasoningChunks.join(''),
+      reasoningLength: this.reasoningLength,
       firstChunk: this.firstChunk,
       lastChunk: this.lastChunk,
       hasToolCalls: this.hasToolCalls,

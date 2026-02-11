@@ -1,1 +1,0 @@
-ALTER TABLE "request_logs" ADD COLUMN "standard_request_body" jsonb;

@@ -286,13 +286,32 @@ function ResponsePanel({ log, className }: ResponsePanelProps) {
           </TabsContent>
 
           <TabsContent value="headers" className="p-4 m-0">
-            {log.responseHeaders ? (
-              <HeadersViewer headers={log.responseHeaders} />
-            ) : (
-              <div className="flex items-center justify-center h-[200px] text-sm text-muted-foreground">
-                无响应头数据
-              </div>
-            )}
+            <Tabs defaultValue="client-headers" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsTrigger value="client-headers">客户端响应头</TabsTrigger>
+                <TabsTrigger value="provider-headers">Provider 响应头</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="client-headers">
+                {log.clientResponseHeaders ? (
+                  <HeadersViewer headers={log.clientResponseHeaders} />
+                ) : (
+                  <div className="flex items-center justify-center h-[150px] text-sm text-muted-foreground">
+                    无客户端响应头数据
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="provider-headers">
+                {log.providerResponseHeaders ? (
+                  <HeadersViewer headers={log.providerResponseHeaders} />
+                ) : (
+                  <div className="flex items-center justify-center h-[150px] text-sm text-muted-foreground">
+                    无 Provider 响应头数据
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
           </TabsContent>
         </Tabs>
       </ScrollArea>

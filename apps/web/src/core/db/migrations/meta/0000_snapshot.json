@@ -1,5 +1,5 @@
 {
-  "id": "aeb04872-689e-4c33-b7bf-f5f66fde6ab7",
+  "id": "43ec0c97-9414-4c6f-94a8-66fb49542d59",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -79,6 +79,13 @@
           "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true
+        },
+        "aliases": {
+          "name": "aliases",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'[]'::jsonb"
         },
         "display_name": {
           "name": "display_name",
@@ -403,8 +410,38 @@
           "primaryKey": false,
           "notNull": false
         },
-        "response_headers": {
-          "name": "response_headers",
+        "standard_request_body": {
+          "name": "standard_request_body",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "transformed_request_body": {
+          "name": "transformed_request_body",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "provider_response_headers": {
+          "name": "provider_response_headers",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "client_response_headers": {
+          "name": "client_response_headers",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "provider_response_body": {
+          "name": "provider_response_body",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "standard_response_body": {
+          "name": "standard_response_body",
           "type": "jsonb",
           "primaryKey": false,
           "notNull": false
@@ -457,6 +494,82 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'false'"
+        },
+        "incoming_protocol": {
+          "name": "incoming_protocol",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "target_protocol": {
+          "name": "target_protocol",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tool_calls_count": {
+          "name": "tool_calls_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "conversation_id": {
+          "name": "conversation_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "stream_status": {
+          "name": "stream_status",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'pending'"
+        },
+        "stream_progress": {
+          "name": "stream_progress",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "stream_content": {
+          "name": "stream_content",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "stream_started_at": {
+          "name": "stream_started_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "stream_completed_at": {
+          "name": "stream_completed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_updated_at": {
+          "name": "last_updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "is_complete": {
+          "name": "is_complete",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         },
         "created_at": {
           "name": "created_at",
@@ -547,6 +660,123 @@
           "columns": [
             {
               "expression": "streaming",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_request_logs_tool_calls_count": {
+          "name": "idx_request_logs_tool_calls_count",
+          "columns": [
+            {
+              "expression": "tool_calls_count",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_request_logs_conversation_id": {
+          "name": "idx_request_logs_conversation_id",
+          "columns": [
+            {
+              "expression": "conversation_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_request_logs_status_created_at": {
+          "name": "idx_request_logs_status_created_at",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_request_logs_stream_status": {
+          "name": "idx_request_logs_stream_status",
+          "columns": [
+            {
+              "expression": "stream_status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_request_logs_is_complete": {
+          "name": "idx_request_logs_is_complete",
+          "columns": [
+            {
+              "expression": "is_complete",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_stream_status_complete": {
+          "name": "idx_stream_status_complete",
+          "columns": [
+            {
+              "expression": "stream_status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "is_complete",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_request_logs_last_updated_at": {
+          "name": "idx_request_logs_last_updated_at",
+          "columns": [
+            {
+              "expression": "last_updated_at",
               "isExpression": false,
               "asc": true,
               "nulls": "last"

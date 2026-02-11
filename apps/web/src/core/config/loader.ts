@@ -44,6 +44,11 @@ export function loadConfig(): GatewayConfig {
       timeout: parseInt(process.env.CB_TIMEOUT || '60000'), // 60 seconds
       resetTimeout: parseInt(process.env.CB_RESET_TIMEOUT || '30000'), // 30 seconds
     },
+
+    sameProtocolPassthrough: {
+      enabled: process.env.GATEWAY_SAME_PROTOCOL_PASSTHROUGH === 'true',
+      allowedProtocols: ['openai', 'anthropic'],
+    },
   };
 }
 

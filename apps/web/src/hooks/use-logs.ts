@@ -49,7 +49,9 @@ export interface Log {
   requestBody: Record<string, unknown> | null
   standardRequestBody: Record<string, unknown> | null
   transformedRequestBody: Record<string, unknown> | null
-  responseHeaders: Record<string, string> | null
+  // 响应头链路追踪
+  providerResponseHeaders: Record<string, string> | null
+  clientResponseHeaders: Record<string, string> | null
   // 响应链路追踪
   providerResponseBody: Record<string, unknown> | null
   standardResponseBody: Record<string, unknown> | null

@@ -106,7 +106,9 @@ export const requestLogs = pgTable('request_logs', {
   requestBody: jsonb('request_body'),                         // 客户端原始请求
   standardRequestBody: jsonb('standard_request_body'),        // 标准格式请求
   transformedRequestBody: jsonb('transformed_request_body'),  // Provider 请求
-  responseHeaders: jsonb('response_headers'),
+  // 响应头链路追踪
+  providerResponseHeaders: jsonb('provider_response_headers'), // Provider 响应头
+  clientResponseHeaders: jsonb('client_response_headers'),     // 客户端响应头
   // 响应链路追踪
   providerResponseBody: jsonb('provider_response_body'),      // Provider 原始响应
   standardResponseBody: jsonb('standard_response_body'),      // 标准格式（可选）

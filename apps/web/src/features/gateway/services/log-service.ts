@@ -22,7 +22,9 @@ export interface LogRequestParams {
   requestBody?: unknown;
   standardRequestBody?: unknown;
   transformedRequestBody?: unknown;
-  responseHeaders?: Record<string, string>;
+  // 响应头链路追踪
+  providerResponseHeaders?: Record<string, string>;
+  clientResponseHeaders?: Record<string, string>;
   // 响应链路追踪
   providerResponseBody?: unknown;
   standardResponseBody?: unknown;
@@ -116,7 +118,8 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
       requestBody: params.requestBody,
       standardRequestBody: params.standardRequestBody as any,
       transformedRequestBody: params.transformedRequestBody,
-      responseHeaders: params.responseHeaders,
+      providerResponseHeaders: params.providerResponseHeaders,
+      clientResponseHeaders: params.clientResponseHeaders,
       providerResponseBody: params.providerResponseBody as any,
       standardResponseBody: params.standardResponseBody as any,
       responseBody: params.responseBody as any,
@@ -287,7 +290,8 @@ export async function finalizeStreamLog(
     inputTokens: number;
     outputTokens: number;
     usageEstimated: boolean;
-    responseHeaders: Record<string, string>;
+    providerResponseHeaders: Record<string, string>;
+    clientResponseHeaders: Record<string, string>;
     providerResponseBody: unknown;
     standardResponseBody: unknown;
     responseBody: unknown;
@@ -315,7 +319,8 @@ export async function finalizeStreamLog(
         inputTokens: params.inputTokens,
         outputTokens: params.outputTokens,
         totalTokens: params.inputTokens + params.outputTokens,
-        responseHeaders: params.responseHeaders as any,
+        providerResponseHeaders: params.providerResponseHeaders as any,
+        clientResponseHeaders: params.clientResponseHeaders as any,
         providerResponseBody: params.providerResponseBody as any,
         standardResponseBody: params.standardResponseBody as any,
         responseBody: params.responseBody as any,

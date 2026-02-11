@@ -38,6 +38,11 @@ export interface CircuitBreakerConfig {
   resetTimeout: number;
 }
 
+export interface SameProtocolPassthroughConfig {
+  enabled: boolean;
+  allowedProtocols: ('openai' | 'anthropic')[];
+}
+
 export interface GatewayConfig {
   server: ServerConfig;
   database: DatabaseConfig;
@@ -45,4 +50,5 @@ export interface GatewayConfig {
   metrics: MetricsConfig;
   health: HealthConfig;
   circuitBreaker: CircuitBreakerConfig;
+  sameProtocolPassthrough: SameProtocolPassthroughConfig;
 }

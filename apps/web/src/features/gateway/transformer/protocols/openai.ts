@@ -121,6 +121,14 @@ export class OpenAITransformer implements Transformer {
       'Normalizing OpenAI request',
     );
 
+    // OpenAI 的 response_format 映射到标准的 output_config
+    const outputConfig = openaiReq.response_format
+      ? {
+          type: openaiReq.response_format.type,
+          schema: openaiReq.response_format.schema,
+        }
+      : undefined;
+
     return {
       model: openaiReq.model,
       messages: this.convertMessages(openaiReq.messages),
@@ -135,6 +143,7 @@ export class OpenAITransformer implements Transformer {
       stop: openaiReq.stop,
       seed: openaiReq.seed,
       response_format: openaiReq.response_format,
+      output_config: outputConfig,
       metadata: {
         originalProvider: 'openai',
         ...ctx.metadata,
@@ -199,6 +208,14 @@ export class OpenAITransformer implements Transformer {
 
     if (transformedRequest.response_format) {
       openaiReq.response_format = transformedRequest.response_format;
+    }
+
+    // output_config 映射到 response_format
+    if (transformedRequest.output_config) {
+      openaiReq.response_format = {
+        type: transformedRequest.output_config.type,
+        schema: transformedRequest.output_config.schema,
+      };
     }
 
     // 应用参数映射（如果存在）
@@ -462,6 +479,8 @@ export class OpenAITransformer implements Transformer {
       tool_calls: msg.tool_calls ? this.normalizeToolCalls(msg.tool_calls) : undefined,
       tool_call_id: msg.tool_call_id,
       name: msg.name,
+      // 保留原始消息的所有元数据
+      metadata: msg.reasoning_content ? { reasoning_content: msg.reasoning_content } : undefined,
     }));
   }
 
@@ -549,6 +568,11 @@ export class OpenAITransformer implements Transformer {
 
       if (msg.name) {
         openaiMsg.name = msg.name;
+      }
+
+      // 还原 metadata 中的字段
+      if (msg.metadata?.reasoning_content) {
+        openaiMsg.reasoning_content = msg.metadata.reasoning_content as string;
       }
 
       return openaiMsg;

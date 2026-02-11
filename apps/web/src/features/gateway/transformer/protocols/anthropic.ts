@@ -50,7 +50,14 @@ interface AnthropicRequest {
   top_p?: number;
   top_k?: number;
   stream?: boolean;
-  system?: string;
+  // system 支持字符串或数组格式
+  system?:
+    | string
+    | Array<{
+        type: 'text';
+        text: string;
+        cache_control?: { type: 'ephemeral' };
+      }>;
   tools?: AnthropicTool[];
   tool_choice?: { type: 'auto' } | { type: 'any' } | { type: 'tool'; name: string };
   stop_sequences?: string[];
@@ -60,6 +67,11 @@ interface AnthropicRequest {
   thinking?: {
     type: 'enabled';
     budget_tokens: number;
+  };
+  // 输出配置 (Anthropic 的 structured output)
+  output_config?: {
+    type: 'text' | 'json_object' | 'json_schema';
+    schema?: unknown;
   };
 }
 
@@ -155,20 +167,22 @@ export class AnthropicTransformer implements Transformer {
     );
 
     // 转换消息
-    let standardMessages: StandardMessage[] = [];
-
-    // 处理 system 消息
-    if (anthropicReq.system) {
-      standardMessages.push({
-        role: 'system',
-        content: anthropicReq.system,
-      });
-    }
-
-    // 转换普通消息
-    standardMessages = standardMessages.concat(
-      anthropicReq.messages.map((msg) => this.convertMessage(msg)),
+    const standardMessages: StandardMessage[] = anthropicReq.messages.map((msg) =>
+      this.convertMessage(msg),
     );
+
+    // 处理 system 字段（支持字符串或数组格式）
+    let systemContent: string | { type: 'text'; text: string }[] | undefined;
+    if (anthropicReq.system) {
+      if (typeof anthropicReq.system === 'string') {
+        systemContent = anthropicReq.system;
+      } else if (Array.isArray(anthropicReq.system)) {
+        // 将 Anthropic 的 system 数组转换为标准格式
+        systemContent = anthropicReq.system
+          .filter((s) => s.type === 'text')
+          .map((s) => ({ type: 'text' as const, text: s.text }));
+      }
+    }
 
     return {
       model: anthropicReq.model,
@@ -181,6 +195,10 @@ export class AnthropicTransformer implements Transformer {
       tools: anthropicReq.tools?.map((t) => this.convertTool(t)),
       tool_choice: this.convertToolChoice(anthropicReq.tool_choice),
       stop: anthropicReq.stop_sequences,
+      // system 字段（支持字符串或数组格式）
+      system: systemContent,
+      // output_config 字段
+      output_config: anthropicReq.output_config,
       reasoning: anthropicReq.thinking
         ? {
             enabled: true,
@@ -202,13 +220,10 @@ export class AnthropicTransformer implements Transformer {
     request: StandardRequest,
     ctx: TransformerContext,
   ): Promise<{ body: unknown; url?: string; headers?: Record<string, string> }> {
-    // 分离 system 消息和普通消息
-    const systemMessages = request.messages.filter((m) => m.role === 'system');
-    const otherMessages = request.messages.filter((m) => m.role !== 'system');
-
+    // 所有消息都传递给 Anthropic（包括 system，由 Anthropic 内部处理 system 转换）
     const anthropicReq: AnthropicRequest = {
       model: request.model,
-      messages: this.convertToAnthropicMessages(otherMessages),
+      messages: this.convertToAnthropicMessages(request.messages),
       max_tokens: request.max_tokens ?? 4096,
       temperature: request.temperature,
       top_p: request.top_p,
@@ -216,9 +231,17 @@ export class AnthropicTransformer implements Transformer {
       stream: request.stream,
     };
 
-    // 添加 system prompt
-    if (systemMessages.length > 0) {
-      anthropicReq.system = systemMessages.map((m) => (typeof m.content === 'string' ? m.content : '')).join('\n');
+    // 添加 system prompt（支持字符串或数组格式）
+    if (request.system) {
+      if (typeof request.system === 'string') {
+        anthropicReq.system = request.system;
+      } else if (Array.isArray(request.system)) {
+        // 转换为 Anthropic 支持的 system 数组格式
+        anthropicReq.system = request.system.map((s) => ({
+          type: 'text' as const,
+          text: s.text,
+        }));
+      }
     }
 
     // 添加工具
@@ -240,6 +263,11 @@ export class AnthropicTransformer implements Transformer {
         type: 'enabled',
         budget_tokens: request.reasoning.max_tokens ?? 1024,
       };
+    }
+
+    // 添加 output_config
+    if (request.output_config) {
+      anthropicReq.output_config = request.output_config;
     }
 
     // 添加元数据

@@ -77,6 +77,20 @@ export interface ReasoningConfig {
   enable_thinking?: boolean;
 }
 
+// ==================== 系统提示类型 ====================
+
+export interface SystemPrompt {
+  type: 'text';
+  text: string;
+}
+
+// ==================== 输出配置 ====================
+
+export interface OutputConfig {
+  type: 'text' | 'json_object' | 'json_schema';
+  schema?: unknown;
+}
+
 // ==================== 统一请求 ====================
 
 export interface StandardRequest {
@@ -99,6 +113,12 @@ export interface StandardRequest {
 
   // 推理模式
   reasoning?: ReasoningConfig;
+
+  // 系统提示（支持字符串或数组格式）
+  system?: string | SystemPrompt[];
+
+  // 输出配置
+  output_config?: OutputConfig;
 
   // 其他参数
   stop?: string | string[];

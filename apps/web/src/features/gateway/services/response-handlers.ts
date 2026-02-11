@@ -585,10 +585,30 @@ export async function handleStreamingResponse(
         'No stream adapter available, skipping egress transformation'
       );
     }
-  } else {
+  } else if (transformedStream) {
+    // 同协议场景：仍然收集 Provider 原始响应用于日志
     logger.debug(
       { protocol: incomingProtocol },
-      'Same protocol, skipping stream transformation'
+      'Same protocol, collecting provider response for logging'
+    );
+
+    // 收集 Provider 原始响应
+    transformedStream = transformedStream.pipeThrough(
+      new TransformStream({
+        transform(chunk, controller) {
+          const text = new TextDecoder().decode(chunk);
+          const lines = text.split('\n');
+          for (const line of lines) {
+            if (line.startsWith('data:')) {
+              const data = line.slice(5).trim();
+              if (data !== '[DONE]') {
+                providerCollector.processEvent(data);
+              }
+            }
+          }
+          controller.enqueue(chunk);
+        },
+      })
     );
   }
 
@@ -639,7 +659,10 @@ export async function handleStreamingResponse(
         const metadata = extractMetadata({
           requestBody: rawBody,
           standardRequestBody: params.standardRequestBody,
-          standardResponseBody: standardCollector.getFullContent(),
+          // 同协议时，standardResponseBody 与 providerResponseBody 相同
+          standardResponseBody: needsTransformation
+            ? standardCollector.getFullContent()
+            : providerCollector.getFullContent(),
           responseBody: fullContent,
           latencyMs: Date.now() - startTime,
           conversationId: params.conversationId,
@@ -658,7 +681,10 @@ export async function handleStreamingResponse(
             streamContent: providerCollector.getFullContent(),
             streamProgress: providerCollector.getProgress(),
           },
-          standardResponseBody: standardCollector.getFullContent(),
+          // 同协议时，standardResponseBody 与 providerResponseBody 相同
+          standardResponseBody: needsTransformation
+            ? standardCollector.getFullContent()
+            : providerCollector.getFullContent(),
           responseBody: {
             ...(clientCollector.getSummary(incomingProtocol) as Record<string, unknown>),
             streamContent: fullContent,

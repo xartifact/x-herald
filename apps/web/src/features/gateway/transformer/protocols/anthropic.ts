@@ -27,6 +27,7 @@ interface AnthropicMessage {
     | Array<
         | { type: 'text'; text: string }
         | { type: 'image'; source: { type: 'base64'; media_type: string; data: string } | { type: 'url'; url: string } }
+        | { type: 'thinking'; thinking: string }
         | { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> }
         | { type: 'tool_result'; tool_use_id: string; content: string }
       >;
@@ -755,12 +756,22 @@ export class AnthropicTransformer implements Transformer {
   private convertMessage(msg: AnthropicMessage): StandardMessage {
     const content = this.convertAnthropicContent(msg.content);
 
-    // 提取 tool_calls 和 tool_call_id
+    // 提取 tool_calls、tool_call_id 和 thinking 内容
     let toolCalls: ToolCall[] | undefined;
     let toolCallId: string | undefined;
+    let reasoning_content = '';
 
     if (Array.isArray(msg.content)) {
       for (const item of msg.content) {
+        // 提取 thinking 块
+        if (item.type === 'thinking' && 'thinking' in item) {
+          reasoning_content = item.thinking || '';
+          logger.debug(
+            { thinkingLength: reasoning_content.length },
+            'Extracted thinking content from Anthropic message'
+          );
+        }
+
         if (item.type === 'tool_use') {
           if (!toolCalls) toolCalls = [];
 
@@ -797,6 +808,7 @@ export class AnthropicTransformer implements Transformer {
       content,
       tool_calls: toolCalls,
       tool_call_id: toolCallId,
+      reasoning_content: reasoning_content || undefined,
       // 在 metadata 中保留 Anthropic 原始信息
       metadata: {
         anthropicOriginalRole,
@@ -868,6 +880,18 @@ export class AnthropicTransformer implements Transformer {
   private convertToAnthropicMessages(messages: StandardMessage[]): AnthropicMessage[] {
     return messages.map((msg) => {
       const content: AnthropicMessage['content'] = this.convertToAnthropicContent(msg);
+
+      // 处理 reasoning_content（必须在 tool_calls 之前）
+      if (msg.reasoning_content && Array.isArray(content)) {
+        content.unshift({
+          type: 'thinking',
+          thinking: msg.reasoning_content,
+        });
+        logger.debug(
+          { thinkingLength: msg.reasoning_content.length },
+          'Added thinking block to Anthropic message'
+        );
+      }
 
       // 处理 tool_calls
       if (msg.tool_calls) {

@@ -5,6 +5,7 @@ import { logRequest } from './log-service';
 import { handleNonStreamingResponse, handleStreamingResponse } from './response-handlers';
 import { handleGatewayError, handleProviderError } from './error-handler';
 import logger from '@/core/lib/logger';
+import { loadConfig } from '@/core/config';
 import type { VirtualKey } from '@/features/keys/db';
 import type { Context } from 'hono';
 
@@ -57,9 +58,10 @@ export async function handleChatCompletion(
   const requestPath = c.req.path;
   const requestMethod = c.req.method;
 
-  const requestHeaders: Record<string, string> = {};
+  // 提取客户端原始请求头（用于日志记录）
+  const clientRequestHeaders: Record<string, string> = {};
   c.req.raw.headers.forEach((value, key) => {
-    requestHeaders[key] = value;
+    clientRequestHeaders[key] = value;
   });
 
   // 提取或生成 conversationId
@@ -134,12 +136,29 @@ export async function handleChatCompletion(
     targetProtocol = getProviderProtocol(incomingProtocol, provider);
     const providerUrl = getProviderUrl(provider, targetProtocol);
 
+    // 检查是否启用同协议透传
+    const config = loadConfig();
+    const isSameProtocol = incomingProtocol === targetProtocol;
+
+    // Anthropic 协议在 thinking 模式下不透传
+    const isAnthropicWithThinking =
+      incomingProtocol === 'anthropic' &&
+      (rawBody as any).thinking?.type === 'enabled';
+
+    const isPassthroughEnabled =
+      isSameProtocol &&
+      !isAnthropicWithThinking &&
+      config.sameProtocolPassthrough.enabled &&
+      config.sameProtocolPassthrough.allowedProtocols.includes(incomingProtocol);
+
     logger.debug(
       {
         requestId,
         clientProtocol: incomingProtocol,
         selectedProtocol: targetProtocol,
-        isNativeMatch: incomingProtocol === targetProtocol,
+        isNativeMatch: isSameProtocol,
+        isAnthropicWithThinking,
+        isPassthroughEnabled,
       },
       'Protocol selected'
     );
@@ -160,11 +179,7 @@ export async function handleChatCompletion(
     standardReq.model = instance.actualModelName;
 
     // 6. 请求适配 (标准格式 -> Provider 协议)
-    const egressTransformer = getTransformer(targetProtocol);
-    if (!egressTransformer?.adaptRequest) {
-      throw new Error(`No adapter found for protocol: ${targetProtocol}`);
-    }
-
+    // 准备 ctx（透传和转换模式都需要）
     ctx.provider = {
       name: provider.name,
       baseUrl: providerUrl,
@@ -174,16 +189,48 @@ export async function handleChatCompletion(
     };
     ctx.instanceConfig = instance.config ?? undefined;
 
-    const adapted = await egressTransformer.adaptRequest(standardReq, ctx);
-    transformedBody = adapted.body;
+    let targetUrl: string;
+    let requestBody: string;
+    let providerRequestHeaders: Record<string, string>;
 
-    // 7. 发送请求到 Provider
-    const targetUrl = adapted.url || joinUrl(providerUrl, getEndpoint(targetProtocol, isStreaming));
+    if (isPassthroughEnabled) {
+      // 同协议透传：跳过转换，使用原始请求体（仅更新模型名）
+      logger.debug(
+        { requestId, protocol: incomingProtocol },
+        'Same protocol passthrough enabled, skipping transformation'
+      );
 
-    const requestBody = JSON.stringify(adapted.body);
+      transformedBody = {
+        ...rawBody,
+        model: instance.actualModelName,
+      };
+
+      targetUrl = joinUrl(providerUrl, getEndpoint(targetProtocol, isStreaming));
+      requestBody = JSON.stringify(transformedBody);
+      providerRequestHeaders = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${provider.apiKey}`,
+      };
+    } else {
+      // 需要协议转换：执行 adapt
+      const egressTransformer = getTransformer(targetProtocol);
+      if (!egressTransformer?.adaptRequest) {
+        throw new Error(`No adapter found for protocol: ${targetProtocol}`);
+      }
+
+      const adapted = await egressTransformer.adaptRequest(standardReq, ctx);
+      transformedBody = adapted.body;
+
+      targetUrl = adapted.url || joinUrl(providerUrl, getEndpoint(targetProtocol, isStreaming));
+      requestBody = JSON.stringify(adapted.body);
+      providerRequestHeaders = {
+        ...adapted.headers,
+        Authorization: `Bearer ${provider.apiKey}`,
+      };
+    }
 
     logger.debug(
-      { requestId, targetUrl, targetProtocol, model: standardReq.model },
+      { requestId, targetUrl, targetProtocol, model: standardReq.model, isPassthrough: isPassthroughEnabled },
       'Forwarding to provider',
     );
 
@@ -201,10 +248,7 @@ export async function handleChatCompletion(
 
     const response = await fetch(targetUrl, {
       method: 'POST',
-      headers: {
-        ...adapted.headers,
-        Authorization: `Bearer ${provider.apiKey}`,
-      },
+      headers: providerRequestHeaders,
       body: requestBody,
     });
 
@@ -215,7 +259,7 @@ export async function handleChatCompletion(
         provider,
         virtualKey,
         rawBody.model || 'unknown',
-        requestHeaders,
+        clientRequestHeaders,
         rawBody,
         clientIp,
         userAgent,
@@ -243,7 +287,7 @@ export async function handleChatCompletion(
       provider,
       originalModelName: modelName,
       startTime,
-      requestHeaders,
+      requestHeaders: clientRequestHeaders,
       rawBody,
       standardRequestBody,
       transformedBody,
@@ -252,6 +296,7 @@ export async function handleChatCompletion(
       requestPath,
       requestMethod,
       conversationId,
+      isPassthroughEnabled,
     };
 
     if (actualStreaming) {
@@ -266,7 +311,7 @@ export async function handleChatCompletion(
       error,
       c,
       virtualKey,
-      requestHeaders,
+      requestHeaders: clientRequestHeaders,
       clientIp,
       userAgent,
       requestPath,

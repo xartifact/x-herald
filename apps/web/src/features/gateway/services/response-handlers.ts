@@ -37,17 +37,168 @@ interface ResponseHandlerParams {
   requestPath: string;
   requestMethod: string;
   conversationId?: string;
+  isPassthroughEnabled?: boolean;
 }
 
 /**
- * 提取响应头信息（保留所有信息）
+ * 提取 Provider 响应头信息（保留所有信息）
  */
-function extractResponseHeaders(response: Response): Record<string, string> {
+function extractProviderResponseHeaders(response: Response): Record<string, string> {
   const headers: Record<string, string> = {};
   response.headers.forEach((value, key) => {
-    headers[key] = value;
+    headers[key.toLowerCase()] = value;
   });
   return headers;
+}
+
+/**
+ * 必须过滤的敏感 headers（安全原因）
+ * 这些 headers 可能包含敏感信息或不应该暴露给客户端
+ */
+const SENSITIVE_HEADERS = new Set([
+  // 认证相关 - 绝对不能透传
+  'authorization',
+  'www-authenticate',
+  'proxy-authorization',
+  'proxy-authenticate',
+  // Cookie 相关 - 防止 session 泄露
+  'set-cookie',
+  'cookie',
+  // 内部网络信息
+  'host',
+]);
+
+/**
+ * Header 值最大长度限制 (防止内存膨胀)
+ */
+const MAX_HEADER_VALUE_LENGTH = 8192; // 8KB
+
+/**
+ * 判断 header 是否应该被过滤
+ *
+ * 作为网关，默认透传所有 headers，只过滤真正敏感的
+ * 这样可以让客户端获取完整的 Provider 响应信息
+ */
+function shouldFilterHeader(headerName: string): boolean {
+  const lowerName = headerName.toLowerCase();
+
+  // 只过滤明确敏感的 headers
+  if (SENSITIVE_HEADERS.has(lowerName)) {
+    return true;
+  }
+
+  // 默认不透传（透传所有其他 headers）
+  return false;
+}
+
+/**
+ * 清理 header 值,防止注入攻击和内存膨胀
+ */
+function sanitizeHeaderValue(value: string): string {
+  // 1. 移除控制字符 (ASCII 0-31, 127)
+  let sanitized = value.replace(/[\x00-\x1F\x7F]/g, '');
+
+  // 2. 截断过长的 header 值
+  if (sanitized.length > MAX_HEADER_VALUE_LENGTH) {
+    logger.warn(
+      { headerLength: sanitized.length },
+      'Truncating oversized header value'
+    );
+    sanitized = sanitized.substring(0, MAX_HEADER_VALUE_LENGTH);
+  }
+
+  return sanitized;
+}
+
+/**
+ * 过滤 Provider 响应头
+ *
+ * 默认透传所有 headers，只过滤敏感 headers
+ * 这样可以让客户端获取完整的 Provider 响应信息
+ */
+function filterProviderHeaders(
+  providerHeaders: Record<string, string>
+): Record<string, string> {
+  const filtered: Record<string, string> = {};
+  const filteredOut: string[] = [];
+
+  for (const [key, value] of Object.entries(providerHeaders)) {
+    // 过滤空值
+    if (!value || value.trim() === '') {
+      continue;
+    }
+
+    // 只过滤敏感 headers，其他全部透传
+    if (shouldFilterHeader(key)) {
+      filteredOut.push(key);
+      continue;
+    }
+
+    filtered[key] = sanitizeHeaderValue(value);
+  }
+
+  if (filteredOut.length > 0) {
+    logger.debug(
+      { filteredHeaders: filteredOut },
+      'Filtered sensitive headers from provider response'
+    );
+  }
+
+  return filtered;
+}
+
+/**
+ * 合并响应头: Gateway headers + 过滤后的 Provider headers
+ *
+ * @param gatewayHeaders - Gateway 必需的 headers (优先级最高)
+ * @param providerHeaders - Provider 返回的所有 headers
+ * @returns 合并后的 headers 对象
+ */
+export function mergeResponseHeaders(
+  gatewayHeaders: Record<string, string>,
+  providerHeaders: Record<string, string>
+): Record<string, string> {
+  // 1. 过滤 Provider headers
+  const filteredProviderHeaders = filterProviderHeaders(providerHeaders);
+
+  // 2. 合并: Provider headers 在前,Gateway headers 覆盖
+  const merged = {
+    ...filteredProviderHeaders,
+    ...gatewayHeaders, // Gateway headers 优先级更高
+  };
+
+  logger.debug(
+    {
+      providerHeaderCount: Object.keys(providerHeaders).length,
+      filteredCount: Object.keys(providerHeaders).length - Object.keys(filteredProviderHeaders).length,
+      finalCount: Object.keys(merged).length,
+      providerHeaders: Object.keys(filteredProviderHeaders),
+      gatewayHeaders: Object.keys(gatewayHeaders),
+    },
+    'Response headers: provider headers passed through (sensitive headers filtered)'
+  );
+
+  return merged;
+}
+
+/**
+ * 生成客户端响应头（非流式）
+ */
+function getClientNonStreamingHeaders(): Record<string, string> {
+  return {
+    'content-type': 'application/json; charset=utf-8',
+  };
+}
+
+/**
+ * 生成客户端响应头（流式）
+ */
+function getClientStreamingHeaders(): Record<string, string> {
+  return {
+    'content-type': 'text/event-stream',
+    'cache-control': 'no-cache',
+    'connection': 'keep-alive',
+  };
 }
 
 /**
@@ -85,7 +236,8 @@ export async function handleNonStreamingResponse(
     );
 
     const latencyMs = Date.now() - startTime;
-    const responseHeaders = extractResponseHeaders(response);
+    const providerResponseHeaders = extractProviderResponseHeaders(response);
+    const clientResponseHeaders = getClientStreamingHeaders();
 
     // 记录日志（流式）
     logRequest({
@@ -99,7 +251,8 @@ export async function handleNonStreamingResponse(
       requestHeaders,
       requestBody: rawBody,
       transformedRequestBody: params.transformedBody,
-      responseHeaders,
+      providerResponseHeaders,
+      clientResponseHeaders,
       clientIp,
       userAgent,
       requestPath,
@@ -111,13 +264,79 @@ export async function handleNonStreamingResponse(
     });
 
     // 返回 SSE 流
+    const mergedHeaders = mergeResponseHeaders(
+      clientResponseHeaders,
+      providerResponseHeaders
+    );
+
     return new Response(response.body, {
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        Connection: 'keep-alive',
-      },
+      headers: mergedHeaders,
     });
+  }
+
+  // 同协议透传模式：直接转发响应，不进行协议转换
+  if (params.isPassthroughEnabled) {
+    const latencyMs = Date.now() - startTime;
+    const providerResponseHeaders = extractProviderResponseHeaders(response);
+    const clientResponseHeaders = getClientNonStreamingHeaders();
+
+    // 获取 Provider 原始响应
+    const providerResponseClone = response.clone();
+    let providerResponseData;
+    try {
+      providerResponseData = await providerResponseClone.json();
+    } catch {
+      const text = await response.text();
+      logger.error(
+        {
+          requestId: ctx.requestId,
+          provider: provider.name,
+          statusCode: response.status,
+          bodyPreview: text,
+        },
+        'Failed to parse provider response as JSON'
+      );
+      throw new Error(`Invalid JSON response from provider: ${text}`);
+    }
+
+    // 记录日志
+    await logRequest({
+      virtualKey,
+      modelName: originalModelName,
+      providerId: provider.id,
+      providerName: provider.name,
+      status: 'success',
+      statusCode: 200,
+      latencyMs,
+      requestHeaders,
+      requestBody: rawBody,
+      transformedRequestBody: params.transformedBody,
+      providerResponseHeaders,
+      clientResponseHeaders,
+      providerResponseBody: providerResponseData,
+      standardResponseBody: providerResponseData, // 透传模式下相同
+      responseBody: providerResponseData,
+      clientIp,
+      userAgent,
+      requestPath,
+      requestMethod,
+      streaming: false,
+      incomingProtocol,
+      targetProtocol,
+      conversationId: params.conversationId,
+    });
+
+    const mergedHeaders = mergeResponseHeaders(
+      clientResponseHeaders,
+      providerResponseHeaders
+    );
+
+    // 设置响应头
+    for (const [key, value] of Object.entries(mergedHeaders)) {
+      c.header(key, value);
+    }
+
+    return c.json(providerResponseData);
   }
 
   // 检查响应体是否存在
@@ -177,7 +396,8 @@ export async function handleNonStreamingResponse(
   const responseData = await adaptedRes.json();
 
   const latencyMs = Date.now() - startTime;
-  const responseHeaders = extractResponseHeaders(response);
+  const providerResponseHeaders = extractProviderResponseHeaders(response);
+  const clientResponseHeaders = getClientNonStreamingHeaders();
 
   // 记录日志 - 包含完整的响应链路
   await logRequest({
@@ -194,7 +414,8 @@ export async function handleNonStreamingResponse(
     requestBody: rawBody,
     standardRequestBody: params.standardRequestBody,
     transformedRequestBody: params.transformedBody,
-    responseHeaders,
+    providerResponseHeaders,
+    clientResponseHeaders,
     providerResponseBody: providerResponseData,      // Provider 原始响应
     standardResponseBody: standardRes,                // 标准格式
     responseBody: responseData,                       // 客户端最终响应
@@ -207,6 +428,16 @@ export async function handleNonStreamingResponse(
     targetProtocol,
     conversationId: params.conversationId,
   });
+
+  const mergedHeaders = mergeResponseHeaders(
+    clientResponseHeaders,
+    providerResponseHeaders
+  );
+
+  // 设置响应头
+  for (const [key, value] of Object.entries(mergedHeaders)) {
+    c.header(key, value);
+  }
 
   return c.json(responseData);
 }
@@ -330,8 +561,8 @@ class StreamResponseCollector {
     if (json.choices?.[0]?.delta?.reasoning_content) {
       reasoning = json.choices[0].delta.reasoning_content;
     }
-    // Anthropic 格式
-    else if (json.type === 'content_block_delta' && json.delta?.type === 'thinking') {
+    // Anthropic 格式 - thinking_delta 事件
+    else if (json.type === 'content_block_delta' && json.delta?.type === 'thinking_delta') {
       reasoning = json.delta.thinking;
     }
 
@@ -364,18 +595,24 @@ class StreamResponseCollector {
    * Phase 1 新增：获取真实 usage 或基于完整内容的估算
    */
   getUsage(): { inputTokens: number; outputTokens: number; estimated: boolean } {
-    if (
-      this.realUsage?.prompt_tokens !== undefined &&
-      this.realUsage?.completion_tokens !== undefined
-    ) {
+    // 只要有任意一个真实 usage 数据，就视为非完全估算
+    const hasRealInput = this.realUsage?.prompt_tokens !== undefined;
+    const hasRealOutput = this.realUsage?.completion_tokens !== undefined;
+
+    if (hasRealInput || hasRealOutput) {
+      // 回退：基于完整内容估算缺失的部分
+      const fullContent = this.contentChunks.join('');
+      const fullThinking = this.thinkingBlocks.join('');
+      const estimatedOutput = estimateTokens(fullContent) + estimateTokens(fullThinking);
+
       return {
-        inputTokens: this.realUsage.prompt_tokens,
-        outputTokens: this.realUsage.completion_tokens,
-        estimated: false,
+        inputTokens: this.realUsage?.prompt_tokens ?? 0,
+        outputTokens: this.realUsage?.completion_tokens ?? estimatedOutput,
+        estimated: !hasRealOutput, // 如果 output tokens 是估算的，标记为 estimated
       };
     }
 
-    // 回退：基于完整内容估算
+    // 完全没有真实 usage 数据，完全基于内容估算
     const fullContent = this.contentChunks.join('');
     const fullThinking = this.thinkingBlocks.join('');
 
@@ -383,9 +620,8 @@ class StreamResponseCollector {
     const estimatedThinking = estimateTokens(fullThinking);
 
     return {
-      inputTokens: this.realUsage?.prompt_tokens ?? 0,
-      outputTokens:
-        (this.realUsage?.completion_tokens ?? 0) + estimatedOutput + estimatedThinking,
+      inputTokens: 0,
+      outputTokens: estimatedOutput + estimatedThinking,
       estimated: true,
     };
   }
@@ -435,7 +671,7 @@ function extractUsageFromChunk(data: string): { prompt_tokens?: number; completi
     // 后备：Anthropic 原始格式 - message_delta 事件中的 usage
     if (json.type === 'message_delta' && json.usage) {
       return {
-        prompt_tokens: undefined,
+        prompt_tokens: json.usage.input_tokens,
         completion_tokens: json.usage.output_tokens,
       };
     }
@@ -444,7 +680,7 @@ function extractUsageFromChunk(data: string): { prompt_tokens?: number; completi
     if (json.type === 'message_start' && json.message?.usage) {
       return {
         prompt_tokens: json.message.usage.input_tokens,
-        completion_tokens: undefined,
+        completion_tokens: json.message.usage.output_tokens,
       };
     }
 
@@ -509,12 +745,14 @@ export async function handleStreamingResponse(
   const UPDATE_INTERVAL = parseInt(process.env.LOG_UPDATE_INTERVAL_MS || '5000', 10); // 默认 5 秒
 
   // 提前提取响应头（流式响应在开始时即可获取）
-  const responseHeaders = extractResponseHeaders(response);
+  const providerResponseHeaders = extractProviderResponseHeaders(response);
+  const clientResponseHeaders = getClientStreamingHeaders();
 
   let transformedStream = response.body;
 
   // 检查是否需要协议转换
-  const needsTransformation = targetProtocol !== incomingProtocol;
+  // 透传模式下也跳过转换
+  const needsTransformation = targetProtocol !== incomingProtocol && !params.isPassthroughEnabled;
 
   if (needsTransformation && transformedStream) {
     logger.debug(
@@ -675,7 +913,8 @@ export async function handleStreamingResponse(
           inputTokens: usage.inputTokens,
           outputTokens: usage.outputTokens,
           usageEstimated: usage.estimated,
-          responseHeaders,
+          providerResponseHeaders,
+          clientResponseHeaders,
           providerResponseBody: {
             ...(providerCollector.getSummary(targetProtocol) as Record<string, unknown>),
             streamContent: providerCollector.getFullContent(),
@@ -716,11 +955,12 @@ export async function handleStreamingResponse(
     });
   }
 
+  const mergedHeaders = mergeResponseHeaders(
+    clientResponseHeaders,
+    providerResponseHeaders
+  );
+
   return new Response(finalStream, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      Connection: 'keep-alive',
-    },
+    headers: mergedHeaders,
   });
 }

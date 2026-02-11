@@ -5,6 +5,7 @@ import {
   NoSuitableInstanceError,
 } from './model-group-router';
 import { logRequest } from './log-service';
+import { mergeResponseHeaders } from './response-handlers';
 import type { VirtualKey } from '@/features/keys/db';
 import type { Context } from 'hono';
 
@@ -25,14 +26,23 @@ interface ErrorHandlerParams {
 }
 
 /**
- * 提取响应头信息（保留所有信息）
+ * 提取 Provider 响应头信息（保留所有信息）
  */
-function extractResponseHeaders(response: Response): Record<string, string> {
+function extractProviderResponseHeaders(response: Response): Record<string, string> {
   const headers: Record<string, string> = {};
   response.headers.forEach((value, key) => {
     headers[key] = value;
   });
   return headers;
+}
+
+/**
+ * 生成客户端错误响应头
+ */
+function getClientErrorHeaders(): Record<string, string> {
+  return {
+    'content-type': 'application/json; charset=utf-8',
+  };
 }
 
 /**
@@ -179,7 +189,8 @@ export async function handleProviderError(
 ): Promise<Response> {
   const errorData = await parseProviderError(response);
   const latencyMs = Date.now() - startTime;
-  const responseHeaders = extractResponseHeaders(response);
+  const providerResponseHeaders = extractProviderResponseHeaders(response);
+  const clientResponseHeaders = getClientErrorHeaders();
 
   await logRequest({
     virtualKey,
@@ -192,7 +203,9 @@ export async function handleProviderError(
     requestHeaders,
     requestBody: rawBody,
     transformedRequestBody: transformedBody,
-    responseHeaders,
+    providerResponseHeaders,
+    clientResponseHeaders,
+    providerResponseBody: errorData,
     responseBody: errorData,
     errorMessage: errorData.error?.message || 'Provider request failed',
     errorType: 'provider_error',
@@ -204,6 +217,16 @@ export async function handleProviderError(
     incomingProtocol,
     targetProtocol,
   });
+
+  const mergedHeaders = mergeResponseHeaders(
+    clientResponseHeaders,
+    providerResponseHeaders
+  );
+
+  // 设置响应头
+  for (const [key, value] of Object.entries(mergedHeaders)) {
+    c.header(key, value);
+  }
 
   return c.json(
     {

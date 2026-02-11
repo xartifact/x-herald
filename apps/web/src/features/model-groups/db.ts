@@ -139,6 +139,31 @@ export interface InstanceConfig {
     connectTimeout: number;
     readTimeout: number;
   };
+
+  // 供应商特定参数转换规则
+  parameterTransforms?: Array<{
+    // 匹配条件
+    when?: {
+      paramName: string;
+      operator: 'eq' | 'ne' | 'exists' | 'not_exists';
+      value?: unknown;
+    };
+    // 转换操作
+    action: {
+      type: 'add' | 'remove' | 'rename' | 'transform';
+      targetParam: string;
+      value?: unknown;
+      // 简单表达式支持，如: "${reasoning.enabled} ? true : false"
+      expression?: string;
+    };
+  }>;
+
+  // Schema处理配置
+  schemaConfig?: {
+    cleanEnabled: boolean;
+    preserveFields?: string[];  // 保留的字段（覆盖默认清理）
+    additionalBannedFields?: string[];  // 额外清理的字段
+  };
 }
 
 export const modelInstances = pgTable('model_instances', {

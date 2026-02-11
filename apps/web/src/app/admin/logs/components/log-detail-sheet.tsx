@@ -545,25 +545,25 @@ export function LogDetailSheet({
                 <Section title="工具调用" badge={log.toolCallsCount.toString()}>
                   <InfoRow
                     label="调用次数"
-                    value={log.toolCallsCount}
+                    value={log.toolCallsCount.toString()}
                   />
-                  {log.metadata?.toolCalls?.pattern && (
+                  {(log.metadata?.toolCalls as Record<string, string> | undefined)?.pattern && (
                     <InfoRow
                       label="调用模式"
                       value={
                         <Badge variant="outline">
-                          {log.metadata.toolCalls.pattern === 'single' ? '单次' :
-                           log.metadata.toolCalls.pattern === 'parallel' ? '并行' : '顺序'}
+                          {(log.metadata?.toolCalls as Record<string, string>).pattern === 'single' ? '单次' :
+                           (log.metadata?.toolCalls as Record<string, string>).pattern === 'parallel' ? '并行' : '顺序'}
                         </Badge>
                       }
                     />
                   )}
-                  {log.metadata?.toolCalls?.tools && log.metadata.toolCalls.tools.length > 0 && (
+                  {(log.metadata?.toolCalls as { tools?: string[] } | undefined)?.tools && (log.metadata?.toolCalls as { tools: string[] }).tools.length > 0 && (
                     <InfoRow
                       label="工具列表"
                       value={
                         <div className="flex flex-wrap gap-1">
-                          {log.metadata.toolCalls.tools.map((tool: string, idx: number) => (
+                          {(log.metadata?.toolCalls as { tools: string[] }).tools.map((tool: string, idx: number) => (
                             <Badge key={idx} variant="secondary" className="text-xs">
                               {tool}
                             </Badge>
@@ -575,27 +575,25 @@ export function LogDetailSheet({
                 </Section>
               )}
 
-              {/* 对话上下文 */}
               {log.conversationId && (
                 <Section title="对话上下文">
                   <InfoRow
                     label="对话ID"
-                    value={log.conversationId}
+                    value={String(log.conversationId)}
                     copyable
                     mono
                   />
                 </Section>
               )}
 
-              {/* 内容特征 */}
               {log.metadata?.content && (
                 <Section title="内容特征">
-                  {log.metadata.content.types && log.metadata.content.types.length > 0 && (
+                  {(log.metadata.content as { types?: string[] }).types && (log.metadata.content as { types: string[] }).types.length > 0 && (
                     <InfoRow
                       label="内容类型"
                       value={
                         <div className="flex flex-wrap gap-1">
-                          {(log.metadata.content.types as string[]).map((type: string, idx: number) => (
+                          {(log.metadata.content as { types: string[] }).types.map((type: string, idx: number) => (
                             <Badge key={idx} variant="outline" className="text-xs">
                               {type}
                             </Badge>
@@ -604,19 +602,19 @@ export function LogDetailSheet({
                       }
                     />
                   )}
-                  {log.metadata.content.hasFunctionCalling && (
+                  {(log.metadata.content as { hasFunctionCalling?: boolean }).hasFunctionCalling && (
                     <InfoRow
                       label="函数调用"
                       value={<Badge variant="secondary">是</Badge>}
                     />
                   )}
                   {/* 使用工具 */}
-                  {log.metadata.content.toolNames && log.metadata.content.toolNames.length > 0 && (
+                  {(log.metadata.content as { toolNames?: string[] }).toolNames && (log.metadata.content as { toolNames: string[] }).toolNames.length > 0 && (
                     <InfoRow
                       label="使用工具"
                       value={
                         <div className="flex flex-wrap gap-1">
-                          {log.metadata.content.toolNames.map((tool: string, idx: number) => (
+                          {(log.metadata.content as { toolNames: string[] }).toolNames.map((tool: string, idx: number) => (
                             <Badge
                               key={idx}
                               variant="secondary"

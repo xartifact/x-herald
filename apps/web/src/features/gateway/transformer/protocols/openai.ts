@@ -18,6 +18,7 @@ import type {
 
 import { cleanSchemaForOpenAI } from '../utils/schema-cleaner';
 import { parseToolArguments } from '../utils/tool-arguments-parser';
+import { applyParameterTransforms, buildHeaders } from '../utils/parameter-transformer';
 
 // OpenAI 特定类型
 interface OpenAIMessage {
@@ -148,62 +149,83 @@ export class OpenAITransformer implements Transformer {
     request: StandardRequest,
     ctx: TransformerContext,
   ): Promise<{ body: unknown; url?: string; headers?: Record<string, string> }> {
+    // 1. 应用实例特定的参数转换
+    let transformedRequest = request;
+    if (ctx.instanceConfig?.parameterTransforms) {
+      transformedRequest = applyParameterTransforms(
+        request,
+        ctx.instanceConfig.parameterTransforms,
+        ctx
+      );
+    }
+
     const openaiReq: OpenAIRequest = {
-      model: request.model,
-      messages: this.convertToOpenAIMessages(request.messages),
-      temperature: request.temperature,
-      max_tokens: request.max_tokens,
-      top_p: request.top_p,
-      frequency_penalty: request.frequency_penalty,
-      presence_penalty: request.presence_penalty,
-      stream: request.stream,
-      stop: request.stop,
-      seed: request.seed,
+      model: transformedRequest.model,
+      messages: this.convertToOpenAIMessages(transformedRequest.messages),
+      temperature: transformedRequest.temperature,
+      max_tokens: transformedRequest.max_tokens,
+      top_p: transformedRequest.top_p,
+      frequency_penalty: transformedRequest.frequency_penalty,
+      presence_penalty: transformedRequest.presence_penalty,
+      stream: transformedRequest.stream,
+      stop: transformedRequest.stop,
+      seed: transformedRequest.seed,
     };
 
     // 添加可选字段
-    if (request.tools?.length) {
-      // 防御性清理：确保 Schema 符合规范
-      openaiReq.tools = request.tools.map(tool => ({
+    if (transformedRequest.tools?.length) {
+      // 防御性清理：确保 Schema 符合规范（支持配置）
+      const schemaConfig = ctx.instanceConfig?.schemaConfig
+        ? {
+            cleanEnabled: ctx.instanceConfig.schemaConfig.cleanEnabled,
+            preserveFields: ctx.instanceConfig.schemaConfig.preserveFields,
+            additionalBannedFields: ctx.instanceConfig.schemaConfig.additionalBannedFields,
+          }
+        : undefined;
+      openaiReq.tools = transformedRequest.tools.map(tool => ({
         ...tool,
         function: {
           ...tool.function,
           parameters: tool.function.parameters
-            ? cleanSchemaForOpenAI(tool.function.parameters) as typeof tool.function.parameters
+            ? cleanSchemaForOpenAI(tool.function.parameters, schemaConfig) as typeof tool.function.parameters
             : tool.function.parameters,
         },
       }));
 
-      if (request.tool_choice) {
-        openaiReq.tool_choice = request.tool_choice;
+      if (transformedRequest.tool_choice) {
+        openaiReq.tool_choice = transformedRequest.tool_choice;
       }
     }
 
-    if (request.response_format) {
-      openaiReq.response_format = request.response_format;
+    if (transformedRequest.response_format) {
+      openaiReq.response_format = transformedRequest.response_format;
     }
 
-    // 阿里云百炼特殊参数
-    const isAlibaba = this.isAlibabaDashscope(ctx);
-    if (isAlibaba && request.reasoning?.enabled) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (openaiReq as any).enable_thinking = request.reasoning.enable_thinking ?? true;
-      logger.debug(
-        { requestId: ctx.requestId, enable_thinking: true },
-        'Added Alibaba DashScope enable_thinking parameter'
-      );
+    // 应用参数映射（如果存在）
+    if (ctx.instanceConfig?.parameterMapping) {
+      for (const [param, config] of Object.entries(ctx.instanceConfig.parameterMapping)) {
+        if (config.default !== undefined && openaiReq[param as keyof OpenAIRequest] === undefined) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (openaiReq as any)[param] = config.default;
+        }
+      }
     }
 
     logger.debug(
-      { requestId: ctx.requestId, model: request.model, isAlibaba },
+      { requestId: ctx.requestId, model: transformedRequest.model },
       'Adapted to OpenAI format',
+    );
+
+    // 构建 headers（包含自定义 headers）
+    const headers = buildHeaders(
+      { 'Content-Type': 'application/json' },
+      ctx.instanceConfig?.customHeaders,
+      ctx
     );
 
     return {
       body: openaiReq,
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
     };
   }
 
@@ -326,6 +348,10 @@ export class OpenAITransformer implements Transformer {
       start: async (controller) => {
         const reader = stream.getReader();
         let buffer = '';
+        let errorCount = 0;
+        const MAX_ERRORS = 5;
+        const errors: Array<{ error: unknown; data: string }> = [];
+        let model = '';
 
         try {
           while (true) {
@@ -347,6 +373,11 @@ export class OpenAITransformer implements Transformer {
 
               try {
                 const chunk: OpenAIStreamChunk = JSON.parse(data);
+
+                // 记录 model（用于错误报告）
+                if (chunk.model && !model) {
+                  model = chunk.model;
+                }
 
                 // 验证工具调用参数（如果存在）
                 if (chunk.choices?.[0]?.finish_reason === 'tool_calls') {
@@ -375,15 +406,48 @@ export class OpenAITransformer implements Transformer {
                 const standardChunk = this.convertStreamChunk(chunk);
                 controller.enqueue(encoder.encode(`data: ${JSON.stringify(standardChunk)}\n\n`));
               } catch (error) {
-                logger.error({ error, data }, 'Failed to parse stream chunk');
+                errorCount++;
+                errors.push({ error, data });
+
+                logger.error(
+                  { error, data, errorCount, requestId: ctx.requestId },
+                  'Failed to parse stream chunk'
+                );
+
+                // 超过阈值，向流中注入错误事件
+                if (errorCount >= MAX_ERRORS) {
+                  const errorChunk = {
+                    id: ctx.requestId,
+                    object: 'chat.completion.chunk' as const,
+                    created: Math.floor(Date.now() / 1000),
+                    model: model || 'unknown',
+                    choices: [{
+                      index: 0,
+                      delta: { content: '\n[Stream Error: Multiple parse failures]' },
+                      finish_reason: 'stop' as const
+                    }]
+                  };
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify(errorChunk)}\n\n`));
+                  controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+                  controller.close();
+                  return;
+                }
               }
             }
           }
         } catch (error) {
+          // 记录完整错误上下文
+          logger.error(
+            { error, errorCount, errors: errors.slice(-3), requestId: ctx.requestId },
+            'Stream transformation failed'
+          );
           controller.error(error);
         } finally {
           reader.releaseLock();
-          controller.close();
+          // 只在正常结束时关闭（错误情况已在上面处理）
+          if (errorCount < MAX_ERRORS) {
+            controller.close();
+          }
         }
       },
     });

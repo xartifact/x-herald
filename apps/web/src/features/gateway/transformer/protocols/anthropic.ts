@@ -11,6 +11,7 @@ import type {
   StandardResponse,
   StandardMessage,
   ToolDefinition,
+  ToolCall,
   MessageContent,
   StreamChunk,
 } from '@/types';
@@ -727,20 +728,20 @@ export class AnthropicTransformer implements Transformer {
     const content = this.convertAnthropicContent(msg.content);
 
     // 提取 tool_calls 和 tool_call_id
-    let toolCalls;
-    let toolCallId;
+    let toolCalls: ToolCall[] | undefined;
+    let toolCallId: string | undefined;
 
     if (Array.isArray(msg.content)) {
       for (const item of msg.content) {
         if (item.type === 'tool_use') {
           if (!toolCalls) toolCalls = [];
-          
+
           // 使用安全的 JSON 序列化和验证
           const argsString = parseToolArguments(
             JSON.stringify(item.input || {}),
             logger
           );
-          
+
           toolCalls.push({
             id: item.id || '',
             type: 'function' as const,
@@ -757,6 +758,7 @@ export class AnthropicTransformer implements Transformer {
 
     // 确定 role：Anthropic 的 tool_result 使用 user 角色，但在标准格式中应为 tool 角色
     let role: 'user' | 'assistant' | 'system' | 'tool' = msg.role;
+    const anthropicOriginalRole = msg.role;
     if (toolCallId && !toolCalls) {
       // 这是一个 tool_result 消息，在标准格式中应使用 tool 角色
       role = 'tool';
@@ -767,6 +769,12 @@ export class AnthropicTransformer implements Transformer {
       content,
       tool_calls: toolCalls,
       tool_call_id: toolCallId,
+      // 在 metadata 中保留 Anthropic 原始信息
+      metadata: {
+        anthropicOriginalRole,
+        hasToolResult: !!toolCallId,
+        hasToolUse: !!toolCalls?.length,
+      },
     };
   }
 

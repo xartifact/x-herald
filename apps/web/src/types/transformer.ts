@@ -9,6 +9,7 @@ import type {
   ProviderConfig,
   ProtocolType,
 } from './llm';
+import type { InstanceConfig } from '@/features/model-groups/db';
 
 // ==================== Transformer 上下文 ====================
 
@@ -20,6 +21,9 @@ export interface TransformerContext {
   // Provider 信息
   provider?: ProviderConfig;
   targetProtocol?: ProtocolType;
+
+  // 模型实例配置
+  instanceConfig?: InstanceConfig;
 
   // 原始请求/响应
   originalRequest?: unknown;

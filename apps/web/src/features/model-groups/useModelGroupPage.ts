@@ -63,6 +63,7 @@ export function useModelGroupPage() {
       description: '',
       weight: 100,
       priority: 0,
+      config: undefined,
     },
   })
 
@@ -116,6 +117,7 @@ export function useModelGroupPage() {
       description: instance.description || '',
       weight: instance.weight,
       priority: instance.priority,
+      config: instance.config || undefined,
     })
     setInstanceDialogOpen(true)
   }
@@ -162,6 +164,7 @@ export function useModelGroupPage() {
       description: data.description,
       weight: data.weight,
       priority: data.priority,
+      config: data.config,
     }
     if (editingInstanceId) {
       await updateInstance.mutateAsync({

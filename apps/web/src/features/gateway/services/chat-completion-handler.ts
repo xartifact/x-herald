@@ -59,9 +59,7 @@ export async function handleChatCompletion(
 
   const requestHeaders: Record<string, string> = {};
   c.req.raw.headers.forEach((value, key) => {
-    if (!key.toLowerCase().includes('authorization') && !key.toLowerCase().includes('cookie')) {
-      requestHeaders[key] = value;
-    }
+    requestHeaders[key] = value;
   });
 
   // 提取或生成 conversationId
@@ -75,7 +73,7 @@ export async function handleChatCompletion(
 
   try {
     rawBody = (await c.req.json()) as { model?: string; [key: string]: unknown };
-    incomingProtocol = detectProtocol(requestPath, rawBody);
+    incomingProtocol = detectProtocol(requestPath, rawBody, c.req.raw.headers);
 
     logger.info(
       { requestId, model: rawBody.model, protocol: incomingProtocol },
@@ -174,6 +172,7 @@ export async function handleChatCompletion(
       protocol: targetProtocol,
       models: [],
     };
+    ctx.instanceConfig = instance.config ?? undefined;
 
     const adapted = await egressTransformer.adaptRequest(standardReq, ctx);
     transformedBody = adapted.body;
@@ -194,7 +193,7 @@ export async function handleChatCompletion(
         requestId,
         provider: provider.name,
         targetProtocol,
-        bodyPreview: requestBody.slice(0, 1000), // 只记录前1000字符
+        bodyPreview: requestBody,
         hasToolCalls: requestBody.includes('tool_calls'),
       },
       'Request body sent to provider',

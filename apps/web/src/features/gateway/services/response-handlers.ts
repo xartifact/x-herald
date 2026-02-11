@@ -40,20 +40,12 @@ interface ResponseHandlerParams {
 }
 
 /**
- * 提取响应头信息（排除敏感信息）
+ * 提取响应头信息（保留所有信息）
  */
 function extractResponseHeaders(response: Response): Record<string, string> {
   const headers: Record<string, string> = {};
   response.headers.forEach((value, key) => {
-    // 排除敏感信息和二进制内容
-    if (
-      !key.toLowerCase().includes('authorization') &&
-      !key.toLowerCase().includes('cookie') &&
-      !key.toLowerCase().includes('set-cookie') &&
-      key.toLowerCase() !== 'content-encoding'
-    ) {
-      headers[key] = value;
-    }
+    headers[key] = value;
   });
   return headers;
 }
@@ -149,11 +141,11 @@ export async function handleNonStreamingResponse(
         requestId: ctx.requestId,
         provider: provider.name,
         statusCode: response.status,
-        bodyPreview: text.slice(0, 500)
+        bodyPreview: text
       },
       'Failed to parse provider response as JSON'
     );
-    throw new Error(`Invalid JSON response from provider: ${text.slice(0, 100)}`);
+    throw new Error(`Invalid JSON response from provider: ${text}`);
   }
 
   // 检查阿里云特定错误格式
@@ -324,11 +316,6 @@ class StreamResponseCollector {
       content = json.delta.text;
     }
 
-    // 双重保护：在收集器层也清理内容
-    if (content) {
-      content = this.sanitizeContent(content);
-    }
-
     return content;
   }
 
@@ -348,26 +335,7 @@ class StreamResponseCollector {
       reasoning = json.delta.thinking;
     }
 
-    // 双重保护：清理 reasoning 内容
-    if (reasoning) {
-      reasoning = this.sanitizeContent(reasoning);
-    }
-
     return reasoning;
-  }
-
-  /**
-   * 清理内容中的控制标签（双重保护）
-   */
-  private sanitizeContent(text: string): string {
-    if (!text) return text;
-
-    // 移除控制标签
-    return text
-      .replace(/<is_displaying_contents>[\s\S]*?<\/is_displaying_contents>/gi, '')
-      .replace(/<filepaths>[\s\S]*?<\/filepaths>/gi, '')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim();
   }
 
   /**

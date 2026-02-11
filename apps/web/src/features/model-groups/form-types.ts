@@ -24,4 +24,31 @@ export interface InstanceFormData {
   description: string
   weight: number
   priority: number
+  config?: {
+    parameterTransforms?: Array<{
+      when?: {
+        paramName: string
+        operator: 'eq' | 'ne' | 'exists' | 'not_exists'
+        value?: unknown
+      }
+      action: {
+        type: 'add' | 'remove' | 'rename' | 'transform'
+        targetParam: string
+        value?: unknown
+        expression?: string
+      }
+    }>
+    schemaConfig?: {
+      cleanEnabled: boolean
+      preserveFields?: string[]
+      additionalBannedFields?: string[]
+    }
+    customHeaders?: Record<string, string>
+    parameterMapping?: Record<string, {
+      min?: number
+      max?: number
+      default?: unknown
+      transform?: string
+    }>
+  }
 }

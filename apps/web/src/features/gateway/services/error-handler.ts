@@ -25,20 +25,12 @@ interface ErrorHandlerParams {
 }
 
 /**
- * 提取响应头信息（排除敏感信息）
+ * 提取响应头信息（保留所有信息）
  */
 function extractResponseHeaders(response: Response): Record<string, string> {
   const headers: Record<string, string> = {};
   response.headers.forEach((value, key) => {
-    // 排除敏感信息和二进制内容
-    if (
-      !key.toLowerCase().includes('authorization') &&
-      !key.toLowerCase().includes('cookie') &&
-      !key.toLowerCase().includes('set-cookie') &&
-      key.toLowerCase() !== 'content-encoding'
-    ) {
-      headers[key] = value;
-    }
+    headers[key] = value;
   });
   return headers;
 }
@@ -153,14 +145,14 @@ async function parseProviderError(response: Response): Promise<{ error?: { messa
         }
       }
     }
-    return { error: { message: text.substring(0, 500) } };
+    return { error: { message: text } };
   }
 
   // 尝试解析为 JSON
   try {
     return JSON.parse(text);
   } catch {
-    return { error: { message: text.substring(0, 500) || 'Provider request failed' } };
+    return { error: { message: text || 'Provider request failed' } };
   }
 }
 

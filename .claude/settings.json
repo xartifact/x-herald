@@ -1,7 +1,6 @@
 {
   "enabledPlugins": {
     "claude-mem@thedotmack": true,
-    "serena@claude-plugins-official": true,
     "superpowers@claude-plugins-official": true
   }
 }

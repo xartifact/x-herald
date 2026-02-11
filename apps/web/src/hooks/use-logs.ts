@@ -6,6 +6,20 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { get, del, post } from '@/core/lib/api-client'
 import { toast } from 'sonner'
 
+// Log 元数据类型
+export interface LogMetadata {
+  content?: {
+    types?: string[];
+    hasFunctionCalling?: boolean;
+    toolNames?: string[];
+  };
+  toolCalls?: {
+    pattern?: string;
+    tools?: string[];
+  };
+  [key: string]: unknown;
+}
+
 // Query Keys
 export const logKeys = {
   all: ['logs'] as const,
@@ -50,9 +64,9 @@ export interface Log {
   incomingProtocol: string | null
   targetProtocol: string | null
   // 新增字段：标记系统
-  metadata: Record<string, unknown> | null
+  metadata: LogMetadata | null
   toolCallsCount: number | null
-  conversationId: string | null
+  conversationId?: string 
   createdAt: string
 }
 

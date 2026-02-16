@@ -12,6 +12,7 @@ import type {
   StandardMessage,
   ToolDefinition,
   ToolCall,
+  ToolResult,
   MessageContent,
   StreamChunk,
 } from '@/types';
@@ -759,6 +760,7 @@ export class AnthropicTransformer implements Transformer {
     // 提取 tool_calls、tool_call_id 和 thinking 内容
     let toolCalls: ToolCall[] | undefined;
     let toolCallId: string | undefined;
+    const toolResults: ToolResult[] = [];
     let reasoning_content = '';
 
     if (Array.isArray(msg.content)) {
@@ -790,6 +792,12 @@ export class AnthropicTransformer implements Transformer {
             },
           });
         } else if (item.type === 'tool_result') {
+          // 收集所有 tool_result（支持多个）
+          toolResults.push({
+            tool_call_id: item.tool_use_id,
+            content: typeof item.content === 'string' ? item.content : '',
+          });
+          // 保留最后一个作为 tool_call_id（向后兼容）
           toolCallId = item.tool_use_id;
         }
       }
@@ -798,7 +806,7 @@ export class AnthropicTransformer implements Transformer {
     // 确定 role：Anthropic 的 tool_result 使用 user 角色，但在标准格式中应为 tool 角色
     let role: 'user' | 'assistant' | 'system' | 'tool' = msg.role;
     const anthropicOriginalRole = msg.role;
-    if (toolCallId && !toolCalls) {
+    if ((toolCallId || toolResults.length > 0) && !toolCalls) {
       // 这是一个 tool_result 消息，在标准格式中应使用 tool 角色
       role = 'tool';
     }
@@ -808,11 +816,12 @@ export class AnthropicTransformer implements Transformer {
       content,
       tool_calls: toolCalls,
       tool_call_id: toolCallId,
+      tool_results: toolResults.length > 0 ? toolResults : undefined,
       reasoning_content: reasoning_content || undefined,
       // 在 metadata 中保留 Anthropic 原始信息
       metadata: {
         anthropicOriginalRole,
-        hasToolResult: !!toolCallId,
+        hasToolResult: !!toolCallId || toolResults.length > 0,
         hasToolUse: !!toolCalls?.length,
       },
     };
@@ -918,8 +927,19 @@ export class AnthropicTransformer implements Transformer {
         }
       }
 
-      // 处理 tool_result
-      if (msg.tool_call_id) {
+      // 处理 tool_results（支持多个）
+      if (msg.tool_results && msg.tool_results.length > 0) {
+        for (const tr of msg.tool_results) {
+          if (Array.isArray(content)) {
+            content.push({
+              type: 'tool_result',
+              tool_use_id: tr.tool_call_id,
+              content: tr.content,
+            });
+          }
+        }
+      } else if (msg.tool_call_id) {
+        // 向后兼容：处理单个 tool_call_id
         if (Array.isArray(content)) {
           content.push({
             type: 'tool_result',

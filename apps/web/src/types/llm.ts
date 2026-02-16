@@ -37,11 +37,18 @@ export interface ToolMessage {
   tool_call_id: string;
 }
 
+export interface ToolResult {
+  tool_call_id: string;
+  content: string;
+}
+
 export interface StandardMessage {
   role: MessageRole;
   content: string | MessageContent[];
   tool_calls?: ToolCall[];
   tool_call_id?: string;
+  // 支持多条 tool results（解决 Anthropic 多 tool_result 丢失问题）
+  tool_results?: ToolResult[];
   name?: string;
   // 推理/思考内容（统一 Anthropic thinking 和阿里云 reasoning_content）
   reasoning_content?: string;

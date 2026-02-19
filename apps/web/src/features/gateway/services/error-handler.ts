@@ -9,6 +9,71 @@ import { mergeResponseHeaders } from './response-handlers';
 import type { VirtualKey } from '@/features/keys/db';
 import type { Context } from 'hono';
 
+/**
+ * 将字节数转为带一位小数的 MB 字符串
+ */
+function bytesToMB(bytes: number): string {
+  return (Math.round(bytes / 1024 / 1024 * 10) / 10).toFixed(1);
+}
+
+/**
+ * 规范化 Provider 错误消息
+ * 将技术性原始错误转为用户可读描述，并返回结构化 code
+ */
+export function normalizeProviderErrorMessage(rawMessage: string): {
+  message: string;
+  code: string;
+} {
+  // 1. 消息体超 Provider 限制
+  // 例：total message size 10852702 exceeds limit 2097152
+  const sizeMatch = rawMessage.match(/total message size (\d+) exceeds limit (\d+)/i);
+  if (sizeMatch) {
+    const actualMB = bytesToMB(parseInt(sizeMatch[1], 10));
+    const limitMB = bytesToMB(parseInt(sizeMatch[2], 10));
+    return {
+      code: 'context_length_exceeded',
+      message: `Message content too large (~${actualMB} MB). Model limit is ${limitMB} MB. Please reduce conversation history.`,
+    };
+  }
+
+  // 2. Provider 服务连接失败
+  // 例：Cannot connect to host 10.86.0.141:8131 ssl:default [Connect call failed]
+  if (/Cannot connect to host|Connect call failed/i.test(rawMessage)) {
+    return {
+      code: 'provider_service_unavailable',
+      message: 'Provider service is temporarily unavailable. Please try again later.',
+    };
+  }
+
+  // 3. 请求体超网关大小限制
+  // 例：Exceeded limit on max bytes to request body : 6291456
+  const bodyLimitMatch = rawMessage.match(/Exceeded limit on max bytes to request body\s*:\s*(\d+)/i);
+  if (bodyLimitMatch) {
+    const limitMB = bytesToMB(parseInt(bodyLimitMatch[1], 10));
+    return {
+      code: 'request_too_large',
+      message: `Request body too large (~${limitMB} MB). Please reduce request size.`,
+    };
+  }
+
+  // 4. Tool call 格式错误
+  // 例：an assistant message with 'tool_calls' must be followed by tool messages...
+  if (/an assistant message with 'tool_calls' must be followed by tool messages/i.test(rawMessage)) {
+    const idsMatch = rawMessage.match(/tool_call_ids did not have response messages:\s*(.+)$/i);
+    const idsPart = idsMatch ? ` Missing IDs: ${idsMatch[1].trim()}.` : '';
+    return {
+      code: 'invalid_tool_call_format',
+      message: `Invalid message format: tool_call responses are missing.${idsPart}`,
+    };
+  }
+
+  // 5. 兜底：未识别错误，保留原始消息
+  return {
+    code: 'provider_error',
+    message: rawMessage,
+  };
+}
+
 interface ErrorHandlerParams {
   error: unknown;
   c: Context;
@@ -23,6 +88,7 @@ interface ErrorHandlerParams {
   transformedBody?: unknown;
   incomingProtocol?: string;
   targetProtocol?: string;
+  providerRequestHeaders?: Record<string, string>;
 }
 
 /**
@@ -110,6 +176,7 @@ export async function handleGatewayError(
     statusCode: 500,
     latencyMs,
     requestHeaders,
+    providerRequestHeaders: params.providerRequestHeaders,
     transformedRequestBody: params.transformedBody,
     errorMessage: error instanceof Error ? error.message : 'Internal server error',
     errorType: 'internal_error',
@@ -176,6 +243,7 @@ export async function handleProviderError(
   virtualKey: VirtualKey,
   originalModelName: string,
   requestHeaders: Record<string, string>,
+  providerRequestHeaders: Record<string, string>,
   rawBody: unknown,
   clientIp: string,
   userAgent: string,
@@ -192,6 +260,16 @@ export async function handleProviderError(
   const providerResponseHeaders = extractProviderResponseHeaders(response);
   const clientResponseHeaders = getClientErrorHeaders();
 
+  const mergedHeaders = mergeResponseHeaders(
+    clientResponseHeaders,
+    providerResponseHeaders
+  );
+
+  // 设置响应头
+  for (const [key, value] of Object.entries(mergedHeaders)) {
+    c.header(key, value);
+  }
+
   await logRequest({
     virtualKey,
     modelName: originalModelName,
@@ -201,10 +279,11 @@ export async function handleProviderError(
     statusCode: response.status,
     latencyMs,
     requestHeaders,
+    providerRequestHeaders,
     requestBody: rawBody,
     transformedRequestBody: transformedBody,
     providerResponseHeaders,
-    clientResponseHeaders,
+    clientResponseHeaders: mergedHeaders,
     providerResponseBody: errorData,
     responseBody: errorData,
     errorMessage: errorData.error?.message || 'Provider request failed',
@@ -217,16 +296,6 @@ export async function handleProviderError(
     incomingProtocol,
     targetProtocol,
   });
-
-  const mergedHeaders = mergeResponseHeaders(
-    clientResponseHeaders,
-    providerResponseHeaders
-  );
-
-  // 设置响应头
-  for (const [key, value] of Object.entries(mergedHeaders)) {
-    c.header(key, value);
-  }
 
   return c.json(
     {

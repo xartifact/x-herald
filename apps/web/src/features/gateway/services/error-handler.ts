@@ -256,6 +256,8 @@ export async function handleProviderError(
   targetProtocol?: string,
 ): Promise<Response> {
   const errorData = await parseProviderError(response);
+  const rawErrorMessage = errorData.error?.message || 'Provider request failed';
+  const normalized = normalizeProviderErrorMessage(rawErrorMessage);
   const latencyMs = Date.now() - startTime;
   const providerResponseHeaders = extractProviderResponseHeaders(response);
   const clientResponseHeaders = getClientErrorHeaders();
@@ -286,7 +288,7 @@ export async function handleProviderError(
     clientResponseHeaders: mergedHeaders,
     providerResponseBody: errorData,
     responseBody: errorData,
-    errorMessage: errorData.error?.message || 'Provider request failed',
+    errorMessage: rawErrorMessage,
     errorType: 'provider_error',
     clientIp,
     userAgent,
@@ -301,7 +303,8 @@ export async function handleProviderError(
     {
       error: {
         type: 'provider_error',
-        message: errorData.error?.message || 'Provider request failed',
+        code: normalized.code,
+        message: normalized.message,
         provider: provider.name,
       },
     },

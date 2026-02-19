@@ -61,3 +61,40 @@ describe('normalizeProviderErrorMessage', () => {
     });
   });
 });
+
+describe('真实错误消息回归测试', () => {
+  const realErrors = [
+    {
+      raw: 'total message size 10852702 exceeds limit 2097152',
+      expectedCode: 'context_length_exceeded',
+    },
+    {
+      raw: 'total message size 8135482 exceeds limit 2097152',
+      expectedCode: 'context_length_exceeded',
+    },
+    {
+      raw: '{"code":500,"message":"聊天请求失败: Cannot connect to host 10.86.0.141:8131 ssl:default [Connect call failed (\'10.86.0.141\', 8131)]","data":{}}',
+      expectedCode: 'provider_service_unavailable',
+    },
+    {
+      raw: 'Exceeded limit on max bytes to request body : 6291456',
+      expectedCode: 'request_too_large',
+    },
+    {
+      raw: "an assistant message with 'tool_calls' must be followed by tool messages responding to each 'tool_call_id'. The following tool_call_ids did not have response messages: Skill:13",
+      expectedCode: 'invalid_tool_call_format',
+    },
+    {
+      raw: 'Provider request failed',
+      expectedCode: 'provider_error',
+    },
+  ];
+
+  for (const { raw, expectedCode } of realErrors) {
+    it(`应正确处理: "${raw.slice(0, 50)}..."`, () => {
+      const result = normalizeProviderErrorMessage(raw);
+      expect(result.code).toBe(expectedCode);
+      expect(result.message.length).toBeGreaterThan(0);
+    });
+  }
+});

@@ -1,4 +1,5 @@
 import postgres from 'postgres';
+import logger from '../lib/logger';
 
 const connectionString = process.env.DATABASE_URL ||
   `postgres://${process.env.DB_USER || 'postgres'}:${process.env.DB_PASSWORD || 'postgres'}@${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || '5432'}/${process.env.DB_NAME || 'llm_gateway'}`;
@@ -6,7 +7,7 @@ const connectionString = process.env.DATABASE_URL ||
 const client = postgres(connectionString, { max: 1 });
 
 async function verifyTables() {
-  console.log('Verifying database tables...\n');
+  logger.info('Verifying database tables...');
 
   const expectedTables = [
     'providers',
@@ -27,22 +28,19 @@ async function verifyTables() {
   `;
 
   const existingTables = results.map(r => r.table_name);
-  console.log('Existing tables:');
-  console.log('================');
+  logger.info({ tables: existingTables }, 'Existing tables:');
 
   let allExist = true;
   for (const table of expectedTables) {
     const exists = existingTables.includes(table);
-    const status = exists ? '✅' : '❌';
-    console.log(`${status} ${table}`);
+    logger.info({ table, exists }, exists ? '✓' : '✗');
     if (!exists) allExist = false;
   }
 
-  console.log('\n================');
   if (allExist) {
-    console.log('✅ All tables verified successfully!');
+    logger.info('All tables verified successfully!');
   } else {
-    console.log('❌ Some tables are missing!');
+    logger.error('Some tables are missing!');
     process.exit(1);
   }
 
@@ -50,6 +48,6 @@ async function verifyTables() {
 }
 
 verifyTables().catch((error) => {
-  console.error('Verification failed:', error);
+  logger.error({ error }, 'Verification failed');
   process.exit(1);
 });

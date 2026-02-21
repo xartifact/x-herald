@@ -8,6 +8,20 @@
       "when": 1770802566835,
       "tag": "0000_orange_revanche",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1771317626060,
+      "tag": "0001_rapid_miracleman",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1771328027553,
+      "tag": "0002_striped_moira_mactaggert",
+      "breakpoints": true
     }
   ]
 }

@@ -64,11 +64,13 @@ async function createDatabaseIfNotExists(options: DatabaseOptions): Promise<void
   try {
     // 使用 unsafe 执行 CREATE DATABASE（不能使用参数化查询）
     await createClient.unsafe(`CREATE DATABASE "${options.database}"`);
-    console.log(`✅ 数据库 "${options.database}" 创建成功`);
+    // 使用 console 输出启动日志（logger 可能尚未初始化）
+    // eslint-disable-next-line no-console
+    console.log(`[DB] 数据库 "${options.database}" 创建成功`);
   } catch (error) {
     // 如果数据库已存在，忽略错误
     if (error instanceof Error && 'code' in error && error.code === '42P04') {
-      console.log(`ℹ️  数据库 "${options.database}" 已存在`);
+      // 静默处理：数据库已存在是预期内的正常情况
     } else {
       throw error;
     }
@@ -99,7 +101,8 @@ async function checkTablesExist(client: postgres.Sql): Promise<boolean> {
  * 运行数据库迁移
  */
 async function runMigrations(db: ReturnType<typeof drizzle>): Promise<void> {
-  console.log('🔄 开始运行数据库迁移...');
+  // eslint-disable-next-line no-console
+  console.log('[DB] 开始运行数据库迁移...');
 
   try {
     // 获取迁移文件夹路径
@@ -115,20 +118,23 @@ async function runMigrations(db: ReturnType<typeof drizzle>): Promise<void> {
       migrationsFolder = path.join(__dirname, 'migrations');
     }
 
-    console.log('📁 迁移文件夹:', migrationsFolder);
+    // eslint-disable-next-line no-console
+    console.log('[DB] 迁移文件夹:', migrationsFolder);
 
     await migrate(db, { migrationsFolder });
-    console.log('✅ 数据库迁移完成');
+    // eslint-disable-next-line no-console
+    console.log('[DB] 数据库迁移完成');
   } catch (error) {
     // 如果是 "No migrations to run" 错误，忽略
     if (error instanceof Error && error.message?.includes('No migrations')) {
-      console.log('ℹ️  没有新的迁移需要运行');
+      // 静默处理：没有新迁移是预期内的正常情况
     } else if (error instanceof Error) {
-      console.error('❌ 数据库迁移失败:', error);
-      console.error('错误详情:', error.message);
+      // eslint-disable-next-line no-console
+      console.error('[DB] 数据库迁移失败:', error.message);
       throw error;
     } else {
-      console.error('❌ 数据库迁移失败:', error);
+      // eslint-disable-next-line no-console
+      console.error('[DB] 数据库迁移失败:', error);
       throw error;
     }
   }
@@ -140,17 +146,17 @@ async function runMigrations(db: ReturnType<typeof drizzle>): Promise<void> {
  * - 检查表是否存在，不存在则运行迁移
  */
 async function initializeDatabase(options: DatabaseOptions): Promise<void> {
-  console.log('🔍 检查数据库状态...');
+  // eslint-disable-next-line no-console
+  console.log('[DB] 检查数据库状态...');
 
   try {
     // 1. 检查并创建数据库
     const dbExists = await checkDatabaseExists(options);
 
     if (!dbExists) {
-      console.log(`📦 数据库 "${options.database}" 不存在，正在创建...`);
+      // eslint-disable-next-line no-console
+      console.log(`[DB] 数据库 "${options.database}" 不存在，正在创建...`);
       await createDatabaseIfNotExists(options);
-    } else {
-      console.log(`✅ 数据库 "${options.database}" 已存在`);
     }
 
     // 2. 连接到目标数据库
@@ -163,10 +169,11 @@ async function initializeDatabase(options: DatabaseOptions): Promise<void> {
       const tablesExist = await checkTablesExist(client);
 
       if (!tablesExist) {
-        console.log('📋 数据表不存在，正在运行迁移...');
+        // eslint-disable-next-line no-console
+        console.log('[DB] 数据表不存在，正在运行迁移...');
         await runMigrations(db);
       } else {
-        console.log('✅ 数据表已存在，检查是否有新迁移...');
+        // 静默处理：表已存在是预期内的正常情况
         // 即使表存在，也尝试运行迁移（幂等性）
         await runMigrations(db);
       }
@@ -174,9 +181,11 @@ async function initializeDatabase(options: DatabaseOptions): Promise<void> {
       await client.end();
     }
 
-    console.log('✅ 数据库初始化完成\n');
+    // eslint-disable-next-line no-console
+    console.log('[DB] 数据库初始化完成');
   } catch (error) {
-    console.error('❌ 数据库初始化失败:', error);
+    // eslint-disable-next-line no-console
+    console.error('[DB] 数据库初始化失败:', error);
     throw error;
   }
 }
@@ -201,7 +210,8 @@ export async function createDatabase(options: DatabaseOptions) {
 
   // 同步等待数据库初始化完成
   await initializeDatabase(options);
-  console.log('🚀 数据库已就绪，应用可以正常运行');
+  // eslint-disable-next-line no-console
+  console.log('[DB] 数据库已就绪，应用可以正常运行');
 
   return dbClient;
 }
@@ -228,10 +238,12 @@ export function createDatabaseSync(options: DatabaseOptions) {
   // 异步初始化，不阻塞（旧版行为）
   initializeDatabase(options)
     .then(() => {
-      console.log('🚀 数据库已就绪，应用可以正常运行');
+      // eslint-disable-next-line no-console
+      console.log('[DB] 数据库已就绪，应用可以正常运行');
     })
     .catch((error) => {
-      console.error('❌ 数据库初始化失败，应用可能无法正常工作:', error);
+      // eslint-disable-next-line no-console
+      console.error('[DB] 数据库初始化失败，应用可能无法正常工作:', error);
     });
 
   return dbClient;

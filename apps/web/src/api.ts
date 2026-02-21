@@ -15,6 +15,7 @@ import { keysRoutes } from './features/keys';
 import { logsRoutes } from './features/logs';
 import { modelGroupsRoutes } from './features/model-groups';
 import { providersRoutes } from './features/providers';
+import { settingsRoutes } from './features/settings';
 
 // Create API app (异步版本)
 export const createApiApp = async () => {
@@ -51,6 +52,7 @@ export const createApiApp = async () => {
   app.route('/api/model-groups', modelGroupsRoutes);
   app.route('/api/keys', keysRoutes);
   app.route('/api/logs', logsRoutes);
+  app.route('/api/settings', settingsRoutes);
 
   // Gateway Routes (Anthropic/OpenAI 兼容 API)
   app.route('/api/v1', gatewayRoutes);

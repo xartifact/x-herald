@@ -43,6 +43,17 @@ export interface SameProtocolPassthroughConfig {
   allowedProtocols: ('openai' | 'anthropic')[];
 }
 
+export interface ModelMappingConfig {
+  enabled: boolean;          // 是否启用模型映射
+  defaultModelGroup: string; // 全局默认模型组名称（必须是存在的模型组名）
+}
+
+export interface LoggerConfig {
+  level: 'debug' | 'info' | 'warn' | 'error';  // 日志级别
+  enableRequestLog: boolean;                   // 是否启用请求日志
+  enableDebug: boolean;                        // 是否启用 debug 日志
+}
+
 export interface GatewayConfig {
   server: ServerConfig;
   database: DatabaseConfig;
@@ -51,4 +62,6 @@ export interface GatewayConfig {
   health: HealthConfig;
   circuitBreaker: CircuitBreakerConfig;
   sameProtocolPassthrough: SameProtocolPassthroughConfig;
+  modelMapping: ModelMappingConfig;
+  logger: LoggerConfig;
 }

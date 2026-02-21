@@ -40,6 +40,7 @@ export function useLogPage() {
   const queryClient = useQueryClient()
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [clientTypeFilter, setClientTypeFilter] = useState<string>('all')
   const [timeRange, setTimeRange] = useState<string>('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
@@ -63,8 +64,12 @@ export function useLogPage() {
       params.status = statusFilter
     }
 
+    if (clientTypeFilter !== 'all') {
+      params.clientType = clientTypeFilter
+    }
+
     return params
-  }, [currentPage, pageSize, timeParams, statusFilter])
+  }, [currentPage, pageSize, timeParams, statusFilter, clientTypeFilter])
 
   const { data: logsData, isLoading: loading, isFetching } = useLogs(queryParams)
   const { data: logDetailData } = useLog(selectedLogId || '')
@@ -76,6 +81,7 @@ export function useLogPage() {
   const logs: LogListItem[] = logsData?.data || []
   const pagination = logsData?.pagination
   const stats = statsData?.data?.overview
+  const clientStats = statsData?.data?.clientStats
   const storage = storageData?.data
 
   // 完整日志详情（从详情接口获取）
@@ -116,6 +122,11 @@ export function useLogPage() {
     setCurrentPage(1)
   }
 
+  const handleClientTypeChange = (value: string) => {
+    setClientTypeFilter(value)
+    setCurrentPage(1)
+  }
+
   const handleTimeRangeChange = (value: string) => {
     setTimeRange(value)
     setCurrentPage(1)
@@ -146,9 +157,11 @@ export function useLogPage() {
     logs: filteredLogs,
     pagination,
     stats,
+    clientStats,
     storage,
     searchQuery,
     statusFilter,
+    clientTypeFilter,
     timeRange,
     currentPage,
     pageSize,
@@ -164,6 +177,7 @@ export function useLogPage() {
     setRetentionDays,
     handleSearchChange,
     handleStatusChange,
+    handleClientTypeChange,
     handleTimeRangeChange,
     handleRefresh,
     setCurrentPage,

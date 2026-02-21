@@ -1,4 +1,4 @@
-CREATE TABLE "gateway_configs" (
+CREATE TABLE IF NOT EXISTS "gateway_configs" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"key" varchar(100) NOT NULL,
 	"value" jsonb NOT NULL,

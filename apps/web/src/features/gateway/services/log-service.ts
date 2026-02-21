@@ -38,6 +38,7 @@ export interface LogRequestParams {
   errorType?: string;
   clientIp?: string;
   userAgent?: string;
+  clientType?: string;
   requestPath: string;
   requestMethod: string;
   streaming: boolean;
@@ -143,6 +144,7 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
       errorType: params.errorType,
       clientIp: params.clientIp,
       userAgent: params.userAgent,
+      clientType: params.clientType,
       requestPath: params.requestPath,
       requestMethod: params.requestMethod,
       streaming: params.streaming ? 'true' : 'false',
@@ -213,6 +215,7 @@ export async function logStreamStart(params: {
   transformedRequestBody?: unknown;
   clientIp?: string;
   userAgent?: string;
+  clientType?: string;
   requestPath: string;
   requestMethod: string;
   incomingProtocol?: string;
@@ -256,6 +259,7 @@ export async function logStreamStart(params: {
         transformedRequestBody: params.transformedRequestBody as any,
         clientIp: params.clientIp,
         userAgent: params.userAgent,
+        clientType: params.clientType,
         requestPath: params.requestPath,
         requestMethod: params.requestMethod,
         streaming: 'true',

@@ -19,6 +19,7 @@ import {
 import { JsonViewer, HeadersViewer } from '@/components/admin/JsonViewer'
 import { cn } from '@/core/lib/utils'
 import type { Log } from '@/hooks/use-logs'
+import { CLIENT_REGISTRY } from '@/features/gateway/services/client-identifier'
 
 interface LogDetailSheetProps {
   log?: Log | null
@@ -415,6 +416,13 @@ export function LogDetailSheet({
                   value={log.modelName}
                   mono
                 />
+                {log.originalModelName && log.originalModelName !== log.modelName && (
+                  <InfoRow
+                    label="原始模型"
+                    value={log.originalModelName}
+                    mono
+                  />
+                )}
                 <InfoRow
                   label="供应商"
                   value={log.providerName || '-'}
@@ -521,13 +529,21 @@ export function LogDetailSheet({
                   mono
                 />
                 <InfoRow
-                  label="User Agent"
+                  label="客户端"
                   value={
-                    <span className="text-xs break-all">
-                      {log.userAgent || '-'}
-                    </span>
+                    <div className="space-y-1">
+                      <Badge variant="secondary" className="text-xs font-normal">
+                        {log.clientType
+                          ? (CLIENT_REGISTRY[log.clientType] ?? log.clientType)
+                          : '未知客户端'}
+                      </Badge>
+                      {log.userAgent && log.userAgent !== 'unknown' && (
+                        <div className="text-xs text-muted-foreground break-all font-mono">
+                          {log.userAgent}
+                        </div>
+                      )}
+                    </div>
                   }
-                  mono
                 />
                 <InfoRow
                   label="请求 ID"

@@ -37,6 +37,7 @@ export interface LogListItem {
   virtualKeyId: string | null
   virtualKeyName: string | null
   modelName: string
+  originalModelName: string | null
   providerId: string | null
   providerName: string | null
   status: 'success' | 'failure'
@@ -48,6 +49,7 @@ export interface LogListItem {
   streaming: string
   errorMessage: string | null
   errorType: string | null
+  clientType: string | null
   createdAt: string
 }
 
@@ -100,6 +102,10 @@ export interface LogStats {
     virtualKeyName: string
     requestCount: number
     totalTokens: number
+  }>
+  clientStats: Array<{
+    clientType: string | null
+    requestCount: number
   }>
 }
 

@@ -1,4 +1,4 @@
-CREATE TABLE "providers" (
+CREATE TABLE IF NOT EXISTS "providers" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" varchar(255) NOT NULL,
 	"api_key" text,
@@ -8,7 +8,7 @@ CREATE TABLE "providers" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "model_groups" (
+CREATE TABLE IF NOT EXISTS "model_groups" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" varchar(255) NOT NULL,
 	"aliases" jsonb DEFAULT '[]'::jsonb,
@@ -25,7 +25,7 @@ CREATE TABLE "model_groups" (
 	CONSTRAINT "model_groups_name_unique" UNIQUE("name")
 );
 --> statement-breakpoint
-CREATE TABLE "model_instances" (
+CREATE TABLE IF NOT EXISTS "model_instances" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"group_id" uuid NOT NULL,
 	"provider_id" uuid NOT NULL,
@@ -45,7 +45,7 @@ CREATE TABLE "model_instances" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "request_logs" (
+CREATE TABLE IF NOT EXISTS "request_logs" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"virtual_key_id" uuid,
 	"virtual_key_name" varchar(255),
@@ -89,7 +89,7 @@ CREATE TABLE "request_logs" (
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "virtual_keys" (
+CREATE TABLE IF NOT EXISTS "virtual_keys" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"key" varchar(255) NOT NULL,
 	"name" varchar(255) NOT NULL,
@@ -104,7 +104,7 @@ CREATE TABLE "virtual_keys" (
 	CONSTRAINT "virtual_keys_key_unique" UNIQUE("key")
 );
 --> statement-breakpoint
-CREATE TABLE "health_runs" (
+CREATE TABLE IF NOT EXISTS "health_runs" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"target_id" uuid NOT NULL,
 	"checked_at" timestamp DEFAULT now() NOT NULL,
@@ -114,7 +114,7 @@ CREATE TABLE "health_runs" (
 	"error_message" text
 );
 --> statement-breakpoint
-CREATE TABLE "health_targets" (
+CREATE TABLE IF NOT EXISTS "health_targets" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" varchar(255) NOT NULL,
 	"type" varchar(20) NOT NULL,
@@ -126,21 +126,41 @@ CREATE TABLE "health_targets" (
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-ALTER TABLE "model_instances" ADD CONSTRAINT "model_instances_group_id_model_groups_id_fk" FOREIGN KEY ("group_id") REFERENCES "public"."model_groups"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "model_instances" ADD CONSTRAINT "model_instances_provider_id_providers_id_fk" FOREIGN KEY ("provider_id") REFERENCES "public"."providers"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "request_logs" ADD CONSTRAINT "request_logs_virtual_key_id_virtual_keys_id_fk" FOREIGN KEY ("virtual_key_id") REFERENCES "public"."virtual_keys"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "request_logs" ADD CONSTRAINT "request_logs_provider_id_providers_id_fk" FOREIGN KEY ("provider_id") REFERENCES "public"."providers"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "health_runs" ADD CONSTRAINT "health_runs_target_id_health_targets_id_fk" FOREIGN KEY ("target_id") REFERENCES "public"."health_targets"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "idx_request_logs_virtual_key_id" ON "request_logs" USING btree ("virtual_key_id");--> statement-breakpoint
-CREATE INDEX "idx_request_logs_model_name" ON "request_logs" USING btree ("model_name");--> statement-breakpoint
-CREATE INDEX "idx_request_logs_provider_id" ON "request_logs" USING btree ("provider_id");--> statement-breakpoint
-CREATE INDEX "idx_request_logs_status" ON "request_logs" USING btree ("status");--> statement-breakpoint
-CREATE INDEX "idx_request_logs_created_at" ON "request_logs" USING btree ("created_at");--> statement-breakpoint
-CREATE INDEX "idx_request_logs_streaming" ON "request_logs" USING btree ("streaming");--> statement-breakpoint
-CREATE INDEX "idx_request_logs_tool_calls_count" ON "request_logs" USING btree ("tool_calls_count");--> statement-breakpoint
-CREATE INDEX "idx_request_logs_conversation_id" ON "request_logs" USING btree ("conversation_id");--> statement-breakpoint
-CREATE INDEX "idx_request_logs_status_created_at" ON "request_logs" USING btree ("status","created_at");--> statement-breakpoint
-CREATE INDEX "idx_request_logs_stream_status" ON "request_logs" USING btree ("stream_status");--> statement-breakpoint
-CREATE INDEX "idx_request_logs_is_complete" ON "request_logs" USING btree ("is_complete");--> statement-breakpoint
-CREATE INDEX "idx_stream_status_complete" ON "request_logs" USING btree ("stream_status","is_complete");--> statement-breakpoint
-CREATE INDEX "idx_request_logs_last_updated_at" ON "request_logs" USING btree ("last_updated_at");
+DO $$ BEGIN
+  ALTER TABLE "model_instances" ADD CONSTRAINT "model_instances_group_id_model_groups_id_fk" FOREIGN KEY ("group_id") REFERENCES "public"."model_groups"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+  ALTER TABLE "model_instances" ADD CONSTRAINT "model_instances_provider_id_providers_id_fk" FOREIGN KEY ("provider_id") REFERENCES "public"."providers"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+  ALTER TABLE "request_logs" ADD CONSTRAINT "request_logs_virtual_key_id_virtual_keys_id_fk" FOREIGN KEY ("virtual_key_id") REFERENCES "public"."virtual_keys"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+  ALTER TABLE "request_logs" ADD CONSTRAINT "request_logs_provider_id_providers_id_fk" FOREIGN KEY ("provider_id") REFERENCES "public"."providers"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+  ALTER TABLE "health_runs" ADD CONSTRAINT "health_runs_target_id_health_targets_id_fk" FOREIGN KEY ("target_id") REFERENCES "public"."health_targets"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_request_logs_virtual_key_id" ON "request_logs" USING btree ("virtual_key_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_request_logs_model_name" ON "request_logs" USING btree ("model_name");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_request_logs_provider_id" ON "request_logs" USING btree ("provider_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_request_logs_status" ON "request_logs" USING btree ("status");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_request_logs_created_at" ON "request_logs" USING btree ("created_at");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_request_logs_streaming" ON "request_logs" USING btree ("streaming");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_request_logs_tool_calls_count" ON "request_logs" USING btree ("tool_calls_count");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_request_logs_conversation_id" ON "request_logs" USING btree ("conversation_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_request_logs_status_created_at" ON "request_logs" USING btree ("status","created_at");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_request_logs_stream_status" ON "request_logs" USING btree ("stream_status");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_request_logs_is_complete" ON "request_logs" USING btree ("is_complete");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_stream_status_complete" ON "request_logs" USING btree ("stream_status","is_complete");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_request_logs_last_updated_at" ON "request_logs" USING btree ("last_updated_at");

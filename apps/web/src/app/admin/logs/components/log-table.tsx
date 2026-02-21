@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/table'
 import { cn } from '@/core/lib/utils'
 import type { LogListItem } from '@/hooks/use-logs'
+import { CLIENT_REGISTRY } from '@/features/gateway/services/client-identifier'
 
 interface LogTableProps {
   logs: LogListItem[]
@@ -39,6 +40,7 @@ export function LogTable({
             <TableHead className="w-[100px]">延迟</TableHead>
             <TableHead className="w-[140px]">Token</TableHead>
             <TableHead className="min-w-[150px]">虚拟密钥</TableHead>
+            <TableHead className="w-[120px]">客户端</TableHead>
             <TableHead className="w-[160px]">时间</TableHead>
             <TableHead className="w-[120px] text-right">操作</TableHead>
           </TableRow>
@@ -82,6 +84,11 @@ export function LogTable({
                         {log.statusCode || log.status}
                       </Badge>
                     </div>
+                    {log.originalModelName && log.originalModelName !== log.modelName && (
+                      <div className="text-xs text-muted-foreground truncate">
+                        原始: {log.originalModelName}
+                      </div>
+                    )}
                     {log.providerName && (
                       <div className="text-xs text-muted-foreground truncate">
                         {log.providerName}
@@ -136,6 +143,17 @@ export function LogTable({
                       </Badge>
                     )}
                   </div>
+                </TableCell>
+
+                {/* 客户端 */}
+                <TableCell>
+                  {log.clientType && log.clientType !== 'unknown' ? (
+                    <Badge variant="secondary" className="text-xs font-normal whitespace-nowrap">
+                      {CLIENT_REGISTRY[log.clientType] ?? log.clientType}
+                    </Badge>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">-</span>
+                  )}
                 </TableCell>
 
                 {/* 时间 */}

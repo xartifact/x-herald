@@ -5,13 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import type { LogStats } from '@/hooks/use-logs'
 import type { LogStorage } from '@/hooks/use-logs'
+import { CLIENT_REGISTRY } from '@/features/gateway/services/client-identifier'
 
 interface LogStatsCardsProps {
   stats?: LogStats['overview']
   storage?: LogStorage
+  clientStats?: LogStats['clientStats']
 }
 
-export function LogStatsCards({ stats, storage }: LogStatsCardsProps) {
+export function LogStatsCards({ stats, storage, clientStats }: LogStatsCardsProps) {
   if (!stats) return null
 
   const successRate = stats.totalRequests > 0
@@ -90,6 +92,34 @@ export function LogStatsCards({ stats, storage }: LogStatsCardsProps) {
           </div>
         </CardContent>
       </Card>
+
+      {clientStats && clientStats.length > 0 && (() => {
+        const top = clientStats[0]
+        const topName = top.clientType
+          ? (CLIENT_REGISTRY[top.clientType] ?? top.clientType)
+          : '未知客户端'
+        return (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">客户端分布</CardTitle>
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold truncate" title={topName}>{topName}</div>
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                <Badge variant="secondary" className="text-xs">
+                  最多 {top.requestCount} 次
+                </Badge>
+                {clientStats.slice(1, 3).map(s => (
+                  <span key={s.clientType ?? 'unknown'} className="text-xs text-muted-foreground">
+                    {s.clientType ? (CLIENT_REGISTRY[s.clientType] ?? s.clientType) : '未知'}
+                  </span>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )
+      })()}
     </div>
   )
 }

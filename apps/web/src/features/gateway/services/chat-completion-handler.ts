@@ -3,6 +3,7 @@ import { modelGroupRouter } from './model-group-router';
 import { detectProtocol, getProviderProtocol, getProviderUrl, getEndpoint } from './protocol-detector';
 import { logRequest } from './log-service';
 import { handleNonStreamingResponse, handleStreamingResponse } from './response-handlers';
+import { identifyClient } from './client-identifier';
 import { handleGatewayError, handleProviderError } from './error-handler';
 import logger from '@/core/lib/logger';
 import { loadConfig } from '@/core/config';
@@ -63,6 +64,10 @@ export async function handleChatCompletion(
   c.req.raw.headers.forEach((value, key) => {
     clientRequestHeaders[key] = value;
   });
+
+  // 识别客户端类型
+  const clientInfo = identifyClient(userAgent, clientRequestHeaders);
+  const clientType = clientInfo.type;
 
   // 提取或生成 conversationId
   const conversationId = c.req.header('x-conversation-id') || undefined;
@@ -306,6 +311,7 @@ export async function handleChatCompletion(
       requestMethod,
       conversationId,
       isPassthroughEnabled,
+      clientType,
     };
 
     if (actualStreaming) {

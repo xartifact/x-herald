@@ -127,6 +127,7 @@ export const requestLogs = pgTable('request_logs', {
   errorType: varchar('error_type', { length: 50 }),
   clientIp: varchar('client_ip', { length: 45 }),
   userAgent: text('user_agent'),
+  clientType: varchar('client_type', { length: 100 }),
   requestPath: varchar('request_path', { length: 255 }),
   requestMethod: varchar('request_method', { length: 10 }),
   streaming: varchar('streaming', { length: 10 }).default('false').notNull(),

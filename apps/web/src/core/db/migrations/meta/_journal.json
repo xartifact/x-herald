@@ -22,6 +22,13 @@
       "when": 1771328027553,
       "tag": "0002_striped_moira_mactaggert",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1771655103296,
+      "tag": "0003_dazzling_jimmy_woo",
+      "breakpoints": true
     }
   ]
 }

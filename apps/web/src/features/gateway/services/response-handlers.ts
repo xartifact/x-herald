@@ -42,6 +42,7 @@ interface ResponseHandlerParams {
   requestMethod: string;
   conversationId?: string;
   isPassthroughEnabled?: boolean;
+  clientType?: string;
 }
 
 /**
@@ -176,6 +177,7 @@ export async function handleNonStreamingResponse(
       incomingProtocol,
       targetProtocol,
       conversationId: params.conversationId,
+      clientType: params.clientType,
     });
 
     return new Response(response.body, {
@@ -247,6 +249,7 @@ export async function handleNonStreamingResponse(
       incomingProtocol,
       targetProtocol,
       conversationId: params.conversationId,
+      clientType: params.clientType,
     });
 
     return c.json(providerResponseData);
@@ -354,6 +357,7 @@ export async function handleNonStreamingResponse(
     incomingProtocol,
     targetProtocol,
     conversationId: params.conversationId,
+    clientType: params.clientType,
   });
 
   return c.json(responseData);
@@ -657,6 +661,7 @@ export async function handleStreamingResponse(
     incomingProtocol,
     targetProtocol,
     conversationId: params.conversationId,
+    clientType: params.clientType,
   });
 
   // 创建三个收集器，分别收集响应链路的三个阶段

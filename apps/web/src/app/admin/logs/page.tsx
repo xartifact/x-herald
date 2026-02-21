@@ -18,9 +18,11 @@ export default function LogsPage() {
     logs,
     pagination,
     stats,
+    clientStats,
     storage,
     searchQuery,
     statusFilter,
+    clientTypeFilter,
     timeRange,
     currentPage,
     pageSize,
@@ -36,6 +38,7 @@ export default function LogsPage() {
     setRetentionDays,
     handleSearchChange,
     handleStatusChange,
+    handleClientTypeChange,
     handleTimeRangeChange,
     handleRefresh,
     setCurrentPage,
@@ -64,13 +67,15 @@ export default function LogsPage() {
           </Button>
         </div>
 
-        <LogStatsCards stats={stats} storage={storage} />
+        <LogStatsCards stats={stats} storage={storage} clientStats={clientStats} />
 
         <LogSearchFilter
           searchQuery={searchQuery}
           onSearchChange={handleSearchChange}
           statusFilter={statusFilter}
           onStatusChange={handleStatusChange}
+          clientTypeFilter={clientTypeFilter}
+          onClientTypeChange={handleClientTypeChange}
           timeRange={timeRange}
           onTimeRangeChange={handleTimeRangeChange}
           onRefresh={handleRefresh}
@@ -91,7 +96,7 @@ export default function LogsPage() {
           <div className="py-12 text-center text-muted-foreground border rounded-lg">加载中...</div>
         ) : logs.length === 0 ? (
           <div className="py-12 text-center text-muted-foreground border rounded-lg">
-            {searchQuery || statusFilter !== 'all' ? '没有找到匹配的日志' : '还没有请求日志'}
+            {searchQuery || statusFilter !== 'all' || clientTypeFilter !== 'all' ? '没有找到匹配的日志' : '还没有请求日志'}
           </div>
         ) : (
           <LogTable

@@ -12,12 +12,15 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/core/lib/utils'
+import { CLIENT_REGISTRY } from '@/features/gateway/services/client-identifier'
 
 interface LogSearchFilterProps {
   searchQuery: string
   onSearchChange: (value: string) => void
   statusFilter: string
   onStatusChange: (value: string) => void
+  clientTypeFilter: string
+  onClientTypeChange: (value: string) => void
   timeRange: string
   onTimeRangeChange: (value: string) => void
   onRefresh: () => void
@@ -29,6 +32,8 @@ export function LogSearchFilter({
   onSearchChange,
   statusFilter,
   onStatusChange,
+  clientTypeFilter,
+  onClientTypeChange,
   timeRange,
   onTimeRangeChange,
   onRefresh,
@@ -57,6 +62,20 @@ export function LogSearchFilter({
                 <SelectItem value="all">全部状态</SelectItem>
                 <SelectItem value="success">成功</SelectItem>
                 <SelectItem value="failure">失败</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={clientTypeFilter} onValueChange={onClientTypeChange}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="客户端筛选" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部客户端</SelectItem>
+                {Object.entries(CLIENT_REGISTRY)
+                  .filter(([type]) => type !== 'unknown')
+                  .map(([type, name]) => (
+                    <SelectItem key={type} value={type}>{name}</SelectItem>
+                  ))}
               </SelectContent>
             </Select>
 

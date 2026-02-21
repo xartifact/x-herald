@@ -44,6 +44,10 @@ logsRoutes.get('/', async (c) => {
       conditions.push(lte(requestLogs.createdAt, new Date(query.endDate)));
     }
 
+    if (query.clientType) {
+      conditions.push(eq(requestLogs.clientType, query.clientType));
+    }
+
     // 查询总数
     const countQuery =
       conditions.length > 0
@@ -62,6 +66,7 @@ logsRoutes.get('/', async (c) => {
               status: requestLogs.status,
               statusCode: requestLogs.statusCode,
               modelName: requestLogs.modelName,
+              originalModelName: requestLogs.originalModelName,
               providerId: requestLogs.providerId,
               providerName: requestLogs.providerName,
               virtualKeyId: requestLogs.virtualKeyId,
@@ -73,6 +78,7 @@ logsRoutes.get('/', async (c) => {
               streaming: requestLogs.streaming,
               errorMessage: requestLogs.errorMessage,
               errorType: requestLogs.errorType,
+              clientType: requestLogs.clientType,
               createdAt: requestLogs.createdAt,
             })
             .from(requestLogs)
@@ -86,6 +92,7 @@ logsRoutes.get('/', async (c) => {
               status: requestLogs.status,
               statusCode: requestLogs.statusCode,
               modelName: requestLogs.modelName,
+              originalModelName: requestLogs.originalModelName,
               providerId: requestLogs.providerId,
               providerName: requestLogs.providerName,
               virtualKeyId: requestLogs.virtualKeyId,
@@ -97,6 +104,7 @@ logsRoutes.get('/', async (c) => {
               streaming: requestLogs.streaming,
               errorMessage: requestLogs.errorMessage,
               errorType: requestLogs.errorType,
+              clientType: requestLogs.clientType,
               createdAt: requestLogs.createdAt,
             })
             .from(requestLogs)
@@ -295,6 +303,31 @@ logsRoutes.get('/stats/overview', async (c) => {
 
     const keyStats = await keyStatsQuery;
 
+    // 按客户端类型统计（top 10）
+    const clientStatsQuery =
+      conditions.length > 0
+        ? db
+            .select({
+              clientType: requestLogs.clientType,
+              requestCount: sql<number>`count(*)`,
+            })
+            .from(requestLogs)
+            .where(and(...conditions))
+            .groupBy(requestLogs.clientType)
+            .orderBy(desc(sql`count(*)`))
+            .limit(10)
+        : db
+            .select({
+              clientType: requestLogs.clientType,
+              requestCount: sql<number>`count(*)`,
+            })
+            .from(requestLogs)
+            .groupBy(requestLogs.clientType)
+            .orderBy(desc(sql`count(*)`))
+            .limit(10);
+
+    const clientStats = await clientStatsQuery;
+
     return c.json({
       success: true,
       data: {
@@ -318,6 +351,10 @@ logsRoutes.get('/stats/overview', async (c) => {
           virtualKeyName: stat.virtualKeyName || '',
           requestCount: Number(stat.requestCount),
           totalTokens: Number(stat.totalTokens),
+        })),
+        clientStats: clientStats.map((stat) => ({
+          clientType: stat.clientType,
+          requestCount: Number(stat.requestCount),
         })),
       },
     });

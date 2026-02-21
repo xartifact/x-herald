@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { useLogs, useDeleteLog, useLogStats, useLogStorage, useCleanupLogs } from '@/hooks/use-logs'
+import { useLogs, useLog, useDeleteLog, useLogStats, useLogStorage, useCleanupLogs, type LogListItem } from '@/hooks/use-logs'
 import { useQueryClient } from '@tanstack/react-query'
 
-const PAGE_SIZE = 20
+const PAGE_SIZE_OPTIONS = [20, 50, 100]
+const DEFAULT_PAGE_SIZE = 50
 
 /**
  * 计算时间范围
@@ -41,6 +42,7 @@ export function useLogPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [timeRange, setTimeRange] = useState<string>('all')
   const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [selectedLogId, setSelectedLogId] = useState<string | null>(null)
   const [detailDialogOpen, setDetailDialogOpen] = useState(false)
   const [cleanupDialogOpen, setCleanupDialogOpen] = useState(false)
@@ -53,7 +55,7 @@ export function useLogPage() {
   const queryParams = useMemo(() => {
     const params: Record<string, string> = {
       page: String(currentPage),
-      pageSize: String(PAGE_SIZE),
+      pageSize: String(pageSize),
       ...timeParams,
     }
 
@@ -62,18 +64,22 @@ export function useLogPage() {
     }
 
     return params
-  }, [currentPage, timeParams, statusFilter])
+  }, [currentPage, pageSize, timeParams, statusFilter])
 
   const { data: logsData, isLoading: loading, isFetching } = useLogs(queryParams)
+  const { data: logDetailData } = useLog(selectedLogId || '')
   const { data: statsData } = useLogStats(timeParams)
   const { data: storageData } = useLogStorage()
   const deleteLog = useDeleteLog()
   const cleanupLogs = useCleanupLogs()
 
-  const logs = logsData?.data || []
+  const logs: LogListItem[] = logsData?.data || []
   const pagination = logsData?.pagination
   const stats = statsData?.data?.overview
   const storage = storageData?.data
+
+  // 完整日志详情（从详情接口获取）
+  const selectedLog = logDetailData?.data
 
   const handleDelete = async (id: string) => {
     if (!confirm('确定要删除这条日志吗？')) return
@@ -90,10 +96,8 @@ export function useLogPage() {
     setDetailDialogOpen(true)
   }
 
-  const selectedLog = logs.find((log) => log.id === selectedLogId)
-
   // 前端搜索过滤（仅针对当前页的数据）
-  const filteredLogs = logs.filter((log) => {
+  const filteredLogs = logs.filter((log: LogListItem) => {
     if (searchQuery === '') return true
 
     const matchesSearch =
@@ -114,6 +118,11 @@ export function useLogPage() {
 
   const handleTimeRangeChange = (value: string) => {
     setTimeRange(value)
+    setCurrentPage(1)
+  }
+
+  const handlePageSizeChange = (size: number) => {
+    setPageSize(size)
     setCurrentPage(1)
   }
 
@@ -142,6 +151,8 @@ export function useLogPage() {
     statusFilter,
     timeRange,
     currentPage,
+    pageSize,
+    pageSizeOptions: PAGE_SIZE_OPTIONS,
     selectedLog,
     detailDialogOpen,
     cleanupDialogOpen,
@@ -156,6 +167,7 @@ export function useLogPage() {
     handleTimeRangeChange,
     handleRefresh,
     setCurrentPage,
+    handlePageSizeChange,
     handleDelete,
     handleCleanup,
     handleViewDetail,

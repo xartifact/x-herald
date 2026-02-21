@@ -12,10 +12,10 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { cn } from '@/core/lib/utils'
-import type { Log } from '@/hooks/use-logs'
+import type { LogListItem } from '@/hooks/use-logs'
 
 interface LogTableProps {
-  logs: Log[]
+  logs: LogListItem[]
   onViewDetail: (logId: string) => void
   onDelete: (logId: string) => void
   formatDuration: (ms: number) => string
@@ -32,7 +32,7 @@ export function LogTable({
   return (
     <div className="border rounded-lg">
       <Table>
-        <TableHeader>
+        <TableHeader className="sticky top-0 z-10 bg-background">
           <TableRow className="hover:bg-transparent">
             <TableHead className="w-[50px]">状态</TableHead>
             <TableHead className="min-w-[200px]">模型</TableHead>

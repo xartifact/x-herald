@@ -53,18 +53,52 @@ logsRoutes.get('/', async (c) => {
     const countResult = await countQuery;
     const total = Number(countResult[0]?.count || 0);
 
-    // 查询数据
+    // 查询数据 - 只选择列表需要的字段（优化性能，减少数据传输）
     const dataQuery =
       conditions.length > 0
         ? db
-            .select()
+            .select({
+              id: requestLogs.id,
+              status: requestLogs.status,
+              statusCode: requestLogs.statusCode,
+              modelName: requestLogs.modelName,
+              providerId: requestLogs.providerId,
+              providerName: requestLogs.providerName,
+              virtualKeyId: requestLogs.virtualKeyId,
+              virtualKeyName: requestLogs.virtualKeyName,
+              latencyMs: requestLogs.latencyMs,
+              inputTokens: requestLogs.inputTokens,
+              outputTokens: requestLogs.outputTokens,
+              totalTokens: requestLogs.totalTokens,
+              streaming: requestLogs.streaming,
+              errorMessage: requestLogs.errorMessage,
+              errorType: requestLogs.errorType,
+              createdAt: requestLogs.createdAt,
+            })
             .from(requestLogs)
             .where(and(...conditions))
             .orderBy(desc(requestLogs.createdAt))
             .limit(pageSize)
             .offset(offset)
         : db
-            .select()
+            .select({
+              id: requestLogs.id,
+              status: requestLogs.status,
+              statusCode: requestLogs.statusCode,
+              modelName: requestLogs.modelName,
+              providerId: requestLogs.providerId,
+              providerName: requestLogs.providerName,
+              virtualKeyId: requestLogs.virtualKeyId,
+              virtualKeyName: requestLogs.virtualKeyName,
+              latencyMs: requestLogs.latencyMs,
+              inputTokens: requestLogs.inputTokens,
+              outputTokens: requestLogs.outputTokens,
+              totalTokens: requestLogs.totalTokens,
+              streaming: requestLogs.streaming,
+              errorMessage: requestLogs.errorMessage,
+              errorType: requestLogs.errorType,
+              createdAt: requestLogs.createdAt,
+            })
             .from(requestLogs)
             .orderBy(desc(requestLogs.createdAt))
             .limit(pageSize)

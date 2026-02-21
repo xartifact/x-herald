@@ -31,7 +31,8 @@ export const logKeys = {
   storage: () => [...logKeys.all, 'storage'] as const,
 }
 
-export interface Log {
+// 列表项（轻量级）- 只包含列表展示需要的字段
+export interface LogListItem {
   id: string
   virtualKeyId: string | null
   virtualKeyName: string | null
@@ -44,7 +45,17 @@ export interface Log {
   inputTokens: number
   outputTokens: number
   totalTokens: number
+  streaming: string
+  errorMessage: string | null
+  errorType: string | null
+  createdAt: string
+}
+
+// 详情项（完整）- 包含所有字段
+export interface Log extends LogListItem {
   requestHeaders: Record<string, string> | null
+  // 请求头链路追踪
+  providerRequestHeaders: Record<string, string> | null
   // 请求链路追踪
   requestBody: Record<string, unknown> | null
   standardRequestBody: Record<string, unknown> | null
@@ -56,20 +67,16 @@ export interface Log {
   providerResponseBody: Record<string, unknown> | null
   standardResponseBody: Record<string, unknown> | null
   responseBody: Record<string, unknown> | null
-  errorMessage: string | null
-  errorType: string | null
   clientIp: string | null
   userAgent: string | null
   requestPath: string | null
   requestMethod: string | null
-  streaming: string
   incomingProtocol: string | null
   targetProtocol: string | null
-  // 新增字段：标记系统
+  // 标记系统
   metadata: LogMetadata | null
   toolCallsCount: number | null
-  conversationId?: string 
-  createdAt: string
+  conversationId?: string
 }
 
 export interface LogStats {
@@ -107,7 +114,7 @@ export interface LogStorage {
 
 export interface LogsListResponse {
   success: boolean
-  data: Log[]
+  data: LogListItem[]
   pagination: {
     page: number
     pageSize: number

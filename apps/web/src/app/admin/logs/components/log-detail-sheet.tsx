@@ -14,7 +14,6 @@ import {
   Copy,
   Check,
   X,
-  ExternalLink,
   ChevronRight,
 } from 'lucide-react'
 import { JsonViewer, HeadersViewer } from '@/components/admin/JsonViewer'
@@ -216,13 +215,32 @@ function RequestPanel({ log, className }: RequestPanelProps) {
           </TabsContent>
 
           <TabsContent value="headers" className="p-4 m-0">
-            {log.requestHeaders ? (
-              <HeadersViewer headers={log.requestHeaders} />
-            ) : (
-              <div className="flex items-center justify-center h-[200px] text-sm text-muted-foreground">
-                无请求头数据
-              </div>
-            )}
+            <Tabs defaultValue="client-headers" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsTrigger value="client-headers">客户端请求头</TabsTrigger>
+                <TabsTrigger value="provider-headers">Provider 请求头</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="client-headers">
+                {log.requestHeaders ? (
+                  <HeadersViewer headers={log.requestHeaders} />
+                ) : (
+                  <div className="flex items-center justify-center h-[150px] text-sm text-muted-foreground">
+                    无客户端请求头数据
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="provider-headers">
+                {log.providerRequestHeaders ? (
+                  <HeadersViewer headers={log.providerRequestHeaders} />
+                ) : (
+                  <div className="flex items-center justify-center h-[150px] text-sm text-muted-foreground">
+                    无 Provider 请求头数据
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
           </TabsContent>
         </Tabs>
       </ScrollArea>
@@ -335,6 +353,7 @@ export function LogDetailSheet({
       <SheetContent
         side="right"
         className="w-[66vw] max-w-[66vw] p-0 flex flex-col gap-0 sm:max-w-[66vw]"
+        hideCloseButton
       >
         {/* 顶部工具栏 */}
         <div className="flex items-center justify-between px-6 py-3.5 border-b bg-background">
@@ -560,7 +579,7 @@ export function LogDetailSheet({
               </Section>
 
               {/* 工具调用信息 */}
-              {log.toolCallsCount && log.toolCallsCount > 0 && (
+              {!!log.toolCallsCount && log.toolCallsCount > 0 && (
                 <Section title="工具调用" badge={log.toolCallsCount.toString()}>
                   <InfoRow
                     label="调用次数"

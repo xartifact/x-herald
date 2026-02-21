@@ -10,6 +10,9 @@ import { eq } from 'drizzle-orm';
 export interface LogRequestParams {
   virtualKey: VirtualKey;
   modelName: string;
+  originalModelName?: string;
+  mappingType?: 'exact' | 'alias' | 'fallback' | null;
+  isMapped?: boolean;
   providerId?: string;
   providerName?: string;
   status: 'success' | 'failure';
@@ -18,6 +21,8 @@ export interface LogRequestParams {
   inputTokens?: number;
   outputTokens?: number;
   requestHeaders?: Record<string, string>;
+  // 请求头链路追踪
+  providerRequestHeaders?: Record<string, string>;  // Provider 请求头
   // 请求链路追踪
   requestBody?: unknown;
   standardRequestBody?: unknown;
@@ -73,6 +78,15 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
       tags: params.tags,
     });
 
+    // 添加模型映射信息到元数据
+    if (params.originalModelName || params.mappingType) {
+      metadata.modelMapping = {
+        originalModel: params.originalModelName,
+        mappingType: params.mappingType,
+        isMapped: params.isMapped,
+      };
+    }
+
     // 计算工具调用次数
     const toolCallsCount = metadata.toolCalls?.tools?.length || 0;
 
@@ -106,6 +120,7 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
       virtualKeyId: params.virtualKey.id,
       virtualKeyName: params.virtualKey.name,
       modelName: params.modelName,
+      originalModelName: params.originalModelName,
       providerId: params.providerId,
       providerName: params.providerName,
       status: params.status,
@@ -115,6 +130,7 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
       outputTokens,
       totalTokens: inputTokens + outputTokens,
       requestHeaders: params.requestHeaders,
+      providerRequestHeaders: params.providerRequestHeaders,
       requestBody: params.requestBody,
       standardRequestBody: params.standardRequestBody as any,
       transformedRequestBody: params.transformedRequestBody,
@@ -185,9 +201,13 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
 export async function logStreamStart(params: {
   virtualKey: VirtualKey;
   modelName: string;
+  originalModelName?: string;
+  mappingType?: 'exact' | 'alias' | 'fallback' | null;
+  isMapped?: boolean;
   providerId: string;
   providerName: string;
   requestHeaders: Record<string, string>;
+  providerRequestHeaders?: Record<string, string>;
   requestBody: unknown;
   standardRequestBody?: unknown;
   transformedRequestBody?: unknown;
@@ -202,12 +222,23 @@ export async function logStreamStart(params: {
   try {
     const db = getDatabase();
 
+    // 构建元数据，包含模型映射信息
+    const metadata: LogMetadata = {};
+    if (params.originalModelName || params.mappingType) {
+      metadata.modelMapping = {
+        originalModel: params.originalModelName,
+        mappingType: params.mappingType,
+        isMapped: params.isMapped,
+      };
+    }
+
     const result = await db
       .insert(requestLogs)
       .values({
         virtualKeyId: params.virtualKey.id,
         virtualKeyName: params.virtualKey.name,
         modelName: params.modelName,
+        originalModelName: params.originalModelName,
         providerId: params.providerId,
         providerName: params.providerName,
         status: 'success', // 临时状态，将在完成时更新
@@ -219,6 +250,7 @@ export async function logStreamStart(params: {
         outputTokens: 0,
         totalTokens: 0,
         requestHeaders: params.requestHeaders as any,
+        providerRequestHeaders: params.providerRequestHeaders as any,
         requestBody: params.requestBody as any,
         standardRequestBody: params.standardRequestBody as any,
         transformedRequestBody: params.transformedRequestBody as any,
@@ -230,6 +262,7 @@ export async function logStreamStart(params: {
         incomingProtocol: params.incomingProtocol,
         targetProtocol: params.targetProtocol,
         conversationId: params.conversationId,
+        metadata: metadata as any,
         streamStartedAt: new Date(),
       })
       .returning({ id: requestLogs.id });
@@ -290,6 +323,7 @@ export async function finalizeStreamLog(
     inputTokens: number;
     outputTokens: number;
     usageEstimated: boolean;
+    providerRequestHeaders?: Record<string, string>;
     providerResponseHeaders: Record<string, string>;
     clientResponseHeaders: Record<string, string>;
     providerResponseBody: unknown;

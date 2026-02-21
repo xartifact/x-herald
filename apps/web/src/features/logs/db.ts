@@ -24,6 +24,13 @@ export interface LogMetadata {
     role?: string;
   };
 
+  // 模型映射信息
+  modelMapping?: {
+    originalModel?: string;
+    mappingType?: 'exact' | 'alias' | 'fallback' | null;
+    isMapped?: boolean;
+  };
+
   // 内容特征
   content?: {
     types?: string[];                                 // text, image, audio, video
@@ -93,6 +100,7 @@ export const requestLogs = pgTable('request_logs', {
   virtualKeyId: uuid('virtual_key_id').references(() => virtualKeys.id),
   virtualKeyName: varchar('virtual_key_name', { length: 255 }),
   modelName: varchar('model_name', { length: 255 }).notNull(),
+  originalModelName: varchar('original_model_name', { length: 255 }),
   providerId: uuid('provider_id').references(() => providers.id),
   providerName: varchar('provider_name', { length: 255 }),
   status: varchar('status', { length: 20 }).notNull().$type<'success' | 'failure'>(),
@@ -106,6 +114,8 @@ export const requestLogs = pgTable('request_logs', {
   requestBody: jsonb('request_body'),                         // 客户端原始请求
   standardRequestBody: jsonb('standard_request_body'),        // 标准格式请求
   transformedRequestBody: jsonb('transformed_request_body'),  // Provider 请求
+  // 请求头链路追踪
+  providerRequestHeaders: jsonb('provider_request_headers'),   // Provider 请求头
   // 响应头链路追踪
   providerResponseHeaders: jsonb('provider_response_headers'), // Provider 响应头
   clientResponseHeaders: jsonb('client_response_headers'),     // 客户端响应头
@@ -151,6 +161,7 @@ export const requestLogs = pgTable('request_logs', {
   // 添加常用查询索引
   virtualKeyIdIdx: index('idx_request_logs_virtual_key_id').on(table.virtualKeyId),
   modelNameIdx: index('idx_request_logs_model_name').on(table.modelName),
+  originalModelNameIdx: index('idx_request_logs_original_model_name').on(table.originalModelName),
   providerIdIdx: index('idx_request_logs_provider_id').on(table.providerId),
   statusIdx: index('idx_request_logs_status').on(table.status),
   createdAtIdx: index('idx_request_logs_created_at').on(table.createdAt),

@@ -163,11 +163,6 @@ export class AnthropicTransformer implements Transformer {
   async normalizeRequest(request: unknown, ctx: TransformerContext): Promise<StandardRequest> {
     const anthropicReq = request as AnthropicRequest;
 
-    logger.debug(
-      { requestId: ctx.requestId, model: anthropicReq.model },
-      'Normalizing Anthropic request',
-    );
-
     // 转换消息
     const standardMessages: StandardMessage[] = anthropicReq.messages.map((msg) =>
       this.convertMessage(msg),
@@ -279,11 +274,6 @@ export class AnthropicTransformer implements Transformer {
       };
     }
 
-    logger.debug(
-      { requestId: ctx.requestId, model: request.model },
-      'Adapted to Anthropic format',
-    );
-
     return {
       body: anthropicReq,
       headers: {
@@ -319,10 +309,6 @@ export class AnthropicTransformer implements Transformer {
         if (cleanedThinking) {
           reasoning_content += cleanedThinking;
         }
-        logger.debug(
-          { requestId: ctx.requestId, thinkingLength: block.thinking.length },
-          'Extracted thinking content from Anthropic response'
-        );
       } else if (block.type === 'tool_use' && block.id) {
         // 使用安全的 JSON 序列化和验证
         const argsString = parseToolArguments(
@@ -387,10 +373,6 @@ export class AnthropicTransformer implements Transformer {
         type: 'thinking',
         thinking: choice.message.reasoning_content,
       });
-      logger.debug(
-        { requestId: ctx.requestId, reasoningLength: choice.message.reasoning_content.length },
-        'Converting reasoning_content to thinking block'
-      );
     }
 
     if (choice.message?.content) {
@@ -768,10 +750,6 @@ export class AnthropicTransformer implements Transformer {
         // 提取 thinking 块
         if (item.type === 'thinking' && 'thinking' in item) {
           reasoning_content = item.thinking || '';
-          logger.debug(
-            { thinkingLength: reasoning_content.length },
-            'Extracted thinking content from Anthropic message'
-          );
         }
 
         if (item.type === 'tool_use') {
@@ -896,10 +874,6 @@ export class AnthropicTransformer implements Transformer {
           type: 'thinking',
           thinking: msg.reasoning_content,
         });
-        logger.debug(
-          { thinkingLength: msg.reasoning_content.length },
-          'Added thinking block to Anthropic message'
-        );
       }
 
       // 处理 tool_calls

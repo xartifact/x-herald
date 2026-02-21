@@ -12,3 +12,9 @@ export {
   type RouteResult,
   type RoutingContext,
 } from './model-group-router';
+
+export {
+  ModelMappingService,
+  modelMappingService,
+  type ModelMappingResult,
+} from './model-mapping';

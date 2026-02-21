@@ -116,11 +116,6 @@ export class OpenAITransformer implements Transformer {
   async normalizeRequest(request: unknown, ctx: TransformerContext): Promise<StandardRequest> {
     const openaiReq = request as OpenAIRequest;
 
-    logger.debug(
-      { requestId: ctx.requestId, model: openaiReq.model },
-      'Normalizing OpenAI request',
-    );
-
     // OpenAI 的 response_format 映射到标准的 output_config
     const outputConfig = openaiReq.response_format
       ? {
@@ -228,11 +223,6 @@ export class OpenAITransformer implements Transformer {
       }
     }
 
-    logger.debug(
-      { requestId: ctx.requestId, model: transformedRequest.model },
-      'Adapted to OpenAI format',
-    );
-
     // 构建 headers（包含自定义 headers）
     const headers = buildHeaders(
       { 'Content-Type': 'application/json' },
@@ -279,10 +269,6 @@ export class OpenAITransformer implements Transformer {
         let reasoning_content: string | undefined;
         if (choice.message?.reasoning_content) {
           reasoning_content = choice.message.reasoning_content;
-          logger.debug(
-            { requestId: ctx.requestId, reasoningLength: reasoning_content.length },
-            'Extracted reasoning_content from OpenAI-compatible response'
-          );
         }
 
         return {
@@ -331,10 +317,6 @@ export class OpenAITransformer implements Transformer {
         // 添加 reasoning_content（如果存在）
         if (choice.message?.reasoning_content) {
           message.reasoning_content = choice.message.reasoning_content;
-          logger.debug(
-            { requestId: ctx.requestId, reasoningLength: choice.message.reasoning_content.length },
-            'Including reasoning_content in OpenAI response'
-          );
         }
 
         return {
@@ -410,14 +392,6 @@ export class OpenAITransformer implements Transformer {
                       });
                     }
                   });
-                }
-
-                // 记录 reasoning_content（所有提供商）
-                if (chunk.choices?.[0]?.delta?.reasoning_content) {
-                  logger.debug(
-                    { requestId: ctx.requestId, hasReasoning: true },
-                    'Stream chunk contains reasoning_content'
-                  );
                 }
 
                 const standardChunk = this.convertStreamChunk(chunk);

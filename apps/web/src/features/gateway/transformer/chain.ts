@@ -64,10 +64,6 @@ export class TransformerChain {
         try {
           current = await transformer.normalizeRequest(current, ctx);
           executed.push(transformer.name);
-          logger.debug(
-            { transformer: transformer.name, requestId: ctx.requestId },
-            'Request normalized',
-          );
         } catch (error) {
           logger.error(
             { error, transformer: transformer.name, requestId: ctx.requestId },
@@ -127,10 +123,6 @@ export class TransformerChain {
         try {
           adapterResult = await transformer.adaptRequest(currentRequest, ctx);
           executed.push(`${transformer.name}:adapt`);
-          logger.debug(
-            { transformer: transformer.name, requestId: ctx.requestId },
-            'Request adapted',
-          );
         } catch (error) {
           logger.error(
             { error, transformer: transformer.name, requestId: ctx.requestId },
@@ -243,10 +235,6 @@ export class TransformerChain {
       if (transformer.transformStream) {
         try {
           currentStream = await transformer.transformStream(currentStream, ctx);
-          logger.debug(
-            { transformer: transformer.name, requestId: ctx.requestId },
-            'Stream transformed',
-          );
         } catch (error) {
           logger.error(
             { error, transformer: transformer.name, requestId: ctx.requestId },

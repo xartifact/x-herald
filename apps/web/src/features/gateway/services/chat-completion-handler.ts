@@ -72,6 +72,7 @@ export async function handleChatCompletion(
   let transformedBody: unknown;
   let incomingProtocol: 'openai' | 'anthropic' | undefined;
   let targetProtocol: 'openai' | 'anthropic' | undefined;
+  let providerRequestHeaders: Record<string, string> | undefined;
 
   try {
     rawBody = (await c.req.json()) as { model?: string; [key: string]: unknown };
@@ -118,11 +119,15 @@ export async function handleChatCompletion(
       virtualKeyId: virtualKey.id,
     });
 
-    const { instance, provider, group, decision } = routeResult;
+    const { instance, provider, group, decision, mapping } = routeResult;
 
     logger.debug(
       {
         requestId,
+        originalModel: mapping.originalModel,
+        resolvedModel: mapping.modelName,
+        mappingType: mapping.mappingType,
+        isMapped: mapping.isMapped,
         groupName: group.name,
         provider: provider.name,
         actualModel: instance.actualModelName,
@@ -191,7 +196,6 @@ export async function handleChatCompletion(
 
     let targetUrl: string;
     let requestBody: string;
-    let providerRequestHeaders: Record<string, string>;
 
     if (isPassthroughEnabled) {
       // 同协议透传：跳过转换，使用原始请求体（仅更新模型名）
@@ -260,6 +264,7 @@ export async function handleChatCompletion(
         virtualKey,
         rawBody.model || 'unknown',
         clientRequestHeaders,
+        providerRequestHeaders,
         rawBody,
         clientIp,
         userAgent,
@@ -286,8 +291,12 @@ export async function handleChatCompletion(
       virtualKey,
       provider,
       originalModelName: modelName,
+      resolvedModelName: mapping.modelName,
+      mappingType: mapping.mappingType,
+      isMapped: mapping.isMapped,
       startTime,
       requestHeaders: clientRequestHeaders,
+      providerRequestHeaders,
       rawBody,
       standardRequestBody,
       transformedBody,
@@ -312,6 +321,7 @@ export async function handleChatCompletion(
       c,
       virtualKey,
       requestHeaders: clientRequestHeaders,
+      providerRequestHeaders,
       clientIp,
       userAgent,
       requestPath,

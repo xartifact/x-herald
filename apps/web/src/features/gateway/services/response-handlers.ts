@@ -27,8 +27,12 @@ interface ResponseHandlerParams {
   virtualKey: VirtualKey;
   provider: { id: string; name: string };
   originalModelName: string;
+  resolvedModelName?: string;
+  mappingType?: 'exact' | 'alias' | 'fallback' | null;
+  isMapped?: boolean;
   startTime: number;
   requestHeaders: Record<string, string>;
+  providerRequestHeaders?: Record<string, string>;
   rawBody: unknown;
   standardRequestBody?: unknown;
   transformedBody?: unknown;
@@ -52,133 +56,31 @@ function extractProviderResponseHeaders(response: Response): Record<string, stri
 }
 
 /**
- * 必须过滤的敏感 headers（安全原因）
- * 这些 headers 可能包含敏感信息或不应该暴露给客户端
- */
-const SENSITIVE_HEADERS = new Set([
-  // 认证相关 - 绝对不能透传
-  'authorization',
-  'www-authenticate',
-  'proxy-authorization',
-  'proxy-authenticate',
-  // Cookie 相关 - 防止 session 泄露
-  'set-cookie',
-  'cookie',
-  // 内部网络信息
-  'host',
-]);
-
-/**
- * Header 值最大长度限制 (防止内存膨胀)
- */
-const MAX_HEADER_VALUE_LENGTH = 8192; // 8KB
-
-/**
- * 判断 header 是否应该被过滤
- *
- * 作为网关，默认透传所有 headers，只过滤真正敏感的
- * 这样可以让客户端获取完整的 Provider 响应信息
- */
-function shouldFilterHeader(headerName: string): boolean {
-  const lowerName = headerName.toLowerCase();
-
-  // 只过滤明确敏感的 headers
-  if (SENSITIVE_HEADERS.has(lowerName)) {
-    return true;
-  }
-
-  // 默认不透传（透传所有其他 headers）
-  return false;
-}
-
-/**
- * 清理 header 值,防止注入攻击和内存膨胀
- */
-function sanitizeHeaderValue(value: string): string {
-  // 1. 移除控制字符 (ASCII 0-31, 127)
-  let sanitized = value.replace(/[\x00-\x1F\x7F]/g, '');
-
-  // 2. 截断过长的 header 值
-  if (sanitized.length > MAX_HEADER_VALUE_LENGTH) {
-    logger.warn(
-      { headerLength: sanitized.length },
-      'Truncating oversized header value'
-    );
-    sanitized = sanitized.substring(0, MAX_HEADER_VALUE_LENGTH);
-  }
-
-  return sanitized;
-}
-
-/**
- * 过滤 Provider 响应头
- *
- * 默认透传所有 headers，只过滤敏感 headers
- * 这样可以让客户端获取完整的 Provider 响应信息
+ * 透传 Provider 响应头（不过滤任何 header）
  */
 function filterProviderHeaders(
   providerHeaders: Record<string, string>
 ): Record<string, string> {
-  const filtered: Record<string, string> = {};
-  const filteredOut: string[] = [];
-
+  const result: Record<string, string> = {};
   for (const [key, value] of Object.entries(providerHeaders)) {
-    // 过滤空值
-    if (!value || value.trim() === '') {
-      continue;
+    if (value && value.trim() !== '') {
+      result[key] = value;
     }
-
-    // 只过滤敏感 headers，其他全部透传
-    if (shouldFilterHeader(key)) {
-      filteredOut.push(key);
-      continue;
-    }
-
-    filtered[key] = sanitizeHeaderValue(value);
   }
-
-  if (filteredOut.length > 0) {
-    logger.debug(
-      { filteredHeaders: filteredOut },
-      'Filtered sensitive headers from provider response'
-    );
-  }
-
-  return filtered;
+  return result;
 }
 
 /**
- * 合并响应头: Gateway headers + 过滤后的 Provider headers
- *
- * @param gatewayHeaders - Gateway 必需的 headers (优先级最高)
- * @param providerHeaders - Provider 返回的所有 headers
- * @returns 合并后的 headers 对象
+ * 合并响应头: Provider headers 全量透传，Gateway headers 覆盖同名项
  */
 export function mergeResponseHeaders(
   gatewayHeaders: Record<string, string>,
   providerHeaders: Record<string, string>
 ): Record<string, string> {
-  // 1. 过滤 Provider headers
-  const filteredProviderHeaders = filterProviderHeaders(providerHeaders);
-
-  // 2. 合并: Provider headers 在前,Gateway headers 覆盖
-  const merged = {
-    ...filteredProviderHeaders,
-    ...gatewayHeaders, // Gateway headers 优先级更高
+  return {
+    ...filterProviderHeaders(providerHeaders),
+    ...gatewayHeaders,
   };
-
-  logger.debug(
-    {
-      providerHeaderCount: Object.keys(providerHeaders).length,
-      filteredCount: Object.keys(providerHeaders).length - Object.keys(filteredProviderHeaders).length,
-      finalCount: Object.keys(merged).length,
-      providerHeaders: Object.keys(filteredProviderHeaders),
-      gatewayHeaders: Object.keys(gatewayHeaders),
-    },
-    'Response headers: provider headers passed through (sensitive headers filtered)'
-  );
-
-  return merged;
 }
 
 /**
@@ -216,6 +118,9 @@ export async function handleNonStreamingResponse(
     virtualKey,
     provider,
     originalModelName,
+    resolvedModelName,
+    mappingType,
+    isMapped,
     startTime,
     requestHeaders,
     rawBody,
@@ -239,20 +144,30 @@ export async function handleNonStreamingResponse(
     const providerResponseHeaders = extractProviderResponseHeaders(response);
     const clientResponseHeaders = getClientStreamingHeaders();
 
-    // 记录日志（流式）
+    // 返回 SSE 流
+    const mergedHeaders = mergeResponseHeaders(
+      clientResponseHeaders,
+      providerResponseHeaders
+    );
+
+    // 记录日志（流式）- 使用实际发送给客户端的 mergedHeaders
     logRequest({
       virtualKey,
-      modelName: originalModelName,
+      modelName: resolvedModelName || originalModelName,
+      originalModelName,
+      mappingType,
+      isMapped,
       providerId: provider.id,
       providerName: provider.name,
       status: 'success',
       statusCode: 200,
       latencyMs,
       requestHeaders,
+      providerRequestHeaders: params.providerRequestHeaders,
       requestBody: rawBody,
       transformedRequestBody: params.transformedBody,
       providerResponseHeaders,
-      clientResponseHeaders,
+      clientResponseHeaders: mergedHeaders,
       clientIp,
       userAgent,
       requestPath,
@@ -262,12 +177,6 @@ export async function handleNonStreamingResponse(
       targetProtocol,
       conversationId: params.conversationId,
     });
-
-    // 返回 SSE 流
-    const mergedHeaders = mergeResponseHeaders(
-      clientResponseHeaders,
-      providerResponseHeaders
-    );
 
     return new Response(response.body, {
       headers: mergedHeaders,
@@ -299,20 +208,34 @@ export async function handleNonStreamingResponse(
       throw new Error(`Invalid JSON response from provider: ${text}`);
     }
 
-    // 记录日志
+    const mergedHeaders = mergeResponseHeaders(
+      clientResponseHeaders,
+      providerResponseHeaders
+    );
+
+    // 设置响应头
+    for (const [key, value] of Object.entries(mergedHeaders)) {
+      c.header(key, value);
+    }
+
+    // 记录日志 - 使用实际发送给客户端的 mergedHeaders
     await logRequest({
       virtualKey,
-      modelName: originalModelName,
+      modelName: resolvedModelName || originalModelName,
+      originalModelName,
+      mappingType,
+      isMapped,
       providerId: provider.id,
       providerName: provider.name,
       status: 'success',
       statusCode: 200,
       latencyMs,
       requestHeaders,
+      providerRequestHeaders: params.providerRequestHeaders,
       requestBody: rawBody,
       transformedRequestBody: params.transformedBody,
       providerResponseHeaders,
-      clientResponseHeaders,
+      clientResponseHeaders: mergedHeaders,
       providerResponseBody: providerResponseData,
       standardResponseBody: providerResponseData, // 透传模式下相同
       responseBody: providerResponseData,
@@ -325,16 +248,6 @@ export async function handleNonStreamingResponse(
       targetProtocol,
       conversationId: params.conversationId,
     });
-
-    const mergedHeaders = mergeResponseHeaders(
-      clientResponseHeaders,
-      providerResponseHeaders
-    );
-
-    // 设置响应头
-    for (const [key, value] of Object.entries(mergedHeaders)) {
-      c.header(key, value);
-    }
 
     return c.json(providerResponseData);
   }
@@ -399,10 +312,23 @@ export async function handleNonStreamingResponse(
   const providerResponseHeaders = extractProviderResponseHeaders(response);
   const clientResponseHeaders = getClientNonStreamingHeaders();
 
-  // 记录日志 - 包含完整的响应链路
+  const mergedHeaders = mergeResponseHeaders(
+    clientResponseHeaders,
+    providerResponseHeaders
+  );
+
+  // 设置响应头
+  for (const [key, value] of Object.entries(mergedHeaders)) {
+    c.header(key, value);
+  }
+
+  // 记录日志 - 包含完整的响应链路，clientResponseHeaders 使用实际发送的 mergedHeaders
   await logRequest({
     virtualKey,
-    modelName: originalModelName,
+    modelName: resolvedModelName || originalModelName,
+    originalModelName,
+    mappingType,
+    isMapped,
     providerId: provider.id,
     providerName: provider.name,
     status: 'success',
@@ -411,11 +337,12 @@ export async function handleNonStreamingResponse(
     inputTokens: standardRes.usage?.prompt_tokens,
     outputTokens: standardRes.usage?.completion_tokens,
     requestHeaders,
+    providerRequestHeaders: params.providerRequestHeaders,
     requestBody: rawBody,
     standardRequestBody: params.standardRequestBody,
     transformedRequestBody: params.transformedBody,
     providerResponseHeaders,
-    clientResponseHeaders,
+    clientResponseHeaders: mergedHeaders,
     providerResponseBody: providerResponseData,      // Provider 原始响应
     standardResponseBody: standardRes,                // 标准格式
     responseBody: responseData,                       // 客户端最终响应
@@ -428,16 +355,6 @@ export async function handleNonStreamingResponse(
     targetProtocol,
     conversationId: params.conversationId,
   });
-
-  const mergedHeaders = mergeResponseHeaders(
-    clientResponseHeaders,
-    providerResponseHeaders
-  );
-
-  // 设置响应头
-  for (const [key, value] of Object.entries(mergedHeaders)) {
-    c.header(key, value);
-  }
 
   return c.json(responseData);
 }
@@ -684,11 +601,11 @@ function extractUsageFromChunk(data: string): { prompt_tokens?: number; completi
       };
     }
 
-    // 调试日志：记录未提取到 usage 的事件类型
-    logger.debug({ eventType: json.type || json.object || 'unknown' }, 'No usage found in chunk');
+    // 调试日志：仅在需要时记录未提取到 usage 的事件类型
+    // 已移除：高频 debug 日志，减少日志噪音
   } catch (error) {
-    // 解析失败，记录调试日志
-    logger.debug({ error }, 'Failed to parse chunk for usage extraction');
+    // 解析失败，静默处理以避免影响性能
+    // 已移除：高频 debug 日志，减少日志噪音
   }
   return null;
 }
@@ -705,6 +622,9 @@ export async function handleStreamingResponse(
     virtualKey,
     provider,
     originalModelName,
+    resolvedModelName,
+    mappingType,
+    isMapped,
     startTime,
     requestHeaders,
     rawBody,
@@ -719,10 +639,14 @@ export async function handleStreamingResponse(
   // Phase 2: 流开始时创建初始日志
   const logId = await logStreamStart({
     virtualKey,
-    modelName: originalModelName,
+    modelName: resolvedModelName || originalModelName,
+    originalModelName,
+    mappingType,
+    isMapped,
     providerId: provider.id,
     providerName: provider.name,
     requestHeaders,
+    providerRequestHeaders: params.providerRequestHeaders,
     requestBody: rawBody,
     standardRequestBody: params.standardRequestBody,
     transformedRequestBody: params.transformedBody,
@@ -755,10 +679,7 @@ export async function handleStreamingResponse(
   const needsTransformation = targetProtocol !== incomingProtocol && !params.isPassthroughEnabled;
 
   if (needsTransformation && transformedStream) {
-    logger.debug(
-      { from: targetProtocol, to: incomingProtocol },
-      'Stream protocol transformation required'
-    );
+    // 已移除：stream transformation debug 日志，减少日志噪音
 
     // 收集 Provider 原始响应（第一次转换前）
     transformedStream = transformedStream.pipeThrough(
@@ -783,9 +704,10 @@ export async function handleStreamingResponse(
     ctx.state.set('streamDirection', 'normalize');
     const ingressTransformer = getTransformer(targetProtocol);
     if (ingressTransformer?.transformStream) {
-      logger.debug({ from: targetProtocol, to: 'standard' }, 'Normalizing stream');
+      // 已移除：stream normalization debug 日志，减少日志噪音
       transformedStream = await ingressTransformer.transformStream(transformedStream, ctx);
     } else {
+      // 警告保留：异常情况需要记录
       logger.warn(
         { protocol: targetProtocol },
         'No stream normalizer available, skipping ingress transformation'
@@ -815,9 +737,10 @@ export async function handleStreamingResponse(
     ctx.state.set('streamDirection', 'adapt');
     const egressTransformer = getTransformer(incomingProtocol);
     if (egressTransformer?.transformStream) {
-      logger.debug({ from: 'standard', to: incomingProtocol }, 'Adapting stream');
+      // 已移除：stream adaptation debug 日志，减少日志噪音
       transformedStream = await egressTransformer.transformStream(transformedStream, ctx);
     } else {
+      // 警告保留：异常情况需要记录
       logger.warn(
         { protocol: incomingProtocol },
         'No stream adapter available, skipping egress transformation'
@@ -825,10 +748,7 @@ export async function handleStreamingResponse(
     }
   } else if (transformedStream) {
     // 同协议场景：仍然收集 Provider 原始响应用于日志
-    logger.debug(
-      { protocol: incomingProtocol },
-      'Same protocol, collecting provider response for logging'
-    );
+    // 已移除：same protocol debug 日志，减少日志噪音
 
     // 收集 Provider 原始响应
     transformedStream = transformedStream.pipeThrough(
@@ -849,6 +769,12 @@ export async function handleStreamingResponse(
       })
     );
   }
+
+  // 提前计算 mergedHeaders，供 flush 闭包记录实际发送给客户端的 headers
+  const mergedHeaders = mergeResponseHeaders(
+    clientResponseHeaders,
+    providerResponseHeaders
+  );
 
   // Phase 2: 创建 TransformStream 提取 usage、收集响应并定期更新日志
   const usageExtractor = new TransformStream<Uint8Array, Uint8Array>({
@@ -914,7 +840,7 @@ export async function handleStreamingResponse(
           outputTokens: usage.outputTokens,
           usageEstimated: usage.estimated,
           providerResponseHeaders,
-          clientResponseHeaders,
+          clientResponseHeaders: mergedHeaders,
           providerResponseBody: {
             ...(providerCollector.getSummary(targetProtocol) as Record<string, unknown>),
             streamContent: providerCollector.getFullContent(),
@@ -954,11 +880,6 @@ export async function handleStreamingResponse(
       await markStreamAborted(logId);
     });
   }
-
-  const mergedHeaders = mergeResponseHeaders(
-    clientResponseHeaders,
-    providerResponseHeaders
-  );
 
   return new Response(finalStream, {
     headers: mergedHeaders,

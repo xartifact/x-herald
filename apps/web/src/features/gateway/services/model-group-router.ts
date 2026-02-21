@@ -14,6 +14,7 @@ import type {
   RoutingStrategy,
 } from '@/features/model-groups/types';
 import logger from '@/core/lib/logger';
+import { modelMappingService, type ModelMappingResult } from './model-mapping';
 
 // 路由结果
 export interface RouteResult {
@@ -33,6 +34,9 @@ export interface RouteResult {
     candidates: number;
     latency?: number;
   };
+
+  // 模型映射信息
+  mapping: ModelMappingResult;
 }
 
 // 路由上下文
@@ -75,14 +79,20 @@ export class ModelGroupRouter {
     const startTime = Date.now();
     const db = getDatabase();
 
-    // 1. 查找模型组
-    const group = await this.findModelGroup(context.requestedModel);
+    // 1. 解析模型名称（支持 fallback 映射）
+    const mappingResult = await modelMappingService.resolveModel(
+      context.requestedModel,
+      context.virtualKeyId
+    );
+
+    // 2. 使用映射后的模型名查找模型组
+    const group = await this.findModelGroup(mappingResult.modelName);
     if (!group) {
       throw new ModelNotFoundError(context.requestedModel);
     }
 
     if (!group.enabled) {
-      throw new ModelDisabledError(context.requestedModel);
+      throw new ModelDisabledError(mappingResult.modelName);
     }
 
     // 2. 获取所有可用的模型实例
@@ -102,14 +112,14 @@ export class ModelGroupRouter {
       );
 
     if (instances.length === 0) {
-      throw new NoAvailableInstanceError(context.requestedModel);
+      throw new NoAvailableInstanceError(mappingResult.modelName);
     }
 
     // 3. 过滤满足条件的实例
     const candidates = this.filterCandidates(instances, context, group);
 
     if (candidates.length === 0) {
-      throw new NoSuitableInstanceError(context.requestedModel);
+      throw new NoSuitableInstanceError(mappingResult.modelName);
     }
 
     // 4. 根据策略选择实例
@@ -121,6 +131,9 @@ export class ModelGroupRouter {
     logger.info(
       {
         model: context.requestedModel,
+        resolvedModel: mappingResult.modelName,
+        mappingType: mappingResult.mappingType,
+        isMapped: mappingResult.isMapped,
         strategy,
         selectedProvider: selected.provider.name,
         actualModel: selected.instance.actualModelName,
@@ -140,6 +153,7 @@ export class ModelGroupRouter {
         candidates: candidates.length,
         latency,
       },
+      mapping: mappingResult,
     };
   }
 

@@ -33,8 +33,14 @@ class TransformerRegistryImpl implements TransformerRegistry {
   }
 }
 
-// 单例实例
-export const transformerRegistry = new TransformerRegistryImpl();
+// 通过 globalThis 共享单例，避免 Turbopack 多 bundle 隔离问题
+const g = globalThis as unknown as {
+  __xllm_transformerRegistry?: TransformerRegistryImpl;
+};
+if (!g.__xllm_transformerRegistry) {
+  g.__xllm_transformerRegistry = new TransformerRegistryImpl();
+}
+export const transformerRegistry = g.__xllm_transformerRegistry;
 
 // 便捷导出
 export const registerTransformer = (name: string, transformer: Transformer | TransformerConstructor) =>

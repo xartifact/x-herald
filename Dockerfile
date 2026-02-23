@@ -1,37 +1,37 @@
-FROM oven/bun:1 as base
+FROM oven/bun:1 AS base
 WORKDIR /app
 
-# Install dependencies
-FROM base AS install
-RUN mkdir -p /temp/prod
-COPY package.json bun.lockb /temp/prod/
-COPY apps/backend/package.json /temp/prod/apps/backend/
-COPY apps/web/package.json /temp/prod/apps/web/
-COPY packages/shared/package.json /temp/prod/packages/shared/
-COPY packages/database/package.json /temp/prod/packages/database/
-COPY packages/config/package.json /temp/prod/packages/config/
-RUN cd /temp/prod && bun install --frozen-lockfile --production
+# ---- 安装依赖 ----
+FROM base AS deps
+COPY package.json bun.lock* bun.lockb* ./
+COPY apps/web/package.json ./apps/web/
+RUN bun install --frozen-lockfile
 
-# Build
-FROM base AS build
-COPY --from=install /temp/prod/node_modules node_modules
+# ---- 构建 ----
+FROM base AS builder
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN bun run build
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN bun run build:web
 
-# Production
-FROM oven/bun:1-slim AS release
+# ---- 生产运行 ----
+FROM oven/bun:1-slim AS runner
 WORKDIR /app
-
-# Copy built application
-COPY --from=build /app/apps/backend/dist ./dist
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/packages ./packages
-
-# Copy migrations
-COPY --from=build /app/packages/database/src/migrations ./packages/database/src/migrations
-
 ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# standalone 输出（含最小 node_modules）
+COPY --from=builder /app/apps/web/.next/standalone ./
+# 静态资源（standalone 不自动包含）
+COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
+# 公共资源
+COPY --from=builder /app/apps/web/public ./apps/web/public
+# 迁移文件（复制到固定路径）
+COPY --from=builder /app/apps/web/src/core/db/migrations /app/migrations
 
 EXPOSE 3000
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
+ENV DB_MIGRATIONS_FOLDER=/app/migrations
 
-CMD ["bun", "run", "dist/index.js"]
+CMD ["bun", "apps/web/server.js"]

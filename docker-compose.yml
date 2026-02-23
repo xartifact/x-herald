@@ -24,7 +24,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: x-llm-gateway-backend
+    container_name: x-llm-gateway
     environment:
       NODE_ENV: production
       PORT: ${PORT:-3000}
@@ -36,11 +36,18 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       DB_SSL: "false"
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-change-me}
+      DB_MIGRATIONS_FOLDER: /app/migrations
     ports:
       - "${PORT:-3000}:3000"
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     networks:
       - gateway-network
     restart: unless-stopped

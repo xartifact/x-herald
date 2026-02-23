@@ -1,0 +1,10 @@
+.git
+.github
+node_modules
+apps/web/node_modules
+apps/web/.next
+**/.turbo
+**/.env*
+!**/.env.example
+docs
+*.md

@@ -3,8 +3,8 @@ import { apiApp } from '@/api';
 // 标记为动态路由
 export const dynamic = 'force-dynamic';
 
-async function handler(request: Request) {
-  const app = await apiApp();
+function handler(request: Request) {
+  const app = apiApp();
   if (!app) {
     return new Response('API not initialized', { status: 500 });
   }

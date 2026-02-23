@@ -4,9 +4,26 @@ import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import * as schema from './schema';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import logger from '../lib/logger';
 
-let dbClient: ReturnType<typeof drizzle> | null = null;
-let postgresClient: postgres.Sql | null = null;
+// 通过 globalThis 共享单例，避免 Turbopack 多 bundle 隔离问题
+const g = globalThis as unknown as {
+  __xllm_dbClient?: ReturnType<typeof drizzle<typeof schema>>;
+  __xllm_postgresClient?: postgres.Sql;
+};
+
+function getDbClient() {
+  return g.__xllm_dbClient ?? null;
+}
+function setDbClient(client: ReturnType<typeof drizzle<typeof schema>> | null) {
+  g.__xllm_dbClient = client ?? undefined;
+}
+function getPostgresClient() {
+  return g.__xllm_postgresClient ?? null;
+}
+function setPostgresClient(client: postgres.Sql | null) {
+  g.__xllm_postgresClient = client ?? undefined;
+}
 
 export interface DatabaseOptions {
   host: string;
@@ -64,9 +81,7 @@ async function createDatabaseIfNotExists(options: DatabaseOptions): Promise<void
   try {
     // 使用 unsafe 执行 CREATE DATABASE（不能使用参数化查询）
     await createClient.unsafe(`CREATE DATABASE "${options.database}"`);
-    // 使用 console 输出启动日志（logger 可能尚未初始化）
-    // eslint-disable-next-line no-console
-    console.log(`[DB] 数据库 "${options.database}" 创建成功`);
+    logger.trace(`[DB] 数据库 "${options.database}" 创建成功`);
   } catch (error) {
     // 如果数据库已存在，忽略错误
     if (error instanceof Error && 'code' in error && error.code === '42P04') {
@@ -101,8 +116,7 @@ async function checkTablesExist(client: postgres.Sql): Promise<boolean> {
  * 运行数据库迁移
  */
 async function runMigrations(db: ReturnType<typeof drizzle>): Promise<void> {
-  // eslint-disable-next-line no-console
-  console.log('[DB] 开始运行数据库迁移...');
+  logger.trace('[DB] 开始运行数据库迁移');
 
   try {
     // 获取迁移文件夹路径
@@ -118,23 +132,16 @@ async function runMigrations(db: ReturnType<typeof drizzle>): Promise<void> {
       migrationsFolder = path.join(__dirname, 'migrations');
     }
 
-    // eslint-disable-next-line no-console
-    console.log('[DB] 迁移文件夹:', migrationsFolder);
+    logger.trace({ migrationsFolder }, '[DB] 迁移文件夹');
 
     await migrate(db, { migrationsFolder });
-    // eslint-disable-next-line no-console
-    console.log('[DB] 数据库迁移完成');
+    logger.trace('[DB] 数据库迁移完成');
   } catch (error) {
     // 如果是 "No migrations to run" 错误，忽略
     if (error instanceof Error && error.message?.includes('No migrations')) {
       // 静默处理：没有新迁移是预期内的正常情况
-    } else if (error instanceof Error) {
-      // eslint-disable-next-line no-console
-      console.error('[DB] 数据库迁移失败:', error.message);
-      throw error;
     } else {
-      // eslint-disable-next-line no-console
-      console.error('[DB] 数据库迁移失败:', error);
+      logger.error({ err: error }, '[DB] 数据库迁移失败');
       throw error;
     }
   }
@@ -146,46 +153,32 @@ async function runMigrations(db: ReturnType<typeof drizzle>): Promise<void> {
  * - 检查表是否存在，不存在则运行迁移
  */
 async function initializeDatabase(options: DatabaseOptions): Promise<void> {
-  // eslint-disable-next-line no-console
-  console.log('[DB] 检查数据库状态...');
+  logger.trace('[DB] 检查数据库状态');
 
   try {
     // 1. 检查并创建数据库
     const dbExists = await checkDatabaseExists(options);
 
     if (!dbExists) {
-      // eslint-disable-next-line no-console
-      console.log(`[DB] 数据库 "${options.database}" 不存在，正在创建...`);
+      logger.trace(`[DB] 数据库 "${options.database}" 不存在，正在创建`);
       await createDatabaseIfNotExists(options);
     }
 
-    // 2. 连接到目标数据库
+    // 2. 连接到目标数据库，onnotice 静默 PostgreSQL NOTICE 消息
     const connString = buildConnectionString(options);
-    const client = postgres(connString, { max: 1 });
+    const client = postgres(connString, { max: 1, onnotice: () => {} });
     const db = drizzle(client, { schema });
 
     try {
-      // 3. 检查表是否存在
-      const tablesExist = await checkTablesExist(client);
-
-      if (!tablesExist) {
-        // eslint-disable-next-line no-console
-        console.log('[DB] 数据表不存在，正在运行迁移...');
-        await runMigrations(db);
-      } else {
-        // 静默处理：表已存在是预期内的正常情况
-        // 即使表存在，也尝试运行迁移（幂等性）
-        await runMigrations(db);
-      }
+      // 3. 运行迁移（幂等）
+      await runMigrations(db);
     } finally {
       await client.end();
     }
 
-    // eslint-disable-next-line no-console
-    console.log('[DB] 数据库初始化完成');
+    logger.trace('[DB] 数据库初始化完成');
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('[DB] 数据库初始化失败:', error);
+    logger.error({ err: error }, '[DB] 数据库初始化失败');
     throw error;
   }
 }
@@ -194,26 +187,27 @@ async function initializeDatabase(options: DatabaseOptions): Promise<void> {
  * 创建数据库连接（异步版本，推荐使用）
  */
 export async function createDatabase(options: DatabaseOptions) {
-  if (dbClient) {
-    return dbClient;
+  if (getDbClient()) {
+    return getDbClient()!;
   }
 
   const connectionString = buildConnectionString(options);
 
-  postgresClient = postgres(connectionString, {
+  const pgClient = postgres(connectionString, {
     max: 10,
     idle_timeout: 20,
     connect_timeout: 10,
   });
+  setPostgresClient(pgClient);
 
-  dbClient = drizzle(postgresClient, { schema });
+  const db = drizzle(pgClient, { schema });
+  setDbClient(db);
 
   // 同步等待数据库初始化完成
   await initializeDatabase(options);
-  // eslint-disable-next-line no-console
-  console.log('[DB] 数据库已就绪，应用可以正常运行');
+  logger.trace('[DB] 数据库已就绪，应用可以正常运行');
 
-  return dbClient;
+  return getDbClient()!;
 }
 
 /**
@@ -221,52 +215,54 @@ export async function createDatabase(options: DatabaseOptions) {
  * @deprecated 使用异步版本 createDatabase() 代替
  */
 export function createDatabaseSync(options: DatabaseOptions) {
-  if (dbClient) {
-    return dbClient;
+  if (getDbClient()) {
+    return getDbClient()!;
   }
 
   const connectionString = buildConnectionString(options);
 
-  postgresClient = postgres(connectionString, {
+  const pgClient = postgres(connectionString, {
     max: 10,
     idle_timeout: 20,
     connect_timeout: 10,
   });
+  setPostgresClient(pgClient);
 
-  dbClient = drizzle(postgresClient, { schema });
+  const db = drizzle(pgClient, { schema });
+  setDbClient(db);
 
   // 异步初始化，不阻塞（旧版行为）
   initializeDatabase(options)
     .then(() => {
-      // eslint-disable-next-line no-console
-      console.log('[DB] 数据库已就绪，应用可以正常运行');
+      logger.trace('[DB] 数据库已就绪，应用可以正常运行');
     })
     .catch((error) => {
-      // eslint-disable-next-line no-console
-      console.error('[DB] 数据库初始化失败，应用可能无法正常工作:', error);
+      logger.error({ err: error }, '[DB] 数据库初始化失败，应用可能无法正常工作');
     });
 
-  return dbClient;
+  return getDbClient()!;
 }
 
 /**
  * 获取数据库实例
  */
 export function getDatabase() {
-  if (!dbClient) {
+  const client = getDbClient();
+  if (!client) {
     throw new Error('Database not initialized. Call createDatabase() first.');
   }
-  return dbClient;
+  return client;
 }
 
 /**
  * 关闭数据库连接
  */
 export async function closeDatabase() {
-  if (postgresClient) {
-    await postgresClient.end();
-    dbClient = null;
-    postgresClient = null;
+  const pgClient = getPostgresClient();
+  if (pgClient) {
+    await pgClient.end();
+    setDbClient(null);
+    setPostgresClient(null);
   }
 }
 

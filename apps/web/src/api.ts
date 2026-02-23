@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 
 import { loadConfig, validateConfig } from '@/core/config';
-import { createDatabase } from '@/core/db/client';
+import { getDatabase } from '@/core/db/client';
 import { startAutoCleanup } from '@/features/logs/log-cleanup';
 
 import logger from './core/lib/logger';
@@ -9,7 +9,7 @@ import { createCorsMiddleware } from './core/middleware/cors';
 import { errorHandler } from './core/middleware/error';
 import { requestLogger } from './core/middleware/logger';
 import { authRoutes } from './features/auth';
-import { gatewayRoutes, registerDefaultTransformers } from './features/gateway';
+import { gatewayRoutes } from './features/gateway';
 import { healthRoutes } from './features/health';
 import { keysRoutes } from './features/keys';
 import { logsRoutes } from './features/logs';
@@ -17,21 +17,21 @@ import { modelGroupsRoutes } from './features/model-groups';
 import { providersRoutes } from './features/providers';
 import { settingsRoutes } from './features/settings';
 
-// Create API app (异步版本)
-export const createApiApp = async () => {
+// Create API app
+export const createApiApp = () => {
   const app = new Hono();
-
-  // Register default transformers
-  registerDefaultTransformers();
-  logger.info('Transformers registered');
 
   // Load and validate configuration
   const config = loadConfig();
   validateConfig(config);
 
-  // Initialize database (等待初始化完成)
-  await createDatabase(config.database);
-  logger.info('Database initialized');
+  // 验证数据库已初始化（在 instrumentation.ts 中初始化）
+  try {
+    getDatabase();
+  } catch (error) {
+    logger.error('Database not initialized. Make sure instrumentation hook is enabled.');
+    throw error;
+  }
 
   // 启动日志自动清理（每24小时检查一次，保留30天）
   // 生产环境始终启用，开发环境可通过 ENABLE_LOG_CLEANUP=true 启用
@@ -81,11 +81,11 @@ export const createApiApp = async () => {
   return app;
 };
 
-// 懒加载 API app (异步版本)
-let _apiApp: Awaited<ReturnType<typeof createApiApp>> | null = null;
-export const apiApp = async () => {
+// 懒加载 API app
+let _apiApp: ReturnType<typeof createApiApp> | null = null;
+export const apiApp = () => {
   if (!_apiApp) {
-    _apiApp = await createApiApp();
+    _apiApp = createApiApp();
   }
   return _apiApp;
 };

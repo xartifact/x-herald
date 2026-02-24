@@ -203,7 +203,6 @@ export async function handleNonStreamingResponse(
           requestId: ctx.requestId,
           provider: provider.name,
           statusCode: response.status,
-          bodyPreview: text,
         },
         'Failed to parse provider response as JSON'
       );
@@ -276,7 +275,6 @@ export async function handleNonStreamingResponse(
         requestId: ctx.requestId,
         provider: provider.name,
         statusCode: response.status,
-        bodyPreview: text
       },
       'Failed to parse provider response as JSON'
     );

@@ -20,6 +20,8 @@ import { JsonViewer, HeadersViewer } from '@/components/admin/JsonViewer'
 import { cn } from '@/core/lib/utils'
 import type { Log } from '@/hooks/use-logs'
 import { CLIENT_REGISTRY } from '@/features/gateway/services/client-identifier'
+import { MessageTimelineSection } from './message-timeline-section'
+import { ToolCallDetailsSection } from './tool-call-details-section'
 
 interface LogDetailSheetProps {
   log?: Log | null
@@ -338,11 +340,20 @@ function RequestPanel({ log, className }: RequestPanelProps) {
       <ScrollArea className="flex-1">
         <Tabs defaultValue="client" className="w-full">
           <div className="px-4 pt-3 pb-2 border-b bg-muted/10">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full"
+              style={{
+                gridTemplateColumns: log.metadata?.messageSequence
+                  ? 'repeat(5, 1fr)'
+                  : 'repeat(4, 1fr)'
+              }}
+            >
               <TabsTrigger value="client">客户端请求</TabsTrigger>
               <TabsTrigger value="provider">Provider 请求</TabsTrigger>
               <TabsTrigger value="standard">标准格式</TabsTrigger>
               <TabsTrigger value="headers">Headers</TabsTrigger>
+              {log.metadata?.messageSequence && (
+                <TabsTrigger value="message-analysis">消息分析</TabsTrigger>
+              )}
             </TabsList>
           </div>
 
@@ -404,6 +415,15 @@ function RequestPanel({ log, className }: RequestPanelProps) {
               </TabsContent>
             </Tabs>
           </TabsContent>
+
+          {/* 新增：消息分析 Tab */}
+          {log.metadata?.messageSequence && (
+            <TabsContent value="message-analysis" className="p-0 m-0">
+              <ScrollArea className="h-full">
+                <MessageTimelineSection messageSequence={log.metadata.messageSequence} />
+              </ScrollArea>
+            </TabsContent>
+          )}
         </Tabs>
       </ScrollArea>
     </div>
@@ -758,47 +778,78 @@ export function LogDetailSheet({
 
               {/* 工具调用信息 */}
               {!!log.toolCallsCount && log.toolCallsCount > 0 && (
-                <Section title="工具调用" badge={log.toolCallsCount.toString()}>
-                  <InfoRow
-                    label="调用次数"
-                    value={log.toolCallsCount.toString()}
-                  />
-                  {(log.metadata?.toolCalls as Record<string, string> | undefined)?.pattern && (
+                <>
+                  <Section title="工具调用" badge={log.toolCallsCount.toString()}>
                     <InfoRow
-                      label="调用模式"
-                      value={
-                        <Badge variant="outline">
-                          {(log.metadata?.toolCalls as Record<string, string>).pattern === 'single' ? '单次' :
-                           (log.metadata?.toolCalls as Record<string, string>).pattern === 'parallel' ? '并行' : '顺序'}
-                        </Badge>
-                      }
+                      label="调用次数"
+                      value={log.toolCallsCount.toString()}
                     />
+                    {(log.metadata?.toolCalls as Record<string, string> | undefined)?.pattern && (
+                      <InfoRow
+                        label="调用模式"
+                        value={
+                          <Badge variant="outline">
+                            {(log.metadata?.toolCalls as Record<string, string>).pattern === 'single' ? '单次' :
+                             (log.metadata?.toolCalls as Record<string, string>).pattern === 'parallel' ? '并行' : '顺序'}
+                          </Badge>
+                        }
+                      />
+                    )}
+                    {(log.metadata?.toolCalls as { tools?: string[] } | undefined)?.tools && (log.metadata?.toolCalls as { tools: string[] }).tools.length > 0 && (
+                      <InfoRow
+                        label="工具列表"
+                        value={
+                          <div className="flex flex-wrap gap-1">
+                            {(log.metadata?.toolCalls as { tools: string[] }).tools.map((tool: string, idx: number) => (
+                              <Badge key={idx} variant="secondary" className="text-xs">
+                                {tool}
+                              </Badge>
+                            ))}
+                          </div>
+                        }
+                      />
+                    )}
+                  </Section>
+
+                  {/* 新增：工具调用详情 */}
+                  {log.metadata?.toolCalls?.details && log.metadata.toolCalls.details.length > 0 && (
+                    <Section title="工具调用详情">
+                      <div className="px-3 pb-3">
+                        <ToolCallDetailsSection toolCalls={log.metadata.toolCalls} />
+                      </div>
+                    </Section>
                   )}
-                  {(log.metadata?.toolCalls as { tools?: string[] } | undefined)?.tools && (log.metadata?.toolCalls as { tools: string[] }).tools.length > 0 && (
-                    <InfoRow
-                      label="工具列表"
-                      value={
-                        <div className="flex flex-wrap gap-1">
-                          {(log.metadata?.toolCalls as { tools: string[] }).tools.map((tool: string, idx: number) => (
-                            <Badge key={idx} variant="secondary" className="text-xs">
-                              {tool}
-                            </Badge>
-                          ))}
-                        </div>
-                      }
-                    />
-                  )}
-                </Section>
+                </>
               )}
 
-              {log.conversationId && (
+              {(log.conversationId || log.metadata?.messageSequence) && (
                 <Section title="对话上下文">
-                  <InfoRow
-                    label="对话ID"
-                    value={String(log.conversationId)}
-                    copyable
-                    mono
-                  />
+                  {log.conversationId && (
+                    <InfoRow
+                      label="对话ID"
+                      value={String(log.conversationId)}
+                      copyable
+                      mono
+                    />
+                  )}
+                  {log.metadata?.messageSequence && (
+                    <InfoRow
+                      label="消息数量"
+                      value={`${log.metadata.messageSequence.totalCount} 条`}
+                    />
+                  )}
+                  {log.metadata?.conversation?.roleSwitches !== undefined && (
+                    <InfoRow
+                      label="角色切换"
+                      value={`${log.metadata.conversation.roleSwitches} 次`}
+                    />
+                  )}
+                  {log.metadata?.conversation?.hasToolInteraction && (
+                    <InfoRow
+                      label="工具交互"
+                      value={<Badge variant="secondary">包含</Badge>}
+                    />
+                  )}
                 </Section>
               )}
 

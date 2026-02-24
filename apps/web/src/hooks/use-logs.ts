@@ -8,15 +8,48 @@ import { toast } from 'sonner'
 
 // Log 元数据类型
 export interface LogMetadata {
+  // 消息序列信息
+  messageSequence?: {
+    totalCount: number;
+    roles: Array<{
+      role: 'user' | 'assistant' | 'system' | 'tool';
+      index: number;
+      contentType?: string[];
+      toolCallCount?: number;
+      toolName?: string;
+      toolCallId?: string;
+      length?: number;
+    }>;
+  };
+
   content?: {
     types?: string[];
     hasFunctionCalling?: boolean;
     toolNames?: string[];
   };
+
   toolCalls?: {
-    pattern?: string;
+    pattern?: 'sequential' | 'parallel' | 'single';
     tools?: string[];
+    details?: Array<{
+      name: string;
+      arguments?: unknown;
+      result?: unknown;
+      callId?: string;
+      source?: 'request' | 'response';
+      messageIndex?: number;
+    }>;
   };
+
+  conversation?: {
+    messageId?: string;
+    parentMessageId?: string;
+    turnNumber?: number;
+    role?: string;
+    roleSwitches?: number;
+    hasToolInteraction?: boolean;
+  };
+
   [key: string]: unknown;
 }
 

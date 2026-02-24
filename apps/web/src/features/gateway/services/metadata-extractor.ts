@@ -26,19 +26,28 @@ export function extractMetadata(params: MetadataExtractionParams): LogMetadata {
   const metadata: LogMetadata = {};
 
   try {
-    // 1. 提取工具调用信息
-    const toolCallsInfo = extractToolCalls(params.standardResponseBody);
+    // 1. 提取消息序列（新增）
+    const messageSeq = extractMessageSequence(params.requestBody, params.standardRequestBody);
+    if (messageSeq) {
+      metadata.messageSequence = messageSeq;
+    }
+
+    // 2. 提取工具调用信息（增强：同时从请求和响应提取）
+    const toolCallsInfo = extractToolCalls(
+      params.standardRequestBody,
+      params.standardResponseBody
+    );
     if (toolCallsInfo) {
       metadata.toolCalls = toolCallsInfo;
     }
 
-    // 2. 提取对话上下文
+    // 3. 提取对话上下文（增强）
     const conversationInfo = extractConversationContext(params);
     if (conversationInfo) {
       metadata.conversation = conversationInfo;
     }
 
-    // 3. 提取内容特征
+    // 4. 提取内容特征
     const contentInfo = extractContentTypes(params.requestBody, params.standardRequestBody);
     
     // 合并工具名称到内容特征
@@ -52,19 +61,19 @@ export function extractMetadata(params: MetadataExtractionParams): LogMetadata {
       };
     }
 
-    // 4. 提取性能指标
+    // 5. 提取性能指标
     const performanceInfo = extractPerformanceMetrics(params);
     if (performanceInfo) {
       metadata.performance = performanceInfo;
     }
 
-    // 5. 提取请求特征
+    // 6. 提取请求特征
     const requestInfo = extractRequestFeatures(params.standardRequestBody);
     if (requestInfo) {
       metadata.request = requestInfo;
     }
 
-    // 6. 提取错误信息
+    // 7. 提取错误信息
     if (params.errorMessage || params.errorType) {
       const errorInfo = extractErrorInfo(params);
       if (errorInfo) {
@@ -72,7 +81,7 @@ export function extractMetadata(params: MetadataExtractionParams): LogMetadata {
       }
     }
 
-    // 7. 提取业务标记
+    // 8. 提取业务标记
     const businessInfo = extractBusinessTags(params);
     if (businessInfo) {
       metadata.business = businessInfo;
@@ -85,9 +94,104 @@ export function extractMetadata(params: MetadataExtractionParams): LogMetadata {
 }
 
 /**
+ * 从请求中提取消息序列信息
+ */
+function extractMessageSequence(
+  requestBody?: unknown,
+  standardRequestBody?: unknown
+): LogMetadata['messageSequence'] | null {
+  const body = (standardRequestBody || requestBody) as any;
+  if (!body?.messages || !Array.isArray(body.messages)) {
+    return null;
+  }
+
+  const messages = body.messages;
+  const roles: NonNullable<LogMetadata['messageSequence']>['roles'] = [];
+
+  messages.forEach((msg: any, index: number) => {
+    const roleInfo: any = {
+      role: msg.role,
+      index: index + 1,
+    };
+
+    // 检测内容类型（text, image）
+    const contentTypes: string[] = [];
+    if (typeof msg.content === 'string') {
+      contentTypes.push('text');
+    } else if (Array.isArray(msg.content)) {
+      msg.content.forEach((part: any) => {
+        if (part.type && !contentTypes.includes(part.type)) {
+          contentTypes.push(part.type);
+        }
+      });
+    }
+    if (contentTypes.length > 0) {
+      roleInfo.contentType = contentTypes;
+    }
+
+    // 计算内容长度
+    let length = 0;
+    if (typeof msg.content === 'string') {
+      length = msg.content.length;
+    } else if (Array.isArray(msg.content)) {
+      length = msg.content.reduce((sum: number, part: any) => {
+        if (part.text) return sum + part.text.length;
+        return sum;
+      }, 0);
+    }
+    if (length > 0) {
+      roleInfo.length = length;
+    }
+
+    // 工具调用信息（assistant 消息）
+    if (msg.tool_calls && Array.isArray(msg.tool_calls)) {
+      roleInfo.toolCallCount = msg.tool_calls.length;
+    }
+
+    // tool 消息的特殊信息
+    if (msg.role === 'tool') {
+      roleInfo.toolName = msg.name;
+      roleInfo.toolCallId = msg.tool_call_id;
+    }
+
+    roles.push(roleInfo);
+  });
+
+  return {
+    totalCount: messages.length,
+    roles,
+  };
+}
+
+/**
  * 从响应中提取工具调用信息
  */
-function extractToolCalls(standardResponseBody?: unknown): LogMetadata['toolCalls'] | null {
+function extractToolCalls(
+  standardRequestBody?: unknown,
+  standardResponseBody?: unknown
+): LogMetadata['toolCalls'] | null {
+  const toolCallsFromResponse = extractToolCallsFromResponse(standardResponseBody);
+  const toolResultsFromRequest = extractToolResultsFromRequest(standardRequestBody);
+
+  // 合并工具结果到工具调用详情
+  if (toolCallsFromResponse && toolResultsFromRequest.length > 0) {
+    toolCallsFromResponse.details?.forEach((detail) => {
+      const result = toolResultsFromRequest.find(
+        (r) => r.callId === detail.callId || r.toolName === detail.name
+      );
+      if (result) {
+        detail.result = result.result;
+      }
+    });
+  }
+
+  return toolCallsFromResponse;
+}
+
+/**
+ * 从响应中提取工具调用详情
+ */
+function extractToolCallsFromResponse(standardResponseBody?: unknown): LogMetadata['toolCalls'] | null {
   if (!standardResponseBody || typeof standardResponseBody !== 'object') {
     return null;
   }
@@ -117,9 +221,12 @@ function extractToolCalls(standardResponseBody?: unknown): LogMetadata['toolCall
   const pattern = detectToolCallPattern(toolCalls);
 
   // 提取详细信息
-  const details = toolCalls.map((tc: any) => ({
+  const details = toolCalls.map((tc: any, index: number) => ({
     name: tc.function?.name || 'unknown',
     arguments: tc.function?.arguments ? JSON.parse(tc.function.arguments) : undefined,
+    callId: tc.id,
+    source: 'response' as const,
+    messageIndex: index,
   }));
 
   return {
@@ -127,6 +234,28 @@ function extractToolCalls(standardResponseBody?: unknown): LogMetadata['toolCall
     tools,
     details,
   };
+}
+
+/**
+ * 从请求中提取工具结果
+ */
+function extractToolResultsFromRequest(standardRequestBody?: unknown): Array<{
+  toolName?: string;
+  callId?: string;
+  result: unknown;
+}> {
+  const body = standardRequestBody as any;
+  if (!body?.messages || !Array.isArray(body.messages)) {
+    return [];
+  }
+
+  return body.messages
+    .filter((msg: any) => msg.role === 'tool')
+    .map((msg: any) => ({
+      toolName: msg.name,
+      callId: msg.tool_call_id,
+      result: msg.content,
+    }));
 }
 
 /**
@@ -146,7 +275,28 @@ function detectToolCallPattern(toolCalls: any[]): 'sequential' | 'parallel' | 's
  * 提取对话上下文
  */
 function extractConversationContext(params: MetadataExtractionParams): LogMetadata['conversation'] | null {
-  if (!params.conversationId) {
+  const body = (params.standardRequestBody || params.requestBody) as any;
+
+  let roleSwitches = 0;
+  let hasToolInteraction = false;
+  let lastRole: string | null = null;
+
+  // 从消息数组中检测角色切换和工具交互
+  if (body?.messages && Array.isArray(body.messages)) {
+    body.messages.forEach((msg: any) => {
+      if (lastRole && msg.role !== lastRole) {
+        roleSwitches++;
+      }
+      lastRole = msg.role;
+
+      if (msg.role === 'tool' || msg.tool_calls) {
+        hasToolInteraction = true;
+      }
+    });
+  }
+
+  // 如果有 conversationId 或者检测到对话特征，则返回对话上下文
+  if (!params.conversationId && roleSwitches === 0 && !hasToolInteraction) {
     return null;
   }
 
@@ -155,6 +305,8 @@ function extractConversationContext(params: MetadataExtractionParams): LogMetada
     parentMessageId: undefined,
     turnNumber: undefined,
     role: 'assistant', // 默认角色
+    roleSwitches: roleSwitches > 0 ? roleSwitches : undefined,
+    hasToolInteraction: hasToolInteraction || undefined,
   };
 }
 

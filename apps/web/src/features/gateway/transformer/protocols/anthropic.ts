@@ -19,6 +19,7 @@ import type {
 
 import { cleanSchemaForOpenAI } from '../utils/schema-cleaner';
 import { parseToolArguments } from '../utils/tool-arguments-parser';
+import { buildHeaders } from '../utils/parameter-transformer';
 
 // Anthropic 特定类型
 interface AnthropicMessage {
@@ -276,10 +277,7 @@ export class AnthropicTransformer implements Transformer {
 
     return {
       body: anthropicReq,
-      headers: {
-        'Content-Type': 'application/json',
-        'anthropic-version': '2023-06-01',
-      },
+      headers: {},
     };
   }
 

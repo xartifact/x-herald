@@ -5,23 +5,42 @@ import { pgTable, varchar, integer, timestamp, text, uuid, jsonb, index, boolean
  * 用于存储灵活的业务标记和自定义元数据
  */
 export interface LogMetadata {
-  // 工具调用追踪
+  // 消息序列信息
+  messageSequence?: {
+    totalCount: number;  // 消息总数
+    roles: Array<{
+      role: 'user' | 'assistant' | 'system' | 'tool';
+      index: number;              // 在消息数组中的位置（从1开始）
+      contentType?: string[];     // ['text', 'image']
+      toolCallCount?: number;     // assistant 消息包含的工具调用数
+      toolName?: string;          // tool 消息关联的工具名称
+      toolCallId?: string;        // tool 消息关联的调用 ID
+      length?: number;            // 内容长度（字符数）
+    }>;
+  };
+
+  // 工具调用追踪（增强）
   toolCalls?: {
     pattern?: 'sequential' | 'parallel' | 'single';  // 调用模式
     tools?: string[];                                 // 工具名称列表
     details?: Array<{                                 // 详细信息
       name: string;
       arguments?: unknown;
-      result?: unknown;
+      result?: unknown;          // 工具执行结果（从 tool role 消息提取）
+      callId?: string;           // 调用 ID（如 call_abc123）
+      source?: 'request' | 'response';  // 来源
+      messageIndex?: number;     // 在消息序列中的位置
     }>;
   };
 
-  // 对话上下文
+  // 对话上下文（增强）
   conversation?: {
     messageId?: string;
     parentMessageId?: string;
     turnNumber?: number;
     role?: string;
+    roleSwitches?: number;           // 角色切换次数
+    hasToolInteraction?: boolean;    // 是否包含工具交互
   };
 
   // 模型映射信息

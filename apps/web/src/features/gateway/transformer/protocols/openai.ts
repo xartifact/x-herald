@@ -223,16 +223,9 @@ export class OpenAITransformer implements Transformer {
       }
     }
 
-    // 构建 headers（包含自定义 headers）
-    const headers = buildHeaders(
-      { 'Content-Type': 'application/json' },
-      ctx.instanceConfig?.customHeaders,
-      ctx
-    );
-
     return {
       body: openaiReq,
-      headers,
+      headers: {},
     };
   }
 
@@ -253,7 +246,7 @@ export class OpenAITransformer implements Transformer {
     } catch {
       const text = await response.text();
       logger.error(
-        { requestId: ctx.requestId, statusCode: response.status, bodyPreview: text.slice(0, 500) },
+        { requestId: ctx.requestId, statusCode: response.status },
         'Failed to parse provider response as JSON'
       );
       throw new Error(`Invalid JSON response from provider: ${text.slice(0, 100)}`);

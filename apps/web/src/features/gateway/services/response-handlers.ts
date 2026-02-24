@@ -95,10 +95,16 @@ function getClientNonStreamingHeaders(): Record<string, string> {
 
 /**
  * 生成客户端响应头（流式）
+ * 若 provider 已返回 text/event-stream 类型，保留其完整值（含 charset 等参数）
+ * 否则强制设为标准 SSE 类型
  */
-function getClientStreamingHeaders(): Record<string, string> {
+function getClientStreamingHeaders(providerContentType?: string): Record<string, string> {
+  const contentType =
+    providerContentType?.startsWith('text/event-stream')
+      ? providerContentType
+      : 'text/event-stream';
   return {
-    'content-type': 'text/event-stream',
+    'content-type': contentType,
     'cache-control': 'no-cache',
     'connection': 'keep-alive',
   };
@@ -143,7 +149,7 @@ export async function handleNonStreamingResponse(
 
     const latencyMs = Date.now() - startTime;
     const providerResponseHeaders = extractProviderResponseHeaders(response);
-    const clientResponseHeaders = getClientStreamingHeaders();
+    const clientResponseHeaders = getClientStreamingHeaders(providerResponseHeaders['content-type']);
 
     // 返回 SSE 流
     const mergedHeaders = mergeResponseHeaders(
@@ -673,7 +679,7 @@ export async function handleStreamingResponse(
 
   // 提前提取响应头（流式响应在开始时即可获取）
   const providerResponseHeaders = extractProviderResponseHeaders(response);
-  const clientResponseHeaders = getClientStreamingHeaders();
+  const clientResponseHeaders = getClientStreamingHeaders(providerResponseHeaders['content-type']);
 
   let transformedStream = response.body;
 

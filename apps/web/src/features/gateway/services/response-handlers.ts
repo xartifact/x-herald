@@ -95,8 +95,9 @@ function getClientNonStreamingHeaders(): Record<string, string> {
 
 /**
  * 生成客户端响应头（流式）
+ * 透明代理原则：不主动添加 provider 没有的 header
  * 若 provider 已返回 text/event-stream 类型，保留其完整值（含 charset 等参数）
- * 否则强制设为标准 SSE 类型
+ * 否则强制设为标准 SSE 类型（provider 未发 content-type 时的兜底）
  */
 function getClientStreamingHeaders(providerContentType?: string): Record<string, string> {
   const contentType =
@@ -105,8 +106,6 @@ function getClientStreamingHeaders(providerContentType?: string): Record<string,
       : 'text/event-stream';
   return {
     'content-type': contentType,
-    'cache-control': 'no-cache',
-    'connection': 'keep-alive',
   };
 }
 

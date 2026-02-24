@@ -98,6 +98,167 @@ function Section({ title, children, badge, action }: SectionProps) {
   )
 }
 
+// Content Features 数据结构
+interface ContentFeatures {
+  request?: {
+    messageCount: number
+    roleDistribution: { user: number; assistant: number; system: number }
+    avgMessageLength: number
+    systemPromptLength?: number
+  }
+  response?: {
+    blockCount: number
+    typeDistribution: { text: number; toolUse: number; thinking: number }
+    totalLength: number
+  }
+  tokens?: {
+    inputOutputRatio: { input: number; output: number }
+    tokensPerSecond: number
+    tokensPerMessage: number
+  }
+  tools?: {
+    pattern: string
+    complexity: number
+  }
+  complexity?: {
+    contextLevel: 'short' | 'medium' | 'long' | 'extra-long'
+    contentDensity: number
+  }
+}
+
+// 提取内容特征
+function extractContentFeatures(log: Log): ContentFeatures | null {
+  try {
+    const features: ContentFeatures = {}
+
+    // 1. 请求内容统计
+    if (log.requestBody?.messages && Array.isArray(log.requestBody.messages)) {
+      const messages = log.requestBody.messages as Array<{ role: string; content: unknown }>
+      const roleDistribution = { user: 0, assistant: 0, system: 0 }
+      let totalLength = 0
+      let systemPromptLength: number | undefined
+
+      messages.forEach((msg) => {
+        const role = msg.role as 'user' | 'assistant' | 'system'
+        if (role in roleDistribution) {
+          roleDistribution[role]++
+        }
+
+        // 计算消息长度
+        const content = msg.content
+        let msgLength = 0
+        if (typeof content === 'string') {
+          msgLength = content.length
+        } else if (Array.isArray(content)) {
+          msgLength = content.reduce((sum, block) => {
+            if (typeof block === 'object' && block !== null && 'text' in block) {
+              return sum + String(block.text).length
+            }
+            return sum
+          }, 0)
+        }
+        totalLength += msgLength
+
+        // 记录 system 消息长度
+        if (role === 'system' && !systemPromptLength) {
+          systemPromptLength = msgLength
+        }
+      })
+
+      features.request = {
+        messageCount: messages.length,
+        roleDistribution,
+        avgMessageLength: messages.length > 0 ? Math.round(totalLength / messages.length) : 0,
+        systemPromptLength,
+      }
+    }
+
+    // 2. 响应内容统计
+    if (log.responseBody?.content && Array.isArray(log.responseBody.content)) {
+      const content = log.responseBody.content as Array<{ type: string; text?: string }>
+      const typeDistribution = { text: 0, toolUse: 0, thinking: 0 }
+      let totalLength = 0
+
+      content.forEach((block) => {
+        if (block.type === 'text') {
+          typeDistribution.text++
+          if (block.text) {
+            totalLength += block.text.length
+          }
+        } else if (block.type === 'tool_use') {
+          typeDistribution.toolUse++
+        } else if (block.type === 'thinking') {
+          typeDistribution.thinking++
+        }
+      })
+
+      features.response = {
+        blockCount: content.length,
+        typeDistribution,
+        totalLength,
+      }
+    }
+
+    // 3. Token 使用详情
+    if (log.inputTokens > 0 || log.outputTokens > 0) {
+      const totalTokens = log.inputTokens + log.outputTokens
+      const inputRatio = totalTokens > 0 ? (log.inputTokens / totalTokens) * 100 : 0
+      const outputRatio = totalTokens > 0 ? (log.outputTokens / totalTokens) * 100 : 0
+
+      const tokensPerSecond = log.latencyMs > 0 ? (log.outputTokens / (log.latencyMs / 1000)) : 0
+      const tokensPerMessage = features.request?.messageCount
+        ? log.inputTokens / features.request.messageCount
+        : 0
+
+      features.tokens = {
+        inputOutputRatio: {
+          input: Math.round(inputRatio * 10) / 10,
+          output: Math.round(outputRatio * 10) / 10,
+        },
+        tokensPerSecond: Math.round(tokensPerSecond * 10) / 10,
+        tokensPerMessage: Math.round(tokensPerMessage),
+      }
+    }
+
+    // 4. 工具使用详情
+    if (log.metadata?.toolCalls) {
+      const toolCalls = log.metadata.toolCalls as { pattern?: string; tools?: string[] }
+      features.tools = {
+        pattern: toolCalls.pattern || 'unknown',
+        complexity: toolCalls.tools?.length || 0,
+      }
+    }
+
+    // 5. 内容复杂度指标
+    if (log.inputTokens > 0) {
+      let contextLevel: 'short' | 'medium' | 'long' | 'extra-long'
+      if (log.inputTokens < 1000) {
+        contextLevel = 'short'
+      } else if (log.inputTokens < 10000) {
+        contextLevel = 'medium'
+      } else if (log.inputTokens < 50000) {
+        contextLevel = 'long'
+      } else {
+        contextLevel = 'extra-long'
+      }
+
+      // 计算内容密度（字符数 / Token 数）
+      const totalChars = (features.request?.avgMessageLength || 0) * (features.request?.messageCount || 0)
+      const contentDensity = log.inputTokens > 0 ? totalChars / log.inputTokens : 0
+
+      features.complexity = {
+        contextLevel,
+        contentDensity: Math.round(contentDensity * 10) / 10,
+      }
+    }
+
+    return Object.keys(features).length > 0 ? features : null
+  } catch (error) {
+    console.error('Failed to extract content features:', error)
+    return null
+  }
+}
+
 interface PanelProps {
   title: string
   icon?: React.ReactNode
@@ -348,6 +509,7 @@ export function LogDetailSheet({
   if (!log) return null
 
   const isSuccess = log.status === 'success'
+  const contentFeatures = extractContentFeatures(log)
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -642,6 +804,7 @@ export function LogDetailSheet({
 
               {log.metadata?.content && (
                 <Section title="内容特征">
+                  {/* 原有的内容类型 */}
                   {(log.metadata.content as { types?: string[] }).types && (log.metadata.content as { types: string[] }).types.length > 0 && (
                     <InfoRow
                       label="内容类型"
@@ -680,6 +843,155 @@ export function LogDetailSheet({
                         </div>
                       }
                     />
+                  )}
+
+                  {/* 新增：请求内容统计 */}
+                  {contentFeatures?.request && (
+                    <>
+                      <InfoRow
+                        label="消息数量"
+                        value={contentFeatures.request.messageCount}
+                      />
+                      <InfoRow
+                        label="角色分布"
+                        value={
+                          <div className="flex items-center gap-2 text-xs">
+                            {contentFeatures.request.roleDistribution.user > 0 && (
+                              <span>User: {contentFeatures.request.roleDistribution.user}</span>
+                            )}
+                            {contentFeatures.request.roleDistribution.assistant > 0 && (
+                              <>
+                                <span className="text-muted-foreground">|</span>
+                                <span>Assistant: {contentFeatures.request.roleDistribution.assistant}</span>
+                              </>
+                            )}
+                            {contentFeatures.request.roleDistribution.system > 0 && (
+                              <>
+                                <span className="text-muted-foreground">|</span>
+                                <span>System: {contentFeatures.request.roleDistribution.system}</span>
+                              </>
+                            )}
+                          </div>
+                        }
+                      />
+                      {contentFeatures.request.avgMessageLength > 0 && (
+                        <InfoRow
+                          label="平均消息长度"
+                          value={`${contentFeatures.request.avgMessageLength.toLocaleString()} 字符`}
+                        />
+                      )}
+                      {contentFeatures.request.systemPromptLength && (
+                        <InfoRow
+                          label="系统提示"
+                          value={`${contentFeatures.request.systemPromptLength.toLocaleString()} 字符`}
+                        />
+                      )}
+                    </>
+                  )}
+
+                  {/* 新增：响应内容统计 */}
+                  {contentFeatures?.response && (
+                    <>
+                      <InfoRow
+                        label="响应块数"
+                        value={contentFeatures.response.blockCount}
+                      />
+                      {contentFeatures.response.blockCount > 0 && (
+                        <InfoRow
+                          label="响应类型"
+                          value={
+                            <div className="flex items-center gap-2 text-xs">
+                              {contentFeatures.response.typeDistribution.text > 0 && (
+                                <span>Text: {contentFeatures.response.typeDistribution.text}</span>
+                              )}
+                              {contentFeatures.response.typeDistribution.toolUse > 0 && (
+                                <>
+                                  <span className="text-muted-foreground">|</span>
+                                  <span>Tool: {contentFeatures.response.typeDistribution.toolUse}</span>
+                                </>
+                              )}
+                              {contentFeatures.response.typeDistribution.thinking > 0 && (
+                                <>
+                                  <span className="text-muted-foreground">|</span>
+                                  <span>Thinking: {contentFeatures.response.typeDistribution.thinking}</span>
+                                </>
+                              )}
+                            </div>
+                          }
+                        />
+                      )}
+                      {contentFeatures.response.totalLength > 0 && (
+                        <InfoRow
+                          label="响应长度"
+                          value={`${contentFeatures.response.totalLength.toLocaleString()} 字符`}
+                        />
+                      )}
+                    </>
+                  )}
+
+                  {/* 新增：Token 使用详情 */}
+                  {contentFeatures?.tokens && (
+                    <>
+                      <InfoRow
+                        label="Token 分布"
+                        value={
+                          <div className="flex items-center gap-2 text-xs">
+                            <span>输入: {contentFeatures.tokens.inputOutputRatio.input}%</span>
+                            <span className="text-muted-foreground">|</span>
+                            <span>输出: {contentFeatures.tokens.inputOutputRatio.output}%</span>
+                          </div>
+                        }
+                      />
+                      {contentFeatures.tokens.tokensPerSecond > 0 && (
+                        <InfoRow
+                          label="生成速度"
+                          value={`${contentFeatures.tokens.tokensPerSecond} tokens/s`}
+                          mono
+                        />
+                      )}
+                      {contentFeatures.tokens.tokensPerMessage > 0 && (
+                        <InfoRow
+                          label="每消息 Token"
+                          value={`${contentFeatures.tokens.tokensPerMessage} tokens`}
+                          mono
+                        />
+                      )}
+                    </>
+                  )}
+
+                  {/* 新增：内容复杂度 */}
+                  {contentFeatures?.complexity && (
+                    <>
+                      <InfoRow
+                        label="上下文长度"
+                        value={
+                          <Badge
+                            variant={
+                              contentFeatures.complexity.contextLevel === 'extra-long'
+                                ? 'destructive'
+                                : contentFeatures.complexity.contextLevel === 'long'
+                                  ? 'secondary'
+                                  : 'outline'
+                            }
+                          >
+                            {contentFeatures.complexity.contextLevel === 'short'
+                              ? '短'
+                              : contentFeatures.complexity.contextLevel === 'medium'
+                                ? '中'
+                                : contentFeatures.complexity.contextLevel === 'long'
+                                  ? '长'
+                                  : '超长'}
+                          </Badge>
+                        }
+                      />
+                      {contentFeatures.complexity.contentDensity > 0 && (
+                        <InfoRow
+                          label="内容密度"
+                          value={`${contentFeatures.complexity.contentDensity} 字符/token`}
+                          mono
+                        />
+                      )}
+                    </>
                   )}
                 </Section>
               )}

@@ -218,14 +218,14 @@ export async function handleChatCompletion(
       targetUrl = joinUrl(providerUrl, getEndpoint(targetProtocol, isStreaming));
       requestBody = JSON.stringify(transformedBody);
 
-      // 构建 Provider 请求头：透传所有客户端请求头（除 Gateway 认证头）+ Provider API Key
-      // 作为透明代理，只过滤 Gateway 自身使用的认证头，其他全部透传
+      // 构建 Provider 请求头：透传所有客户端请求头（除 Gateway 认证头和长度相关头）+ Provider API Key
+      // content-length 和 transfer-encoding 必须过滤：body 已被修改（至少替换了模型名），长度不再匹配
       // 统一使用小写 key 避免重复
-      const gatewayAuthHeaders = ['authorization', 'x-api-key'];
+      const filteredHeaders = ['authorization', 'x-api-key', 'content-length', 'transfer-encoding'];
       providerRequestHeaders = {
         ...Object.fromEntries(
           Object.entries(clientRequestHeaders).filter(
-            ([key]) => !gatewayAuthHeaders.includes(key)
+            ([key]) => !filteredHeaders.includes(key)
           )
         ),
         'authorization': `Bearer ${provider.apiKey}`,
@@ -243,14 +243,14 @@ export async function handleChatCompletion(
       targetUrl = adapted.url || joinUrl(providerUrl, getEndpoint(targetProtocol, isStreaming));
       requestBody = JSON.stringify(adapted.body);
 
-      // 构建 Provider 请求头：透传所有客户端请求头（除 Gateway 认证头）+ Provider API Key
-      // 作为透明代理，只过滤 Gateway 自身使用的认证头，其他全部透传
+      // 构建 Provider 请求头：透传所有客户端请求头（除 Gateway 认证头和长度相关头）+ Provider API Key
+      // content-length 和 transfer-encoding 必须过滤：协议转换后 body 完全不同，长度不再匹配
       // 统一使用小写 key 避免重复
-      const gatewayAuthHeaders = ['authorization', 'x-api-key'];
+      const filteredHeaders = ['authorization', 'x-api-key', 'content-length', 'transfer-encoding'];
       providerRequestHeaders = {
         ...Object.fromEntries(
           Object.entries(clientRequestHeaders).filter(
-            ([key]) => !gatewayAuthHeaders.includes(key)
+            ([key]) => !filteredHeaders.includes(key)
           )
         ),
         ...Object.fromEntries(
@@ -349,6 +349,7 @@ export async function handleChatCompletion(
       virtualKey,
       requestHeaders: clientRequestHeaders,
       providerRequestHeaders,
+      rawBody,
       clientIp,
       userAgent,
       requestPath,

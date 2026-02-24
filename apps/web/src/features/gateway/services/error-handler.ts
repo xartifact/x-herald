@@ -86,9 +86,27 @@ interface ErrorHandlerParams {
   isStreaming: boolean;
   startTime: number;
   transformedBody?: unknown;
+  rawBody?: unknown;
   incomingProtocol?: string;
   targetProtocol?: string;
   providerRequestHeaders?: Record<string, string>;
+}
+
+/**
+ * 提取详细错误消息，包括 cause 链
+ * Bun/Node fetch 失败时真实原因在 error.cause 里
+ */
+function extractDetailedErrorMessage(error: unknown): string {
+  if (!(error instanceof Error)) {
+    return 'Internal server error';
+  }
+  let msg = error.message;
+  if (error.cause instanceof Error) {
+    msg += `: ${error.cause.message}`;
+  } else if (error.cause != null) {
+    msg += `: ${String(error.cause)}`;
+  }
+  return msg;
 }
 
 /**
@@ -131,9 +149,29 @@ export async function handleGatewayError(
   } = params;
 
   const latencyMs = Date.now() - startTime;
+  const rawBody = params.rawBody as { model?: string } | undefined;
+  const requestedModel = rawBody?.model || 'unknown';
 
-  // 处理特定错误类型
+  // 处理特定错误类型 - 记录日志后返回
   if (error instanceof ModelNotFoundError) {
+    await logRequest({
+      virtualKey,
+      modelName: requestedModel,
+      status: 'failure',
+      statusCode: 404,
+      latencyMs,
+      requestHeaders,
+      requestBody: params.rawBody,
+      errorMessage: error.message,
+      errorType: 'model_not_found',
+      clientIp,
+      userAgent,
+      requestPath,
+      requestMethod,
+      streaming: isStreaming,
+      incomingProtocol: params.incomingProtocol,
+      targetProtocol: params.targetProtocol,
+    });
     return c.json(
       {
         error: {
@@ -146,6 +184,24 @@ export async function handleGatewayError(
   }
 
   if (error instanceof ModelDisabledError) {
+    await logRequest({
+      virtualKey,
+      modelName: requestedModel,
+      status: 'failure',
+      statusCode: 400,
+      latencyMs,
+      requestHeaders,
+      requestBody: params.rawBody,
+      errorMessage: error.message,
+      errorType: 'model_disabled',
+      clientIp,
+      userAgent,
+      requestPath,
+      requestMethod,
+      streaming: isStreaming,
+      incomingProtocol: params.incomingProtocol,
+      targetProtocol: params.targetProtocol,
+    });
     return c.json(
       {
         error: {
@@ -158,6 +214,24 @@ export async function handleGatewayError(
   }
 
   if (error instanceof NoAvailableInstanceError || error instanceof NoSuitableInstanceError) {
+    await logRequest({
+      virtualKey,
+      modelName: requestedModel,
+      status: 'failure',
+      statusCode: 503,
+      latencyMs,
+      requestHeaders,
+      requestBody: params.rawBody,
+      errorMessage: error.message,
+      errorType: 'service_unavailable',
+      clientIp,
+      userAgent,
+      requestPath,
+      requestMethod,
+      streaming: isStreaming,
+      incomingProtocol: params.incomingProtocol,
+      targetProtocol: params.targetProtocol,
+    });
     return c.json(
       {
         error: {
@@ -169,16 +243,19 @@ export async function handleGatewayError(
     );
   }
 
+  const detailedErrorMessage = extractDetailedErrorMessage(error);
+
   await logRequest({
     virtualKey,
-    modelName: 'unknown',
+    modelName: requestedModel,
     status: 'failure',
     statusCode: 500,
     latencyMs,
     requestHeaders,
     providerRequestHeaders: params.providerRequestHeaders,
+    requestBody: params.rawBody,
     transformedRequestBody: params.transformedBody,
-    errorMessage: error instanceof Error ? error.message : 'Internal server error',
+    errorMessage: detailedErrorMessage,
     errorType: 'internal_error',
     clientIp,
     userAgent,
@@ -193,7 +270,7 @@ export async function handleGatewayError(
     {
       error: {
         type: 'internal_error',
-        message: error instanceof Error ? error.message : 'Internal server error',
+        message: detailedErrorMessage,
       },
     },
     500,

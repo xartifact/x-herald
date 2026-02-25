@@ -1,10 +1,12 @@
 'use client'
 
 import { Plus, Search } from 'lucide-react'
+import { useState } from 'react'
 import { Button } from '@/ui/button'
 import { Input } from '@/ui/input'
 import { Card, CardContent } from '@/ui/card'
 import { ProviderTable, ProviderFormDialog } from './components'
+import { ThinkingTypeMappingDialog } from './components/ThinkingTypeMappingDialog'
 import { useProviderPage } from './useProviderPage'
 
 export default function ProvidersPage() {
@@ -28,6 +30,14 @@ export default function ProvidersPage() {
     handleAddNew,
     toggleShowApiKey,
   } = useProviderPage()
+
+  const [thinkingMappingOpen, setThinkingMappingOpen] = useState(false)
+  const [selectedProvider, setSelectedProvider] = useState<{ id: string; name: string } | null>(null)
+
+  const handleConfigureThinkingMapping = (providerId: string, name: string) => {
+    setSelectedProvider({ id: providerId, name })
+    setThinkingMappingOpen(true)
+  }
 
   return (
     <div className="space-y-6">
@@ -83,6 +93,7 @@ export default function ProvidersPage() {
           onToggleShowApiKey={toggleShowApiKey}
           onEdit={handleEdit}
           onDelete={handleDelete}
+          onConfigureThinkingMapping={handleConfigureThinkingMapping}
         />
       )}
 
@@ -96,6 +107,13 @@ export default function ProvidersPage() {
         onToggleShowApiKey={() => setShowFormApiKey(!showFormApiKey)}
         onSubmit={onSubmit}
         protocolOptions={PROTOCOL_OPTIONS}
+      />
+
+      <ThinkingTypeMappingDialog
+        providerId={selectedProvider?.id || ''}
+        providerName={selectedProvider?.name || ''}
+        open={thinkingMappingOpen}
+        onOpenChange={setThinkingMappingOpen}
       />
     </div>
   )

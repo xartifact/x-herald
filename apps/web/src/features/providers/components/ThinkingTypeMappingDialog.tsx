@@ -1,16 +1,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Plus, Trash2, Brain } from 'lucide-react';
+import { useForm, useFieldArray } from 'react-hook-form';
+import { toast } from 'sonner';
 import { z } from 'zod';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/ui/dialog';
+
 import { Button } from '@/ui/button';
+import { Card, CardContent } from '@/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/ui/dialog';
 import { Input } from '@/ui/input';
 import { Label } from '@/ui/label';
-import { Card, CardContent } from '@/ui/card';
-import { Plus, Trash2, Brain } from 'lucide-react';
-import { toast } from 'sonner';
+
+
 import { useProviderThinkingTypeMappings, useUpdateProviderThinkingTypeMappings } from '../hooks/useThinkingTypeMappings';
 
 const mappingSchema = z.object({

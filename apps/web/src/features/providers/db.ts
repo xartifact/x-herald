@@ -1,4 +1,4 @@
-import { pgTable, varchar, boolean, integer, timestamp, text, uuid, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, varchar, boolean, timestamp, text, uuid, jsonb } from 'drizzle-orm/pg-core';
 
 // 协议配置接口
 export interface ProtocolConfig {
@@ -6,11 +6,21 @@ export interface ProtocolConfig {
   enabled: boolean;
 }
 
+// 思考模式映射配置
+export interface ThinkingMappingConfig {
+  enabled: boolean;
+  mappings: Record<string, string>;
+}
+
+export interface ProtocolExtendedConfig extends ProtocolConfig {
+  thinkingMapping?: ThinkingMappingConfig;
+}
+
 // 支持的协议类型
 export type ProtocolType = 'openai' | 'anthropic' | 'gemini' | 'custom';
 
 // 协议配置映射
-export type ProtocolsConfig = Partial<Record<ProtocolType, ProtocolConfig>>;
+export type ProtocolsConfig = Partial<Record<ProtocolType, ProtocolExtendedConfig>>;
 
 export const providers = pgTable('providers', {
   id: uuid('id').primaryKey().defaultRandom(),

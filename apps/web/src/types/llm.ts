@@ -213,6 +213,14 @@ export interface ProviderConfig {
   models: string[];
   defaultModel?: string;
   headers?: Record<string, string>;
+  protocols?: Record<string, {
+    baseUrl: string;
+    enabled: boolean;
+    thinkingMapping?: {
+      enabled: boolean;
+      mappings: Record<string, string>;
+    };
+  }>;
 }
 
 export interface ModelInfo {

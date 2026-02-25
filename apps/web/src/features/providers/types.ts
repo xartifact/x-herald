@@ -22,3 +22,24 @@ export interface ProtocolsConfig {
   anthropic?: ProtocolConfig
   gemini?: ProtocolConfig
 }
+
+
+export interface ThinkingTypeMapping {
+  from: string
+  to: string
+}
+
+export interface ThinkingMappingConfig {
+  enabled: boolean
+  mappings: Record<string, string>
+}
+
+export interface ExtendedProtocolConfig extends ProtocolConfig {
+  thinkingMapping?: ThinkingMappingConfig
+}
+
+export interface ExtendedProtocolsConfig {
+  openai?: ExtendedProtocolConfig
+  anthropic?: ExtendedProtocolConfig
+  gemini?: ExtendedProtocolConfig
+}

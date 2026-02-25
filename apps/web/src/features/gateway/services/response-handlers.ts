@@ -843,6 +843,68 @@ export async function handleStreamingResponse(
   );
 
   // Phase 2: 创建 TransformStream 提取 usage、收集响应并定期更新日志
+  // 标记是否已完成日志，避免重复调用
+  let isLogFinalized = false;
+
+  // 提取 finalizeLog 函数，确保在任何情况下都能被调用
+  const finalizeLog = async (status: 'success' | 'failure' = 'success') => {
+    if (isLogFinalized) return;
+    isLogFinalized = true;
+
+    try {
+      const usage = clientCollector.getUsage();
+      const fullContent = clientCollector.getFullContent();
+      const progress = clientCollector.getProgress();
+
+      const metadata = extractMetadata({
+        requestBody: rawBody,
+        standardRequestBody: params.standardRequestBody,
+        // 同协议时，standardResponseBody 与 providerResponseBody 相同
+        standardResponseBody: needsTransformation
+          ? standardCollector.getFullContent()
+          : providerCollector.getFullContent(),
+        responseBody: fullContent,
+        latencyMs: Date.now() - startTime,
+        conversationId: params.conversationId,
+      });
+
+      await finalizeStreamLog(logId, {
+        status,
+        statusCode: status === 'success' ? 200 : 500,
+        startTime,
+        inputTokens: usage.inputTokens,
+        outputTokens: usage.outputTokens,
+        usageEstimated: usage.estimated,
+        providerResponseHeaders,
+        clientResponseHeaders: mergedHeaders,
+        providerResponseBody: {
+          ...(providerCollector.getSummary(targetProtocol) as Record<string, unknown>),
+          streamContent: providerCollector.getFullContent(),
+          streamProgress: providerCollector.getProgress(),
+        },
+        // 同协议时，standardResponseBody 与 providerResponseBody 相同
+        standardResponseBody: needsTransformation
+          ? standardCollector.getFullContent()
+          : providerCollector.getFullContent(),
+        responseBody: {
+          ...(clientCollector.getSummary(incomingProtocol) as Record<string, unknown>),
+          streamContent: fullContent,
+          streamProgress: progress,
+        },
+        streamContent: fullContent,
+        streamProgress: progress,
+        metadata,
+        toolCallsCount: metadata.toolCalls?.tools?.length,
+      });
+    } catch (error) {
+      logger.error({ error, logId }, 'Failed to finalize stream log');
+      await markStreamFailed(logId, {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        type: 'log_finalization_error',
+      });
+    }
+  };
+
   const usageExtractor = new TransformStream<Uint8Array, Uint8Array>({
     transform(chunk, controller) {
       // 解析 SSE chunk 提取 usage 和收集响应
@@ -880,59 +942,8 @@ export async function handleStreamingResponse(
       controller.enqueue(chunk);
     },
     async flush() {
-      // Phase 2: 流结束，最终日志
-      try {
-        const usage = clientCollector.getUsage();
-        const fullContent = clientCollector.getFullContent();
-        const progress = clientCollector.getProgress();
-
-        const metadata = extractMetadata({
-          requestBody: rawBody,
-          standardRequestBody: params.standardRequestBody,
-          // 同协议时，standardResponseBody 与 providerResponseBody 相同
-          standardResponseBody: needsTransformation
-            ? standardCollector.getFullContent()
-            : providerCollector.getFullContent(),
-          responseBody: fullContent,
-          latencyMs: Date.now() - startTime,
-          conversationId: params.conversationId,
-        });
-
-        await finalizeStreamLog(logId, {
-          status: 'success',
-          statusCode: 200,
-          startTime,
-          inputTokens: usage.inputTokens,
-          outputTokens: usage.outputTokens,
-          usageEstimated: usage.estimated,
-          providerResponseHeaders,
-          clientResponseHeaders: mergedHeaders,
-          providerResponseBody: {
-            ...(providerCollector.getSummary(targetProtocol) as Record<string, unknown>),
-            streamContent: providerCollector.getFullContent(),
-            streamProgress: providerCollector.getProgress(),
-          },
-          // 同协议时，standardResponseBody 与 providerResponseBody 相同
-          standardResponseBody: needsTransformation
-            ? standardCollector.getFullContent()
-            : providerCollector.getFullContent(),
-          responseBody: {
-            ...(clientCollector.getSummary(incomingProtocol) as Record<string, unknown>),
-            streamContent: fullContent,
-            streamProgress: progress,
-          },
-          streamContent: fullContent,
-          streamProgress: progress,
-          metadata,
-          toolCallsCount: metadata.toolCalls?.tools?.length,
-        });
-      } catch (error) {
-        logger.error({ error, logId }, 'Failed to finalize stream log');
-        await markStreamFailed(logId, {
-          message: error instanceof Error ? error.message : 'Unknown error',
-          type: 'log_finalization_error',
-        });
-      }
+      // Phase 2: 流正常结束，调用 finalizeLog
+      await finalizeLog('success');
     },
   });
 
@@ -951,8 +962,9 @@ export async function handleStreamingResponse(
   // Phase 2: 监听客户端断开
   if (params.request?.signal) {
     params.request.signal.addEventListener('abort', async () => {
-      logger.info({ logId }, 'Client disconnected, marking stream as aborted');
-      await markStreamAborted(logId);
+      logger.info({ logId }, 'Client disconnected, finalizing stream log');
+      // 客户端断开时，仍然尝试完成日志记录（使用已收集的数据）
+      await finalizeLog('success');
     });
   }
 

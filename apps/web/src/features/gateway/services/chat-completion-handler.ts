@@ -197,6 +197,7 @@ export async function handleChatCompletion(
       apiKey: provider.apiKey || '',
       protocol: targetProtocol,
       models: [],
+      protocols: provider.protocols,
     };
     ctx.instanceConfig = instance.config ?? undefined;
 

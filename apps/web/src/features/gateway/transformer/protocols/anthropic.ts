@@ -68,8 +68,8 @@ interface AnthropicRequest {
     user_id?: string;
   };
   thinking?: {
-    type: 'enabled';
-    budget_tokens: number;
+    type: 'enabled' | 'adaptive';
+    budget_tokens?: number;
   };
   // 输出配置 (Anthropic 的 structured output)
   output_config?: {
@@ -275,10 +275,36 @@ export class AnthropicTransformer implements Transformer {
       };
     }
 
+    // 应用 thinking 类型映射（如果配置了）
+    this.applyThinkingMapping(anthropicReq, ctx);
+
     return {
       body: anthropicReq,
       headers: {},
     };
+  }
+
+  private applyThinkingMapping(
+    anthropicReq: AnthropicRequest,
+    ctx: TransformerContext,
+  ): void {
+    if (!anthropicReq.thinking?.type) return;
+
+    const protocolConfig = ctx.provider?.protocols?.anthropic;
+    const thinkingMapping = protocolConfig?.thinkingMapping;
+
+    if (!thinkingMapping?.enabled || !thinkingMapping.mappings) return;
+
+    const originalType = anthropicReq.thinking.type;
+    const mappedType = thinkingMapping.mappings[originalType];
+
+    if (mappedType) {
+      logger.debug(
+        { originalType, mappedType, provider: ctx.provider?.name },
+        'Applying thinking type mapping',
+      );
+      anthropicReq.thinking!.type = mappedType as 'enabled' | 'adaptive';
+    }
   }
 
   /**

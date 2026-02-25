@@ -85,6 +85,54 @@ export function mergeResponseHeaders(
 }
 
 /**
+ * 将 SSE chunk 中的 model 字段替换为客户端原始请求的模型名
+ * 支持 OpenAI 格式（顶层 model）和 Anthropic 格式（message_start.message.model）
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function remapModelInChunk(json: any, targetModel: string): boolean {
+  let modified = false;
+  if (json.model !== undefined) {
+    json.model = targetModel;
+    modified = true;
+  }
+  if (json.type === 'message_start' && json.message?.model !== undefined) {
+    json.message.model = targetModel;
+    modified = true;
+  }
+  return modified;
+}
+
+/**
+ * 创建 SSE 流的 model 回写 TransformStream
+ * 将 provider 实际模型名替换回客户端请求的原始模型名
+ */
+function createModelRemapStream(originalModelName: string): TransformStream<Uint8Array, Uint8Array> {
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
+  return new TransformStream({
+    transform(chunk, controller) {
+      const text = decoder.decode(chunk);
+      const lines = text.split('\n');
+      const remapped = lines.map((line) => {
+        if (!line.startsWith('data:')) return line;
+        const data = line.slice(5).trim();
+        if (data === '[DONE]') return line;
+        try {
+          const json = JSON.parse(data);
+          if (remapModelInChunk(json, originalModelName)) {
+            return `data: ${JSON.stringify(json)}`;
+          }
+        } catch {
+          // 解析失败，原样透传
+        }
+        return line;
+      });
+      controller.enqueue(encoder.encode(remapped.join('\n')));
+    },
+  });
+}
+
+/**
  * 生成客户端响应头（非流式）
  */
 function getClientNonStreamingHeaders(): Record<string, string> {
@@ -256,6 +304,11 @@ export async function handleNonStreamingResponse(
       clientType: params.clientType,
     });
 
+    // 模型映射时将响应体中的 model 字段回写为客户端请求的原始模型名
+    if (isMapped && originalModelName && providerResponseData?.model !== undefined) {
+      providerResponseData.model = originalModelName;
+    }
+
     return c.json(providerResponseData);
   }
 
@@ -362,6 +415,11 @@ export async function handleNonStreamingResponse(
     conversationId: params.conversationId,
     clientType: params.clientType,
   });
+
+  // 模型映射时将响应体中的 model 字段回写为客户端请求的原始模型名
+  if (isMapped && originalModelName && responseData?.model !== undefined) {
+    responseData.model = originalModelName;
+  }
 
   return c.json(responseData);
 }
@@ -879,7 +937,12 @@ export async function handleStreamingResponse(
   });
 
   // 通过 usage 提取器返回最终流
-  const finalStream = transformedStream?.pipeThrough(usageExtractor);
+  let finalStream = transformedStream?.pipeThrough(usageExtractor);
+
+  // 模型映射时将 SSE chunks 中的 model 字段回写为客户端请求的原始模型名
+  if (isMapped && originalModelName && finalStream) {
+    finalStream = finalStream.pipeThrough(createModelRemapStream(originalModelName));
+  }
 
   // Phase 2: 监听客户端断开
   if (params.request?.signal) {

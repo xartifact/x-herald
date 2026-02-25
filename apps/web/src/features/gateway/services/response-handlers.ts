@@ -936,13 +936,17 @@ export async function handleStreamingResponse(
     },
   });
 
-  // 通过 usage 提取器返回最终流
-  let finalStream = transformedStream?.pipeThrough(usageExtractor);
-
-  // 模型映射时将 SSE chunks 中的 model 字段回写为客户端请求的原始模型名
-  if (isMapped && originalModelName && finalStream) {
-    finalStream = finalStream.pipeThrough(createModelRemapStream(originalModelName));
+  // 模型映射时先 remap，再让 usageExtractor 收集
+  // 顺序：remap → usageExtractor → 客户端
+  // 这样 clientCollector 收集到的 allChunks 里 model 字段已是原始请求模型名
+  if (isMapped && originalModelName && transformedStream) {
+    transformedStream = transformedStream.pipeThrough(
+      createModelRemapStream(originalModelName)
+    ) as unknown as ReadableStream<Uint8Array<ArrayBuffer>>;
   }
+
+  // 通过 usage 提取器返回最终流
+  const finalStream = transformedStream?.pipeThrough(usageExtractor);
 
   // Phase 2: 监听客户端断开
   if (params.request?.signal) {

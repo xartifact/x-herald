@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 x-llm-gateway 是现代化的 LLM Gateway 项目，支持协议转换、智能路由和高可用性。基于 Next.js + Hono 的 Monorepo 架构。
 
+第一原则： 这是一个透明代理
+
 ## 核心命令
 
 ### 开发

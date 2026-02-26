@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { getDatabase } from '@/core/db/client';
 import { authMiddleware } from '@/features/auth/middleware';
 import logger from '@/core/lib/logger';
-import { providers, type NewProvider } from './db';
+import { providers, type NewProvider, type ProtocolsConfig } from './db';
 
 const providersRoutes = new Hono();
 
@@ -398,14 +398,13 @@ providersRoutes.put('/:id/thinking-type-mappings', async (c) => {
       }
     }
 
-    const currentProtocols = provider[0].protocols as Record<string, unknown>;
-    const currentAnthropic = (currentProtocols.anthropic || {}) as Record<string, unknown>;
-    const updatedProtocols = {
+    const currentProtocols = (provider[0].protocols ?? {}) as ProtocolsConfig;
+    const currentAnthropic = currentProtocols.anthropic;
+    const updatedProtocols: ProtocolsConfig = {
       ...currentProtocols,
       anthropic: {
-        baseUrl: currentAnthropic.baseUrl || '',
-        enabled: currentAnthropic.enabled !== undefined ? currentAnthropic.enabled : true,
-        ...currentAnthropic,
+        baseUrl: currentAnthropic?.baseUrl ?? '',
+        enabled: currentAnthropic?.enabled ?? true,
         thinkingMapping: {
           enabled: Object.keys(mappings).length > 0,
           mappings,

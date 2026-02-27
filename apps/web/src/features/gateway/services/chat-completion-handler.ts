@@ -50,6 +50,7 @@ function joinUrl(baseUrl: string, endpoint: string): string {
 export async function handleChatCompletion(
   c: Context,
   isStreaming: boolean,
+  preprocessedBody?: Record<string, unknown>,
 ): Promise<Response> {
   const startTime = Date.now();
   const requestId = crypto.randomUUID();
@@ -82,7 +83,9 @@ export async function handleChatCompletion(
   let logId: string | undefined;
 
   try {
-    rawBody = (await c.req.json()) as { model?: string; [key: string]: unknown };
+    // 使用预处理的 body 或从请求中解析
+    rawBody = preprocessedBody as { model?: string; [key: string]: unknown } ??
+      (await c.req.json()) as { model?: string; [key: string]: unknown };
     incomingProtocol = detectProtocol(requestPath, rawBody, c.req.raw.headers);
 
     logger.info(
@@ -305,6 +308,7 @@ export async function handleChatCompletion(
     // 创建 AbortController 用于超时和客户端断开控制
     const abortController = new AbortController();
     const REQUEST_TIMEOUT_MS = 120000; // 2 分钟超时
+    const CONNECT_TIMEOUT_MS = 30000; // 30 秒连接超时
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
     // 设置超时
@@ -327,7 +331,8 @@ export async function handleChatCompletion(
         headers: providerRequestHeaders,
         body: requestBody,
         signal: abortController.signal,
-      });
+        connectTimeout: CONNECT_TIMEOUT_MS,
+      } as RequestInit);
     } catch (fetchError) {
       // 清理超时和事件监听
       if (timeoutId) clearTimeout(timeoutId);

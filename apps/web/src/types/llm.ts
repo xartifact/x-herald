@@ -135,6 +135,11 @@ export interface StandardRequest {
     schema?: unknown;
   };
 
+  // 流式选项 (OpenAI 特有)
+  stream_options?: {
+    include_usage?: boolean;
+  };
+
   // 元数据（不参与协议转换，仅传递）
   metadata?: {
     originalProvider?: string;

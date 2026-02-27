@@ -33,7 +33,7 @@ logsRoutes.get('/', async (c) => {
     }
 
     if (query.status) {
-      conditions.push(eq(requestLogs.status, query.status as 'success' | 'failure'));
+      conditions.push(eq(requestLogs.status, query.status as 'success' | 'failure' | 'pending'| 'failure'));
     }
 
     if (query.startDate) {
@@ -80,6 +80,7 @@ logsRoutes.get('/', async (c) => {
               errorType: requestLogs.errorType,
               clientType: requestLogs.clientType,
               createdAt: requestLogs.createdAt,
+              isComplete: requestLogs.isComplete,
             })
             .from(requestLogs)
             .where(and(...conditions))
@@ -106,6 +107,7 @@ logsRoutes.get('/', async (c) => {
               errorType: requestLogs.errorType,
               clientType: requestLogs.clientType,
               createdAt: requestLogs.createdAt,
+              isComplete: requestLogs.isComplete,
             })
             .from(requestLogs)
             .orderBy(desc(requestLogs.createdAt))

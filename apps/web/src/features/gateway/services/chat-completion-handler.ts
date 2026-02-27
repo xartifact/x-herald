@@ -1,7 +1,7 @@
 import { getTransformer, createTransformerContext } from '../transformer';
 import { modelGroupRouter } from './model-group-router';
 import { detectProtocol, getProviderProtocol, getProviderUrl, getEndpoint } from './protocol-detector';
-import { logRequest } from './log-service';
+import { logRequestStart } from './log-service';
 import { handleNonStreamingResponse, handleStreamingResponse } from './response-handlers';
 import { identifyClient } from './client-identifier';
 import { handleGatewayError, handleProviderError } from './error-handler';
@@ -79,6 +79,7 @@ export async function handleChatCompletion(
   let incomingProtocol: 'openai' | 'anthropic' | undefined;
   let targetProtocol: 'openai' | 'anthropic' | undefined;
   let providerRequestHeaders: Record<string, string> | undefined;
+  let logId: string | undefined;
 
   try {
     rawBody = (await c.req.json()) as { model?: string; [key: string]: unknown };
@@ -277,11 +278,95 @@ export async function handleChatCompletion(
       'Request body sent to provider',
     );
 
-    const response = await fetch(targetUrl, {
-      method: 'POST',
-      headers: providerRequestHeaders,
-      body: requestBody,
+    // 7.5 预创建日志记录（pending 状态）
+    logId = await logRequestStart({
+      virtualKey,
+      modelName: mapping.modelName,
+      originalModelName: mapping.originalModel,
+      mappingType: mapping.mappingType,
+      isMapped: mapping.isMapped,
+      providerId: provider.id,
+      providerName: provider.name,
+      requestHeaders: clientRequestHeaders,
+      providerRequestHeaders,
+      requestBody: rawBody,
+      standardRequestBody,
+      transformedRequestBody: transformedBody,
+      clientIp,
+      userAgent,
+      clientType,
+      requestPath,
+      requestMethod,
+      incomingProtocol,
+      targetProtocol,
+      conversationId,
     });
+
+    // 创建 AbortController 用于超时和客户端断开控制
+    const abortController = new AbortController();
+    const REQUEST_TIMEOUT_MS = 120000; // 2 分钟超时
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+    // 设置超时
+    timeoutId = setTimeout(() => {
+      logger.warn({ requestId, timeout: REQUEST_TIMEOUT_MS }, 'Request timeout, aborting');
+      abortController.abort();
+    }, REQUEST_TIMEOUT_MS);
+
+    // 监听客户端断开，同时取消上游请求
+    const clientAbortHandler = () => {
+      logger.info({ requestId }, 'Client disconnected, aborting upstream request');
+      abortController.abort();
+    };
+    c.req.raw.signal?.addEventListener('abort', clientAbortHandler);
+
+    let response: Response;
+    try {
+      response = await fetch(targetUrl, {
+        method: 'POST',
+        headers: providerRequestHeaders,
+        body: requestBody,
+        signal: abortController.signal,
+      });
+    } catch (fetchError) {
+      // 清理超时和事件监听
+      if (timeoutId) clearTimeout(timeoutId);
+      c.req.raw.signal?.removeEventListener('abort', clientAbortHandler);
+
+      // 处理超时或取消错误
+      if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+        const isTimeout = !c.req.raw.signal?.aborted;
+        const errorMessage = isTimeout
+          ? `Request timeout after ${REQUEST_TIMEOUT_MS / 1000}s`
+          : 'Client disconnected';
+
+        logger.warn({ requestId, isTimeout }, errorMessage);
+
+        return handleGatewayError({
+          error: new Error(errorMessage),
+          c,
+          virtualKey,
+          requestHeaders: clientRequestHeaders,
+          providerRequestHeaders,
+          rawBody,
+          clientIp,
+          userAgent,
+          requestPath,
+          requestMethod,
+          isStreaming,
+          startTime,
+          transformedBody,
+          incomingProtocol,
+          targetProtocol,
+          logId,
+        });
+      }
+      throw fetchError;
+    }
+
+    // 清理超时和事件监听
+    if (timeoutId) clearTimeout(timeoutId);
+    c.req.raw.signal?.removeEventListener('abort', clientAbortHandler);
 
     if (!response.ok) {
       return handleProviderError(
@@ -302,6 +387,7 @@ export async function handleChatCompletion(
         transformedBody,
         incomingProtocol,
         targetProtocol,
+        logId,
       );
     }
 
@@ -334,6 +420,8 @@ export async function handleChatCompletion(
       conversationId,
       isPassthroughEnabled,
       clientType,
+      logId,
+      request: c.req.raw, // 传递原始请求对象，用于监听客户端断开
     };
 
     if (actualStreaming) {
@@ -360,6 +448,7 @@ export async function handleChatCompletion(
       transformedBody,
       incomingProtocol,
       targetProtocol,
+      logId,
     });
   }
 }

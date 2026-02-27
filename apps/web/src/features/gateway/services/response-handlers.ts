@@ -8,7 +8,7 @@ import type { StreamProgress, StreamContent } from '@/features/logs/db';
 import { getTransformer } from '../transformer';
 import {
   logRequest,
-  logStreamStart,
+  upgradeToStreamLog,
   updateStreamProgress,
   finalizeStreamLog,
   markStreamFailed,
@@ -43,6 +43,7 @@ interface ResponseHandlerParams {
   conversationId?: string;
   isPassthroughEnabled?: boolean;
   clientType?: string;
+  logId?: string;
 }
 
 /**
@@ -231,6 +232,7 @@ export async function handleNonStreamingResponse(
       targetProtocol,
       conversationId: params.conversationId,
       clientType: params.clientType,
+      logId: params.logId,
     });
 
     return new Response(response.body, {
@@ -302,6 +304,7 @@ export async function handleNonStreamingResponse(
       targetProtocol,
       conversationId: params.conversationId,
       clientType: params.clientType,
+      logId: params.logId,
     });
 
     // 模型映射时将响应体中的 model 字段回写为客户端请求的原始模型名
@@ -414,6 +417,7 @@ export async function handleNonStreamingResponse(
     targetProtocol,
     conversationId: params.conversationId,
     clientType: params.clientType,
+    logId: params.logId,
   });
 
   // 模型映射时将响应体中的 model 字段回写为客户端请求的原始模型名
@@ -701,29 +705,9 @@ export async function handleStreamingResponse(
     targetProtocol,
   } = params;
 
-  // Phase 2: 流开始时创建初始日志
-  const logId = await logStreamStart({
-    virtualKey,
-    modelName: resolvedModelName || originalModelName,
-    originalModelName,
-    mappingType,
-    isMapped,
-    providerId: provider.id,
-    providerName: provider.name,
-    requestHeaders,
-    providerRequestHeaders: params.providerRequestHeaders,
-    requestBody: rawBody,
-    standardRequestBody: params.standardRequestBody,
-    transformedRequestBody: params.transformedBody,
-    clientIp,
-    userAgent,
-    requestPath,
-    requestMethod,
-    incomingProtocol,
-    targetProtocol,
-    conversationId: params.conversationId,
-    clientType: params.clientType,
-  });
+  // 复用 chat-completion-handler 预创建的日志 ID，升级为流式状态
+  const logId = params.logId || 'temp-' + Date.now();
+  await upgradeToStreamLog(logId);
 
   // 创建三个收集器，分别收集响应链路的三个阶段
   const providerCollector = new StreamResponseCollector();
@@ -963,9 +947,10 @@ export async function handleStreamingResponse(
   if (params.request?.signal) {
     params.request.signal.addEventListener('abort', async () => {
       logger.info({ logId }, 'Client disconnected, finalizing stream log');
-      // 客户端断开时，仍然尝试完成日志记录（使用已收集的数据）
+      // 客户端断开时，完成日志记录（使用已收集的数据）
+      // isLogFinalized 标记会防止 flush() 重复调用
       await finalizeLog('success');
-    });
+    }, { once: true }); // 使用 once: true 确保只触发一次
   }
 
   return new Response(finalStream, {

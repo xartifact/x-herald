@@ -21,14 +21,21 @@ gatewayRoutes.use('*', virtualKeyMiddleware);
  * OpenAI 兼容端点
  */
 gatewayRoutes.post('/chat/completions', async (c) => {
-  return handleChatCompletion(c, false);
+  // 从请求体中读取 stream 字段，用于日志记录
+  // 注意：实际的流式处理在 handleChatCompletion 内部根据 standardReq.stream 决定
+  const body = await c.req.json().catch(() => ({}));
+  const isStreaming = body.stream === true;
+  return handleChatCompletion(c, isStreaming);
 });
-
 /**
  * Anthropic 兼容端点
  */
 gatewayRoutes.post('/messages', async (c) => {
-  return handleChatCompletion(c, false);
+  // 从请求体中读取 stream 字段，用于日志记录
+  // 注意：实际的流式处理在 handleChatCompletion 内部根据 standardReq.stream 决定
+  const body = await c.req.json().catch(() => ({}));
+  const isStreaming = body.stream === true;
+  return handleChatCompletion(c, isStreaming);
 });
 
 /**

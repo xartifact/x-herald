@@ -419,7 +419,7 @@ function RequestPanel({ log, className }: RequestPanelProps) {
           {/* 新增：消息分析 Tab */}
           {log.metadata?.messageSequence && (
             <TabsContent value="message-analysis" className="p-0 m-0">
-              <ScrollArea className="h-full">
+              <ScrollArea className="h-[calc(100vh-280px)]">
                 <MessageTimelineSection messageSequence={log.metadata.messageSequence} />
               </ScrollArea>
             </TabsContent>
@@ -529,6 +529,7 @@ export function LogDetailSheet({
   if (!log) return null
 
   const isSuccess = log.status === 'success'
+  const isPending = log.status === 'pending'
   const contentFeatures = extractContentFeatures(log)
 
   return (
@@ -542,7 +543,9 @@ export function LogDetailSheet({
         <div className="flex items-center justify-between px-6 py-3.5 border-b bg-background">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              {isSuccess ? (
+              {isPending ? (
+                <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+              ) : isSuccess ? (
                 <div className="h-2 w-2 rounded-full bg-green-500" />
               ) : (
                 <div className="h-2 w-2 rounded-full bg-red-500" />
@@ -553,8 +556,14 @@ export function LogDetailSheet({
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm font-medium">{log.modelName}</span>
             </div>
-            <Badge variant={isSuccess ? 'default' : 'destructive'} className="font-mono text-xs">
-              {log.statusCode || log.status}
+            <Badge
+              variant={isPending ? 'outline' : isSuccess ? 'default' : 'destructive'}
+              className={cn(
+                "font-mono text-xs",
+                isPending && "border-amber-500 text-amber-600"
+              )}
+            >
+              {isPending ? "请求中" : log.statusCode || log.status}
             </Badge>
           </div>
           <div className="flex items-center gap-2">
@@ -582,10 +591,10 @@ export function LogDetailSheet({
                   label="状态"
                   value={
                     <div className="flex items-center gap-2">
-                      <span className={isSuccess ? 'text-green-600' : 'text-red-600'}>
-                        {isSuccess ? '成功' : '失败'}
+                      <span className={isPending ? 'text-amber-600' : isSuccess ? 'text-green-600' : 'text-red-600'}>
+                        {isPending ? '请求中' : isSuccess ? '成功' : '失败'}
                       </span>
-                      {log.statusCode && (
+                      {!isPending && log.statusCode && (
                         <code className="text-xs bg-muted px-1.5 py-0.5 rounded">
                           {log.statusCode}
                         </code>
@@ -1063,7 +1072,9 @@ export function LogDetailSheet({
             <Separator orientation="vertical" className="h-4" />
             <span>Token: {formatTokens(log.totalTokens)}</span>
             <Separator orientation="vertical" className="h-4" />
-            <span>{isSuccess ? '成功' : '失败'}</span>
+            <span className={isPending ? 'text-amber-600' : isSuccess ? 'text-green-600' : 'text-red-600'}>
+              {isPending ? '请求中' : isSuccess ? '成功' : '失败'}
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <span>{new Date(log.createdAt).toLocaleTimeString('zh-CN')}</span>

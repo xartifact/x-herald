@@ -1,6 +1,6 @@
 'use client'
 
-import { FileText, Trash2, AlertCircle, CheckCircle2, ArrowUpRight, ArrowDownRight } from 'lucide-react'
+import { FileText, Trash2, AlertCircle, CheckCircle2, ArrowUpRight, ArrowDownRight, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -48,6 +48,7 @@ export function LogTable({
         <TableBody>
           {logs.map((log) => {
             const isSuccess = log.status === 'success'
+            const isPending = log.status === 'pending'
 
             return (
               <TableRow
@@ -55,14 +56,15 @@ export function LogTable({
                 className={cn(
                   "cursor-pointer transition-colors",
                   "hover:bg-muted/50",
-                  !isSuccess && "bg-red-50/30 dark:bg-red-950/10"
+                  !isSuccess && !isPending && "bg-red-50/30 dark:bg-red-950/10"
                 )}
                 onClick={() => onViewDetail(log.id)}
               >
-                {/* 状态 */}
                 <TableCell>
                   <div className="flex items-center justify-center">
-                    {isSuccess ? (
+                    {isPending ? (
+                      <Loader2 className="h-4 w-4 text-amber-600 animate-spin" />
+                    ) : isSuccess ? (
                       <CheckCircle2 className="h-4 w-4 text-green-600" />
                     ) : (
                       <AlertCircle className="h-4 w-4 text-red-600" />
@@ -78,10 +80,13 @@ export function LogTable({
                         {log.modelName}
                       </span>
                       <Badge
-                        variant={isSuccess ? 'default' : 'destructive'}
-                        className="text-xs font-mono h-5 px-1.5"
+                        variant={isPending ? 'outline' : isSuccess ? 'default' : 'destructive'}
+                        className={cn(
+                          "text-xs font-mono h-5 px-1.5",
+                          isPending && "border-amber-500 text-amber-600"
+                        )}
                       >
-                        {log.statusCode || log.status}
+                        {isPending ? "请求中" : log.statusCode || log.status}
                       </Badge>
                     </div>
                     {log.originalModelName && log.originalModelName !== log.modelName && (

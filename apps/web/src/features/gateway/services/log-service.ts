@@ -137,8 +137,8 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
           errorMessage: params.errorMessage,
           errorType: params.errorType,
           isComplete: true,
-          streamStatus: params.streaming ? 'completed' : 'pending',
-          streamCompletedAt: params.streaming ? new Date() : null,
+          streamStatus: 'completed',
+          streamCompletedAt: new Date(),
           lastUpdatedAt: new Date(),
           metadata: metadata as any,
           toolCallsCount,
@@ -187,10 +187,11 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
       conversationId: params.conversationId,
 
       // Phase 1 新增：流状态字段
-      streamStatus: params.streaming ? 'completed' : 'pending',
-      isComplete: true, // Phase 1 中流结束后才记录
-      streamStartedAt: params.streaming ? new Date(Date.now() - params.latencyMs) : null,
-      streamCompletedAt: params.streaming ? new Date() : null,
+      // 无论流式还是非流式，都标记为已完成
+      streamStatus: 'completed',
+      isComplete: true,
+      streamStartedAt: params.streaming ? new Date(Date.now() - params.latencyMs) : new Date(),
+      streamCompletedAt: new Date(),
       lastUpdatedAt: new Date(),
 
       // Phase 1 新增：从响应体中提取流内容和进度

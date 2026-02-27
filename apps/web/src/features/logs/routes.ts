@@ -79,6 +79,7 @@ logsRoutes.get('/', async (c) => {
               errorMessage: requestLogs.errorMessage,
               errorType: requestLogs.errorType,
               clientType: requestLogs.clientType,
+              requestPath: requestLogs.requestPath,
               createdAt: requestLogs.createdAt,
               isComplete: requestLogs.isComplete,
             })
@@ -106,6 +107,7 @@ logsRoutes.get('/', async (c) => {
               errorMessage: requestLogs.errorMessage,
               errorType: requestLogs.errorType,
               clientType: requestLogs.clientType,
+              requestPath: requestLogs.requestPath,
               createdAt: requestLogs.createdAt,
               isComplete: requestLogs.isComplete,
             })

@@ -83,6 +83,7 @@ export interface LogListItem {
   errorMessage: string | null
   errorType: string | null
   clientType: string | null
+  requestPath: string | null
   createdAt: string
   isComplete: boolean
 }

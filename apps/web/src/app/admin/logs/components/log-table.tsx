@@ -41,6 +41,7 @@ export function LogTable({
             <TableHead className="w-[140px]">Token</TableHead>
             <TableHead className="min-w-[150px]">虚拟密钥</TableHead>
             <TableHead className="w-[120px]">客户端</TableHead>
+            <TableHead className="w-[140px]">Endpoint</TableHead>
             <TableHead className="w-[160px]">时间</TableHead>
             <TableHead className="w-[120px] text-right">操作</TableHead>
           </TableRow>
@@ -156,6 +157,17 @@ export function LogTable({
                     <Badge variant="secondary" className="text-xs font-normal whitespace-nowrap">
                       {CLIENT_REGISTRY[log.clientType] ?? log.clientType}
                     </Badge>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">-</span>
+                  )}
+                </TableCell>
+
+                {/* Endpoint */}
+                <TableCell>
+                  {log.requestPath ? (
+                    <span className="text-xs font-mono text-muted-foreground truncate max-w-[120px] block" title={log.requestPath}>
+                      {log.requestPath.length > 20 ? log.requestPath.slice(0, 20) + '...' : log.requestPath}
+                    </span>
                   ) : (
                     <span className="text-xs text-muted-foreground">-</span>
                   )}

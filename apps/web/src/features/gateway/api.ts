@@ -8,6 +8,7 @@ import logger from '@/core/lib/logger';
 import { handleChatCompletion } from './services/chat-completion-handler';
 import { logRequest } from './services/log-service';
 import { modelGroupRouter } from './services/model-group-router';
+import { identifyClient } from './services/client-identifier';
 
 const gatewayRoutes = new Hono<{
   Variables: {
@@ -52,6 +53,10 @@ gatewayRoutes.post('/messages/count_tokens', async (c) => {
   c.req.raw.headers.forEach((value, key) => {
     clientRequestHeaders[key.toLowerCase()] = value;
   });
+
+  // 识别客户端类型
+  const clientInfo = identifyClient(userAgent, clientRequestHeaders);
+  const clientType = clientInfo.type;
 
   try {
     const body = await c.req.json();
@@ -132,34 +137,74 @@ gatewayRoutes.post('/messages/count_tokens', async (c) => {
       body: JSON.stringify(forwardedBody),
     });
 
+    // 7. 处理响应
     const latencyMs = Date.now() - startTime;
 
-    // 7. 记录请求日志
-    await logRequest({
-      virtualKey,
-      modelName: mapping.originalModel,
-      status: response.ok ? 'success' : 'failure',
-      statusCode: response.status,
-      latencyMs,
-      clientIp,
-      userAgent,
-      requestPath: c.req.path,
-      requestMethod: 'POST',
-      streaming: false,
-    });
-
-    // 8. 处理响应
     if (!response.ok) {
       const errorBody = await response.text();
       logger.error(
         { provider: provider.name, status: response.status, error: errorBody },
         'Provider count_tokens error'
       );
-      return c.json(JSON.parse(errorBody || '{}'), response.status as 400 | 401 | 403 | 404 | 429 | 500 | 502 | 503);
+
+      const parsedError = JSON.parse(errorBody || '{}');
+      await logRequest({
+        virtualKey,
+        modelName: mapping.originalModel,
+        originalModelName: modelName,
+        providerId: provider.id,
+        providerName: provider.name,
+        status: 'failure',
+        statusCode: response.status,
+        latencyMs,
+        clientIp,
+        userAgent,
+        clientType,
+        requestPath: c.req.path,
+        requestMethod: 'POST',
+        streaming: false,
+        incomingProtocol: 'anthropic',
+        targetProtocol: 'anthropic',
+        requestHeaders: clientRequestHeaders,
+        providerRequestHeaders,
+        requestBody: body,
+        transformedRequestBody: forwardedBody,
+        responseBody: parsedError,
+        errorMessage: parsedError?.error?.message || errorBody,
+        errorType: parsedError?.error?.type,
+      });
+
+      return c.json(parsedError, response.status as 400 | 401 | 403 | 404 | 429 | 500 | 502 | 503);
     }
 
-    // 9. 返回 Provider 的原始响应
+    // 8. 返回 Provider 的原始响应
     const result = await response.json();
+
+    await logRequest({
+      virtualKey,
+      modelName: mapping.originalModel,
+      originalModelName: modelName,
+      providerId: provider.id,
+      providerName: provider.name,
+      status: 'success',
+      statusCode: response.status,
+      latencyMs,
+      clientIp,
+      userAgent,
+      clientType,
+      requestPath: c.req.path,
+      requestMethod: 'POST',
+      streaming: false,
+      incomingProtocol: 'anthropic',
+      targetProtocol: 'anthropic',
+      requestHeaders: clientRequestHeaders,
+      providerRequestHeaders,
+      requestBody: body,
+      transformedRequestBody: forwardedBody,
+      responseBody: result,
+      inputTokens: result?.input_tokens || 0,
+    });
+
     return c.json(result);
 
   } catch (error) {
@@ -175,9 +220,14 @@ gatewayRoutes.post('/messages/count_tokens', async (c) => {
       latencyMs,
       clientIp,
       userAgent,
+      clientType,
       requestPath: c.req.path,
       requestMethod: 'POST',
       streaming: false,
+      incomingProtocol: 'anthropic',
+      targetProtocol: 'anthropic',
+      errorMessage: error instanceof Error ? error.message : 'Failed to count tokens',
+      errorType: 'internal_error',
     });
 
     return c.json(

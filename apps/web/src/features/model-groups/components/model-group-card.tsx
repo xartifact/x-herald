@@ -4,15 +4,22 @@ import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, Layers } from 'lucide-rea
 import { Button } from '@/ui/button'
 import { Badge } from '@/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card'
-import type { ModelGroup } from '../types'
+import { Separator } from '@/ui/separator'
+import { ModelInstanceTable } from './model-instance-table'
+import type { ModelGroup, ModelInstance } from '../types'
 
 interface ModelGroupCardProps {
   group: ModelGroup
+  instances: ModelInstance[]
   isExpanded: boolean
   onToggleExpand: () => void
   onEdit: () => void
   onDelete: () => void
   onAddInstance: () => void
+  onEditInstance: (instance: ModelInstance) => void
+  onDeleteInstance: (instance: ModelInstance) => void
+  onMoveInstance: (instanceId: string, direction: 'up' | 'down') => void
+  getProviderName: (providerId: string) => string
 }
 
 const ROUTING_STRATEGY_LABELS: Record<string, string> = {
@@ -26,11 +33,16 @@ const ROUTING_STRATEGY_LABELS: Record<string, string> = {
 
 export function ModelGroupCard({
   group,
+  instances,
   isExpanded,
   onToggleExpand,
   onEdit,
   onDelete,
   onAddInstance,
+  onEditInstance,
+  onDeleteInstance,
+  onMoveInstance,
+  getProviderName,
 }: ModelGroupCardProps) {
   return (
     <Card>
@@ -44,6 +56,9 @@ export function ModelGroupCard({
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="text-xs">
+              {instances.length} 个实例
+            </Badge>
             <Badge variant={group.enabled ? 'default' : 'destructive'}>
               {group.enabled ? '启用' : '禁用'}
             </Badge>
@@ -90,11 +105,24 @@ export function ModelGroupCard({
                 <span className="ml-2">{group.capabilities.vision ? '✓' : '✗'}</span>
               </div>
             </div>
-            <div className="flex justify-end">
-              <Button size="sm" variant="outline" onClick={onAddInstance}>
-                <Plus className="mr-2 h-4 w-4" />
-                添加实例
-              </Button>
+
+            <Separator />
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-medium">模型实例</h4>
+                <Button size="sm" variant="outline" onClick={onAddInstance}>
+                  <Plus className="mr-2 h-3.5 w-3.5" />
+                  添加实例
+                </Button>
+              </div>
+              <ModelInstanceTable
+                instances={instances}
+                getProviderName={getProviderName}
+                onEdit={onEditInstance}
+                onDelete={onDeleteInstance}
+                onMove={onMoveInstance}
+              />
             </div>
           </div>
         </CardContent>

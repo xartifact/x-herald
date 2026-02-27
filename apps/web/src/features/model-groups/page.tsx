@@ -1,18 +1,15 @@
 'use client'
 
-import { Plus, Search, Layers, Server } from 'lucide-react'
+import { Plus, Search } from 'lucide-react'
 import { useProviders } from '@/features/providers/useProviders'
 import { Button } from '@/ui/button'
 import { Input } from '@/ui/input'
-import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/tabs'
-import { ModelGroupCard, ModelInstanceTable, ModelGroupForm, ModelInstanceForm } from './components'
+import { Card, CardContent } from '@/ui/card'
+import { ModelGroupCard, ModelGroupForm, ModelInstanceForm } from './components'
 import { useModelGroupPage } from './useModelGroupPage'
 
 export default function ModelGroupsPage() {
   const {
-    activeTab,
-    setActiveTab,
     searchQuery,
     setSearchQuery,
     expandedGroup,
@@ -25,8 +22,8 @@ export default function ModelGroupsPage() {
     editingInstanceId,
     groups,
     groupsLoading,
-    instances,
     instancesLoading,
+    instancesByGroup,
     filteredGroups,
     groupForm,
     instanceForm,
@@ -38,6 +35,7 @@ export default function ModelGroupsPage() {
     handleAddInstance,
     handleEditInstance,
     handleDeleteInstance,
+    handleMoveInstance,
     onGroupSubmit,
     onInstanceSubmit,
   } = useModelGroupPage()
@@ -57,100 +55,64 @@ export default function ModelGroupsPage() {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="groups">
-            <Layers className="mr-2 h-4 w-4" />
-            模型组
-          </TabsTrigger>
-          <TabsTrigger value="instances">
-            <Server className="mr-2 h-4 w-4" />
-            模型实例
-          </TabsTrigger>
-        </TabsList>
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="搜索模型组..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-8"
+          />
+        </div>
+        <Button onClick={handleAddGroup}>
+          <Plus className="mr-2 h-4 w-4" />
+          添加模型组
+        </Button>
+      </div>
 
-        <TabsContent value="groups" className="space-y-4">
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="搜索模型组..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8"
-              />
-            </div>
-            <Button onClick={handleAddGroup}>
-              <Plus className="mr-2 h-4 w-4" />
-              添加模型组
-            </Button>
-          </div>
-
-          {groupsLoading ? (
-            <Card>
-              <CardContent className="py-12">
-                <div className="text-center text-muted-foreground">加载中...</div>
-              </CardContent>
-            </Card>
-          ) : filteredGroups.length === 0 ? (
-            <Card>
-              <CardContent className="py-12">
-                <div className="text-center space-y-4">
-                  <p className="text-muted-foreground">
-                    {searchQuery ? '没有找到匹配的模型组' : '还没有模型组'}
-                  </p>
-                  {!searchQuery && (
-                    <Button onClick={handleAddGroup} variant="outline">
-                      <Plus className="mr-2 h-4 w-4" />
-                      添加第一个模型组
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {filteredGroups.map((group) => (
-                <ModelGroupCard
-                  key={group.id}
-                  group={group}
-                  isExpanded={expandedGroup === group.id}
-                  onToggleExpand={() => setExpandedGroup(expandedGroup === group.id ? null : group.id)}
-                  onEdit={() => handleEditGroup(group)}
-                  onDelete={() => handleDeleteGroup(group.id, group.name)}
-                  onAddInstance={() => handleAddInstance(group.id)}
-                />
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="instances">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>模型实例列表</CardTitle>
-                <Button onClick={() => handleAddInstance()}>
+      {groupsLoading || instancesLoading ? (
+        <Card>
+          <CardContent className="py-12">
+            <div className="text-center text-muted-foreground">加载中...</div>
+          </CardContent>
+        </Card>
+      ) : filteredGroups.length === 0 ? (
+        <Card>
+          <CardContent className="py-12">
+            <div className="text-center space-y-4">
+              <p className="text-muted-foreground">
+                {searchQuery ? '没有找到匹配的模型组' : '还没有模型组'}
+              </p>
+              {!searchQuery && (
+                <Button onClick={handleAddGroup} variant="outline">
                   <Plus className="mr-2 h-4 w-4" />
-                  添加实例
+                  添加第一个模型组
                 </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {instancesLoading ? (
-                <div className="text-center py-8 text-muted-foreground">加载中...</div>
-              ) : (
-                <ModelInstanceTable
-                  instances={instances}
-                  getProviderName={getProviderName}
-                  onEdit={handleEditInstance}
-                  onDelete={handleDeleteInstance}
-                />
               )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {filteredGroups.map((group) => (
+            <ModelGroupCard
+              key={group.id}
+              group={group}
+              instances={instancesByGroup.get(group.id) || []}
+              isExpanded={expandedGroup === group.id}
+              onToggleExpand={() => setExpandedGroup(expandedGroup === group.id ? null : group.id)}
+              onEdit={() => handleEditGroup(group)}
+              onDelete={() => handleDeleteGroup(group.id, group.name)}
+              onAddInstance={() => handleAddInstance(group.id)}
+              onEditInstance={handleEditInstance}
+              onDeleteInstance={handleDeleteInstance}
+              onMoveInstance={(instanceId, direction) => handleMoveInstance(group.id, instanceId, direction)}
+              getProviderName={getProviderName}
+            />
+          ))}
+        </div>
+      )}
 
       <ModelGroupForm
         open={groupDialogOpen}

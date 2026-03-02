@@ -1,4 +1,5 @@
 import { getTransformer, createTransformerContext } from '../transformer';
+import { buildHeaders } from '../transformer/utils/parameter-transformer';
 import { modelGroupRouter } from './model-group-router';
 import { detectProtocol, getProviderProtocol, getProviderUrl, getEndpoint } from './protocol-detector';
 import { logRequestStart } from './log-service';
@@ -263,6 +264,11 @@ export async function handleChatCompletion(
         ),
         'authorization': `Bearer ${provider.apiKey}`,
       };
+    }
+
+    // 合并实例自定义 Headers
+    if (ctx.instanceConfig?.customHeaders) {
+      providerRequestHeaders = buildHeaders(providerRequestHeaders, ctx.instanceConfig.customHeaders, ctx);
     }
 
     logger.debug(

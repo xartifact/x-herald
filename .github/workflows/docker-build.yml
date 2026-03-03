@@ -5,6 +5,9 @@ on:
     branches:
       - main
       - master
+      - ci/docker
+      - feat/**
+      - fix/**
     tags:
       - "v*"
   pull_request:

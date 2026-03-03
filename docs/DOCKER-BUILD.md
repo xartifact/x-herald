@@ -14,8 +14,8 @@
 
 构建的镜像会推送到以下仓库：
 
-1. **Docker Hub**: `your-username/x-llm-gateway`
-2. **GitHub Container Registry (GHCR)**: `ghcr.io/username/x-llm-gateway`
+1. **Docker Hub**: `xartifact/x-llm-gateway`
+2. **GitHub Container Registry (GHCR)**: `ghcr.io/xartifact/x-llm-gateway`
 
 ## 配置步骤
 
@@ -56,13 +56,13 @@ GitHub Container Registry 无需额外配置，使用自动提供的 `GITHUB_TOK
 ### 从 Docker Hub 拉取
 
 ```bash
-docker pull your-username/x-llm-gateway:latest
+docker pull xartifact/x-llm-gateway:latest
 ```
 
 ### 从 GitHub Container Registry 拉取
 
 ```bash
-docker pull ghcr.io/username/x-llm-gateway:latest
+docker pull ghcr.io/xartifact/x-llm-gateway:latest
 ```
 
 ### 使用 docker-compose
@@ -70,7 +70,7 @@ docker pull ghcr.io/username/x-llm-gateway:latest
 ```yaml
 services:
   gateway:
-    image: ghcr.io/username/x-llm-gateway:latest
+    image: ghcr.io/xartifact/x-llm-gateway:latest
     env_file:
       - .env.local
     ports:

@@ -21,7 +21,7 @@ ENV NODE_ENV=production
 RUN cd apps/web && bun run build
 
 # ---- 生产运行 ----
-FROM oven/bun:1-slim AS runner
+FROM oven/bun:1 AS runner
 WORKDIR /app
 
 # 安装 CA 证书（修复 TLS 证书验证问题）

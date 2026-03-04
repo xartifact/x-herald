@@ -33,6 +33,7 @@ services:
       DB_PORT: 5432
       DB_SSL: "false"
       DB_MIGRATIONS_FOLDER: /app/migrations
+      PROVIDER_SKIP_TLS_VERIFY: ${PROVIDER_SKIP_TLS_VERIFY:-false}
     ports:
       - "${PORT:-3000}:3000"
     depends_on:

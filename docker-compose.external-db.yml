@@ -11,6 +11,7 @@ services:
       PORT: ${PORT:-3000}
       HOST: 0.0.0.0
       DB_MIGRATIONS_FOLDER: /app/migrations
+      PROVIDER_SKIP_TLS_VERIFY: true
     ports:
       - "${PORT:-3000}:3000"
     healthcheck:

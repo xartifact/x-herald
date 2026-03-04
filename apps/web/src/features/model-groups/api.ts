@@ -218,6 +218,31 @@ modelGroupRoutes.patch('/:id/toggle', async (c) => {
 // ==================== 模型实例管理 ====================
 
 /**
+ * 批量更新模型实例优先级（重新排序）
+ */
+modelGroupRoutes.put('/instances/reorder', async (c) => {
+  const { instanceIds } = await c.req.json<{ instanceIds: string[] }>();
+  const db = getDatabase();
+
+  try {
+    for (let i = 0; i < instanceIds.length; i++) {
+      await db
+        .update(modelInstances)
+        .set({ priority: i, updatedAt: new Date() })
+        .where(eq(modelInstances.id, instanceIds[i]));
+    }
+
+    return c.json({ success: true });
+  } catch (error) {
+    logger.error({ error }, 'Failed to reorder model instances');
+    return c.json(
+      { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
+      500
+    );
+  }
+});
+
+/**
  * 创建模型实例
  */
 modelGroupRoutes.post('/instances', async (c) => {
@@ -289,6 +314,8 @@ modelGroupRoutes.put('/instances/:id', async (c) => {
     const [updated] = await db
       .update(modelInstances)
       .set({
+        groupId: data.groupId,
+        providerId: data.providerId,
         name: data.name,
         actualModelName: data.actualModelName,
         description: data.description,

@@ -1,6 +1,6 @@
 import { getDatabase } from '@/core/db/client';
 import { requestLogs } from '@/features/logs/db';
-import { and, eq, lt } from 'drizzle-orm';
+import { and, eq, lt, or } from 'drizzle-orm';
 import logger from '@/core/lib/logger';
 
 /**
@@ -26,7 +26,10 @@ export async function cleanupStaleStreams(timeoutMinutes: number = 5): Promise<n
       .where(
         and(
           eq(requestLogs.isComplete, false),
-          eq(requestLogs.streamStatus, 'streaming'),
+          or(
+            eq(requestLogs.streamStatus, 'streaming'),
+            eq(requestLogs.streamStatus, 'pending')
+          ),
           lt(requestLogs.lastUpdatedAt, cutoffTime)
         )
       )

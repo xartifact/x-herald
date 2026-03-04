@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -25,25 +23,25 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: x-llm-gateway
+    env_file:
+      - .env.local
     environment:
       NODE_ENV: production
       PORT: ${PORT:-3000}
       HOST: 0.0.0.0
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_NAME: ${DB_NAME:-llm_gateway}
-      DB_USER: ${DB_USER:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD:-postgres}
       DB_SSL: "false"
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-change-me}
       DB_MIGRATIONS_FOLDER: /app/migrations
+      PROVIDER_SKIP_TLS_VERIFY: ${PROVIDER_SKIP_TLS_VERIFY:-false}
     ports:
       - "${PORT:-3000}:3000"
     depends_on:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
+      test:
+        ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3

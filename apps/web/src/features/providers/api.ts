@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { getDatabase } from '@/core/db/client';
 import { authMiddleware } from '@/features/auth/middleware';
 import logger from '@/core/lib/logger';
-import { providers, type NewProvider } from './db';
+import { providers, type NewProvider, type ProtocolsConfig } from './db';
 
 const providersRoutes = new Hono();
 
@@ -315,6 +315,122 @@ providersRoutes.delete('/:id', async (c) => {
         error: 'Failed to delete provider',
         code: 'PROVIDER_DELETE_ERROR',
       },
+      500
+    );
+  }
+});
+
+// GET /api/providers/:id/thinking-type-mappings - 获取 thinking 类型映射
+providersRoutes.get('/:id/thinking-type-mappings', async (c) => {
+  try {
+    const { id } = c.req.param();
+    const db = getDatabase();
+
+    const provider = await db
+      .select()
+      .from(providers)
+      .where(eq(providers.id, id))
+      .limit(1);
+
+    if (!provider || provider.length === 0) {
+      return c.json(
+        { error: 'Provider not found', code: 'PROVIDER_NOT_FOUND' },
+        404
+      );
+    }
+
+    const protocols = provider[0].protocols as Record<string, {
+      baseUrl: string;
+      enabled: boolean;
+      thinkingMapping?: {
+        enabled: boolean;
+        mappings: Record<string, string>;
+      };
+    }>;
+
+    const anthropicConfig = protocols?.anthropic;
+    const mappings = anthropicConfig?.thinkingMapping?.mappings || {};
+
+    const mappingArray = Object.entries(mappings).map(([from, to]) => ({
+      from,
+      to,
+    }));
+
+    return c.json({
+      success: true,
+      data: mappingArray,
+    });
+  } catch (error) {
+    logger.error({ error }, 'Failed to get thinking type mappings');
+    return c.json(
+      { error: 'Failed to get thinking type mappings', code: 'MAPPINGS_GET_ERROR' },
+      500
+    );
+  }
+});
+
+// PUT /api/providers/:id/thinking-type-mappings - 更新 thinking 类型映射
+providersRoutes.put('/:id/thinking-type-mappings', async (c) => {
+  try {
+    const { id } = c.req.param();
+    const body = await c.req.json();
+    const db = getDatabase();
+
+    const provider = await db
+      .select()
+      .from(providers)
+      .where(eq(providers.id, id))
+      .limit(1);
+
+    if (!provider || provider.length === 0) {
+      return c.json(
+        { error: 'Provider not found', code: 'PROVIDER_NOT_FOUND' },
+        404
+      );
+    }
+
+    const mappings: Record<string, string> = {};
+    if (body.mappings && Array.isArray(body.mappings)) {
+      for (const mapping of body.mappings) {
+        if (mapping.from && mapping.to) {
+          mappings[mapping.from] = mapping.to;
+        }
+      }
+    }
+
+    const currentProtocols = (provider[0].protocols ?? {}) as ProtocolsConfig;
+    const currentAnthropic = currentProtocols.anthropic;
+    const updatedProtocols: ProtocolsConfig = {
+      ...currentProtocols,
+      anthropic: {
+        baseUrl: currentAnthropic?.baseUrl ?? '',
+        enabled: currentAnthropic?.enabled ?? true,
+        thinkingMapping: {
+          enabled: Object.keys(mappings).length > 0,
+          mappings,
+        },
+      },
+    };
+
+    await db
+      .update(providers)
+      .set({
+        protocols: updatedProtocols,
+        updatedAt: new Date(),
+      })
+      .where(eq(providers.id, id));
+
+    logger.info({ providerId: id, mappings }, 'Thinking type mappings updated');
+
+    return c.json({
+      success: true,
+      message: 'Thinking type mappings updated successfully',
+      data: Object.entries(mappings).map(([from, to]) => ({ from, to })),
+    });
+  } catch (error) {
+    logger.error({ error }, 'Failed to update thinking type mappings');
+    return c.json(
+      { error: 'Failed to update thinking type mappings', code: 'MAPPINGS_UPDATE_ERROR' },
       500
     );
   }

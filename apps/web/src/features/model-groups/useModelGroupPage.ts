@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import {
   useModelGroups,
@@ -11,12 +11,12 @@ import {
   useCreateModelInstance,
   useUpdateModelInstance,
   useDeleteModelInstance,
+  useReorderInstances,
 } from './useModelGroups'
 import type { GroupFormData, InstanceFormData } from './form-types'
 import type { ModelGroup, ModelInstance } from './types'
 
 export function useModelGroupPage() {
-  const [activeTab, setActiveTab] = useState('groups')
   const [searchQuery, setSearchQuery] = useState('')
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null)
   const [groupDialogOpen, setGroupDialogOpen] = useState(false)
@@ -33,6 +33,7 @@ export function useModelGroupPage() {
   const createInstance = useCreateModelInstance()
   const updateInstance = useUpdateModelInstance()
   const deleteInstance = useDeleteModelInstance()
+  const reorderInstances = useReorderInstances()
 
   const groupForm = useForm<GroupFormData>({
     defaultValues: {
@@ -66,6 +67,21 @@ export function useModelGroupPage() {
       config: undefined,
     },
   })
+
+  // 按 groupId 分组实例，并按 priority 排序
+  const instancesByGroup = useMemo(() => {
+    const map = new Map<string, ModelInstance[]>()
+    for (const instance of instances) {
+      const list = map.get(instance.groupId) || []
+      list.push(instance)
+      map.set(instance.groupId, list)
+    }
+    // 按 priority 升序排序
+    for (const [key, list] of map) {
+      map.set(key, list.sort((a, b) => a.priority - b.priority))
+    }
+    return map
+  }, [instances])
 
   const handleAddGroup = () => {
     setEditingGroupId(null)
@@ -127,6 +143,26 @@ export function useModelGroupPage() {
     await deleteInstance.mutateAsync({ id: instance.id, groupId: instance.groupId })
   }
 
+  const handleMoveInstance = useCallback(
+    (groupId: string, instanceId: string, direction: 'up' | 'down') => {
+      const groupInstances = instancesByGroup.get(groupId)
+      if (!groupInstances) return
+
+      const index = groupInstances.findIndex((i) => i.id === instanceId)
+      if (index === -1) return
+      if (direction === 'up' && index === 0) return
+      if (direction === 'down' && index === groupInstances.length - 1) return
+
+      const swapIndex = direction === 'up' ? index - 1 : index + 1
+      const newOrder = [...groupInstances]
+      ;[newOrder[index], newOrder[swapIndex]] = [newOrder[swapIndex], newOrder[index]]
+
+      const instanceIds = newOrder.map((i) => i.id)
+      reorderInstances.mutate(instanceIds)
+    },
+    [instancesByGroup, reorderInstances]
+  )
+
   const onGroupSubmit = async (data: GroupFormData) => {
     // 解析别名：逗号分隔的字符串转数组
     const aliases = data.aliases
@@ -187,8 +223,6 @@ export function useModelGroupPage() {
   )
 
   return {
-    activeTab,
-    setActiveTab,
     searchQuery,
     setSearchQuery,
     expandedGroup,
@@ -203,6 +237,7 @@ export function useModelGroupPage() {
     groupsLoading,
     instances,
     instancesLoading,
+    instancesByGroup,
     filteredGroups,
     groupForm,
     instanceForm,
@@ -214,6 +249,7 @@ export function useModelGroupPage() {
     handleAddInstance,
     handleEditInstance,
     handleDeleteInstance,
+    handleMoveInstance,
     onGroupSubmit,
     onInstanceSubmit,
   }

@@ -90,6 +90,7 @@ interface ErrorHandlerParams {
   incomingProtocol?: string;
   targetProtocol?: string;
   providerRequestHeaders?: Record<string, string>;
+  logId?: string;
 }
 
 /**
@@ -171,6 +172,7 @@ export async function handleGatewayError(
       streaming: isStreaming,
       incomingProtocol: params.incomingProtocol,
       targetProtocol: params.targetProtocol,
+      logId: params.logId,
     });
     return c.json(
       {
@@ -201,6 +203,7 @@ export async function handleGatewayError(
       streaming: isStreaming,
       incomingProtocol: params.incomingProtocol,
       targetProtocol: params.targetProtocol,
+      logId: params.logId,
     });
     return c.json(
       {
@@ -231,6 +234,7 @@ export async function handleGatewayError(
       streaming: isStreaming,
       incomingProtocol: params.incomingProtocol,
       targetProtocol: params.targetProtocol,
+      logId: params.logId,
     });
     return c.json(
       {
@@ -264,6 +268,7 @@ export async function handleGatewayError(
     streaming: isStreaming,
     incomingProtocol: params.incomingProtocol,
     targetProtocol: params.targetProtocol,
+    logId: params.logId,
   });
 
   return c.json(
@@ -331,6 +336,7 @@ export async function handleProviderError(
   transformedBody?: unknown,
   incomingProtocol?: string,
   targetProtocol?: string,
+  logId?: string,
 ): Promise<Response> {
   const errorData = await parseProviderError(response);
   const rawErrorMessage = errorData.error?.message || 'Provider request failed';
@@ -374,6 +380,7 @@ export async function handleProviderError(
     streaming: isStreaming,
     incomingProtocol,
     targetProtocol,
+    logId,
   });
 
   return c.json(

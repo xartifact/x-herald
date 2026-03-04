@@ -2,11 +2,12 @@ import { Hono } from 'hono';
 import { eq } from 'drizzle-orm';
 import { getDatabase } from '@/core/db/client';
 import { modelGroups } from '@/features/model-groups/db';
-import { requestLogs, type VirtualKey } from '@/features/keys/db';
+import type { VirtualKey } from '@/features/keys/db';
 import { virtualKeyMiddleware } from './middleware/virtual-key';
 import logger from '@/core/lib/logger';
-import { handleChatCompletion } from './services/chat-completion-handler';
 import { logRequest } from './services/log-service';
+import openaiRoutes from './routes/openai';
+import anthropicRoutes from './routes/anthropic';
 
 const gatewayRoutes = new Hono<{
   Variables: {
@@ -16,19 +17,9 @@ const gatewayRoutes = new Hono<{
 
 gatewayRoutes.use('*', virtualKeyMiddleware);
 
-/**
- * OpenAI 兼容端点
- */
-gatewayRoutes.post('/chat/completions', async (c) => {
-  return handleChatCompletion(c, false);
-});
-
-/**
- * Anthropic 兼容端点
- */
-gatewayRoutes.post('/messages', async (c) => {
-  return handleChatCompletion(c, false);
-});
+// 挂载协议子路由
+gatewayRoutes.route('/', openaiRoutes);
+gatewayRoutes.route('/', anthropicRoutes);
 
 /**
  * 模型列表端点 - 返回模型组列表

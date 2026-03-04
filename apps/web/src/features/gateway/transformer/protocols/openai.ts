@@ -47,6 +47,9 @@ interface OpenAIRequest {
   frequency_penalty?: number;
   presence_penalty?: number;
   stream?: boolean;
+  stream_options?: {
+    include_usage?: boolean;
+  };
   tools?: ToolDefinition[];
   tool_choice?: 'auto' | 'none' | 'required' | { type: 'function'; function: { name: string } };
   response_format?: {
@@ -137,6 +140,7 @@ export class OpenAITransformer implements Transformer {
       tool_choice: openaiReq.tool_choice,
       stop: openaiReq.stop,
       seed: openaiReq.seed,
+      stream_options: openaiReq.stream_options,
       response_format: openaiReq.response_format,
       output_config: outputConfig,
       metadata: {
@@ -172,6 +176,7 @@ export class OpenAITransformer implements Transformer {
       frequency_penalty: transformedRequest.frequency_penalty,
       presence_penalty: transformedRequest.presence_penalty,
       stream: transformedRequest.stream,
+      stream_options: transformedRequest.stream_options,
       stop: transformedRequest.stop,
       seed: transformedRequest.seed,
     };

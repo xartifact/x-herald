@@ -171,6 +171,26 @@ export function useToggleModelGroup() {
 
 // ==================== 模型实例 Hooks ====================
 
+// 批量更新模型实例优先级
+export function useReorderInstances() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (instanceIds: string[]) => {
+      const response = await put<ApiResponse<null>>('/api/model-groups/instances/reorder', { instanceIds }, { extractData: false })
+      if (!response.success) {
+        throw new Error(response.error || '更新优先级失败')
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: modelGroupKeys.instances() })
+    },
+    onError: (error: Error) => {
+      toast.error(error.message)
+    },
+  })
+}
+
 // 创建模型实例
 export function useCreateModelInstance() {
   const queryClient = useQueryClient()

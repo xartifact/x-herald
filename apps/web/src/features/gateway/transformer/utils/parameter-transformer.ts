@@ -282,6 +282,13 @@ export function buildHeaders(
 
   if (customHeaders) {
     for (const [key, value] of Object.entries(customHeaders)) {
+      // 删除已有的同名 key（忽略大小写），避免大小写不一致导致重复
+      const lowerKey = key.toLowerCase();
+      for (const existing of Object.keys(headers)) {
+        if (existing.toLowerCase() === lowerKey) {
+          delete headers[existing];
+        }
+      }
       // 支持简单的变量替换
       headers[key] = value.replace(/\$\{requestId\}/g, ctx.requestId);
     }

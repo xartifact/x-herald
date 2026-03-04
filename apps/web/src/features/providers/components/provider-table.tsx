@@ -1,6 +1,6 @@
 'use client'
 
-import { Pencil, Trash2, Eye, EyeOff } from 'lucide-react'
+import { Pencil, Trash2, Eye, EyeOff, BrainCircuit } from 'lucide-react'
 import { Button } from '@/ui/button'
 import {
   Table,
@@ -20,6 +20,7 @@ interface ProviderTableProps {
   onToggleShowApiKey: (providerId: string) => void
   onEdit: (providerId: string) => void
   onDelete: (providerId: string, name: string) => void
+  onConfigureThinkingMapping: (providerId: string, name: string) => void
 }
 
 function getEnabledProtocols(protocols: ProtocolsConfig): string[] {
@@ -32,6 +33,7 @@ export function ProviderTable({
   onToggleShowApiKey,
   onEdit,
   onDelete,
+  onConfigureThinkingMapping,
 }: ProviderTableProps) {
   return (
     <Card>
@@ -103,6 +105,14 @@ export function ProviderTable({
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        title="配置 Thinking 映射"
+                        onClick={() => onConfigureThinkingMapping(provider.id, provider.name)}
+                      >
+                        <BrainCircuit className="h-4 w-4" />
+                      </Button>
                       <Button variant="ghost" size="sm" onClick={() => onEdit(provider.id)}>
                         <Pencil className="h-4 w-4" />
                       </Button>

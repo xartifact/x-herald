@@ -122,7 +122,7 @@ export const requestLogs = pgTable('request_logs', {
   originalModelName: varchar('original_model_name', { length: 255 }),
   providerId: uuid('provider_id').references(() => providers.id),
   providerName: varchar('provider_name', { length: 255 }),
-  status: varchar('status', { length: 20 }).notNull().$type<'success' | 'failure'>(),
+  status: varchar('status', { length: 20 }).notNull().$type<'success' | 'failure' | 'pending'>(),
   statusCode: integer('status_code'),
   latencyMs: integer('latency_ms').notNull(),
   inputTokens: integer('input_tokens').default(0).notNull(),

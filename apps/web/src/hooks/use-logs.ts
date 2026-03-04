@@ -73,7 +73,7 @@ export interface LogListItem {
   originalModelName: string | null
   providerId: string | null
   providerName: string | null
-  status: 'success' | 'failure'
+  status: 'success' | 'failure' | 'pending'
   statusCode: number | null
   latencyMs: number
   inputTokens: number
@@ -83,8 +83,11 @@ export interface LogListItem {
   errorMessage: string | null
   errorType: string | null
   clientType: string | null
+  requestPath: string | null
   createdAt: string
+  isComplete: boolean
 }
+
 
 // 详情项（完整）- 包含所有字段
 export interface Log extends LogListItem {

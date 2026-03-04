@@ -1,22 +1,32 @@
 FROM oven/bun:1 AS base
 WORKDIR /app
 
-# ---- 安装依赖 ----
-FROM base AS deps
-COPY package.json bun.lock* bun.lockb* ./
-COPY apps/web/package.json ./apps/web/
-RUN bun install --frozen-lockfile
-
 # ---- 构建 ----
 FROM base AS builder
-COPY --from=deps /app/node_modules ./node_modules
+# 复制所有 package.json 文件
+COPY package.json bun.lock* bun.lockb* ./
+COPY apps/web/package.json ./apps/web/
+
+# 安装所有依赖（包括 workspace）
+RUN bun install --frozen-lockfile
+
+# 复制源代码
 COPY . .
+
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN bun run build:web
+# 设置环境变量以支持构建
+ENV NODE_ENV=production
+
+# 构建应用
+RUN cd apps/web && bun run build
 
 # ---- 生产运行 ----
-FROM oven/bun:1-slim AS runner
+FROM oven/bun:1 AS runner
 WORKDIR /app
+
+# 安装 CA 证书（修复 TLS 证书验证问题）
+RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
@@ -24,8 +34,6 @@ ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=builder /app/apps/web/.next/standalone ./
 # 静态资源（standalone 不自动包含）
 COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
-# 公共资源
-COPY --from=builder /app/apps/web/public ./apps/web/public
 # 迁移文件（复制到固定路径）
 COPY --from=builder /app/apps/web/src/core/db/migrations /app/migrations
 

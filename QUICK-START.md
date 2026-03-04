@@ -173,3 +173,48 @@ docker-compose up -d
 - 📖 阅读 [数据库初始化文档](./packages/database/DATABASE-INIT.md)
 - 🔧 查看 [开发路线图](./docs/DEVELOPMENT-ROADMAP.md)
 - 📝 了解 [API 文档](./docs/API.md)
+
+## 使用外部数据库
+
+如果你不想使用 Docker Compose 内置的 PostgreSQL，可以配置外部数据库：
+
+### 1. 复制示例配置文件
+
+```bash
+# 复制外部数据库配置模板
+cp .env.external.example .env.local
+```
+
+### 2. 编辑数据库配置
+
+修改 `.env.local` 中的数据库连接信息：
+
+```env
+# External Database Configuration
+DB_HOST=your-db-host.com      # 外部数据库主机
+DB_PORT=5432                   # 端口
+DB_NAME=llm_gateway           # 数据库名
+DB_USER=your_db_user          # 用户名
+DB_PASSWORD=your_secure_password  # 密码
+DB_SSL=true                   # 生产环境建议启用 SSL
+```
+
+### 3. 启动应用（不含 PostgreSQL）
+
+```bash
+# 使用外部数据库配置启动
+docker-compose -f docker-compose.external-db.yml up -d
+
+# 查看日志
+docker-compose -f docker-compose.external-db.yml logs -f
+```
+
+### 文件说明
+
+| 文件 | 用途 |
+|------|------|
+| `docker-compose.yml` | 默认配置，包含 PostgreSQL + 应用 |
+| `docker-compose.external-db.yml` | 外部数据库配置，只启动应用 |
+| `.env.local` | 本地开发环境变量（默认使用内置数据库） |
+| `.env.external.example` | 外部数据库配置模板 |
+

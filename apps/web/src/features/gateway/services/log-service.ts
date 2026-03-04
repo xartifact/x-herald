@@ -15,7 +15,7 @@ export interface LogRequestParams {
   isMapped?: boolean;
   providerId?: string;
   providerName?: string;
-  status: 'success' | 'failure';
+  status: 'success' | 'failure' | 'pending';
   statusCode?: number;
   latencyMs: number;
   inputTokens?: number;
@@ -49,6 +49,7 @@ export interface LogRequestParams {
   userId?: string;
   organizationId?: string;
   tags?: string[];
+  logId?: string;
 }
 
 /**
@@ -117,6 +118,36 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
     }
 
     const db = getDatabase();
+    // 如果提供了 logId，则更新现有记录而非插入新记录
+    if (params.logId) {
+      await db
+        .update(requestLogs)
+        .set({
+          status: params.status,
+          statusCode: params.statusCode,
+          latencyMs: params.latencyMs,
+          inputTokens,
+          outputTokens,
+          totalTokens: inputTokens + outputTokens,
+          providerResponseHeaders: params.providerResponseHeaders as any,
+          clientResponseHeaders: params.clientResponseHeaders as any,
+          providerResponseBody: params.providerResponseBody as any,
+          standardResponseBody: params.standardResponseBody as any,
+          responseBody: params.responseBody as any,
+          errorMessage: params.errorMessage,
+          errorType: params.errorType,
+          isComplete: true,
+          streamStatus: 'completed',
+          streamCompletedAt: new Date(),
+          lastUpdatedAt: new Date(),
+          metadata: metadata as any,
+          toolCallsCount,
+        })
+        .where(eq(requestLogs.id, params.logId));
+      logger.debug({ logId: params.logId, modelName: params.modelName, status: params.status }, 'Request log updated');
+      return;
+    }
+
     await db.insert(requestLogs).values({
       virtualKeyId: params.virtualKey.id,
       virtualKeyName: params.virtualKey.name,
@@ -156,10 +187,11 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
       conversationId: params.conversationId,
 
       // Phase 1 新增：流状态字段
-      streamStatus: params.streaming ? 'completed' : 'pending',
-      isComplete: true, // Phase 1 中流结束后才记录
-      streamStartedAt: params.streaming ? new Date(Date.now() - params.latencyMs) : null,
-      streamCompletedAt: params.streaming ? new Date() : null,
+      // 无论流式还是非流式，都标记为已完成
+      streamStatus: 'completed',
+      isComplete: true,
+      streamStartedAt: params.streaming ? new Date(Date.now() - params.latencyMs) : new Date(),
+      streamCompletedAt: new Date(),
       lastUpdatedAt: new Date(),
 
       // Phase 1 新增：从响应体中提取流内容和进度
@@ -244,7 +276,7 @@ export async function logStreamStart(params: {
         originalModelName: params.originalModelName,
         providerId: params.providerId,
         providerName: params.providerName,
-        status: 'success', // 临时状态，将在完成时更新
+        status: 'pending', // 临时状态，将在完成时更新
         streamStatus: 'streaming',
         isComplete: false,
         statusCode: 200,
@@ -279,6 +311,105 @@ export async function logStreamStart(params: {
     return 'temp-' + Date.now();
   }
 }
+/**
+ * 创建非流式请求的开始日志
+ * 返回日志 ID 用于后续更新
+ */
+export async function logRequestStart(params: {
+  virtualKey: VirtualKey;
+  modelName: string;
+  originalModelName?: string;
+  mappingType?: 'exact' | 'alias' | 'fallback' | null;
+  isMapped?: boolean;
+  providerId: string;
+  providerName: string;
+  requestHeaders: Record<string, string>;
+  providerRequestHeaders?: Record<string, string>;
+  requestBody: unknown;
+  standardRequestBody?: unknown;
+  transformedRequestBody?: unknown;
+  clientIp?: string;
+  userAgent?: string;
+  clientType?: string;
+  requestPath: string;
+  requestMethod: string;
+  incomingProtocol?: string;
+  targetProtocol?: string;
+  conversationId?: string;
+}): Promise<string> {
+  try {
+    const db = getDatabase();
+    const metadata: LogMetadata = {};
+    if (params.originalModelName || params.mappingType) {
+      metadata.modelMapping = {
+        originalModel: params.originalModelName,
+        mappingType: params.mappingType,
+        isMapped: params.isMapped,
+      };
+    }
+    const result = await db.insert(requestLogs).values({
+      virtualKeyId: params.virtualKey.id,
+      virtualKeyName: params.virtualKey.name,
+      modelName: params.modelName,
+      originalModelName: params.originalModelName,
+      providerId: params.providerId,
+      providerName: params.providerName,
+      status: 'pending',
+      streamStatus: 'pending',
+      isComplete: false,
+      statusCode: 200,
+      latencyMs: 0,
+      inputTokens: 0,
+      outputTokens: 0,
+      totalTokens: 0,
+      requestHeaders: params.requestHeaders as any,
+      providerRequestHeaders: params.providerRequestHeaders as any,
+      requestBody: params.requestBody as any,
+      standardRequestBody: params.standardRequestBody as any,
+      transformedRequestBody: params.transformedRequestBody as any,
+      clientIp: params.clientIp,
+      userAgent: params.userAgent,
+      clientType: params.clientType,
+      requestPath: params.requestPath,
+      requestMethod: params.requestMethod,
+      streaming: 'false',
+      incomingProtocol: params.incomingProtocol,
+      targetProtocol: params.targetProtocol,
+      conversationId: params.conversationId,
+      metadata: metadata as any,
+      streamStartedAt: new Date(),
+    }).returning({ id: requestLogs.id });
+    logger.debug({ logId: result[0].id }, 'Request log created');
+    return result[0].id;
+  } catch (error) {
+    logger.error({ error }, 'Failed to create request log');
+    return 'temp-' + Date.now();
+  }
+}
+
+
+/**
+ * 将已有的请求日志升级为流式状态
+ * 用于预创建日志后进入流式处理时更新状态
+ */
+export async function upgradeToStreamLog(logId: string): Promise<void> {
+  if (logId.startsWith('temp-')) return;
+  try {
+    const db = getDatabase();
+    await db
+      .update(requestLogs)
+      .set({
+        streaming: 'true',
+        streamStatus: 'streaming',
+        streamStartedAt: new Date(),
+        lastUpdatedAt: new Date(),
+      })
+      .where(eq(requestLogs.id, logId));
+    logger.debug({ logId }, 'Log upgraded to streaming');
+  } catch (error) {
+    logger.warn({ error, logId }, 'Failed to upgrade log to streaming');
+  }
+}
 
 /**
  * 更新流进度
@@ -289,9 +420,11 @@ export async function updateStreamProgress(
   progress: StreamProgress,
   partialContent?: Partial<StreamContent>
 ): Promise<void> {
-  // 跳过临时 ID
-  if (logId.startsWith('temp-')) return;
-
+  // 跳过临时 ID（初始日志创建失败时使用）
+  if (logId.startsWith('temp-')) {
+    logger.warn({ logId }, 'Skipping progress update for temporary log ID');
+    return;
+  }
   try {
     const db = getDatabase();
 
@@ -339,9 +472,11 @@ export async function finalizeStreamLog(
     toolCallsCount?: number;
   }
 ): Promise<void> {
-  // 跳过临时 ID
-  if (logId.startsWith('temp-')) return;
-
+  // 跳过临时 ID（初始日志创建失败时使用）
+  if (logId.startsWith('temp-')) {
+    logger.warn({ logId }, 'Skipping finalization for temporary log ID');
+    return;
+  }
   try {
     const latencyMs = Date.now() - params.startTime;
     const db = getDatabase();
@@ -397,8 +532,10 @@ export async function markStreamFailed(
   logId: string,
   error: { message: string; type?: string; statusCode?: number }
 ): Promise<void> {
-  if (logId.startsWith('temp-')) return;
-
+  if (logId.startsWith('temp-')) {
+    logger.warn({ logId }, 'Skipping failure mark for temporary log ID');
+    return;
+  }
   try {
     const db = getDatabase();
 
@@ -425,8 +562,10 @@ export async function markStreamFailed(
  * 标记流中止（客户端断开）
  */
 export async function markStreamAborted(logId: string): Promise<void> {
-  if (logId.startsWith('temp-')) return;
-
+  if (logId.startsWith('temp-')) {
+    logger.warn({ logId }, 'Skipping abort mark for temporary log ID');
+    return;
+  }
   try {
     const db = getDatabase();
 

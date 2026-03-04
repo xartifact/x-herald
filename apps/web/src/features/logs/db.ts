@@ -46,7 +46,7 @@ export interface LogMetadata {
   // 模型映射信息
   modelMapping?: {
     originalModel?: string;
-    mappingType?: 'exact' | 'alias' | 'fallback' | null;
+    mappingType?: 'virtual' | 'exact' | 'alias' | 'fallback' | null;
     isMapped?: boolean;
   };
 

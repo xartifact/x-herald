@@ -1,11 +1,20 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useProviders, useCreateProvider, useUpdateProvider, useDeleteProvider } from './useProviders'
+import {
+  useModelInstances,
+  useModelGroups,
+  useCreateModelInstance,
+  useUpdateModelInstance,
+  useDeleteModelInstance,
+} from '@/features/model-groups/useModelGroups'
 import type { ProtocolsConfig } from './types'
+import type { ModelInstance } from '@/features/model-groups/types'
+import type { InstanceFormData } from '@/features/model-groups/form-types'
 
 const PROTOCOL_OPTIONS = [
   { value: 'openai', label: 'OpenAI', defaultUrl: 'https://api.openai.com/v1' },
@@ -58,11 +67,20 @@ export function useProviderPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [showApiKey, setShowApiKey] = useState<Record<string, boolean>>({})
   const [showFormApiKey, setShowFormApiKey] = useState(false)
+  const [expandedProvider, setExpandedProvider] = useState<string | null>(null)
+  const [instanceDialogOpen, setInstanceDialogOpen] = useState(false)
+  const [editingInstanceId, setEditingInstanceId] = useState<string | null>(null)
 
   const { data: providers = [], isLoading: loading } = useProviders()
   const createProvider = useCreateProvider()
   const updateProvider = useUpdateProvider()
   const deleteProvider = useDeleteProvider()
+
+  const { data: instances = [] } = useModelInstances()
+  const { data: groups = [] } = useModelGroups()
+  const createInstance = useCreateModelInstance()
+  const updateInstance = useUpdateModelInstance()
+  const deleteInstance = useDeleteModelInstance()
 
   const form = useForm<ProviderFormData>({
     resolver: zodResolver(providerSchema),
@@ -77,6 +95,39 @@ export function useProviderPage() {
       },
     },
   })
+
+  const instanceForm = useForm<InstanceFormData>({
+    defaultValues: {
+      groupId: '',
+      providerId: '',
+      name: '',
+      actualModelName: '',
+      description: '',
+      weight: 100,
+      priority: 0,
+      config: undefined,
+    },
+  })
+
+  // 按 providerId 分组实例
+  const instancesByProvider = useMemo(() => {
+    const map = new Map<string, ModelInstance[]>()
+    for (const instance of instances) {
+      const list = map.get(instance.providerId) || []
+      list.push(instance)
+      map.set(instance.providerId, list)
+    }
+    return map
+  }, [instances])
+
+  const getGroupName = useCallback(
+    (groupId: string | null): string => {
+      if (!groupId) return '-'
+      const group = groups.find((g) => g.id === groupId)
+      return group?.displayName || groupId
+    },
+    [groups],
+  )
 
   const editingProvider = editingProviderId
     ? providers.find((p) => p.id === editingProviderId)
@@ -170,6 +221,67 @@ export function useProviderPage() {
     }))
   }
 
+  // 实例操作
+  const handleAddInstance = (providerId: string) => {
+    setEditingInstanceId(null)
+    instanceForm.reset({
+      groupId: '',
+      providerId,
+      name: '',
+      actualModelName: '',
+      description: '',
+      weight: 100,
+      priority: 0,
+      config: undefined,
+    })
+    setInstanceDialogOpen(true)
+  }
+
+  const handleEditInstance = (instance: ModelInstance) => {
+    setEditingInstanceId(instance.id)
+    instanceForm.reset({
+      groupId: instance.groupId || '',
+      providerId: instance.providerId,
+      name: instance.name,
+      actualModelName: instance.actualModelName,
+      description: instance.description || '',
+      weight: instance.weight,
+      priority: instance.priority,
+      config: instance.config || undefined,
+    })
+    setInstanceDialogOpen(true)
+  }
+
+  const handleDeleteInstance = async (instance: ModelInstance) => {
+    if (!confirm(`确定要删除模型实例 "${instance.name}" 吗？`)) return
+    await deleteInstance.mutateAsync({ id: instance.id, groupId: instance.groupId || '' })
+  }
+
+  const onInstanceSubmit = async (data: InstanceFormData) => {
+    const payload = {
+      groupId: data.groupId || null,
+      providerId: data.providerId,
+      name: data.name,
+      actualModelName: data.actualModelName,
+      description: data.description,
+      weight: data.weight,
+      priority: data.priority,
+      config: data.config,
+    }
+    if (editingInstanceId) {
+      await updateInstance.mutateAsync({
+        id: editingInstanceId,
+        groupId: data.groupId,
+        data: payload,
+      })
+    } else {
+      await createInstance.mutateAsync(payload)
+    }
+    setInstanceDialogOpen(false)
+    setEditingInstanceId(null)
+    instanceForm.reset()
+  }
+
   const filteredProviders = providers.filter((provider) =>
     provider.name.toLowerCase().includes(searchQuery.toLowerCase()),
   )
@@ -195,5 +307,20 @@ export function useProviderPage() {
     handleDelete,
     handleAddNew,
     toggleShowApiKey,
+    // 实例相关
+    groups,
+    instancesByProvider,
+    expandedProvider,
+    setExpandedProvider,
+    instanceDialogOpen,
+    setInstanceDialogOpen,
+    editingInstanceId,
+    instanceForm,
+    instanceSubmitPending: createInstance.isPending || updateInstance.isPending,
+    getGroupName,
+    handleAddInstance,
+    handleEditInstance,
+    handleDeleteInstance,
+    onInstanceSubmit,
   }
 }

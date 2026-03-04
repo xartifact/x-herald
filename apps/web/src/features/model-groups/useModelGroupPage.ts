@@ -72,6 +72,7 @@ export function useModelGroupPage() {
   const instancesByGroup = useMemo(() => {
     const map = new Map<string, ModelInstance[]>()
     for (const instance of instances) {
+      if (!instance.groupId) continue
       const list = map.get(instance.groupId) || []
       list.push(instance)
       map.set(instance.groupId, list)
@@ -81,6 +82,11 @@ export function useModelGroupPage() {
       map.set(key, list.sort((a, b) => a.priority - b.priority))
     }
     return map
+  }, [instances])
+
+  // 未分组实例
+  const ungroupedInstances = useMemo(() => {
+    return instances.filter((i) => !i.groupId).sort((a, b) => a.priority - b.priority)
   }, [instances])
 
   const handleAddGroup = () => {
@@ -126,7 +132,7 @@ export function useModelGroupPage() {
   const handleEditInstance = (instance: ModelInstance) => {
     setEditingInstanceId(instance.id)
     instanceForm.reset({
-      groupId: instance.groupId,
+      groupId: instance.groupId || '',
       providerId: instance.providerId,
       name: instance.name,
       actualModelName: instance.actualModelName,
@@ -140,7 +146,7 @@ export function useModelGroupPage() {
 
   const handleDeleteInstance = async (instance: ModelInstance) => {
     if (!confirm(`确定要删除模型实例 "${instance.name}" 吗？`)) return
-    await deleteInstance.mutateAsync({ id: instance.id, groupId: instance.groupId })
+    await deleteInstance.mutateAsync({ id: instance.id, groupId: instance.groupId || '' })
   }
 
   const handleMoveInstance = useCallback(
@@ -193,7 +199,7 @@ export function useModelGroupPage() {
 
   const onInstanceSubmit = async (data: InstanceFormData) => {
     const payload = {
-      groupId: data.groupId,
+      groupId: data.groupId || null,
       providerId: data.providerId,
       name: data.name,
       actualModelName: data.actualModelName,
@@ -238,6 +244,7 @@ export function useModelGroupPage() {
     instances,
     instancesLoading,
     instancesByGroup,
+    ungroupedInstances,
     filteredGroups,
     groupForm,
     instanceForm,

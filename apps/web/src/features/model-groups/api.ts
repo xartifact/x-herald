@@ -250,15 +250,17 @@ modelGroupRoutes.post('/instances', async (c) => {
   const db = getDatabase();
 
   try {
-    // 验证模型组是否存在
-    const group = await db
-      .select()
-      .from(modelGroups)
-      .where(eq(modelGroups.id, data.groupId))
-      .limit(1);
+    // 验证模型组是否存在（如果提供了 groupId）
+    if (data.groupId) {
+      const group = await db
+        .select()
+        .from(modelGroups)
+        .where(eq(modelGroups.id, data.groupId))
+        .limit(1);
 
-    if (group.length === 0) {
-      return c.json({ success: false, error: 'Model group not found' }, 404);
+      if (group.length === 0) {
+        return c.json({ success: false, error: 'Model group not found' }, 404);
+      }
     }
 
     // 验证供应商是否存在
@@ -275,7 +277,7 @@ modelGroupRoutes.post('/instances', async (c) => {
     const [instance] = await db
       .insert(modelInstances)
       .values({
-        groupId: data.groupId,
+        groupId: data.groupId || null,
         providerId: data.providerId,
         name: data.name,
         actualModelName: data.actualModelName,
@@ -362,6 +364,55 @@ modelGroupRoutes.delete('/instances/:id', async (c) => {
     return c.json({ success: true, data: deleted });
   } catch (error) {
     logger.error({ error }, 'Failed to delete model instance');
+    return c.json(
+      { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
+      500
+    );
+  }
+});
+
+/**
+ * 分配模型实例到模型组
+ */
+modelGroupRoutes.patch('/instances/:id/assign', async (c) => {
+  const id = c.req.param('id');
+  const { groupId } = await c.req.json<{ groupId: string | null }>();
+  const db = getDatabase();
+
+  try {
+    // 验证实例存在
+    const instance = await db
+      .select()
+      .from(modelInstances)
+      .where(eq(modelInstances.id, id))
+      .limit(1);
+
+    if (instance.length === 0) {
+      return c.json({ success: false, error: 'Model instance not found' }, 404);
+    }
+
+    // 如果有 groupId，验证模型组存在
+    if (groupId) {
+      const group = await db
+        .select()
+        .from(modelGroups)
+        .where(eq(modelGroups.id, groupId))
+        .limit(1);
+
+      if (group.length === 0) {
+        return c.json({ success: false, error: 'Model group not found' }, 404);
+      }
+    }
+
+    const [updated] = await db
+      .update(modelInstances)
+      .set({ groupId: groupId || null, updatedAt: new Date() })
+      .where(eq(modelInstances.id, id))
+      .returning();
+
+    return c.json({ success: true, data: updated });
+  } catch (error) {
+    logger.error({ error }, 'Failed to assign model instance');
     return c.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       500

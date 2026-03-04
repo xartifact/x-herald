@@ -69,7 +69,7 @@ export interface UpdateModelGroupPayload {
 
 // Create Model Instance Payload
 export interface CreateModelInstancePayload {
-  groupId: string;
+  groupId?: string | null;
   providerId: string;
   name: string;
   actualModelName: string;

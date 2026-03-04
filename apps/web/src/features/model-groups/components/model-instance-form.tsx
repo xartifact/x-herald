@@ -78,14 +78,15 @@ export function ModelInstanceForm({
                   name="groupId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>模型组 *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <FormLabel>模型组</FormLabel>
+                      <Select onValueChange={(v) => field.onChange(v === '__none__' ? '' : v)} value={field.value || '__none__'}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="选择模型组" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
+                          <SelectItem value="__none__">不分组</SelectItem>
                           {groups.map((group) => (
                             <SelectItem key={group.id} value={group.id}>
                               {group.displayName}
@@ -93,6 +94,7 @@ export function ModelInstanceForm({
                           ))}
                         </SelectContent>
                       </Select>
+                      <FormDescription>可选，留空则为未分组实例</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

@@ -5,8 +5,9 @@ import { useState } from 'react'
 import { Button } from '@/ui/button'
 import { Input } from '@/ui/input'
 import { Card, CardContent } from '@/ui/card'
-import { ProviderTable, ProviderFormDialog } from './components'
+import { ProviderFormDialog, SyncModelsDialog, ProviderCard } from './components'
 import { ThinkingTypeMappingDialog } from './components/ThinkingTypeMappingDialog'
+import { ModelInstanceForm } from '@/features/model-groups/components/model-instance-form'
 import { useProviderPage } from './useProviderPage'
 
 export default function ProvidersPage() {
@@ -29,14 +30,36 @@ export default function ProvidersPage() {
     handleDelete,
     handleAddNew,
     toggleShowApiKey,
+    // 实例相关
+    providers,
+    groups,
+    instancesByProvider,
+    expandedProvider,
+    setExpandedProvider,
+    instanceDialogOpen,
+    setInstanceDialogOpen,
+    editingInstanceId,
+    instanceForm,
+    instanceSubmitPending,
+    getGroupName,
+    handleAddInstance,
+    handleEditInstance,
+    handleDeleteInstance,
+    onInstanceSubmit,
   } = useProviderPage()
 
   const [thinkingMappingOpen, setThinkingMappingOpen] = useState(false)
+  const [syncModelsOpen, setSyncModelsOpen] = useState(false)
   const [selectedProvider, setSelectedProvider] = useState<{ id: string; name: string } | null>(null)
 
   const handleConfigureThinkingMapping = (providerId: string, name: string) => {
     setSelectedProvider({ id: providerId, name })
     setThinkingMappingOpen(true)
+  }
+
+  const handleSyncModels = (providerId: string, name: string) => {
+    setSelectedProvider({ id: providerId, name })
+    setSyncModelsOpen(true)
   }
 
   return (
@@ -87,15 +110,41 @@ export default function ProvidersPage() {
           </CardContent>
         </Card>
       ) : (
-        <ProviderTable
-          providers={filteredProviders}
-          showApiKey={showApiKey}
-          onToggleShowApiKey={toggleShowApiKey}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onConfigureThinkingMapping={handleConfigureThinkingMapping}
-        />
+        <div className="space-y-4">
+          {filteredProviders.map((provider) => (
+            <ProviderCard
+              key={provider.id}
+              provider={provider}
+              instances={instancesByProvider.get(provider.id) || []}
+              isExpanded={expandedProvider === provider.id}
+              showApiKey={!!showApiKey[provider.id]}
+              onToggleExpand={() =>
+                setExpandedProvider(expandedProvider === provider.id ? null : provider.id)
+              }
+              onToggleShowApiKey={() => toggleShowApiKey(provider.id)}
+              onEdit={() => handleEdit(provider.id)}
+              onDelete={() => handleDelete(provider.id, provider.name)}
+              onSyncModels={() => handleSyncModels(provider.id, provider.name)}
+              onConfigureThinking={() => handleConfigureThinkingMapping(provider.id, provider.name)}
+              onAddInstance={() => handleAddInstance(provider.id)}
+              onEditInstance={handleEditInstance}
+              onDeleteInstance={handleDeleteInstance}
+              getGroupName={getGroupName}
+            />
+          ))}
+        </div>
       )}
+
+      <ModelInstanceForm
+        open={instanceDialogOpen}
+        onOpenChange={setInstanceDialogOpen}
+        form={instanceForm}
+        editingId={editingInstanceId}
+        isPending={instanceSubmitPending}
+        groups={groups}
+        providers={providers}
+        onSubmit={onInstanceSubmit}
+      />
 
       <ProviderFormDialog
         open={dialogOpen}
@@ -107,6 +156,13 @@ export default function ProvidersPage() {
         onToggleShowApiKey={() => setShowFormApiKey(!showFormApiKey)}
         onSubmit={onSubmit}
         protocolOptions={PROTOCOL_OPTIONS}
+      />
+
+      <SyncModelsDialog
+        providerId={selectedProvider?.id || ''}
+        providerName={selectedProvider?.name || ''}
+        open={syncModelsOpen}
+        onOpenChange={setSyncModelsOpen}
       />
 
       <ThinkingTypeMappingDialog

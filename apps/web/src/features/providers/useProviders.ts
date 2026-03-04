@@ -83,6 +83,54 @@ export function useUpdateProvider() {
 }
 
 /**
+ * 获取供应商远程模型列表
+ */
+export function useProviderModels(providerId: string, enabled = false) {
+  return useQuery({
+    queryKey: [...providerKeys.detail(providerId), 'models'] as const,
+    queryFn: () =>
+      get<{ id: string; name: string; synced: boolean }[]>(
+        `/api/providers/${providerId}/models`
+      ),
+    enabled: !!providerId && enabled,
+  })
+}
+
+/**
+ * 批量同步供应商模型
+ */
+export function useSyncProviderModels() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      providerId,
+      models,
+      groupId,
+    }: {
+      providerId: string
+      models: Array<{ id: string; name: string }>
+      groupId?: string
+    }) =>
+      post<{ created: number; skipped: number }>(
+        `/api/providers/${providerId}/sync-models`,
+        { models, groupId }
+      ),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: providerKeys.lists() })
+      // 同时刷新 model-groups 的 instances
+      queryClient.invalidateQueries({ queryKey: ['model-groups', 'instances'] })
+      const result = data as unknown as { created: number; skipped: number }
+      toast.success(`同步完成：新增 ${result.created} 个，跳过 ${result.skipped} 个`)
+    },
+    onError: (error: unknown) => {
+      const apiError = error as { data?: { error?: string } }
+      toast.error(apiError.data?.error || '同步失败')
+    },
+  })
+}
+
+/**
  * 删除供应商
  */
 export function useDeleteProvider() {

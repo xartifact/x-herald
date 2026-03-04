@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { eq } from 'drizzle-orm';
 import { getDatabase } from '@/core/db/client';
-import { modelGroups } from '@/features/model-groups/db';
+import { modelGroups, virtualModels } from '@/features/model-groups/db';
 import type { VirtualKey } from '@/features/keys/db';
 import { virtualKeyMiddleware } from './middleware/virtual-key';
 import logger from '@/core/lib/logger';
@@ -33,14 +33,51 @@ gatewayRoutes.get('/models', async (c) => {
   try {
     const db = getDatabase();
 
-    // 查询所有启用的模型组
-    const allGroups = await db.select().from(modelGroups).where(eq(modelGroups.enabled, true));
+    // 先查询启用的虚拟模型
+    const enabledVirtualModels = await db
+      .select({
+        name: virtualModels.name,
+        displayName: virtualModels.displayName,
+        createdAt: virtualModels.createdAt,
+        modelGroupCapabilities: modelGroups.capabilities,
+      })
+      .from(virtualModels)
+      .innerJoin(modelGroups, eq(virtualModels.modelGroupId, modelGroups.id))
+      .where(eq(virtualModels.enabled, true));
 
-    // 过滤用户有权限访问的模型组
-    const accessibleGroups = allGroups.filter((group) => {
-      if (!virtualKey.allowedModels?.length) return true;
-      return virtualKey.allowedModels.includes(group.name);
-    });
+    let modelList: Array<{ id: string; object: string; created: number; owned_by: string; capabilities?: unknown }>;
+
+    if (enabledVirtualModels.length > 0) {
+      // 有虚拟模型时，返回虚拟模型列表
+      const accessibleVMs = enabledVirtualModels.filter((vm) => {
+        if (!virtualKey.allowedModels?.length) return true;
+        return virtualKey.allowedModels.includes(vm.name);
+      });
+
+      modelList = accessibleVMs.map((vm) => ({
+        id: vm.name,
+        object: 'model',
+        created: Math.floor(new Date(vm.createdAt).getTime() / 1000),
+        owned_by: 'x-llm-gateway',
+        capabilities: vm.modelGroupCapabilities,
+      }));
+    } else {
+      // 无虚拟模型时，回退到模型组列表
+      const allGroups = await db.select().from(modelGroups).where(eq(modelGroups.enabled, true));
+
+      const accessibleGroups = allGroups.filter((group) => {
+        if (!virtualKey.allowedModels?.length) return true;
+        return virtualKey.allowedModels.includes(group.name);
+      });
+
+      modelList = accessibleGroups.map((group) => ({
+        id: group.name,
+        object: 'model',
+        created: Math.floor(new Date(group.createdAt).getTime() / 1000),
+        owned_by: 'x-llm-gateway',
+        capabilities: group.capabilities,
+      }));
+    }
 
     const latencyMs = Date.now() - startTime;
 
@@ -60,13 +97,7 @@ gatewayRoutes.get('/models', async (c) => {
     // OpenAI 格式
     return c.json({
       object: 'list',
-      data: accessibleGroups.map((group) => ({
-        id: group.name,
-        object: 'model',
-        created: Math.floor(new Date(group.createdAt).getTime() / 1000),
-        owned_by: 'x-llm-gateway',
-        capabilities: group.capabilities,
-      })),
+      data: modelList,
     });
   } catch (error) {
     logger.error({ error }, 'Models list error');

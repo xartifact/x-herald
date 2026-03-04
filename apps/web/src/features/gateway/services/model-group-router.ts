@@ -158,6 +158,67 @@ export class ModelGroupRouter {
   }
 
   /**
+   * 按模型组 ID 直接路由（由 VirtualModelRouter 调用）
+   */
+  async routeByGroupId(groupId: string, context: RoutingContext): Promise<RouteResult | null> {
+    const db = getDatabase();
+
+    const groupResult = await db
+      .select()
+      .from(modelGroups)
+      .where(eq(modelGroups.id, groupId))
+      .limit(1);
+
+    if (groupResult.length === 0 || !groupResult[0].enabled) {
+      return null;
+    }
+
+    const group = groupResult[0];
+
+    const instances = await db
+      .select({
+        instance: modelInstances,
+        provider: providers,
+      })
+      .from(modelInstances)
+      .innerJoin(providers, eq(modelInstances.providerId, providers.id))
+      .where(
+        and(
+          eq(modelInstances.groupId, group.id),
+          eq(modelInstances.enabled, true),
+          eq(providers.enabled, true)
+        )
+      );
+
+    if (instances.length === 0) return null;
+
+    const candidates = this.filterCandidates(instances, context, group);
+    if (candidates.length === 0) return null;
+
+    const strategy = group.routingConfig?.strategy || 'round_robin';
+    const selected = await this.selectByStrategy(candidates, strategy, group.routingConfig);
+
+    const mappingResult: ModelMappingResult = {
+      modelName: group.name,
+      isMapped: true,
+      originalModel: context.requestedModel,
+      mappingType: 'virtual',
+    };
+
+    return {
+      instance: selected.instance,
+      provider: selected.provider,
+      group,
+      decision: {
+        strategy,
+        reason: selected.reason,
+        candidates: candidates.length,
+      },
+      mapping: mappingResult,
+    };
+  }
+
+  /**
    * 查找模型组
    */
   private async findModelGroup(name: string): Promise<ModelGroup | null> {

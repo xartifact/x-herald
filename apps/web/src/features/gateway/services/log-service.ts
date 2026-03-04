@@ -11,7 +11,7 @@ export interface LogRequestParams {
   virtualKey: VirtualKey;
   modelName: string;
   originalModelName?: string;
-  mappingType?: 'exact' | 'alias' | 'fallback' | null;
+  mappingType?: 'virtual' | 'exact' | 'alias' | 'fallback' | null;
   isMapped?: boolean;
   providerId?: string;
   providerName?: string;
@@ -244,7 +244,7 @@ export async function logStreamStart(params: {
   virtualKey: VirtualKey;
   modelName: string;
   originalModelName?: string;
-  mappingType?: 'exact' | 'alias' | 'fallback' | null;
+  mappingType?: 'virtual' | 'exact' | 'alias' | 'fallback' | null;
   isMapped?: boolean;
   providerId: string;
   providerName: string;
@@ -327,7 +327,7 @@ export async function logRequestStart(params: {
   virtualKey: VirtualKey;
   modelName: string;
   originalModelName?: string;
-  mappingType?: 'exact' | 'alias' | 'fallback' | null;
+  mappingType?: 'virtual' | 'exact' | 'alias' | 'fallback' | null;
   isMapped?: boolean;
   providerId: string;
   providerName: string;

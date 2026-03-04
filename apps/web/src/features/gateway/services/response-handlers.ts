@@ -28,7 +28,7 @@ interface ResponseHandlerParams {
   provider: { id: string; name: string };
   originalModelName: string;
   resolvedModelName?: string;
-  mappingType?: 'exact' | 'alias' | 'fallback' | null;
+  mappingType?: 'virtual' | 'exact' | 'alias' | 'fallback' | null;
   isMapped?: boolean;
   startTime: number;
   preprocessEndTime: number;

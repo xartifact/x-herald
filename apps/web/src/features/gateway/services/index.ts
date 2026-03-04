@@ -18,3 +18,8 @@ export {
   modelMappingService,
   type ModelMappingResult,
 } from './model-mapping';
+
+export {
+  VirtualModelRouter,
+  virtualModelRouter,
+} from './virtual-model-router';

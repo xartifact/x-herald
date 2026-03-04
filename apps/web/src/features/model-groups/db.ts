@@ -170,7 +170,7 @@ export const modelInstances = pgTable('model_instances', {
   id: uuid('id').primaryKey().defaultRandom(),
 
   // 关联的模型组
-  groupId: uuid('group_id').notNull().references(() => modelGroups.id, { onDelete: 'cascade' }),
+  groupId: uuid('group_id').references(() => modelGroups.id, { onDelete: 'set null' }),
 
   // 关联的供应商
   providerId: uuid('provider_id').notNull().references(() => providers.id, { onDelete: 'cascade' }),
@@ -232,3 +232,118 @@ export const modelInstancesRelations = relations(modelInstances, ({ one }) => ({
 
 export type ModelInstance = typeof modelInstances.$inferSelect;
 export type NewModelInstance = typeof modelInstances.$inferInsert;
+
+/**
+ * 虚拟模型 (Virtual Model)
+ *
+ * 虚拟模型是对外暴露的模型名称，与内部模型组解耦。
+ * 例如：虚拟模型 "my-gpt4" 映射到模型组 "gpt-4-turbo"
+ */
+// 虚拟模型路由配置
+export interface VirtualModelRoutingConfig {
+  strategy: RoutingStrategy;
+  fallbackEnabled: boolean;
+}
+
+export const virtualModels = pgTable('virtual_models', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: varchar('name', { length: 255 }).notNull().unique(),
+  displayName: varchar('display_name', { length: 255 }),
+  description: text('description'),
+  modelGroupId: uuid('model_group_id')
+    .references(() => modelGroups.id, { onDelete: 'set null' }),
+  routingConfig: jsonb('routing_config').$type<VirtualModelRoutingConfig>(),
+  enabled: boolean('enabled').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+/**
+ * 模型映射 (Model Mapping)
+ *
+ * 虚拟模型的多目标映射，支持关联模型组和模型实例
+ */
+export const modelMappings = pgTable('model_mappings', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  virtualModelId: uuid('virtual_model_id').notNull()
+    .references(() => virtualModels.id, { onDelete: 'cascade' }),
+  targetType: varchar('target_type', { length: 20 }).notNull().$type<'model_group' | 'model_instance'>(),
+  targetId: uuid('target_id').notNull(),
+  weight: integer('weight').default(100).notNull(),
+  priority: integer('priority').default(0).notNull(),
+  enabled: boolean('enabled').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const virtualModelsRelations = relations(virtualModels, ({ one, many }) => ({
+  modelGroup: one(modelGroups, {
+    fields: [virtualModels.modelGroupId],
+    references: [modelGroups.id],
+  }),
+  mappings: many(modelMappings),
+}));
+
+export const modelMappingsRelations = relations(modelMappings, ({ one }) => ({
+  virtualModel: one(virtualModels, {
+    fields: [modelMappings.virtualModelId],
+    references: [virtualModels.id],
+  }),
+}));
+
+export type VirtualModel = typeof virtualModels.$inferSelect;
+export type NewVirtualModel = typeof virtualModels.$inferInsert;
+export type ModelMapping = typeof modelMappings.$inferSelect;
+export type NewModelMapping = typeof modelMappings.$inferInsert;
+
+/**
+ * 路由规则 (Model Route)
+ *
+ * 定义请求如何通过条件匹配路由到目标。
+ * 支持 React Flow 可视化编辑。
+ */
+
+// 路由条件
+export interface RouteCondition {
+  field: string;
+  operator: 'eq' | 'ne' | 'in' | 'starts_with' | 'exists';
+  value?: unknown;
+}
+
+// 路由动作
+export interface RouteAction {
+  type: 'route_to_virtual_model' | 'route_to_group' | 'route_to_instance' | 'reject' | 'fallback';
+  targetId?: string;
+  reason?: string;
+}
+
+// React Flow 序列化数据
+export interface FlowData {
+  nodes: Array<{ id: string; type: string; position: { x: number; y: number }; data: Record<string, unknown> }>;
+  edges: Array<{ id: string; source: string; target: string; sourceHandle?: string; targetHandle?: string }>;
+}
+
+export const modelRoutes = pgTable('model_routes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: varchar('name', { length: 255 }).notNull(),
+  description: text('description'),
+  virtualModelId: uuid('virtual_model_id')
+    .references(() => virtualModels.id, { onDelete: 'cascade' }),
+  conditions: jsonb('conditions').$type<RouteCondition[]>().default([]),
+  action: jsonb('action').$type<RouteAction>().notNull(),
+  priority: integer('priority').default(0).notNull(),
+  enabled: boolean('enabled').default(true).notNull(),
+  flowData: jsonb('flow_data').$type<FlowData>(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const modelRoutesRelations = relations(modelRoutes, ({ one }) => ({
+  virtualModel: one(virtualModels, {
+    fields: [modelRoutes.virtualModelId],
+    references: [virtualModels.id],
+  }),
+}));
+
+export type ModelRoute = typeof modelRoutes.$inferSelect;
+export type NewModelRoute = typeof modelRoutes.$inferInsert;

@@ -1,6 +1,6 @@
 'use client'
 
-import { Pencil, Trash2, Eye, EyeOff, BrainCircuit } from 'lucide-react'
+import { Pencil, Trash2, Eye, EyeOff, BrainCircuit, RefreshCw } from 'lucide-react'
 import { Button } from '@/ui/button'
 import {
   Table,
@@ -21,6 +21,7 @@ interface ProviderTableProps {
   onEdit: (providerId: string) => void
   onDelete: (providerId: string, name: string) => void
   onConfigureThinkingMapping: (providerId: string, name: string) => void
+  onSyncModels: (providerId: string, name: string) => void
 }
 
 function getEnabledProtocols(protocols: ProtocolsConfig): string[] {
@@ -34,6 +35,7 @@ export function ProviderTable({
   onEdit,
   onDelete,
   onConfigureThinkingMapping,
+  onSyncModels,
 }: ProviderTableProps) {
   return (
     <Card>
@@ -105,6 +107,14 @@ export function ProviderTable({
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        title="同步模型"
+                        onClick={() => onSyncModels(provider.id, provider.name)}
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"

@@ -5,7 +5,7 @@ import { useProviders } from '@/features/providers/useProviders'
 import { Button } from '@/ui/button'
 import { Input } from '@/ui/input'
 import { Card, CardContent } from '@/ui/card'
-import { ModelGroupCard, ModelGroupForm, ModelInstanceForm } from './components'
+import { ModelGroupCard, ModelGroupForm, ModelInstanceForm, UngroupedInstancesSection } from './components'
 import { useModelGroupPage } from './useModelGroupPage'
 
 export default function ModelGroupsPage() {
@@ -24,6 +24,7 @@ export default function ModelGroupsPage() {
     groupsLoading,
     instancesLoading,
     instancesByGroup,
+    ungroupedInstances,
     filteredGroups,
     groupForm,
     instanceForm,
@@ -111,6 +112,12 @@ export default function ModelGroupsPage() {
               getProviderName={getProviderName}
             />
           ))}
+
+          <UngroupedInstancesSection
+            instances={ungroupedInstances}
+            groups={groups}
+            getProviderName={getProviderName}
+          />
         </div>
       )}
 

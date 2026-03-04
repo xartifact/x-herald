@@ -1,7 +1,7 @@
 import { getTransformer, createTransformerContext } from '../transformer';
 import { buildHeaders } from '../transformer/utils/parameter-transformer';
 import { modelGroupRouter } from './model-group-router';
-import { PROVIDER_FILTERED_HEADERS } from './headers';
+import { virtualModelRouter } from './virtual-model-router';
 import { detectProtocol, getProviderProtocol, getProviderUrl, getEndpoint } from './protocol-detector';
 import { logRequestStart } from './log-service';
 import { handleNonStreamingResponse, handleStreamingResponse } from './response-handlers';
@@ -120,8 +120,8 @@ export async function handleChatCompletion(
       );
     }
 
-    // 3. 使用模型组路由器选择实例
-    const routeResult = await modelGroupRouter.route({
+    // 3. 使用路由器选择实例：先尝试虚拟模型路由，再 fallback 到模型组路由
+    const routingContext = {
       requestedModel: standardReq.model,
       streaming: standardReq.stream || false,
       hasTools: !!standardReq.tools?.length,
@@ -129,7 +129,11 @@ export async function handleChatCompletion(
         Array.isArray(m.content) && m.content.some((c) => c.type === 'image_url')
       ),
       virtualKeyId: virtualKey.id,
-    });
+    };
+
+    const routeResult =
+      (await virtualModelRouter.route(routingContext)) ??
+      (await modelGroupRouter.route(routingContext));
 
     const { instance, provider, group, decision, mapping } = routeResult;
 
@@ -250,11 +254,14 @@ export async function handleChatCompletion(
       targetUrl = joinUrl(providerUrl, getEndpoint(targetProtocol, isStreaming));
       requestBody = JSON.stringify(transformedBody);
 
-      // 构建 Provider 请求头：透传客户端请求头（过滤认证/长度/hop-by-hop/代理注入头）+ Provider API Key
+      // 构建 Provider 请求头：透传所有客户端请求头（除 Gateway 认证头和长度相关头）+ Provider API Key
+      // content-length 和 transfer-encoding 必须过滤：body 已被修改（至少替换了模型名），长度不再匹配
+      // 统一使用小写 key 避免重复
+      const filteredHeaders = ['authorization', 'x-api-key', 'content-length', 'transfer-encoding'];
       providerRequestHeaders = {
         ...Object.fromEntries(
           Object.entries(clientRequestHeaders).filter(
-            ([key]) => !PROVIDER_FILTERED_HEADERS.has(key)
+            ([key]) => !filteredHeaders.includes(key)
           )
         ),
         'authorization': `Bearer ${provider.apiKey}`,
@@ -272,11 +279,14 @@ export async function handleChatCompletion(
       targetUrl = adapted.url || joinUrl(providerUrl, getEndpoint(targetProtocol, isStreaming));
       requestBody = JSON.stringify(adapted.body);
 
-      // 构建 Provider 请求头：透传客户端请求头（过滤认证/长度/hop-by-hop/代理注入头）+ Provider API Key
+      // 构建 Provider 请求头：透传所有客户端请求头（除 Gateway 认证头和长度相关头）+ Provider API Key
+      // content-length 和 transfer-encoding 必须过滤：协议转换后 body 完全不同，长度不再匹配
+      // 统一使用小写 key 避免重复
+      const filteredHeaders = ['authorization', 'x-api-key', 'content-length', 'transfer-encoding'];
       providerRequestHeaders = {
         ...Object.fromEntries(
           Object.entries(clientRequestHeaders).filter(
-            ([key]) => !PROVIDER_FILTERED_HEADERS.has(key)
+            ([key]) => !filteredHeaders.includes(key)
           )
         ),
         ...Object.fromEntries(

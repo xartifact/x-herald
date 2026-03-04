@@ -1,9 +1,13 @@
+import { eq, and, desc } from 'drizzle-orm';
 import { Hono } from 'hono';
-import { eq, desc } from 'drizzle-orm';
+
 import { getDatabase } from '@/core/db/client';
-import { authMiddleware } from '@/features/auth/middleware';
 import logger from '@/core/lib/logger';
+import { authMiddleware } from '@/features/auth/middleware';
+import { modelInstances } from '@/features/model-groups/db';
+
 import { providers, type NewProvider, type ProtocolsConfig } from './db';
+
 
 const providersRoutes = new Hono();
 
@@ -429,6 +433,211 @@ providersRoutes.put('/:id/thinking-type-mappings', async (c) => {
     logger.error({ error }, 'Failed to update thinking type mappings');
     return c.json(
       { error: 'Failed to update thinking type mappings', code: 'MAPPINGS_UPDATE_ERROR' },
+      500
+    );
+  }
+});
+
+// GET /api/providers/:id/models - 获取供应商的模型列表
+providersRoutes.get('/:id/models', async (c) => {
+  try {
+    const { id } = c.req.param();
+    const db = getDatabase();
+
+    const provider = await db
+      .select()
+      .from(providers)
+      .where(eq(providers.id, id))
+      .limit(1);
+
+    if (!provider || provider.length === 0) {
+      return c.json(
+        { error: 'Provider not found', code: 'PROVIDER_NOT_FOUND' },
+        404
+      );
+    }
+
+    const p = provider[0];
+    if (!p.enabled) {
+      return c.json(
+        { error: 'Provider is disabled', code: 'PROVIDER_DISABLED' },
+        400
+      );
+    }
+
+    const protocols = p.protocols as ProtocolsConfig;
+
+    // 尝试从供应商 API 获取模型列表
+    let remoteModels: Array<{ id: string; name: string }> = [];
+    let fetchError: string | null = null;
+
+    try {
+      if (protocols.openai?.enabled && protocols.openai.baseUrl) {
+        const url = `${protocols.openai.baseUrl.replace(/\/+$/, '')}/models`;
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+        };
+        if (p.apiKey) {
+          headers['Authorization'] = `Bearer ${p.apiKey}`;
+        }
+        const resp = await fetch(url, { headers, signal: AbortSignal.timeout(15000) });
+        if (resp.ok) {
+          const body = await resp.json() as { data?: Array<{ id: string }> };
+          if (body.data && Array.isArray(body.data)) {
+            remoteModels = body.data.map((m) => ({ id: m.id, name: m.id }));
+          }
+        } else {
+          fetchError = `OpenAI API returned ${resp.status}`;
+        }
+      } else if (protocols.anthropic?.enabled && protocols.anthropic.baseUrl) {
+        const url = `${protocols.anthropic.baseUrl.replace(/\/+$/, '')}/models`;
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          'anthropic-version': '2023-06-01',
+        };
+        if (p.apiKey) {
+          headers['x-api-key'] = p.apiKey;
+        }
+        const resp = await fetch(url, { headers, signal: AbortSignal.timeout(15000) });
+        if (resp.ok) {
+          const body = await resp.json() as { data?: Array<{ id: string; display_name?: string }> };
+          if (body.data && Array.isArray(body.data)) {
+            remoteModels = body.data.map((m) => ({
+              id: m.id,
+              name: m.display_name || m.id,
+            }));
+          }
+        } else {
+          fetchError = `Anthropic API returned ${resp.status}`;
+        }
+      } else {
+        fetchError = 'No supported protocol enabled';
+      }
+    } catch (err) {
+      fetchError = err instanceof Error ? err.message : 'Failed to fetch models';
+      logger.warn({ error: err, providerId: id }, 'Failed to fetch remote models');
+    }
+
+    // 查询已同步的实例
+    const existingInstances = await db
+      .select({ actualModelName: modelInstances.actualModelName })
+      .from(modelInstances)
+      .where(eq(modelInstances.providerId, id));
+
+    const syncedSet = new Set(existingInstances.map((i) => i.actualModelName));
+
+    const modelsWithStatus = remoteModels.map((m) => ({
+      id: m.id,
+      name: m.name,
+      synced: syncedSet.has(m.id),
+    }));
+
+    return c.json({
+      success: true,
+      data: modelsWithStatus,
+      total: modelsWithStatus.length,
+      fetchError,
+    });
+  } catch (error) {
+    logger.error({ error }, 'Failed to get provider models');
+    return c.json(
+      { error: 'Failed to get provider models', code: 'PROVIDER_MODELS_ERROR' },
+      500
+    );
+  }
+});
+
+// POST /api/providers/:id/sync-models - 批量同步模型
+providersRoutes.post('/:id/sync-models', async (c) => {
+  try {
+    const { id } = c.req.param();
+    const body = await c.req.json() as {
+      models: Array<{ id: string; name: string }>;
+      groupId?: string;
+    };
+    const db = getDatabase();
+
+    // 验证 provider
+    const provider = await db
+      .select()
+      .from(providers)
+      .where(eq(providers.id, id))
+      .limit(1);
+
+    if (!provider || provider.length === 0) {
+      return c.json(
+        { error: 'Provider not found', code: 'PROVIDER_NOT_FOUND' },
+        404
+      );
+    }
+
+    if (!provider[0].enabled) {
+      return c.json(
+        { error: 'Provider is disabled', code: 'PROVIDER_DISABLED' },
+        400
+      );
+    }
+
+    // 如果有 groupId，验证模型组存在
+    if (body.groupId) {
+      const { modelGroups } = await import('@/features/model-groups/db');
+      const group = await db
+        .select()
+        .from(modelGroups)
+        .where(eq(modelGroups.id, body.groupId))
+        .limit(1);
+
+      if (group.length === 0) {
+        return c.json(
+          { error: 'Model group not found', code: 'MODEL_GROUP_NOT_FOUND' },
+          404
+        );
+      }
+    }
+
+    // 查询已存在的实例（按 providerId + actualModelName 去重）
+    const existingInstances = await db
+      .select({ actualModelName: modelInstances.actualModelName })
+      .from(modelInstances)
+      .where(eq(modelInstances.providerId, id));
+
+    const existingSet = new Set(existingInstances.map((i) => i.actualModelName));
+
+    const toCreate = body.models.filter((m) => !existingSet.has(m.id));
+    const skipped = body.models.length - toCreate.length;
+
+    // 批量插入
+    if (toCreate.length > 0) {
+      await db.insert(modelInstances).values(
+        toCreate.map((m) => ({
+          providerId: id,
+          groupId: body.groupId || null,
+          name: m.name,
+          actualModelName: m.id,
+          weight: 100,
+          priority: 0,
+          enabled: true,
+        }))
+      );
+    }
+
+    logger.info(
+      { providerId: id, created: toCreate.length, skipped },
+      'Models synced'
+    );
+
+    return c.json({
+      success: true,
+      data: {
+        created: toCreate.length,
+        skipped,
+        details: toCreate.map((m) => ({ id: m.id, name: m.name })),
+      },
+    });
+  } catch (error) {
+    logger.error({ error }, 'Failed to sync models');
+    return c.json(
+      { error: 'Failed to sync models', code: 'SYNC_MODELS_ERROR' },
       500
     );
   }

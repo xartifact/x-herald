@@ -197,7 +197,7 @@ export function useCreateModelInstance() {
 
   return useMutation({
     mutationFn: async (data: {
-      groupId: string
+      groupId?: string | null
       providerId: string
       name: string
       actualModelName: string
@@ -282,6 +282,32 @@ export function useDeleteModelInstance() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: modelGroupKeys.instances() })
       toast.success('模型实例删除成功')
+    },
+    onError: (error: Error) => {
+      toast.error(error.message)
+    },
+  })
+}
+
+// 分配模型实例到模型组
+export function useAssignInstance() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id, groupId }: { id: string; groupId: string | null }) => {
+      const response = await patch<ApiResponse<ModelInstance>>(
+        `/api/model-groups/instances/${id}/assign`,
+        { groupId },
+        { extractData: false }
+      )
+      if (!response.success) {
+        throw new Error(response.error || '分配失败')
+      }
+      return response.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: modelGroupKeys.instances() })
+      toast.success('分配成功')
     },
     onError: (error: Error) => {
       toast.error(error.message)

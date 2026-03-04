@@ -7,7 +7,7 @@
 export { default as modelGroupsRoutes } from './api';
 
 // Database Schema (只导出 schema,不导出类型,避免冲突)
-export { modelGroups, modelInstances, modelInstancesRelations } from './db';
+export { modelGroups, modelInstances, modelInstancesRelations, virtualModels, virtualModelsRelations } from './db';
 
 // Types (从 types.ts 统一导出所有类型)
 export * from './types';

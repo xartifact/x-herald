@@ -5,6 +5,7 @@ import { handleChatCompletion } from '../services/chat-completion-handler';
 import { logRequest } from '../services/log-service';
 import { modelGroupRouter } from '../services/model-group-router';
 import { identifyClient } from '../services/client-identifier';
+import { PROVIDER_FILTERED_HEADERS } from '../services/headers';
 
 const anthropicRoutes = new Hono<{
   Variables: {
@@ -92,11 +93,10 @@ anthropicRoutes.post('/messages/count_tokens', async (c) => {
     };
 
     // 5. 构建 Provider 请求头
-    const filteredHeaders = ['authorization', 'x-api-key', 'content-length', 'transfer-encoding', 'host'];
     const providerRequestHeaders: Record<string, string> = {
       ...Object.fromEntries(
         Object.entries(clientRequestHeaders).filter(
-          ([key]) => !filteredHeaders.includes(key)
+          ([key]) => !PROVIDER_FILTERED_HEADERS.has(key)
         )
       ),
       'content-type': 'application/json',

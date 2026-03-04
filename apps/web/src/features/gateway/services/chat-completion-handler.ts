@@ -1,6 +1,7 @@
 import { getTransformer, createTransformerContext } from '../transformer';
 import { buildHeaders } from '../transformer/utils/parameter-transformer';
 import { modelGroupRouter } from './model-group-router';
+import { PROVIDER_FILTERED_HEADERS } from './headers';
 import { detectProtocol, getProviderProtocol, getProviderUrl, getEndpoint } from './protocol-detector';
 import { logRequestStart } from './log-service';
 import { handleNonStreamingResponse, handleStreamingResponse } from './response-handlers';
@@ -224,14 +225,11 @@ export async function handleChatCompletion(
       targetUrl = joinUrl(providerUrl, getEndpoint(targetProtocol, isStreaming));
       requestBody = JSON.stringify(transformedBody);
 
-      // 构建 Provider 请求头：透传所有客户端请求头（除 Gateway 认证头和长度相关头）+ Provider API Key
-      // content-length 和 transfer-encoding 必须过滤：body 已被修改（至少替换了模型名），长度不再匹配
-      // 统一使用小写 key 避免重复
-      const filteredHeaders = ['authorization', 'x-api-key', 'content-length', 'transfer-encoding'];
+      // 构建 Provider 请求头：透传客户端请求头（过滤认证/长度/hop-by-hop/代理注入头）+ Provider API Key
       providerRequestHeaders = {
         ...Object.fromEntries(
           Object.entries(clientRequestHeaders).filter(
-            ([key]) => !filteredHeaders.includes(key)
+            ([key]) => !PROVIDER_FILTERED_HEADERS.has(key)
           )
         ),
         'authorization': `Bearer ${provider.apiKey}`,
@@ -249,14 +247,11 @@ export async function handleChatCompletion(
       targetUrl = adapted.url || joinUrl(providerUrl, getEndpoint(targetProtocol, isStreaming));
       requestBody = JSON.stringify(adapted.body);
 
-      // 构建 Provider 请求头：透传所有客户端请求头（除 Gateway 认证头和长度相关头）+ Provider API Key
-      // content-length 和 transfer-encoding 必须过滤：协议转换后 body 完全不同，长度不再匹配
-      // 统一使用小写 key 避免重复
-      const filteredHeaders = ['authorization', 'x-api-key', 'content-length', 'transfer-encoding'];
+      // 构建 Provider 请求头：透传客户端请求头（过滤认证/长度/hop-by-hop/代理注入头）+ Provider API Key
       providerRequestHeaders = {
         ...Object.fromEntries(
           Object.entries(clientRequestHeaders).filter(
-            ([key]) => !filteredHeaders.includes(key)
+            ([key]) => !PROVIDER_FILTERED_HEADERS.has(key)
           )
         ),
         ...Object.fromEntries(

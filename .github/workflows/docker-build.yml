@@ -1,4 +1,4 @@
-name: Build and Push Docker Image
+name: Build and Deploy
 
 on:
   push:
@@ -18,6 +18,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  DEPLOY_DIR: ~/Docker/x-llm-gateway
 
 jobs:
   build:
@@ -25,6 +26,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tags }}
 
     steps:
       - name: Checkout repository
@@ -75,3 +78,44 @@ jobs:
         run: |
           echo "Image digest: ${{ steps.build-and-push.outputs.digest }}"
           echo "Image tags: ${{ steps.meta.outputs.tags }}"
+
+  deploy:
+    needs: build
+    runs-on: self-hosted
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Deploy to server
+        run: |
+          cd ${{ env.DEPLOY_DIR }}
+
+          echo "Pulling latest images..."
+          docker-compose pull
+
+          echo "Restarting services..."
+          docker-compose up -d
+
+          echo "Waiting for service to start..."
+          sleep 15
+
+          echo "Health check..."
+          MAX_RETRIES=10
+          RETRY_COUNT=0
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            if wget -qO- http://localhost:3000/api/health > /dev/null 2>&1; then
+              echo "✓ Health check passed"
+              break
+            fi
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+              echo "✗ Health check failed after $MAX_RETRIES attempts"
+              exit 1
+            fi
+            echo "  Attempt $RETRY_COUNT/$MAX_RETRIES failed, retrying in 5s..."
+            sleep 5
+          done
+
+          echo "Cleaning up old images..."
+          docker image prune -f
+
+          echo "✓ Deployment completed successfully"

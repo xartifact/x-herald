@@ -92,30 +92,57 @@ jobs:
           echo "Pulling latest images..."
           docker-compose pull
 
-          echo "Restarting services..."
+          echo "Starting services..."
           docker-compose up -d
 
-          echo "Waiting for service to start..."
-          sleep 15
-
-          echo "Health check..."
-          MAX_RETRIES=10
+          echo "Waiting for container to be healthy..."
+          MAX_RETRIES=30
           RETRY_COUNT=0
+          
           while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-            if wget -qO- http://localhost:3000/api/health > /dev/null 2>&1; then
-              echo "✓ Health check passed"
+            # Get container health status from Docker
+            HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' x-llm-gateway 2>/dev/null || echo "unknown")
+            
+            if [ "$HEALTH_STATUS" = "healthy" ]; then
+              echo "✓ Container is healthy"
               break
-            fi
-            RETRY_COUNT=$((RETRY_COUNT + 1))
-            if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
-              echo "✗ Health check failed after $MAX_RETRIES attempts"
+            elif [ "$HEALTH_STATUS" = "unhealthy" ]; then
+              echo "✗ Container is unhealthy"
+              echo "Container logs:"
+              docker-compose logs --tail=30 gateway
               exit 1
             fi
-            echo "  Attempt $RETRY_COUNT/$MAX_RETRIES failed, retrying in 5s..."
+            
+            # Check if container is still starting
+            CONTAINER_STATUS=$(docker inspect --format='{{.State.Status}}' x-llm-gateway 2>/dev/null || echo "unknown")
+            if [ "$CONTAINER_STATUS" = "exited" ] || [ "$CONTAINER_STATUS" = "dead" ]; then
+              echo "✗ Container has stopped (status: $CONTAINER_STATUS)"
+              echo "Container logs:"
+              docker-compose logs gateway
+              exit 1
+            fi
+            
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+              echo "✗ Health check timeout after $MAX_RETRIES attempts (150s)"
+              echo "Last health status: $HEALTH_STATUS"
+              echo "Container status: $CONTAINER_STATUS"
+              echo "Container logs:"
+              docker-compose logs --tail=50 gateway
+              exit 1
+            fi
+            
+            echo "  Attempt $RETRY_COUNT/$MAX_RETRIES (status: $HEALTH_STATUS), retrying in 5s..."
             sleep 5
           done
 
+          echo ""
+          echo "Container status:"
+          docker-compose ps
+
+          echo ""
           echo "Cleaning up old images..."
           docker image prune -f
 
+          echo ""
           echo "✓ Deployment completed successfully"

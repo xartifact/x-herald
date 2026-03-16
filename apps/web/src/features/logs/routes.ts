@@ -140,6 +140,80 @@ logsRoutes.get('/', async (c) => {
   }
 });
 
+// GET /api/logs/client-models - 获取客户端请求模型统计
+logsRoutes.get('/client-models', async (c) => {
+  try {
+    const db = getDatabase();
+    const query = c.req.query();
+
+    // 时间范围筛选
+    const conditions = [];
+    if (query.startDate) {
+      conditions.push(gte(requestLogs.createdAt, new Date(query.startDate)));
+    }
+    if (query.endDate) {
+      conditions.push(lte(requestLogs.createdAt, new Date(query.endDate)));
+    }
+
+    // 只统计有 originalModelName 的记录
+    conditions.push(isNotNull(requestLogs.originalModelName));
+
+    // 按客户端请求模型统计
+    const baseQuery = conditions.length > 1
+      ? db.select({
+          originalModelName: requestLogs.originalModelName,
+          requestCount: sql<number>`count(*)`,
+          successCount: sql<number>`count(*) filter (where ${requestLogs.status} = 'success')`,
+          failureCount: sql<number>`count(*) filter (where ${requestLogs.status} = 'failure')`,
+          totalInputTokens: sql<number>`sum(${requestLogs.inputTokens})`,
+          totalOutputTokens: sql<number>`sum(${requestLogs.outputTokens})`,
+          totalTokens: sql<number>`sum(${requestLogs.totalTokens})`,
+          avgLatency: sql<number>`avg(${requestLogs.latencyMs})`,
+          lastRequestAt: sql<string>`max(${requestLogs.createdAt})`,
+        }).from(requestLogs).where(and(...conditions))
+      : db.select({
+          originalModelName: requestLogs.originalModelName,
+          requestCount: sql<number>`count(*)`,
+          successCount: sql<number>`count(*) filter (where ${requestLogs.status} = 'success')`,
+          failureCount: sql<number>`count(*) filter (where ${requestLogs.status} = 'failure')`,
+          totalInputTokens: sql<number>`sum(${requestLogs.inputTokens})`,
+          totalOutputTokens: sql<number>`sum(${requestLogs.outputTokens})`,
+          totalTokens: sql<number>`sum(${requestLogs.totalTokens})`,
+          avgLatency: sql<number>`avg(${requestLogs.latencyMs})`,
+          lastRequestAt: sql<string>`max(${requestLogs.createdAt})`,
+        }).from(requestLogs).where(isNotNull(requestLogs.originalModelName));
+
+    const stats = await baseQuery.groupBy(requestLogs.originalModelName);
+
+    // 处理数据并添加排序字段
+    const processedStats = stats.map((stat) => ({
+      originalModelName: stat.originalModelName,
+      requestCount: Number(stat.requestCount),
+      successCount: Number(stat.successCount),
+      failureCount: Number(stat.failureCount),
+      totalInputTokens: Number(stat.totalInputTokens || 0),
+      totalOutputTokens: Number(stat.totalOutputTokens || 0),
+      totalTokens: Number(stat.totalTokens || 0),
+      avgLatency: Number(stat.avgLatency || 0),
+      lastRequestAt: stat.lastRequestAt,
+    }));
+
+    return c.json({
+      success: true,
+      data: processedStats,
+    });
+  } catch (error) {
+    logger.error({ error }, 'Failed to get client model stats');
+    return c.json(
+      {
+        error: 'Failed to get client model stats',
+        code: 'CLIENT_MODEL_STATS_ERROR',
+      },
+      500
+    );
+  }
+});
+
 // GET /api/logs/:id - 获取日志详情
 logsRoutes.get('/:id', async (c) => {
   try {
@@ -430,80 +504,6 @@ logsRoutes.get('/stats/storage', async (c) => {
     );
   }
 });
-// GET /api/logs/client-models - 获取客户端请求模型统计
-logsRoutes.get('/client-models', async (c) => {
-  try {
-    const db = getDatabase();
-    const query = c.req.query();
-
-    // 时间范围筛选
-    const conditions = [];
-    if (query.startDate) {
-      conditions.push(gte(requestLogs.createdAt, new Date(query.startDate)));
-    }
-    if (query.endDate) {
-      conditions.push(lte(requestLogs.createdAt, new Date(query.endDate)));
-    }
-
-    // 只统计有 originalModelName 的记录
-    conditions.push(isNotNull(requestLogs.originalModelName));
-
-    // 按客户端请求模型统计
-    const baseQuery = conditions.length > 1
-      ? db.select({
-          originalModelName: requestLogs.originalModelName,
-          requestCount: sql<number>`count(*)`,
-          successCount: sql<number>`count(*) filter (where ${requestLogs.status} = 'success')`,
-          failureCount: sql<number>`count(*) filter (where ${requestLogs.status} = 'failure')`,
-          totalInputTokens: sql<number>`sum(${requestLogs.inputTokens})`,
-          totalOutputTokens: sql<number>`sum(${requestLogs.outputTokens})`,
-          totalTokens: sql<number>`sum(${requestLogs.totalTokens})`,
-          avgLatency: sql<number>`avg(${requestLogs.latencyMs})`,
-          lastRequestAt: sql<string>`max(${requestLogs.createdAt})`,
-        }).from(requestLogs).where(and(...conditions))
-      : db.select({
-          originalModelName: requestLogs.originalModelName,
-          requestCount: sql<number>`count(*)`,
-          successCount: sql<number>`count(*) filter (where ${requestLogs.status} = 'success')`,
-          failureCount: sql<number>`count(*) filter (where ${requestLogs.status} = 'failure')`,
-          totalInputTokens: sql<number>`sum(${requestLogs.inputTokens})`,
-          totalOutputTokens: sql<number>`sum(${requestLogs.outputTokens})`,
-          totalTokens: sql<number>`sum(${requestLogs.totalTokens})`,
-          avgLatency: sql<number>`avg(${requestLogs.latencyMs})`,
-          lastRequestAt: sql<string>`max(${requestLogs.createdAt})`,
-        }).from(requestLogs).where(isNotNull(requestLogs.originalModelName));
-
-    const stats = await baseQuery.groupBy(requestLogs.originalModelName);
-
-    // 处理数据并添加排序字段
-    const processedStats = stats.map((stat) => ({
-      originalModelName: stat.originalModelName,
-      requestCount: Number(stat.requestCount),
-      successCount: Number(stat.successCount),
-      failureCount: Number(stat.failureCount),
-      totalInputTokens: Number(stat.totalInputTokens || 0),
-      totalOutputTokens: Number(stat.totalOutputTokens || 0),
-      totalTokens: Number(stat.totalTokens || 0),
-      avgLatency: Number(stat.avgLatency || 0),
-      lastRequestAt: stat.lastRequestAt,
-    }));
-
-    return c.json({
-      success: true,
-      data: processedStats,
-    });
-  } catch (error) {
-    logger.error({ error }, 'Failed to get client model stats');
-    return c.json(
-      {
-        error: 'Failed to get client model stats',
-        code: 'CLIENT_MODEL_STATS_ERROR',
-      },
-      500
-    );
-  }
-});
-
 // POST /api/logs/cleanup - 手动清理过期日志
 logsRoutes.post('/cleanup', async (c) => {
   try {

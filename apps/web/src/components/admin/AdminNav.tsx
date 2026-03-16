@@ -53,6 +53,7 @@ const navGroups: NavGroup[] = [
     icon: <BarChart3 className="h-4 w-4" />,
     items: [
       { href: '/admin/logs', label: '请求日志', icon: <FileText className="h-4 w-4" /> },
+      { href: "/admin/client-models", label: "客户端模型", icon: <Brain className="h-4 w-4" /> },
     ],
   },
 ];

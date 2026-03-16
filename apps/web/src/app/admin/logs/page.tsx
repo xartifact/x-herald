@@ -10,6 +10,7 @@ import {
   LogDetailSheet,
   LogCleanupDialog,
 } from './components'
+import { ClientModelStats } from '@/features/logs/components/client-model-stats'
 import { useLogPage } from './useLogPage'
 
 export default function LogsPage() {
@@ -26,6 +27,8 @@ function LogsPageContent() {
     logs,
     pagination,
     storage,
+    clientModelStats,
+    clientModelStatsLoading,
     searchQuery,
     statusFilter,
     clientTypeFilter,
@@ -84,6 +87,12 @@ function LogsPageContent() {
           onTimeRangeChange={handleTimeRangeChange}
           onRefresh={handleRefresh}
           isRefreshing={isRefreshing}
+        />
+
+        {/* 客户端模型统计 */}
+        <ClientModelStats 
+          stats={clientModelStats} 
+          isLoading={clientModelStatsLoading} 
         />
 
         <div className="flex items-center justify-between">

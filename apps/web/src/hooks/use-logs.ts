@@ -279,3 +279,32 @@ export function useCleanupLogs() {
     },
   })
 }
+
+// 客户端模型统计项
+export interface ClientModelStat {
+  originalModelName: string
+  requestCount: number
+  successCount: number
+  failureCount: number
+  totalInputTokens: number
+  totalOutputTokens: number
+  totalTokens: number
+  avgLatency: number
+  lastRequestAt: string
+}
+
+export interface ClientModelStatsResponse {
+  success: boolean
+  data: ClientModelStat[]
+}
+
+/**
+ * 获取客户端请求模型统计
+ */
+export function useClientModelStats(filters?: Record<string, string>) {
+  const queryString = filters ? '?' + new URLSearchParams(filters).toString() : ''
+  return useQuery({
+    queryKey: [...logKeys.all, 'client-models', queryString],
+    queryFn: () => get<ClientModelStatsResponse>(`/api/logs/client-models${queryString}`, { extractData: false }),
+  })
+}

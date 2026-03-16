@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useMemo, useCallback } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { useLogs, useLog, useDeleteLog, useLogStorage, useCleanupLogs, type LogListItem } from '@/hooks/use-logs'
+
 import { useQueryClient } from '@tanstack/react-query'
+import { useRouter, useSearchParams } from 'next/navigation'
+
+import { useLogs, useLog, useDeleteLog, useLogStorage, useCleanupLogs, useClientModelStats, type LogListItem } from '@/hooks/use-logs'
 
 const PAGE_SIZE_OPTIONS = [20, 50, 100]
 const DEFAULT_PAGE_SIZE = 50
@@ -79,12 +81,17 @@ export function useLogPage() {
   const { data: logsData, isLoading: loading, isFetching } = useLogs(queryParams)
   const { data: logDetailData } = useLog(selectedLogId || '')
   const { data: storageData } = useLogStorage()
+  const { data: clientModelStatsData, isLoading: clientModelStatsLoading } = useClientModelStats(timeParams)
   const deleteLog = useDeleteLog()
   const cleanupLogs = useCleanupLogs()
 
   const logs: LogListItem[] = logsData?.data || []
   const pagination = logsData?.pagination
   const storage = storageData?.data
+  const selectedLog = logDetailData?.data
+  const clientModelStats = clientModelStatsData?.data || []
+
+  // 完整日志详情（从详情接口获取）
   const selectedLog = logDetailData?.data
 
   const handleDelete = async (id: string) => {
@@ -162,6 +169,8 @@ export function useLogPage() {
     logs: filteredLogs,
     pagination,
     storage,
+    clientModelStats,
+    clientModelStatsLoading,
     searchQuery,
     statusFilter,
     clientTypeFilter,

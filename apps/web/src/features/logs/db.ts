@@ -205,3 +205,20 @@ export const requestLogs = pgTable('request_logs', {
 
 export type RequestLog = typeof requestLogs.$inferSelect;
 export type NewRequestLog = typeof requestLogs.$inferInsert;
+
+/**
+ * 客户端请求的模型名称记录表
+ * 用于收集所有客户端请求过的模型名称，名称唯一
+ */
+export const clientRequestedModels = pgTable('client_requested_models', {
+  modelName: varchar('model_name', { length: 255 }).primaryKey(),
+  firstSeenAt: timestamp('first_seen_at').defaultNow().notNull(),
+  lastSeenAt: timestamp('last_seen_at').defaultNow().notNull(),
+  requestCount: integer('request_count').default(1).notNull(),
+}, (table) => ({
+  lastSeenAtIdx: index('idx_client_models_last_seen').on(table.lastSeenAt),
+  requestCountIdx: index('idx_client_models_request_count').on(table.requestCount),
+}));
+
+export type ClientRequestedModel = typeof clientRequestedModels.$inferSelect;
+export type NewClientRequestedModel = typeof clientRequestedModels.$inferInsert;

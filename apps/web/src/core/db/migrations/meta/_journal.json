@@ -57,6 +57,13 @@
       "when": 1772519723422,
       "tag": "0007_needy_killraven",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1773661727342,
+      "tag": "0008_soft_gravity",
+      "breakpoints": true
     }
   ]
 }

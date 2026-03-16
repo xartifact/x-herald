@@ -212,6 +212,10 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
           ? (params.responseBody.streamProgress as any)
           : null,
     });
+    // 记录客户端请求的模型名称
+    const { recordClientRequestedModel } = await import("@/features/logs/services/client-model-recorder");
+    await recordClientRequestedModel(params.originalModelName || params.modelName);
+
     logger.debug({ modelName: params.modelName, status: params.status }, 'Request logged successfully');
   } catch (error) {
     const errorDetails = error instanceof Error ? {
@@ -310,6 +314,10 @@ export async function logStreamStart(params: {
         streamStartedAt: new Date(),
       })
       .returning({ id: requestLogs.id });
+
+    // 记录客户端请求的模型名称
+    const { recordClientRequestedModel } = await import("@/features/logs/services/client-model-recorder");
+    await recordClientRequestedModel(params.originalModelName || params.modelName);
 
     logger.debug({ logId: result[0].id }, 'Stream log created');
     return result[0].id;

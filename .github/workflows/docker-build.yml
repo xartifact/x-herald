@@ -95,25 +95,12 @@ jobs:
           echo "Starting services..."
           docker-compose up -d
 
-          echo "Waiting for container to be healthy..."
+          echo "Waiting for service to be ready..."
           MAX_RETRIES=30
           RETRY_COUNT=0
-          
+
           while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-            # Get container health status from Docker
-            HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' x-llm-gateway 2>/dev/null || echo "unknown")
-            
-            if [ "$HEALTH_STATUS" = "healthy" ]; then
-              echo "✓ Container is healthy"
-              break
-            elif [ "$HEALTH_STATUS" = "unhealthy" ]; then
-              echo "✗ Container is unhealthy"
-              echo "Container logs:"
-              docker-compose logs --tail=30 gateway
-              exit 1
-            fi
-            
-            # Check if container is still starting
+            # 先检查容器是否存活
             CONTAINER_STATUS=$(docker inspect --format='{{.State.Status}}' x-llm-gateway 2>/dev/null || echo "unknown")
             if [ "$CONTAINER_STATUS" = "exited" ] || [ "$CONTAINER_STATUS" = "dead" ]; then
               echo "✗ Container has stopped (status: $CONTAINER_STATUS)"
@@ -121,18 +108,26 @@ jobs:
               docker-compose logs gateway
               exit 1
             fi
-            
+
+            # 在容器内请求 health 端点（容器内始终是 3000 端口），不依赖 Docker healthcheck 状态
+            HTTP_CODE=$(docker exec x-llm-gateway wget -qO /dev/null -S http://localhost:3000/api/health 2>&1 | grep "HTTP/" | awk '{print $2}' || echo "000")
+
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "✓ Service is healthy (HTTP 200)"
+              break
+            fi
+
             RETRY_COUNT=$((RETRY_COUNT + 1))
             if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
               echo "✗ Health check timeout after $MAX_RETRIES attempts (150s)"
-              echo "Last health status: $HEALTH_STATUS"
+              echo "Last HTTP code: $HTTP_CODE"
               echo "Container status: $CONTAINER_STATUS"
               echo "Container logs:"
               docker-compose logs --tail=50 gateway
               exit 1
             fi
-            
-            echo "  Attempt $RETRY_COUNT/$MAX_RETRIES (status: $HEALTH_STATUS), retrying in 5s..."
+
+            echo "  Attempt $RETRY_COUNT/$MAX_RETRIES (HTTP: $HTTP_CODE), retrying in 5s..."
             sleep 5
           done
 

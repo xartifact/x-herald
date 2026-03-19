@@ -63,3 +63,6 @@ bun.lockb
 # templates
 packages/llms
 
+
+# AI
+.opencode

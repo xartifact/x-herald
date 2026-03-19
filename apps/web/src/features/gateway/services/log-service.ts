@@ -129,6 +129,7 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
           inputTokens,
           outputTokens,
           totalTokens: inputTokens + outputTokens,
+          streaming: params.streaming ? 'true' : 'false',
           providerResponseHeaders: params.providerResponseHeaders as any,
           clientResponseHeaders: params.clientResponseHeaders as any,
           providerResponseBody: params.providerResponseBody as any,

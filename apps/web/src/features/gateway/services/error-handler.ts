@@ -395,3 +395,80 @@ export async function handleProviderError(
     response.status as 400 | 401 | 403 | 429 | 500,
   );
 }
+
+/**
+ * 透传模式下处理 Provider 错误
+ * 直接将 Provider 的原始错误响应转发给客户端，不做任何重写
+ */
+export async function handleProviderErrorPassthrough(
+  c: Context,
+  response: Response,
+  provider: { id: string; name: string },
+  virtualKey: VirtualKey,
+  originalModelName: string,
+  requestHeaders: Record<string, string>,
+  providerRequestHeaders: Record<string, string>,
+  rawBody: unknown,
+  clientIp: string,
+  userAgent: string,
+  requestPath: string,
+  requestMethod: string,
+  isStreaming: boolean,
+  startTime: number,
+  transformedBody?: unknown,
+  incomingProtocol?: string,
+  targetProtocol?: string,
+  logId?: string,
+): Promise<Response> {
+  const responseClone = response.clone();
+  const errorData = await parseProviderError(responseClone);
+  const rawErrorMessage = errorData.error?.message || 'Provider request failed';
+  const latencyMs = Date.now() - startTime;
+  const providerResponseHeaders = extractProviderResponseHeaders(response);
+
+  // 记录日志（仍需记录用于监控和排查）
+  await logRequest({
+    virtualKey,
+    modelName: originalModelName,
+    providerId: provider.id,
+    providerName: provider.name,
+    status: 'failure',
+    statusCode: response.status,
+    latencyMs,
+    requestHeaders,
+    providerRequestHeaders,
+    requestBody: rawBody,
+    transformedRequestBody: transformedBody,
+    providerResponseHeaders,
+    providerResponseBody: errorData,
+    responseBody: errorData,
+    errorMessage: rawErrorMessage,
+    errorType: 'provider_error',
+    clientIp,
+    userAgent,
+    requestPath,
+    requestMethod,
+    streaming: isStreaming,
+    incomingProtocol,
+    targetProtocol,
+    logId,
+  });
+
+  // 透传 Provider 原始响应：保留原始状态码和响应头
+  const passthroughHeaders: Record<string, string> = {};
+  for (const [key, value] of Object.entries(providerResponseHeaders)) {
+    // 过滤 hop-by-hop 头和传输编码头
+    const lower = key.toLowerCase();
+    if (lower === 'transfer-encoding' || lower === 'connection') continue;
+    passthroughHeaders[key] = value;
+  }
+
+  for (const [key, value] of Object.entries(passthroughHeaders)) {
+    c.header(key, value);
+  }
+
+  return c.json(
+    errorData,
+    response.status as 400 | 401 | 403 | 429 | 500,
+  );
+}

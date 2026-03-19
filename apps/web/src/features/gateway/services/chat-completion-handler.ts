@@ -6,7 +6,7 @@ import { detectProtocol, getProviderProtocol, getProviderUrl, getEndpoint } from
 import { logRequestStart } from './log-service';
 import { handleNonStreamingResponse, handleStreamingResponse } from './response-handlers';
 import { identifyClient } from './client-identifier';
-import { handleGatewayError, handleProviderError } from './error-handler';
+import { handleGatewayError, handleProviderError, handleProviderErrorPassthrough } from './error-handler';
 import logger from '@/core/lib/logger';
 import { loadConfig } from '@/core/config';
 import type { VirtualKey } from '@/features/keys/db';
@@ -375,7 +375,12 @@ export async function handleChatCompletion(
     c.req.raw.signal?.removeEventListener('abort', clientAbortHandler);
 
     if (!response.ok) {
-      return handleProviderError(
+      // 透传模式：直接转发 Provider 原始错误响应，不做重写
+      const errorHandler = isPassthroughEnabled
+        ? handleProviderErrorPassthrough
+        : handleProviderError;
+
+      return errorHandler(
         c,
         response,
         provider,

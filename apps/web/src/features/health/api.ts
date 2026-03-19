@@ -13,6 +13,7 @@ health.get('/', async (c) => {
 
     return c.json({
       status: 'healthy',
+      version: process.env.APP_VERSION || 'dev',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       database: 'connected',

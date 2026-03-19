@@ -172,6 +172,11 @@ export default function AdminNav() {
             <span className="hidden md:block text-sm text-muted-foreground">
               {allNavItems.find(item => isItemActive(item.href))?.label}
             </span>
+            {process.env.APP_VERSION && (
+              <span className="hidden md:block text-xs text-muted-foreground/60 font-mono">
+                v{process.env.APP_VERSION}
+              </span>
+            )}
             <Button
               variant="ghost"
               size="sm"

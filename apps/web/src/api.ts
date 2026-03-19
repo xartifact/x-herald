@@ -61,7 +61,7 @@ export const createApiApp = () => {
   app.get('/api', (c) => {
     return c.json({
       name: 'x-llm-gateway API',
-      version: '2.0.0',
+      version: process.env.APP_VERSION || 'dev',
       status: 'running',
       timestamp: new Date().toISOString(),
     });

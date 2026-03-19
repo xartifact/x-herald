@@ -3,6 +3,10 @@ WORKDIR /app
 
 # ---- 构建 ----
 FROM base AS builder
+
+ARG GIT_HASH=unknown
+ENV GIT_HASH=${GIT_HASH}
+
 # 复制所有 package.json 文件
 COPY package.json bun.lock* bun.lockb* ./
 COPY apps/web/package.json ./apps/web/

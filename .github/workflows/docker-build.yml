@@ -109,8 +109,8 @@ jobs:
               exit 1
             fi
 
-            # 在容器内请求 health 端点（容器内始终是 3000 端口），不依赖 Docker healthcheck 状态
-            HTTP_CODE=$(docker exec x-llm-gateway wget -qO /dev/null -S http://localhost:3000/api/health 2>&1 | grep "HTTP/" | awk '{print $2}' || echo "000")
+            # 在容器内用 bun 请求 health 端点（容器内始终是 3000 端口）
+            HTTP_CODE=$(docker exec x-llm-gateway bun -e "fetch('http://localhost:3000/api/health').then(r=>console.log(r.status)).catch(()=>console.log(0))" 2>/dev/null || echo "0")
 
             if [ "$HTTP_CODE" = "200" ]; then
               echo "✓ Service is healthy (HTTP 200)"

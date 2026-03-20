@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useLogs, useLog, useDeleteLog, useLogStats, useLogStorage, useCleanupLogs, type LogListItem } from '@/hooks/use-logs'
+import { useLogs, useLog, useDeleteLog, useLogStorage, useCleanupLogs, type LogListItem } from '@/hooks/use-logs'
 import { useQueryClient } from '@tanstack/react-query'
 
 const PAGE_SIZE_OPTIONS = [20, 50, 100]
@@ -78,15 +78,12 @@ export function useLogPage() {
 
   const { data: logsData, isLoading: loading, isFetching } = useLogs(queryParams)
   const { data: logDetailData } = useLog(selectedLogId || '')
-  const { data: statsData } = useLogStats(timeParams)
   const { data: storageData } = useLogStorage()
   const deleteLog = useDeleteLog()
   const cleanupLogs = useCleanupLogs()
 
   const logs: LogListItem[] = logsData?.data || []
   const pagination = logsData?.pagination
-  const stats = statsData?.data?.overview
-  const clientStats = statsData?.data?.clientStats
   const storage = storageData?.data
   const selectedLog = logDetailData?.data
 
@@ -164,8 +161,6 @@ export function useLogPage() {
     loading,
     logs: filteredLogs,
     pagination,
-    stats,
-    clientStats,
     storage,
     searchQuery,
     statusFilter,

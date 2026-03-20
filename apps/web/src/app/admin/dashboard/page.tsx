@@ -1,127 +1,128 @@
-'use client';
+'use client'
 
-import Link from 'next/link';
-import { useRenderCount } from '@/hooks/use-render-count';
+import { useState, useMemo } from 'react'
+import Link from 'next/link'
+import { RefreshCw } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
+import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { LogStatsCards } from '@/components/log-stats-cards'
+import { useLogStats, useLogStorage, logKeys } from '@/hooks/use-logs'
+
+function getTimeRange(range: string): Record<string, string> {
+  if (range === 'all') return {}
+
+  const now = new Date()
+  const startDate = new Date()
+
+  switch (range) {
+    case '1h':
+      startDate.setHours(now.getHours() - 1)
+      break
+    case '24h':
+      startDate.setHours(now.getHours() - 24)
+      break
+    case '7d':
+      startDate.setDate(now.getDate() - 7)
+      break
+    case '30d':
+      startDate.setDate(now.getDate() - 30)
+      break
+    default:
+      return {}
+  }
+
+  return { startDate: startDate.toISOString() }
+}
 
 export default function AdminDashboard() {
-  useRenderCount('AdminDashboard', true);
+  const queryClient = useQueryClient()
+  const [timeRange, setTimeRange] = useState('24h')
+
+  const timeParams = useMemo(() => getTimeRange(timeRange), [timeRange])
+
+  const { data: statsData, isFetching } = useLogStats(timeParams)
+  const { data: storageData } = useLogStorage()
+
+  const stats = statsData?.data?.overview
+  const clientStats = statsData?.data?.clientStats
+  const storage = storageData?.data
+
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: logKeys.stats() })
+    queryClient.invalidateQueries({ queryKey: logKeys.storage() })
+  }
+
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900">欢迎使用管理后台</h2>
+      {/* 统计概览 */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold tracking-tight">概览</h2>
+        <div className="flex items-center gap-2">
+          <Select value={timeRange} onValueChange={setTimeRange}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">全部时间</SelectItem>
+              <SelectItem value="1h">最近 1 小时</SelectItem>
+              <SelectItem value="24h">最近 24 小时</SelectItem>
+              <SelectItem value="7d">最近 7 天</SelectItem>
+              <SelectItem value="30d">最近 30 天</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={handleRefresh}
+            disabled={isFetching}
+            title="刷新数据"
+          >
+            <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+          </Button>
+        </div>
+      </div>
 
-      {/* 快速开始卡片 */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <LogStatsCards stats={stats} storage={storage} clientStats={clientStats} />
+
+      {/* 快速导航 */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Link
           href="/admin/providers"
-          className="block bg-white rounded-lg shadow-sm p-6 hover:shadow-lg transition"
+          className="block rounded-lg border bg-card p-5 hover:shadow-md transition"
         >
-          <div className="flex items-center">
-            <div className="shrink-0">
-              <div className="flex items-center justify-center h-12 w-12 rounded-md bg-blue-500 text-white text-2xl">
-                🔌
-              </div>
-            </div>
-            <div className="ml-4">
-              <h3 className="text-lg font-medium text-gray-900">
-                供应商管理
-              </h3>
-              <p className="mt-1 text-sm text-gray-500">
-                添加 OpenAI、Anthropic 等供应商
-              </p>
-            </div>
-          </div>
+          <h3 className="text-base font-medium">供应商管理</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            添加 OpenAI、Anthropic 等供应商
+          </p>
         </Link>
 
         <Link
           href="/admin/model-groups"
-          className="block bg-white rounded-lg shadow-sm p-6 hover:shadow-lg transition"
+          className="block rounded-lg border bg-card p-5 hover:shadow-md transition"
         >
-          <div className="flex items-center">
-            <div className="shrink-0">
-              <div className="flex items-center justify-center h-12 w-12 rounded-md bg-green-500 text-white text-2xl">
-                🤖
-              </div>
-            </div>
-            <div className="ml-4">
-              <h3 className="text-lg font-medium text-gray-900">
-                模型组管理
-              </h3>
-              <p className="mt-1 text-sm text-gray-500">
-                配置模型组和路由策略
-              </p>
-            </div>
-          </div>
+          <h3 className="text-base font-medium">模型组管理</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            配置模型组和路由策略
+          </p>
         </Link>
 
         <Link
           href="/admin/keys"
-          className="block bg-white rounded-lg shadow-sm p-6 hover:shadow-lg transition"
+          className="block rounded-lg border bg-card p-5 hover:shadow-md transition"
         >
-          <div className="flex items-center">
-            <div className="shrink-0">
-              <div className="flex items-center justify-center h-12 w-12 rounded-md bg-purple-500 text-white text-2xl">
-                🔑
-              </div>
-            </div>
-            <div className="ml-4">
-              <h3 className="text-lg font-medium text-gray-900">
-                密钥管理
-              </h3>
-              <p className="mt-1 text-sm text-gray-500">
-                生成和管理虚拟密钥
-              </p>
-            </div>
-          </div>
+          <h3 className="text-base font-medium">密钥管理</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            生成和管理虚拟密钥
+          </p>
         </Link>
       </div>
-
-      {/* 快速开始指南 */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">
-          快速开始指南
-        </h3>
-        <ol className="list-decimal list-inside space-y-3 text-gray-700">
-          <li>
-            <strong>添加供应商</strong> - 前往"供应商管理"，添加 OpenAI、Anthropic 等 LLM 提供商
-          </li>
-          <li>
-            <strong>配置模型组</strong> - 在"模型组管理"中创建模型组和配置路由策略
-          </li>
-          <li>
-            <strong>生成密钥</strong> - 在"密钥管理"中为终端用户生成虚拟密钥
-          </li>
-          <li>
-            <strong>开始使用</strong> - 用户使用虚拟密钥调用 Gateway API
-          </li>
-        </ol>
-      </div>
-
-      {/* 系统状态 */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">
-          系统状态
-        </h3>
-        <div className="space-y-2">
-          <div className="flex items-center">
-            <span className="inline-block h-2 w-2 bg-green-500 rounded-full mr-2"></span>
-            <span className="text-gray-700">API 服务运行中</span>
-          </div>
-          <div className="flex items-center">
-            <span className="inline-block h-2 w-2 bg-green-500 rounded-full mr-2"></span>
-            <span className="text-gray-700">数据库连接正常</span>
-          </div>
-          <div className="mt-4">
-            <a
-              href="/api/health"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:underline text-sm"
-            >
-              查看详细健康状态 →
-            </a>
-          </div>
-        </div>
-      </div>
     </div>
-  );
+  )
 }

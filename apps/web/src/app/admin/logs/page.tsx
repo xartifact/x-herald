@@ -4,7 +4,6 @@ import { Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Suspense } from 'react'
 import {
-  LogStatsCards,
   LogSearchFilter,
   LogTable,
   LogPagination,
@@ -26,8 +25,6 @@ function LogsPageContent() {
     loading,
     logs,
     pagination,
-    stats,
-    clientStats,
     storage,
     searchQuery,
     statusFilter,
@@ -75,8 +72,6 @@ function LogsPageContent() {
             清理过期日志
           </Button>
         </div>
-
-        <LogStatsCards stats={stats} storage={storage} clientStats={clientStats} />
 
         <LogSearchFilter
           searchQuery={searchQuery}

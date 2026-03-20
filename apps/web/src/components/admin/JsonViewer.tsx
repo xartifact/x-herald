@@ -104,6 +104,10 @@ interface JsonDiffViewerProps {
   originalLabel?: string
   modifiedLabel?: string
   height?: string | "auto"
+  /** 是否只显示差异区域（折叠无变化部分） */
+  onlyDiff?: boolean
+  /** 是否 inline 模式（单栏）vs side-by-side（双栏） */
+  inline?: boolean
 }
 
 export function JsonDiffViewer({
@@ -112,6 +116,8 @@ export function JsonDiffViewer({
   originalLabel = "Original",
   modifiedLabel = "Modified",
   height = "400px",
+  onlyDiff = false,
+  inline = false,
 }: JsonDiffViewerProps) {
   const [measuredHeight, setMeasuredHeight] = useState(400)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -160,9 +166,10 @@ export function JsonDiffViewer({
           renderWhitespace: "selection",
           folding: true,
           wordWrap: "on",
-          renderSideBySide: true,
+          renderSideBySide: !inline,
           originalAriaLabel: originalLabel,
           modifiedAriaLabel: modifiedLabel,
+          hideUnchangedRegions: { enabled: onlyDiff },
         }}
       />
     </div>

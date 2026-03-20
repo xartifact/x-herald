@@ -16,6 +16,9 @@ import {
   X,
   ChevronRight,
   ArrowLeftRight,
+  Columns2,
+  Rows2,
+  Filter,
 } from 'lucide-react'
 import { JsonViewer, JsonDiffViewer, HeadersViewer } from '@/components/admin/JsonViewer'
 import { cn } from '@/core/lib/utils'
@@ -282,6 +285,8 @@ function BodySubTabs({ tabs }: { tabs: BodySubTabItem[] }) {
   const [diffMode, setDiffMode] = useState(false)
   const [diffLeft, setDiffLeft] = useState(tabs[0]?.key || '')
   const [diffRight, setDiffRight] = useState(tabs[1]?.key || '')
+  const [onlyDiff, setOnlyDiff] = useState(false)
+  const [inline, setInline] = useState(false)
 
   const leftTab = tabs.find((t) => t.key === diffLeft)
   const rightTab = tabs.find((t) => t.key === diffRight)
@@ -309,14 +314,35 @@ function BodySubTabs({ tabs }: { tabs: BodySubTabItem[] }) {
               <option key={t.key} value={t.key}>{t.label}</option>
             ))}
           </select>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setDiffMode(false)}
-            className="h-8 px-2 text-xs flex-shrink-0"
-          >
-            <X className="h-3.5 w-3.5" />
-          </Button>
+          <div className="flex items-center gap-0.5 flex-shrink-0">
+            <Button
+              variant={onlyDiff ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setOnlyDiff(!onlyDiff)}
+              className="h-8 px-2 text-xs"
+              title="只显示差异"
+            >
+              <Filter className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setInline(!inline)}
+              className="h-8 px-2 text-xs"
+              title={inline ? '切换为并排模式' : '切换为内联模式'}
+            >
+              {inline ? <Columns2 className="h-3.5 w-3.5" /> : <Rows2 className="h-3.5 w-3.5" />}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setDiffMode(false)}
+              className="h-8 px-2 text-xs"
+              title="退出比对"
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </div>
         </div>
         <div className="flex-1 min-h-0 p-4 pt-2 flex flex-col">
           {leftTab?.data && rightTab?.data ? (
@@ -326,6 +352,8 @@ function BodySubTabs({ tabs }: { tabs: BodySubTabItem[] }) {
               originalLabel={leftTab.label}
               modifiedLabel={rightTab.label}
               height="auto"
+              onlyDiff={onlyDiff}
+              inline={inline}
             />
           ) : (
             <div className="flex items-center justify-center h-[200px] text-sm text-muted-foreground">

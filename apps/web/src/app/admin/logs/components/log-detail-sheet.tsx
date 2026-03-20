@@ -129,7 +129,7 @@ interface ContentFeatures {
 }
 
 // 提取内容特征
-function extractContentFeatures(log: Log): ContentFeatures | null {
+export function extractContentFeatures(log: Log): ContentFeatures | null {
   try {
     const features: ContentFeatures = {}
 
@@ -334,7 +334,7 @@ interface RequestPanelProps {
   className?: string
 }
 
-function RequestPanel({ log, className }: RequestPanelProps) {
+export function RequestPanel({ log, className }: RequestPanelProps) {
   return (
     <div className={cn("flex flex-col border-r last:border-r-0 bg-background", className)}>
       <div className="px-4 py-2.5 border-b bg-muted/20 flex items-center justify-between">
@@ -441,7 +441,7 @@ interface ResponsePanelProps {
   className?: string
 }
 
-function ResponsePanel({ log, className }: ResponsePanelProps) {
+export function ResponsePanel({ log, className }: ResponsePanelProps) {
   return (
     <div className={cn("flex flex-col border-r last:border-r-0 bg-background", className)}>
       <div className="px-4 py-2.5 border-b bg-muted/20 flex items-center justify-between">
@@ -542,38 +542,38 @@ export function LogDetailSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="w-[66vw] max-w-[66vw] p-0 flex flex-col gap-0 sm:max-w-[66vw]"
+        className="w-full max-w-full md:w-[85vw] md:max-w-[85vw] 2xl:w-[70vw] 2xl:max-w-[70vw] p-0 flex flex-col gap-0"
         hideCloseButton
       >
         {/* 顶部工具栏 */}
-        <div className="flex items-center justify-between px-6 py-3.5 border-b bg-background">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between px-3 md:px-6 py-3 md:py-3.5 border-b bg-background">
+          <div className="flex items-center gap-2 md:gap-3 min-w-0">
+            <div className="flex items-center gap-1.5 md:gap-2 min-w-0">
               {isPending ? (
-                <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
               ) : isSuccess ? (
-                <div className="h-2 w-2 rounded-full bg-green-500" />
+                <div className="h-2 w-2 rounded-full bg-green-500 flex-shrink-0" />
               ) : (
-                <div className="h-2 w-2 rounded-full bg-red-500" />
+                <div className="h-2 w-2 rounded-full bg-red-500 flex-shrink-0" />
               )}
-              <span className="text-sm font-semibold">
+              <span className="text-sm font-semibold hidden md:inline">
                 {log.requestMethod || 'REQUEST'}
               </span>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">{log.modelName}</span>
+              <ChevronRight className="h-4 w-4 text-muted-foreground hidden md:inline flex-shrink-0" />
+              <span className="text-sm font-medium truncate">{log.modelName}</span>
             </div>
             <Badge
               variant={isPending ? 'outline' : isSuccess ? 'default' : 'destructive'}
               className={cn(
-                "font-mono text-xs",
+                "font-mono text-xs flex-shrink-0",
                 isPending && "border-amber-500 text-amber-600"
               )}
             >
               {isPending ? "请求中" : log.statusCode || log.status}
             </Badge>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground font-mono">
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <span className="text-xs text-muted-foreground font-mono hidden md:inline">
               {new Date(log.createdAt).toLocaleString('zh-CN')}
             </span>
             <Button
@@ -587,496 +587,97 @@ export function LogDetailSheet({
           </div>
         </div>
 
-        {/* 主体三栏布局 */}
-        <div className="flex-1 grid grid-cols-[minmax(400px,30%)_1fr_1fr] overflow-hidden">
-          {/* 左侧面板：元数据 */}
+        {/* 主体响应式布局: xl 三栏 / md 两栏 / sm 单栏 Tab */}
+        {/* 大屏：三栏 grid */}
+        <div className="flex-1 hidden 2xl:grid grid-cols-[minmax(360px,30%)_1fr_1fr] overflow-hidden">
           <div className="flex flex-col border-r bg-muted/20 overflow-hidden">
             <ScrollArea className="flex-1">
-              {/* === 基本信息 === */}
-              <Section title="基本信息">
-                <InfoRow
-                  label="状态"
-                  value={
-                    <div className="flex items-center gap-2">
-                      <span className={isPending ? 'text-amber-600' : isSuccess ? 'text-green-600' : 'text-red-600'}>
-                        {isPending ? '请求中' : isSuccess ? '成功' : '失败'}
-                      </span>
-                      {!isPending && log.statusCode && (
-                        <code className="text-xs bg-muted px-1.5 py-0.5 rounded">
-                          {log.statusCode}
-                        </code>
-                      )}
-                    </div>
-                  }
-                />
-                <InfoRow
-                  label="模型"
-                  value={log.modelName}
-                  mono
-                />
-                {log.originalModelName && log.originalModelName !== log.modelName && (
-                  <InfoRow
-                    label="原始模型"
-                    value={log.originalModelName}
-                    mono
-                  />
-                )}
-                <InfoRow
-                  label="供应商"
-                  value={log.providerName || '-'}
-                />
-                {log.providerId && (
-                  <InfoRow
-                    label="供应商ID"
-                    value={log.providerId}
-                    copyable
-                    mono
-                  />
-                )}
-                <InfoRow
-                  label="虚拟密钥"
-                  value={log.virtualKeyName || '-'}
-                  copyable
-                  mono
-                />
-                {log.virtualKeyId && (
-                  <InfoRow
-                    label="密钥ID"
-                    value={log.virtualKeyId}
-                    copyable
-                    mono
-                  />
-                )}
-                {log.incomingProtocol && log.targetProtocol && (
-                  <InfoRow
-                    label="协议转换"
-                    value={
-                      <div className="flex items-center gap-1.5">
-                        <Badge variant="outline" className="text-[10px] font-mono">
-                          {log.incomingProtocol}
-                        </Badge>
-                        <ChevronRight className="h-3 w-3 text-muted-foreground" />
-                        <Badge variant="outline" className="text-[10px] font-mono">
-                          {log.targetProtocol}
-                        </Badge>
-                      </div>
-                    }
-                  />
-                )}
-              </Section>
-
-              {/* === 延迟分析 === */}
-              <Section title="延迟分析">
-                <InfoRow
-                  label="总延迟"
-                  value={
-                    <span className={cn(
-                      "font-semibold",
-                      log.latencyMs < 1000 ? "text-green-600" :
-                      log.latencyMs < 3000 ? "text-amber-600" :
-                      "text-red-600"
-                    )}>
-                      {formatDuration(log.latencyMs)}
-                    </span>
-                  }
-                />
-                {log.metadata?.performance && (
-                  log.metadata.performance.gatewayOverheadMs != null ||
-                  log.metadata.performance.providerTtfbMs != null ||
-                  log.metadata.performance.streamDurationMs != null
-                ) && (
-                  <LatencyBreakdown
-                    totalMs={log.latencyMs}
-                    gatewayOverheadMs={log.metadata.performance.gatewayOverheadMs}
-                    providerTtfbMs={log.metadata.performance.providerTtfbMs}
-                    streamDurationMs={log.metadata.performance.streamDurationMs}
-                    formatDuration={formatDuration}
-                  />
-                )}
-                <InfoRow
-                  label="流式传输"
-                  value={log.streaming ? '是' : '否'}
-                />
-              </Section>
-
-              {/* === Token 用量 === */}
-              <Section title="Token 用量">
-                <InfoRow
-                  label="输入 Token"
-                  value={formatTokens(log.inputTokens)}
-                  mono
-                />
-                <InfoRow
-                  label="输出 Token"
-                  value={formatTokens(log.outputTokens)}
-                  mono
-                />
-                <InfoRow
-                  label="总 Token"
-                  value={
-                    <span className="font-semibold">
-                      {formatTokens(log.totalTokens)}
-                    </span>
-                  }
-                  mono
-                />
-                {contentFeatures?.tokens && (
-                  <>
-                    <InfoRow
-                      label="Token 分布"
-                      value={
-                        <div className="flex items-center gap-2 text-xs">
-                          <span>输入: {contentFeatures.tokens.inputOutputRatio.input}%</span>
-                          <span className="text-muted-foreground">|</span>
-                          <span>输出: {contentFeatures.tokens.inputOutputRatio.output}%</span>
-                        </div>
-                      }
-                    />
-                    {contentFeatures.tokens.tokensPerSecond > 0 && (
-                      <InfoRow
-                        label="生成速率"
-                        value={
-                          <span className={cn(
-                            "font-semibold",
-                            contentFeatures.tokens.tokensPerSecond >= 80 ? "text-green-600" :
-                            contentFeatures.tokens.tokensPerSecond >= 30 ? "text-blue-600" :
-                            "text-amber-600"
-                          )}>
-                            {contentFeatures.tokens.tokensPerSecond} tokens/s
-                          </span>
-                        }
-                        mono
-                      />
-                    )}
-                    {contentFeatures.tokens.tokensPerMessage > 0 && (
-                      <InfoRow
-                        label="每消息 Token"
-                        value={`${contentFeatures.tokens.tokensPerMessage} tokens`}
-                        mono
-                      />
-                    )}
-                  </>
-                )}
-              </Section>
-
-              {/* === 请求信息 === */}
-              <Section title="请求信息">
-                <InfoRow
-                  label="方法"
-                  value={log.requestMethod || '-'}
-                  mono
-                />
-                <InfoRow
-                  label="路径"
-                  value={
-                    <span className="text-xs break-all">
-                      {log.requestPath || '-'}
-                    </span>
-                  }
-                  copyable
-                  mono
-                />
-                <InfoRow
-                  label="客户端 IP"
-                  value={log.clientIp || '-'}
-                  copyable
-                  mono
-                />
-                <InfoRow
-                  label="客户端"
-                  value={
-                    <div className="space-y-1">
-                      <Badge variant="secondary" className="text-xs font-normal">
-                        {log.clientType
-                          ? (CLIENT_REGISTRY[log.clientType] ?? log.clientType)
-                          : '未知客户端'}
-                      </Badge>
-                      {log.userAgent && log.userAgent !== 'unknown' && (
-                        <div className="text-xs text-muted-foreground break-all font-mono">
-                          {log.userAgent}
-                        </div>
-                      )}
-                    </div>
-                  }
-                />
-                <InfoRow
-                  label="请求 ID"
-                  value={
-                    <span className="text-xs break-all">
-                      {log.id}
-                    </span>
-                  }
-                  copyable
-                  mono
-                />
-                <InfoRow
-                  label="创建时间"
-                  value={new Date(log.createdAt).toLocaleString('zh-CN', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                  })}
-                  mono
-                />
-              </Section>
-
-              {/* === 错误详情 === */}
-              {log.errorMessage && (
-                <Section
-                  title="错误详情"
-                  badge={
-                    <Badge variant="destructive" className="text-xs">
-                      Error
-                    </Badge>
-                  }
-                >
-                  <div className="p-4 space-y-2">
-                    <div className="text-sm font-medium text-red-600">
-                      {log.errorMessage}
-                    </div>
-                    {log.errorType && (
-                      <div className="text-xs text-muted-foreground font-mono">
-                        类型: {log.errorType}
-                      </div>
-                    )}
-                  </div>
-                </Section>
-              )}
-
-              {/* === 对话上下文 === */}
-              {(log.conversationId || log.metadata?.messageSequence) && (
-                <Section title="对话上下文">
-                  {log.conversationId && (
-                    <InfoRow
-                      label="对话ID"
-                      value={String(log.conversationId)}
-                      copyable
-                      mono
-                    />
-                  )}
-                  {log.metadata?.messageSequence && (
-                    <InfoRow
-                      label="消息数量"
-                      value={`${log.metadata.messageSequence.totalCount} 条`}
-                    />
-                  )}
-                  {log.metadata?.conversation?.roleSwitches !== undefined && (
-                    <InfoRow
-                      label="角色切换"
-                      value={`${log.metadata.conversation.roleSwitches} 次`}
-                    />
-                  )}
-                  {log.metadata?.conversation?.hasToolInteraction && (
-                    <InfoRow
-                      label="工具交互"
-                      value={<Badge variant="secondary">包含</Badge>}
-                    />
-                  )}
-                </Section>
-              )}
-
-              {/* === 内容分析 === */}
-              {(log.metadata?.content || contentFeatures?.request || contentFeatures?.response || contentFeatures?.complexity) && (
-                <Section title="内容分析">
-                  {(log.metadata?.content as { types?: string[] } | undefined)?.types && (log.metadata!.content as { types: string[] }).types.length > 0 && (
-                    <InfoRow
-                      label="内容类型"
-                      value={
-                        <div className="flex flex-wrap gap-1">
-                          {(log.metadata!.content as { types: string[] }).types.map((type: string, idx: number) => (
-                            <Badge key={idx} variant="outline" className="text-xs">
-                              {type}
-                            </Badge>
-                          ))}
-                        </div>
-                      }
-                    />
-                  )}
-                  {(log.metadata?.content as { hasFunctionCalling?: boolean } | undefined)?.hasFunctionCalling && (
-                    <InfoRow
-                      label="函数调用"
-                      value={<Badge variant="secondary">是</Badge>}
-                    />
-                  )}
-                  {contentFeatures?.request && (
-                    <>
-                      <InfoRow
-                        label="消息数量"
-                        value={contentFeatures.request.messageCount}
-                      />
-                      <InfoRow
-                        label="角色分布"
-                        value={
-                          <div className="flex items-center gap-2 text-xs">
-                            {contentFeatures.request.roleDistribution.user > 0 && (
-                              <span>User: {contentFeatures.request.roleDistribution.user}</span>
-                            )}
-                            {contentFeatures.request.roleDistribution.assistant > 0 && (
-                              <>
-                                <span className="text-muted-foreground">|</span>
-                                <span>Assistant: {contentFeatures.request.roleDistribution.assistant}</span>
-                              </>
-                            )}
-                            {contentFeatures.request.roleDistribution.system > 0 && (
-                              <>
-                                <span className="text-muted-foreground">|</span>
-                                <span>System: {contentFeatures.request.roleDistribution.system}</span>
-                              </>
-                            )}
-                          </div>
-                        }
-                      />
-                      {contentFeatures.request.avgMessageLength > 0 && (
-                        <InfoRow
-                          label="平均消息长度"
-                          value={`${contentFeatures.request.avgMessageLength.toLocaleString()} 字符`}
-                        />
-                      )}
-                      {contentFeatures.request.systemPromptLength && (
-                        <InfoRow
-                          label="系统提示"
-                          value={`${contentFeatures.request.systemPromptLength.toLocaleString()} 字符`}
-                        />
-                      )}
-                    </>
-                  )}
-                  {contentFeatures?.response && (
-                    <>
-                      <InfoRow
-                        label="响应块数"
-                        value={contentFeatures.response.blockCount}
-                      />
-                      {contentFeatures.response.blockCount > 0 && (
-                        <InfoRow
-                          label="响应类型"
-                          value={
-                            <div className="flex items-center gap-2 text-xs">
-                              {contentFeatures.response.typeDistribution.text > 0 && (
-                                <span>Text: {contentFeatures.response.typeDistribution.text}</span>
-                              )}
-                              {contentFeatures.response.typeDistribution.toolUse > 0 && (
-                                <>
-                                  <span className="text-muted-foreground">|</span>
-                                  <span>Tool: {contentFeatures.response.typeDistribution.toolUse}</span>
-                                </>
-                              )}
-                              {contentFeatures.response.typeDistribution.thinking > 0 && (
-                                <>
-                                  <span className="text-muted-foreground">|</span>
-                                  <span>Thinking: {contentFeatures.response.typeDistribution.thinking}</span>
-                                </>
-                              )}
-                            </div>
-                          }
-                        />
-                      )}
-                      {contentFeatures.response.totalLength > 0 && (
-                        <InfoRow
-                          label="响应长度"
-                          value={`${contentFeatures.response.totalLength.toLocaleString()} 字符`}
-                        />
-                      )}
-                    </>
-                  )}
-                  {contentFeatures?.complexity && (
-                    <>
-                      <InfoRow
-                        label="上下文长度"
-                        value={
-                          <Badge
-                            variant={
-                              contentFeatures.complexity.contextLevel === 'extra-long'
-                                ? 'destructive'
-                                : contentFeatures.complexity.contextLevel === 'long'
-                                  ? 'secondary'
-                                  : 'outline'
-                            }
-                          >
-                            {contentFeatures.complexity.contextLevel === 'short'
-                              ? '短'
-                              : contentFeatures.complexity.contextLevel === 'medium'
-                                ? '中'
-                                : contentFeatures.complexity.contextLevel === 'long'
-                                  ? '长'
-                                  : '超长'}
-                          </Badge>
-                        }
-                      />
-                      {contentFeatures.complexity.contentDensity > 0 && (
-                        <InfoRow
-                          label="内容密度"
-                          value={`${contentFeatures.complexity.contentDensity} 字符/token`}
-                          mono
-                        />
-                      )}
-                    </>
-                  )}
-                </Section>
-              )}
-
-              {/* === 工具调用 === */}
-              {!!log.toolCallsCount && log.toolCallsCount > 0 && (
-                <Section
-                  title="工具调用"
-                  badge={
-                    <Badge variant="secondary" className="text-xs">
-                      {log.toolCallsCount}
-                    </Badge>
-                  }
-                >
-                  {(log.metadata?.toolCalls as Record<string, string> | undefined)?.pattern && (
-                    <InfoRow
-                      label="调用模式"
-                      value={
-                        <Badge variant="outline">
-                          {(log.metadata?.toolCalls as Record<string, string>).pattern === 'single' ? '单次' :
-                           (log.metadata?.toolCalls as Record<string, string>).pattern === 'parallel' ? '并行' : '顺序'}
-                        </Badge>
-                      }
-                    />
-                  )}
-                  {(log.metadata?.toolCalls as { tools?: string[] } | undefined)?.tools && (log.metadata?.toolCalls as { tools: string[] }).tools.length > 0 && (
-                    <InfoRow
-                      label="工具列表"
-                      value={
-                        <div className="flex flex-wrap gap-1">
-                          {(log.metadata?.toolCalls as { tools: string[] }).tools.map((tool: string, idx: number) => (
-                            <Badge key={idx} variant="secondary" className="text-xs font-mono bg-blue-50 text-blue-700 border-blue-200">
-                              {tool}
-                            </Badge>
-                          ))}
-                        </div>
-                      }
-                    />
-                  )}
-                  {log.metadata?.toolCalls?.details && log.metadata.toolCalls.details.length > 0 && (
-                    <div className="px-3 pb-3">
-                      <ToolCallDetailsSection toolCalls={log.metadata.toolCalls} />
-                    </div>
-                  )}
-                </Section>
-              )}
+              <MetadataSections
+                log={log}
+                isPending={isPending}
+                isSuccess={isSuccess}
+                contentFeatures={contentFeatures}
+                formatDuration={formatDuration}
+                formatTokens={formatTokens}
+              />
             </ScrollArea>
           </div>
 
-          {/* 中间面板：请求 */}
           <RequestPanel log={log} />
-
-          {/* 右侧面板：响应 */}
           <ResponsePanel log={log} />
         </div>
 
+        {/* 中屏：两栏 (元数据 + 请求/响应 Tab) */}
+        <div className="flex-1 hidden md:grid 2xl:hidden grid-cols-[280px_1fr] overflow-hidden">
+          <div className="flex flex-col border-r bg-muted/20 overflow-hidden">
+            <ScrollArea className="flex-1">
+              <MetadataSections
+                log={log}
+                isPending={isPending}
+                isSuccess={isSuccess}
+                contentFeatures={contentFeatures}
+                formatDuration={formatDuration}
+                formatTokens={formatTokens}
+              />
+            </ScrollArea>
+          </div>
+          <div className="flex flex-col overflow-hidden">
+            <Tabs defaultValue="request" className="flex flex-col flex-1 overflow-hidden">
+              <div className="px-4 py-2 border-b bg-muted/10 flex-shrink-0">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="request">Request</TabsTrigger>
+                  <TabsTrigger value="response">Response</TabsTrigger>
+                </TabsList>
+              </div>
+              <TabsContent value="request" className="flex-1 m-0 overflow-hidden">
+                <RequestPanel log={log} className="h-full border-r-0" />
+              </TabsContent>
+              <TabsContent value="response" className="flex-1 m-0 overflow-hidden">
+                <ResponsePanel log={log} className="h-full border-r-0" />
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
+
+        {/* 小屏：单栏 Tab */}
+        <div className="flex-1 flex flex-col md:hidden overflow-hidden">
+          <Tabs defaultValue="overview" className="flex flex-col flex-1 overflow-hidden">
+            <div className="px-3 py-2 border-b bg-muted/10 flex-shrink-0">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="overview">概览</TabsTrigger>
+                <TabsTrigger value="request">请求</TabsTrigger>
+                <TabsTrigger value="response">响应</TabsTrigger>
+              </TabsList>
+            </div>
+            <TabsContent value="overview" className="flex-1 m-0 overflow-hidden">
+              <ScrollArea className="h-full">
+                <MetadataSections
+                  log={log}
+                  isPending={isPending}
+                  isSuccess={isSuccess}
+                  contentFeatures={contentFeatures}
+                  formatDuration={formatDuration}
+                  formatTokens={formatTokens}
+                />
+              </ScrollArea>
+            </TabsContent>
+            <TabsContent value="request" className="flex-1 m-0 overflow-hidden">
+              <RequestPanel log={log} className="h-full border-r-0" />
+            </TabsContent>
+            <TabsContent value="response" className="flex-1 m-0 overflow-hidden">
+              <ResponsePanel log={log} className="h-full border-r-0" />
+            </TabsContent>
+          </Tabs>
+        </div>
+
         {/* 底部状态栏 */}
-        <div className="flex items-center justify-between px-6 py-2 border-t bg-muted/20 text-xs text-muted-foreground font-mono">
-          <div className="flex items-center gap-4">
+        <div className="flex items-center justify-between px-3 md:px-6 py-2 border-t bg-muted/20 text-xs text-muted-foreground font-mono">
+          <div className="flex items-center gap-2 md:gap-4">
             <span>延迟: {formatDuration(log.latencyMs)}</span>
             <Separator orientation="vertical" className="h-4" />
             <span>Token: {formatTokens(log.totalTokens)}</span>
-            <Separator orientation="vertical" className="h-4" />
-            <span className={isPending ? 'text-amber-600' : isSuccess ? 'text-green-600' : 'text-red-600'}>
+            <Separator orientation="vertical" className="h-4 hidden md:block" />
+            <span className={cn("hidden md:inline", isPending ? 'text-amber-600' : isSuccess ? 'text-green-600' : 'text-red-600')}>
               {isPending ? '请求中' : isSuccess ? '成功' : '失败'}
             </span>
           </div>
@@ -1086,6 +687,377 @@ export function LogDetailSheet({
         </div>
       </SheetContent>
     </Sheet>
+  )
+}
+
+/**
+ * 元数据面板（提取为独立组件，三种布局复用）
+ */
+interface MetadataSectionsProps {
+  log: Log
+  isPending: boolean
+  isSuccess: boolean
+  contentFeatures: ContentFeatures | null
+  formatDuration: (ms: number) => string
+  formatTokens: (tokens: number) => string
+}
+
+export function MetadataSections({ log, isPending, isSuccess, contentFeatures, formatDuration, formatTokens }: MetadataSectionsProps) {
+  return (
+    <>
+      {/* === 基本信息 === */}
+      <Section title="基本信息">
+        <InfoRow
+          label="状态"
+          value={
+            <div className="flex items-center gap-2">
+              <span className={isPending ? 'text-amber-600' : isSuccess ? 'text-green-600' : 'text-red-600'}>
+                {isPending ? '请求中' : isSuccess ? '成功' : '失败'}
+              </span>
+              {!isPending && log.statusCode && (
+                <code className="text-xs bg-muted px-1.5 py-0.5 rounded">
+                  {log.statusCode}
+                </code>
+              )}
+            </div>
+          }
+        />
+        <InfoRow label="模型" value={log.modelName} mono />
+        {log.originalModelName && log.originalModelName !== log.modelName && (
+          <InfoRow label="原始模型" value={log.originalModelName} mono />
+        )}
+        <InfoRow label="供应商" value={log.providerName || '-'} />
+        {log.providerId && (
+          <InfoRow label="供应商ID" value={log.providerId} copyable mono />
+        )}
+        <InfoRow label="虚拟密钥" value={log.virtualKeyName || '-'} copyable mono />
+        {log.virtualKeyId && (
+          <InfoRow label="密钥ID" value={log.virtualKeyId} copyable mono />
+        )}
+        {log.incomingProtocol && log.targetProtocol && (
+          <InfoRow
+            label="协议转换"
+            value={
+              <div className="flex items-center gap-1.5">
+                <Badge variant="outline" className="text-[10px] font-mono">
+                  {log.incomingProtocol}
+                </Badge>
+                <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                <Badge variant="outline" className="text-[10px] font-mono">
+                  {log.targetProtocol}
+                </Badge>
+              </div>
+            }
+          />
+        )}
+      </Section>
+
+      {/* === 延迟分析 === */}
+      <Section title="延迟分析">
+        <InfoRow
+          label="总延迟"
+          value={
+            <span className={cn(
+              "font-semibold",
+              log.latencyMs < 1000 ? "text-green-600" :
+              log.latencyMs < 3000 ? "text-amber-600" :
+              "text-red-600"
+            )}>
+              {formatDuration(log.latencyMs)}
+            </span>
+          }
+        />
+        {log.metadata?.performance && (
+          log.metadata.performance.gatewayOverheadMs != null ||
+          log.metadata.performance.providerTtfbMs != null ||
+          log.metadata.performance.streamDurationMs != null
+        ) && (
+          <LatencyBreakdown
+            totalMs={log.latencyMs}
+            gatewayOverheadMs={log.metadata.performance.gatewayOverheadMs}
+            providerTtfbMs={log.metadata.performance.providerTtfbMs}
+            streamDurationMs={log.metadata.performance.streamDurationMs}
+            formatDuration={formatDuration}
+          />
+        )}
+        <InfoRow label="流式传输" value={log.streaming ? '是' : '否'} />
+      </Section>
+
+      {/* === Token 用量 === */}
+      <Section title="Token 用量">
+        <InfoRow label="输入 Token" value={formatTokens(log.inputTokens)} mono />
+        <InfoRow label="输出 Token" value={formatTokens(log.outputTokens)} mono />
+        <InfoRow
+          label="总 Token"
+          value={<span className="font-semibold">{formatTokens(log.totalTokens)}</span>}
+          mono
+        />
+        {contentFeatures?.tokens && (
+          <>
+            <InfoRow
+              label="Token 分布"
+              value={
+                <div className="flex items-center gap-2 text-xs">
+                  <span>输入: {contentFeatures.tokens.inputOutputRatio.input}%</span>
+                  <span className="text-muted-foreground">|</span>
+                  <span>输出: {contentFeatures.tokens.inputOutputRatio.output}%</span>
+                </div>
+              }
+            />
+            {contentFeatures.tokens.tokensPerSecond > 0 && (
+              <InfoRow
+                label="生成速率"
+                value={
+                  <span className={cn(
+                    "font-semibold",
+                    contentFeatures.tokens.tokensPerSecond >= 80 ? "text-green-600" :
+                    contentFeatures.tokens.tokensPerSecond >= 30 ? "text-blue-600" :
+                    "text-amber-600"
+                  )}>
+                    {contentFeatures.tokens.tokensPerSecond} tokens/s
+                  </span>
+                }
+                mono
+              />
+            )}
+            {contentFeatures.tokens.tokensPerMessage > 0 && (
+              <InfoRow
+                label="每消息 Token"
+                value={`${contentFeatures.tokens.tokensPerMessage} tokens`}
+                mono
+              />
+            )}
+          </>
+        )}
+      </Section>
+
+      {/* === 请求信息 === */}
+      <Section title="请求信息">
+        <InfoRow label="方法" value={log.requestMethod || '-'} mono />
+        <InfoRow
+          label="路径"
+          value={<span className="text-xs break-all">{log.requestPath || '-'}</span>}
+          copyable
+          mono
+        />
+        <InfoRow label="客户端 IP" value={log.clientIp || '-'} copyable mono />
+        <InfoRow
+          label="客户端"
+          value={
+            <div className="space-y-1">
+              <Badge variant="secondary" className="text-xs font-normal">
+                {log.clientType
+                  ? (CLIENT_REGISTRY[log.clientType] ?? log.clientType)
+                  : '未知客户端'}
+              </Badge>
+              {log.userAgent && log.userAgent !== 'unknown' && (
+                <div className="text-xs text-muted-foreground break-all font-mono">
+                  {log.userAgent}
+                </div>
+              )}
+            </div>
+          }
+        />
+        <InfoRow
+          label="请求 ID"
+          value={<span className="text-xs break-all">{log.id}</span>}
+          copyable
+          mono
+        />
+        <InfoRow
+          label="创建时间"
+          value={new Date(log.createdAt).toLocaleString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+          })}
+          mono
+        />
+      </Section>
+
+      {/* === 错误详情 === */}
+      {log.errorMessage && (
+        <Section
+          title="错误详情"
+          badge={<Badge variant="destructive" className="text-xs">Error</Badge>}
+        >
+          <div className="p-4 space-y-2">
+            <div className="text-sm font-medium text-red-600">{log.errorMessage}</div>
+            {log.errorType && (
+              <div className="text-xs text-muted-foreground font-mono">类型: {log.errorType}</div>
+            )}
+          </div>
+        </Section>
+      )}
+
+      {/* === 对话上下文 === */}
+      {(log.conversationId || log.metadata?.messageSequence) && (
+        <Section title="对话上下文">
+          {log.conversationId && (
+            <InfoRow label="对话ID" value={String(log.conversationId)} copyable mono />
+          )}
+          {log.metadata?.messageSequence && (
+            <InfoRow label="消息数量" value={`${log.metadata.messageSequence.totalCount} 条`} />
+          )}
+          {log.metadata?.conversation?.roleSwitches !== undefined && (
+            <InfoRow label="角色切换" value={`${log.metadata.conversation.roleSwitches} 次`} />
+          )}
+          {log.metadata?.conversation?.hasToolInteraction && (
+            <InfoRow label="工具交互" value={<Badge variant="secondary">包含</Badge>} />
+          )}
+        </Section>
+      )}
+
+      {/* === 内容分析 === */}
+      {(log.metadata?.content || contentFeatures?.request || contentFeatures?.response || contentFeatures?.complexity) && (
+        <Section title="内容分析">
+          {(log.metadata?.content as { types?: string[] } | undefined)?.types && (log.metadata!.content as { types: string[] }).types.length > 0 && (
+            <InfoRow
+              label="内容类型"
+              value={
+                <div className="flex flex-wrap gap-1">
+                  {(log.metadata!.content as { types: string[] }).types.map((type: string, idx: number) => (
+                    <Badge key={idx} variant="outline" className="text-xs">{type}</Badge>
+                  ))}
+                </div>
+              }
+            />
+          )}
+          {(log.metadata?.content as { hasFunctionCalling?: boolean } | undefined)?.hasFunctionCalling && (
+            <InfoRow label="函数调用" value={<Badge variant="secondary">是</Badge>} />
+          )}
+          {contentFeatures?.request && (
+            <>
+              <InfoRow label="消息数量" value={contentFeatures.request.messageCount} />
+              <InfoRow
+                label="角色分布"
+                value={
+                  <div className="flex items-center gap-2 text-xs">
+                    {contentFeatures.request.roleDistribution.user > 0 && (
+                      <span>User: {contentFeatures.request.roleDistribution.user}</span>
+                    )}
+                    {contentFeatures.request.roleDistribution.assistant > 0 && (
+                      <>
+                        <span className="text-muted-foreground">|</span>
+                        <span>Assistant: {contentFeatures.request.roleDistribution.assistant}</span>
+                      </>
+                    )}
+                    {contentFeatures.request.roleDistribution.system > 0 && (
+                      <>
+                        <span className="text-muted-foreground">|</span>
+                        <span>System: {contentFeatures.request.roleDistribution.system}</span>
+                      </>
+                    )}
+                  </div>
+                }
+              />
+              {contentFeatures.request.avgMessageLength > 0 && (
+                <InfoRow label="平均消息长度" value={`${contentFeatures.request.avgMessageLength.toLocaleString()} 字符`} />
+              )}
+              {contentFeatures.request.systemPromptLength && (
+                <InfoRow label="系统提示" value={`${contentFeatures.request.systemPromptLength.toLocaleString()} 字符`} />
+              )}
+            </>
+          )}
+          {contentFeatures?.response && (
+            <>
+              <InfoRow label="响应块数" value={contentFeatures.response.blockCount} />
+              {contentFeatures.response.blockCount > 0 && (
+                <InfoRow
+                  label="响应类型"
+                  value={
+                    <div className="flex items-center gap-2 text-xs">
+                      {contentFeatures.response.typeDistribution.text > 0 && (
+                        <span>Text: {contentFeatures.response.typeDistribution.text}</span>
+                      )}
+                      {contentFeatures.response.typeDistribution.toolUse > 0 && (
+                        <>
+                          <span className="text-muted-foreground">|</span>
+                          <span>Tool: {contentFeatures.response.typeDistribution.toolUse}</span>
+                        </>
+                      )}
+                      {contentFeatures.response.typeDistribution.thinking > 0 && (
+                        <>
+                          <span className="text-muted-foreground">|</span>
+                          <span>Thinking: {contentFeatures.response.typeDistribution.thinking}</span>
+                        </>
+                      )}
+                    </div>
+                  }
+                />
+              )}
+              {contentFeatures.response.totalLength > 0 && (
+                <InfoRow label="响应长度" value={`${contentFeatures.response.totalLength.toLocaleString()} 字符`} />
+              )}
+            </>
+          )}
+          {contentFeatures?.complexity && (
+            <>
+              <InfoRow
+                label="上下文长度"
+                value={
+                  <Badge
+                    variant={
+                      contentFeatures.complexity.contextLevel === 'extra-long' ? 'destructive' :
+                      contentFeatures.complexity.contextLevel === 'long' ? 'secondary' : 'outline'
+                    }
+                  >
+                    {contentFeatures.complexity.contextLevel === 'short' ? '短' :
+                     contentFeatures.complexity.contextLevel === 'medium' ? '中' :
+                     contentFeatures.complexity.contextLevel === 'long' ? '长' : '超长'}
+                  </Badge>
+                }
+              />
+              {contentFeatures.complexity.contentDensity > 0 && (
+                <InfoRow label="内容密度" value={`${contentFeatures.complexity.contentDensity} 字符/token`} mono />
+              )}
+            </>
+          )}
+        </Section>
+      )}
+
+      {/* === 工具调用 === */}
+      {!!log.toolCallsCount && log.toolCallsCount > 0 && (
+        <Section
+          title="工具调用"
+          badge={<Badge variant="secondary" className="text-xs">{log.toolCallsCount}</Badge>}
+        >
+          {(log.metadata?.toolCalls as Record<string, string> | undefined)?.pattern && (
+            <InfoRow
+              label="调用模式"
+              value={
+                <Badge variant="outline">
+                  {(log.metadata?.toolCalls as Record<string, string>).pattern === 'single' ? '单次' :
+                   (log.metadata?.toolCalls as Record<string, string>).pattern === 'parallel' ? '并行' : '顺序'}
+                </Badge>
+              }
+            />
+          )}
+          {(log.metadata?.toolCalls as { tools?: string[] } | undefined)?.tools && (log.metadata?.toolCalls as { tools: string[] }).tools.length > 0 && (
+            <InfoRow
+              label="工具列表"
+              value={
+                <div className="flex flex-wrap gap-1">
+                  {(log.metadata?.toolCalls as { tools: string[] }).tools.map((tool: string, idx: number) => (
+                    <Badge key={idx} variant="secondary" className="text-xs font-mono bg-blue-50 text-blue-700 border-blue-200">
+                      {tool}
+                    </Badge>
+                  ))}
+                </div>
+              }
+            />
+          )}
+          {log.metadata?.toolCalls?.details && log.metadata.toolCalls.details.length > 0 && (
+            <div className="px-3 pb-3">
+              <ToolCallDetailsSection toolCalls={log.metadata.toolCalls} />
+            </div>
+          )}
+        </Section>
+      )}
+    </>
   )
 }
 

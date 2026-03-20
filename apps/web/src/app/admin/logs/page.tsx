@@ -2,6 +2,7 @@
 
 import { Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Suspense } from 'react'
 import {
   LogStatsCards,
   LogSearchFilter,
@@ -13,6 +14,14 @@ import {
 import { useLogPage } from './useLogPage'
 
 export default function LogsPage() {
+  return (
+    <Suspense>
+      <LogsPageContent />
+    </Suspense>
+  )
+}
+
+function LogsPageContent() {
   const {
     loading,
     logs,

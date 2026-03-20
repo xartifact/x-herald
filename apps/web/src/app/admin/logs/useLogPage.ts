@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useLogs, useLog, useDeleteLog, useLogStats, useLogStorage, useCleanupLogs, type LogListItem } from '@/hooks/use-logs'
 import { useQueryClient } from '@tanstack/react-query'
 
@@ -38,16 +39,20 @@ function getTimeRange(range: string): { startDate?: string; endDate?: string } {
 
 export function useLogPage() {
   const queryClient = useQueryClient()
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [clientTypeFilter, setClientTypeFilter] = useState<string>('all')
   const [timeRange, setTimeRange] = useState<string>('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
-  const [selectedLogId, setSelectedLogId] = useState<string | null>(null)
-  const [detailDialogOpen, setDetailDialogOpen] = useState(false)
   const [cleanupDialogOpen, setCleanupDialogOpen] = useState(false)
   const [retentionDays, setRetentionDays] = useState('30')
+
+  // 从 URL search param 读取详情状态
+  const selectedLogId = searchParams.get('detail')
+  const detailDialogOpen = !!selectedLogId
 
   // 计算时间范围参数（使用 useMemo 避免每次渲染都创建新对象）
   const timeParams = useMemo(() => getTimeRange(timeRange), [timeRange])
@@ -83,8 +88,6 @@ export function useLogPage() {
   const stats = statsData?.data?.overview
   const clientStats = statsData?.data?.clientStats
   const storage = storageData?.data
-
-  // 完整日志详情（从详情接口获取）
   const selectedLog = logDetailData?.data
 
   const handleDelete = async (id: string) => {
@@ -97,10 +100,15 @@ export function useLogPage() {
     setCleanupDialogOpen(false)
   }
 
-  const handleViewDetail = (logId: string) => {
-    setSelectedLogId(logId)
-    setDetailDialogOpen(true)
-  }
+  const handleViewDetail = useCallback((logId: string) => {
+    router.push(`/admin/logs?detail=${logId}`, { scroll: false })
+  }, [router])
+
+  const setDetailDialogOpen = useCallback((open: boolean) => {
+    if (!open) {
+      router.push('/admin/logs', { scroll: false })
+    }
+  }, [router])
 
   // 前端搜索过滤（仅针对当前页的数据）
   const filteredLogs = logs.filter((log: LogListItem) => {

@@ -217,8 +217,33 @@ export async function handleChatCompletion(
         'Same protocol passthrough enabled, skipping transformation'
       );
 
+      // Anthropic 协议透传时规范化消息
+      let normalizedMessages = rawBody.messages as Array<{ role: string; content: unknown }> | undefined;
+      let shouldStripThinking = false;
+      if (incomingProtocol === 'anthropic' && Array.isArray(normalizedMessages)) {
+        // 拆分混合了 tool_result 和 text 的 user 消息
+        normalizedMessages = normalizeAnthropicPassthroughMessages(normalizedMessages);
+        // thinking 开启时，检查历史 assistant 消息是否包含合法 thinking 块
+        const thinking = rawBody.thinking as { type?: string } | undefined;
+        if (thinking?.type && hasAssistantMessagesWithoutThinking(normalizedMessages)) {
+          const syntheticStrategy = provider.protocols?.anthropic?.syntheticThinking ?? 'strip';
+          if (syntheticStrategy === 'inject') {
+            // 注入合成 thinking 块（适用于无 signature 校验的 Provider）
+            logger.info({ requestId, provider: provider.name }, 'Injecting synthetic thinking blocks');
+            normalizedMessages = injectSyntheticThinkingBlocks(normalizedMessages);
+          } else {
+            // 默认：移除 thinking 参数，降级为非 thinking 模式
+            logger.info({ requestId, provider: provider.name }, 'Stripping thinking param: history lacks thinking blocks');
+            shouldStripThinking = true;
+          }
+        }
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { thinking: _originalThinking, ...rawBodyWithoutThinking } = rawBody as Record<string, unknown>;
       transformedBody = {
-        ...rawBody,
+        ...(shouldStripThinking ? rawBodyWithoutThinking : rawBody),
+        messages: normalizedMessages,
         model: instance.actualModelName,
       };
 
@@ -308,15 +333,17 @@ export async function handleChatCompletion(
 
     // 创建 AbortController 用于超时和客户端断开控制
     const abortController = new AbortController();
-    const REQUEST_TIMEOUT_MS = 120000; // 2 分钟超时
     const CONNECT_TIMEOUT_MS = 30000; // 30 秒连接超时
+    // 首字节超时（TTFB）：等待 Provider 开始响应的最大时间
+    // 流式请求的 thinking 模型可能需要较长思考时间，因此给予更长的超时
+    const TTFB_TIMEOUT_MS = isStreaming ? 600000 : 300000; // 流式 10 分钟，非流式 5 分钟
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-    // 设置超时
+    // 设置首字节超时
     timeoutId = setTimeout(() => {
-      logger.warn({ requestId, timeout: REQUEST_TIMEOUT_MS }, 'Request timeout, aborting');
+      logger.warn({ requestId, timeout: TTFB_TIMEOUT_MS, streaming: isStreaming }, 'Request TTFB timeout, aborting');
       abortController.abort();
-    }, REQUEST_TIMEOUT_MS);
+    }, TTFB_TIMEOUT_MS);
 
     // 监听客户端断开，同时取消上游请求
     const clientAbortHandler = () => {
@@ -343,7 +370,7 @@ export async function handleChatCompletion(
       if (fetchError instanceof Error && fetchError.name === 'AbortError') {
         const isTimeout = !c.req.raw.signal?.aborted;
         const errorMessage = isTimeout
-          ? `Request timeout after ${REQUEST_TIMEOUT_MS / 1000}s`
+          ? `Request TTFB timeout after ${TTFB_TIMEOUT_MS / 1000}s`
           : 'Client disconnected';
 
         logger.warn({ requestId, isTimeout }, errorMessage);
@@ -462,4 +489,84 @@ export async function handleChatCompletion(
       logId,
     });
   }
+}
+
+/**
+ * 规范化 Anthropic 透传消息
+ * 某些 Anthropic 兼容 Provider（如 MiniMax）不支持在 user 消息中混合 tool_result 和 text 块。
+ * 此函数将这类混合消息拆分为独立消息，确保 Provider 兼容性。
+ *
+ * 例：[{tool_result}, {text}] → 两条 user 消息：[{tool_result}] + [{text}]
+ */
+function normalizeAnthropicPassthroughMessages(
+  messages: Array<{ role: string; content: unknown }>,
+): Array<{ role: string; content: unknown }> {
+  const result: Array<{ role: string; content: unknown }> = [];
+
+  for (const msg of messages) {
+    // 只处理 user 角色且 content 为数组的消息
+    if (msg.role !== 'user' || !Array.isArray(msg.content)) {
+      result.push(msg);
+      continue;
+    }
+
+    const blocks = msg.content as Array<{ type: string; [key: string]: unknown }>;
+    const hasToolResult = blocks.some((b) => b.type === 'tool_result');
+    const hasNonToolResult = blocks.some((b) => b.type !== 'tool_result');
+
+    // 不需要拆分：纯 tool_result 或无 tool_result
+    if (!hasToolResult || !hasNonToolResult) {
+      result.push(msg);
+      continue;
+    }
+
+    // 拆分：tool_result 块放前面，其他块放后面
+    const toolResultBlocks = blocks.filter((b) => b.type === 'tool_result');
+    const otherBlocks = blocks.filter((b) => b.type !== 'tool_result');
+
+    result.push({ ...msg, content: toolResultBlocks });
+
+    if (otherBlocks.length > 0) {
+      result.push({ ...msg, content: otherBlocks });
+    }
+  }
+
+  return result;
+}
+
+/**
+ * 检查是否存在缺少 thinking 块的 assistant 消息
+ */
+function hasAssistantMessagesWithoutThinking(
+  messages: Array<{ role: string; content: unknown }>,
+): boolean {
+  return messages.some((msg) => {
+    if (msg.role !== 'assistant' || !Array.isArray(msg.content)) {
+      return false;
+    }
+    const blocks = msg.content as Array<{ type: string; [key: string]: unknown }>;
+    return blocks.length > 0 && !blocks.some((b) => b.type === 'thinking');
+  });
+}
+
+/**
+ * 注入合成 thinking 块（inject 策略）
+ * 适用于无 signature 校验的 Provider，为缺少 thinking 块的 assistant 消息注入占位 thinking。
+ */
+function injectSyntheticThinkingBlocks(
+  messages: Array<{ role: string; content: unknown }>,
+): Array<{ role: string; content: unknown }> {
+  return messages.map((msg) => {
+    if (msg.role !== 'assistant' || !Array.isArray(msg.content)) {
+      return msg;
+    }
+    const blocks = msg.content as Array<{ type: string; [key: string]: unknown }>;
+    if (blocks.some((b) => b.type === 'thinking')) {
+      return msg;
+    }
+    return {
+      ...msg,
+      content: [{ type: 'thinking', thinking: '...' }, ...blocks],
+    };
+  });
 }

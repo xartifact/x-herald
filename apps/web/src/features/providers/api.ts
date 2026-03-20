@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { eq } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 import { getDatabase } from '@/core/db/client';
 import { authMiddleware } from '@/features/auth/middleware';
 import logger from '@/core/lib/logger';
@@ -14,7 +14,7 @@ providersRoutes.use('*', authMiddleware);
 providersRoutes.get('/', async (c) => {
   try {
     const db = getDatabase();
-    const allProviders = await db.select().from(providers);
+    const allProviders = await db.select().from(providers).orderBy(desc(providers.createdAt));
 
     return c.json({
       success: true,
@@ -339,16 +339,8 @@ providersRoutes.get('/:id/thinking-type-mappings', async (c) => {
       );
     }
 
-    const protocols = provider[0].protocols as Record<string, {
-      baseUrl: string;
-      enabled: boolean;
-      thinkingMapping?: {
-        enabled: boolean;
-        mappings: Record<string, string>;
-      };
-    }>;
-
-    const anthropicConfig = protocols?.anthropic;
+    const currentProtocols = (provider[0].protocols ?? {}) as ProtocolsConfig;
+    const anthropicConfig = currentProtocols?.anthropic;
     const mappings = anthropicConfig?.thinkingMapping?.mappings || {};
 
     const mappingArray = Object.entries(mappings).map(([from, to]) => ({
@@ -359,6 +351,7 @@ providersRoutes.get('/:id/thinking-type-mappings', async (c) => {
     return c.json({
       success: true,
       data: mappingArray,
+      syntheticThinking: anthropicConfig?.syntheticThinking ?? 'strip',
     });
   } catch (error) {
     logger.error({ error }, 'Failed to get thinking type mappings');
@@ -398,17 +391,22 @@ providersRoutes.put('/:id/thinking-type-mappings', async (c) => {
       }
     }
 
+    // 解析 syntheticThinking 策略
+    const syntheticThinking = body.syntheticThinking === 'inject' ? 'inject' as const : 'strip' as const;
+
     const currentProtocols = (provider[0].protocols ?? {}) as ProtocolsConfig;
     const currentAnthropic = currentProtocols.anthropic;
     const updatedProtocols: ProtocolsConfig = {
       ...currentProtocols,
       anthropic: {
+        ...currentAnthropic,
         baseUrl: currentAnthropic?.baseUrl ?? '',
         enabled: currentAnthropic?.enabled ?? true,
         thinkingMapping: {
           enabled: Object.keys(mappings).length > 0,
           mappings,
         },
+        syntheticThinking,
       },
     };
 

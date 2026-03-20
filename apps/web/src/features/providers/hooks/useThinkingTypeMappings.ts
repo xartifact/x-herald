@@ -1,43 +1,52 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { get, put } from '@/core/lib/api-client';
 import type { ThinkingTypeMapping } from '../types';
+import type { SyntheticThinkingStrategy } from '../db';
 
 const API_BASE = '/api/providers';
 
-export function useProviderThinkingTypeMappings(providerId: string) {
-  return useQuery<ThinkingTypeMapping[]>({
+interface ThinkingConfigApiResponse {
+  data: ThinkingTypeMapping[];
+  syntheticThinking: SyntheticThinkingStrategy;
+}
+
+interface ThinkingConfigResponse {
+  mappings: ThinkingTypeMapping[];
+  syntheticThinking: SyntheticThinkingStrategy;
+}
+
+export function useProviderThinkingConfig(providerId: string) {
+  return useQuery<ThinkingConfigResponse>({
     queryKey: ['providers', providerId, 'thinking-type-mappings'],
     queryFn: async () => {
-      const response = await fetch(`${API_BASE}/${providerId}/thinking-type-mappings`);
-      const result = await response.json();
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch thinking type mappings');
-      }
-      return result.data || [];
+      const result = await get<ThinkingConfigApiResponse>(
+        `${API_BASE}/${providerId}/thinking-type-mappings`,
+        { extractData: false },
+      );
+      return {
+        mappings: result.data || [],
+        syntheticThinking: result.syntheticThinking ?? 'strip',
+      };
     },
     enabled: !!providerId,
   });
 }
 
-interface UpdateThinkingTypeMappingsParams {
+interface UpdateThinkingConfigParams {
   providerId: string;
   mappings: ThinkingTypeMapping[];
+  syntheticThinking: SyntheticThinkingStrategy;
 }
 
-export function useUpdateProviderThinkingTypeMappings() {
+export function useUpdateProviderThinkingConfig() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ providerId, mappings }: UpdateThinkingTypeMappingsParams) => {
-      const response = await fetch(`${API_BASE}/${providerId}/thinking-type-mappings`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mappings }),
-      });
-      const result = await response.json();
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to update thinking type mappings');
-      }
-      return result.data;
+    mutationFn: async ({ providerId, mappings, syntheticThinking }: UpdateThinkingConfigParams) => {
+      return put(
+        `${API_BASE}/${providerId}/thinking-type-mappings`,
+        { mappings, syntheticThinking },
+      );
     },
     onSuccess: (_, { providerId }) => {
       queryClient.invalidateQueries({

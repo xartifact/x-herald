@@ -889,8 +889,24 @@ export async function handleStreamingResponse(
     }
   };
 
+  // 流空闲超时：如果超过指定时间没有收到任何数据，终止流
+  const STREAM_IDLE_TIMEOUT_MS = 120000; // 2 分钟无数据则超时
+  let streamIdleTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const resetStreamIdleTimer = (controller: TransformStreamDefaultController<Uint8Array>) => {
+    if (streamIdleTimer) clearTimeout(streamIdleTimer);
+    streamIdleTimer = setTimeout(() => {
+      logger.warn({ logId }, `Stream idle timeout after ${STREAM_IDLE_TIMEOUT_MS / 1000}s, terminating`);
+      controller.terminate();
+      finalizeLog('failure').catch(() => {});
+    }, STREAM_IDLE_TIMEOUT_MS);
+  };
+
   const usageExtractor = new TransformStream<Uint8Array, Uint8Array>({
     transform(chunk, controller) {
+      // 每次收到数据，重置空闲超时
+      resetStreamIdleTimer(controller);
+
       // 解析 SSE chunk 提取 usage 和收集响应
       const text = new TextDecoder().decode(chunk);
       const lines = text.split('\n');
@@ -926,7 +942,8 @@ export async function handleStreamingResponse(
       controller.enqueue(chunk);
     },
     async flush() {
-      // Phase 2: 流正常结束，调用 finalizeLog
+      // 流正常结束，清理空闲超时
+      if (streamIdleTimer) clearTimeout(streamIdleTimer);
       await finalizeLog('success');
     },
   });
@@ -947,6 +964,7 @@ export async function handleStreamingResponse(
   if (params.request?.signal) {
     params.request.signal.addEventListener('abort', async () => {
       logger.info({ logId }, 'Client disconnected, finalizing stream log');
+      if (streamIdleTimer) clearTimeout(streamIdleTimer);
       // 客户端断开时，完成日志记录（使用已收集的数据）
       // isLogFinalized 标记会防止 flush() 重复调用
       await finalizeLog('success');

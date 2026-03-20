@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { eq } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 import { getDatabase } from '@/core/db/client';
 import { modelGroups, modelInstances } from './db';
 import { providers } from '@/features/providers/db';
@@ -19,7 +19,7 @@ modelGroupRoutes.use('*', authMiddleware);
  */
 modelGroupRoutes.get('/', async (c) => {
   const db = getDatabase();
-  const groups = await db.select().from(modelGroups);
+  const groups = await db.select().from(modelGroups).orderBy(desc(modelGroups.createdAt));
 
   return c.json({
     success: true,
@@ -36,7 +36,7 @@ modelGroupRoutes.get('/instances', async (c) => {
   const db = getDatabase();
 
   try {
-    const instances = await db.select().from(modelInstances);
+    const instances = await db.select().from(modelInstances).orderBy(desc(modelInstances.createdAt));
 
     return c.json({
       success: true,

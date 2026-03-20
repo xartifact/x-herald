@@ -219,9 +219,37 @@ export class AnthropicTransformer implements Transformer {
     ctx: TransformerContext,
   ): Promise<{ body: unknown; url?: string; headers?: Record<string, string> }> {
     // 所有消息都传递给 Anthropic（包括 system，由 Anthropic 内部处理 system 转换）
+    let messages = this.convertToAnthropicMessages(request.messages);
+
+    // thinking 开启时，检查历史 assistant 消息是否包含合法 thinking 块
+    // 根据 Provider 的 syntheticThinking 策略决定：inject（注入伪造块）或 strip（移除 thinking）
+    let shouldDisableThinking = false;
+    if (request.reasoning?.enabled) {
+      const missingThinking = messages.some((msg) => {
+        if (msg.role !== 'assistant' || typeof msg.content === 'string') return false;
+        if (!Array.isArray(msg.content) || msg.content.length === 0) return false;
+        return !msg.content.some((b) => b.type === 'thinking');
+      });
+      if (missingThinking) {
+        const syntheticStrategy = ctx.provider?.protocols?.anthropic?.syntheticThinking ?? 'strip';
+        if (syntheticStrategy === 'inject') {
+          logger.info({ provider: ctx.provider?.name }, 'Injecting synthetic thinking blocks');
+          messages = messages.map((msg) => {
+            if (msg.role !== 'assistant' || typeof msg.content === 'string') return msg;
+            if (!Array.isArray(msg.content)) return msg;
+            if (msg.content.some((b) => b.type === 'thinking')) return msg;
+            return { ...msg, content: [{ type: 'thinking' as const, thinking: '...' }, ...msg.content] };
+          });
+        } else {
+          logger.info({ provider: ctx.provider?.name }, 'Stripping thinking: history lacks thinking blocks');
+          shouldDisableThinking = true;
+        }
+      }
+    }
+
     const anthropicReq: AnthropicRequest = {
       model: request.model,
-      messages: this.convertToAnthropicMessages(request.messages),
+      messages,
       max_tokens: request.max_tokens ?? 4096,
       temperature: request.temperature,
       top_p: request.top_p,
@@ -255,8 +283,8 @@ export class AnthropicTransformer implements Transformer {
       anthropicReq.stop_sequences = Array.isArray(request.stop) ? request.stop : [request.stop];
     }
 
-    // 添加 reasoning (thinking)
-    if (request.reasoning?.enabled) {
+    // 添加 reasoning (thinking)，如果需要降级则跳过
+    if (request.reasoning?.enabled && !shouldDisableThinking) {
       anthropicReq.thinking = {
         type: 'enabled',
         budget_tokens: request.reasoning.max_tokens ?? 1024,
@@ -889,7 +917,7 @@ export class AnthropicTransformer implements Transformer {
   }
 
   private convertToAnthropicMessages(messages: StandardMessage[]): AnthropicMessage[] {
-    return messages.map((msg) => {
+    return messages.flatMap((msg) => {
       const content: AnthropicMessage['content'] = this.convertToAnthropicContent(msg);
 
       // 处理 reasoning_content（必须在 tool_calls 之前）
@@ -952,10 +980,24 @@ export class AnthropicTransformer implements Transformer {
       // tool 消息在 Anthropic 中是 user 角色的 tool_result
       const role: 'user' | 'assistant' = msg.role === 'assistant' ? 'assistant' : 'user';
 
-      return {
-        role,
-        content,
-      };
+      // 拆分混合了 tool_result 和其他类型的 user 消息
+      // 某些 Anthropic 兼容 Provider（如 MiniMax）不支持在同一 user 消息中混合 tool_result 和 text
+      if (role === 'user' && Array.isArray(content)) {
+        const hasToolResult = content.some((b) => b.type === 'tool_result');
+        const hasNonToolResult = content.some((b) => b.type !== 'tool_result');
+
+        if (hasToolResult && hasNonToolResult) {
+          const toolResultBlocks = content.filter((b) => b.type === 'tool_result');
+          const otherBlocks = content.filter((b) => b.type !== 'tool_result');
+          const result: AnthropicMessage[] = [{ role, content: toolResultBlocks }];
+          if (otherBlocks.length > 0) {
+            result.push({ role, content: otherBlocks });
+          }
+          return result;
+        }
+      }
+
+      return [{ role, content }];
     });
   }
 

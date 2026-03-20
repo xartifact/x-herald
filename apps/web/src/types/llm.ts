@@ -225,6 +225,7 @@ export interface ProviderConfig {
       enabled: boolean;
       mappings: Record<string, string>;
     };
+    syntheticThinking?: 'strip' | 'inject';
   }>;
 }
 

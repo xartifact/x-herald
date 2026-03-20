@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { eq } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 import { getDatabase } from '@/core/db/client';
 import { virtualKeys, type NewVirtualKey } from './db';
 import { authMiddleware } from '@/features/auth/middleware';
@@ -22,7 +22,7 @@ function generateApiKey(): string {
 keysRoutes.get('/', async (c) => {
   try {
     const db = getDatabase();
-    const allKeys = await db.select().from(virtualKeys);
+    const allKeys = await db.select().from(virtualKeys).orderBy(desc(virtualKeys.createdAt));
 
     return c.json({
       success: true,

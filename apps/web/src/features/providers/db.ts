@@ -12,8 +12,14 @@ export interface ThinkingMappingConfig {
   mappings: Record<string, string>;
 }
 
+// 合成 thinking 块策略
+// strip: 移除 thinking 参数，降级为非 thinking 模式（默认，安全）
+// inject: 注入伪造 thinking 块，适用于无 signature 校验的 Provider
+export type SyntheticThinkingStrategy = 'strip' | 'inject';
+
 export interface ProtocolExtendedConfig extends ProtocolConfig {
   thinkingMapping?: ThinkingMappingConfig;
+  syntheticThinking?: SyntheticThinkingStrategy;
 }
 
 // 支持的协议类型

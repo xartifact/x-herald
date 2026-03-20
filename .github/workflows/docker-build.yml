@@ -143,3 +143,81 @@ jobs:
 
           echo ""
           echo "✓ Deployment completed successfully"
+
+  notify:
+    needs: [build, deploy]
+    runs-on: self-hosted
+    if: always() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Send Feishu notification
+        env:
+          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+          DEPLOY_RESULT: ${{ needs.deploy.result }}
+          BUILD_RESULT: ${{ needs.build.result }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          COMMIT_SHA: ${{ github.sha }}
+          REF_NAME: ${{ github.ref_name }}
+          ACTOR: ${{ github.actor }}
+          ACTION_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ "$DEPLOY_RESULT" = "success" ]; then
+            STATUS="✅ 部署成功"
+            COLOR="green"
+          elif [ "$DEPLOY_RESULT" = "skipped" ]; then
+            STATUS="⏭️ 部署跳过"
+            COLOR="grey"
+          else
+            STATUS="❌ 部署失败"
+            COLOR="red"
+          fi
+
+          SHORT_SHA="${COMMIT_SHA:0:7}"
+          # 取第一行作为提交信息
+          FIRST_LINE=$(echo "$COMMIT_MSG" | head -1)
+
+          PAYLOAD=$(jq -n \
+            --arg status "$STATUS" \
+            --arg color "$COLOR" \
+            --arg branch "$REF_NAME" \
+            --arg sha "$SHORT_SHA" \
+            --arg msg "$FIRST_LINE" \
+            --arg actor "$ACTOR" \
+            --arg build "$BUILD_RESULT" \
+            --arg url "$ACTION_URL" \
+            '{
+              msg_type: "interactive",
+              card: {
+                header: {
+                  title: { tag: "plain_text", content: "\($status) - x-llm-gateway" },
+                  template: $color
+                },
+                elements: [
+                  {
+                    tag: "div",
+                    fields: [
+                      { is_short: true, text: { tag: "lark_md", content: "**分支：**\($branch)" } },
+                      { is_short: true, text: { tag: "lark_md", content: "**提交：**\($sha)" } },
+                      { is_short: false, text: { tag: "lark_md", content: "**信息：**\($msg)" } },
+                      { is_short: true, text: { tag: "lark_md", content: "**触发：**\($actor)" } },
+                      { is_short: true, text: { tag: "lark_md", content: "**构建：**\($build)" } }
+                    ]
+                  },
+                  {
+                    tag: "action",
+                    actions: [
+                      {
+                        tag: "button",
+                        text: { tag: "plain_text", content: "查看 Action" },
+                        url: $url,
+                        type: "primary"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }')
+
+          curl -s -X POST "$FEISHU_WEBHOOK" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD"

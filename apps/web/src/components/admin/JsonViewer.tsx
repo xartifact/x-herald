@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import Editor, { loader } from "@monaco-editor/react"
+import { useState, useRef, useEffect } from "react"
+import Editor, { DiffEditor, loader } from "@monaco-editor/react"
 import * as monaco from "monaco-editor"
 import { Copy, Check } from "lucide-react"
 
@@ -12,12 +12,15 @@ loader.config({ monaco })
 
 interface JsonViewerProps {
   data: unknown
-  height?: string
+  /** 固定高度（CSS 值）或 "auto" 自动填充父容器 */
+  height?: string | "auto"
   readonly?: boolean
 }
 
 export function JsonViewer({ data, height = "400px", readonly = true }: JsonViewerProps) {
   const [copied, setCopied] = useState(false)
+  const [measuredHeight, setMeasuredHeight] = useState(400)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   const jsonString = JSON.stringify(data, null, 2)
 
@@ -27,8 +30,34 @@ export function JsonViewer({ data, height = "400px", readonly = true }: JsonView
     setTimeout(() => setCopied(false), 2000)
   }
 
+  // auto 模式：用 ResizeObserver 测量容器高度
+  useEffect(() => {
+    if (height !== "auto" || !containerRef.current) return
+
+    const el = containerRef.current
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const h = entry.contentRect.height
+        if (h > 0) setMeasuredHeight(h)
+      }
+    })
+    observer.observe(el)
+    // 初始测量
+    const h = el.getBoundingClientRect().height
+    if (h > 0) setMeasuredHeight(h)
+
+    return () => observer.disconnect()
+  }, [height])
+
+  const isAuto = height === "auto"
+  const editorHeight = isAuto ? `${measuredHeight}px` : height
+
   return (
-    <div className="relative border rounded-md overflow-hidden">
+    <div
+      ref={containerRef}
+      className="relative border rounded-md overflow-hidden"
+      style={isAuto ? { flex: 1, minHeight: 0 } : undefined}
+    >
       <div className="absolute top-2 right-2 z-10">
         <Button
           variant="outline"
@@ -50,7 +79,7 @@ export function JsonViewer({ data, height = "400px", readonly = true }: JsonView
         </Button>
       </div>
       <Editor
-        height={height}
+        height={editorHeight}
         defaultLanguage="json"
         value={jsonString}
         theme="vs-dark"
@@ -63,6 +92,77 @@ export function JsonViewer({ data, height = "400px", readonly = true }: JsonView
           renderWhitespace: "selection",
           folding: true,
           wordWrap: "on",
+        }}
+      />
+    </div>
+  )
+}
+
+interface JsonDiffViewerProps {
+  original: unknown
+  modified: unknown
+  originalLabel?: string
+  modifiedLabel?: string
+  height?: string | "auto"
+}
+
+export function JsonDiffViewer({
+  original,
+  modified,
+  originalLabel = "Original",
+  modifiedLabel = "Modified",
+  height = "400px",
+}: JsonDiffViewerProps) {
+  const [measuredHeight, setMeasuredHeight] = useState(400)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  const originalStr = JSON.stringify(original, null, 2) || ""
+  const modifiedStr = JSON.stringify(modified, null, 2) || ""
+
+  useEffect(() => {
+    if (height !== "auto" || !containerRef.current) return
+
+    const el = containerRef.current
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const h = entry.contentRect.height
+        if (h > 0) setMeasuredHeight(h)
+      }
+    })
+    observer.observe(el)
+    const h = el.getBoundingClientRect().height
+    if (h > 0) setMeasuredHeight(h)
+
+    return () => observer.disconnect()
+  }, [height])
+
+  const isAuto = height === "auto"
+  const editorHeight = isAuto ? `${measuredHeight}px` : height
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative border rounded-md overflow-hidden"
+      style={isAuto ? { flex: 1, minHeight: 0 } : undefined}
+    >
+      <DiffEditor
+        height={editorHeight}
+        language="json"
+        original={originalStr}
+        modified={modifiedStr}
+        theme="vs-dark"
+        options={{
+          readOnly: true,
+          minimap: { enabled: false },
+          scrollBeyondLastLine: false,
+          fontSize: 12,
+          lineNumbers: "on",
+          renderWhitespace: "selection",
+          folding: true,
+          wordWrap: "on",
+          renderSideBySide: true,
+          originalAriaLabel: originalLabel,
+          modifiedAriaLabel: modifiedLabel,
         }}
       />
     </div>

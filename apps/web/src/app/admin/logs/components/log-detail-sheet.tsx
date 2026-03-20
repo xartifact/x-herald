@@ -15,8 +15,9 @@ import {
   Check,
   X,
   ChevronRight,
+  ArrowLeftRight,
 } from 'lucide-react'
-import { JsonViewer, HeadersViewer } from '@/components/admin/JsonViewer'
+import { JsonViewer, JsonDiffViewer, HeadersViewer } from '@/components/admin/JsonViewer'
 import { cn } from '@/core/lib/utils'
 import type { Log } from '@/hooks/use-logs'
 import { CLIENT_REGISTRY } from '@/features/gateway/services/client-identifier'
@@ -267,65 +268,105 @@ export function extractContentFeatures(log: Log): ContentFeatures | null {
   }
 }
 
-interface PanelProps {
-  title: string
-  icon?: React.ReactNode
-  bodyContent: React.ReactNode
-  transformedContent?: React.ReactNode
-  headers: Record<string, string> | null
-  className?: string
+/**
+ * Body 子 Tab 切换（客户端 / Provider / 标准格式）+ Diff 模式
+ */
+interface BodySubTabItem {
+  key: string
+  label: string
+  data: Record<string, unknown> | null
+  emptyText: string
 }
 
-function Panel({ title, icon, bodyContent, transformedContent, headers, className }: PanelProps) {
-  const [activeTab, setActiveTab] = useState<'body' | 'transformed' | 'headers'>('body')
-  const hasTransformed = transformedContent !== undefined
+function BodySubTabs({ tabs }: { tabs: BodySubTabItem[] }) {
+  const [diffMode, setDiffMode] = useState(false)
+  const [diffLeft, setDiffLeft] = useState(tabs[0]?.key || '')
+  const [diffRight, setDiffRight] = useState(tabs[1]?.key || '')
 
-  return (
-    <div className={cn("flex flex-col border-r last:border-r-0 bg-background", className)}>
-      <div className="px-4 py-2.5 border-b bg-muted/20 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {icon}
-          <h3 className="font-semibold text-sm">{title}</h3>
+  const leftTab = tabs.find((t) => t.key === diffLeft)
+  const rightTab = tabs.find((t) => t.key === diffRight)
+
+  if (diffMode) {
+    return (
+      <div className="flex flex-col flex-1 min-h-0">
+        <div className="px-4 pt-2 pb-1.5 flex-shrink-0 flex items-center gap-2">
+          <select
+            value={diffLeft}
+            onChange={(e) => setDiffLeft(e.target.value)}
+            className="h-8 rounded-md border bg-background px-2 text-xs flex-1"
+          >
+            {tabs.map((t) => (
+              <option key={t.key} value={t.key}>{t.label}</option>
+            ))}
+          </select>
+          <ArrowLeftRight className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+          <select
+            value={diffRight}
+            onChange={(e) => setDiffRight(e.target.value)}
+            className="h-8 rounded-md border bg-background px-2 text-xs flex-1"
+          >
+            {tabs.map((t) => (
+              <option key={t.key} value={t.key}>{t.label}</option>
+            ))}
+          </select>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setDiffMode(false)}
+            className="h-8 px-2 text-xs flex-shrink-0"
+          >
+            <X className="h-3.5 w-3.5" />
+          </Button>
         </div>
-        <div className="flex items-center gap-1">
-          <Button
-            variant={activeTab === 'body' ? 'secondary' : 'ghost'}
-            size="sm"
-            onClick={() => setActiveTab('body')}
-            className="h-7 px-3 text-xs"
-          >
-            Body
-          </Button>
-          {hasTransformed && (
-            <Button
-              variant={activeTab === 'transformed' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setActiveTab('transformed')}
-              className="h-7 px-3 text-xs"
-            >
-              Transformed
-            </Button>
+        <div className="flex-1 min-h-0 p-4 pt-2 flex flex-col">
+          {leftTab?.data && rightTab?.data ? (
+            <JsonDiffViewer
+              original={leftTab.data}
+              modified={rightTab.data}
+              originalLabel={leftTab.label}
+              modifiedLabel={rightTab.label}
+              height="auto"
+            />
+          ) : (
+            <div className="flex items-center justify-center h-[200px] text-sm text-muted-foreground">
+              选中的数据源为空，无法比对
+            </div>
           )}
-          <Button
-            variant={activeTab === 'headers' ? 'secondary' : 'ghost'}
-            size="sm"
-            onClick={() => setActiveTab('headers')}
-            className="h-7 px-3 text-xs"
-          >
-            Headers
-          </Button>
         </div>
       </div>
-      <ScrollArea className="flex-1">
-        {activeTab === 'body' && bodyContent}
-        {activeTab === 'transformed' && transformedContent}
-        {activeTab === 'headers' && (
-          <div className="p-4">
-            <HeadersViewer headers={headers} />
-          </div>
-        )}
-      </ScrollArea>
-    </div>
+    )
+  }
+
+  return (
+    <Tabs defaultValue={tabs[0]?.key} className="flex flex-col flex-1 min-h-0">
+      <div className="px-4 pt-2 pb-1.5 flex-shrink-0 flex items-center gap-2">
+        <TabsList className="grid flex-1" style={{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }}>
+          {tabs.map((tab) => (
+            <TabsTrigger key={tab.key} value={tab.key}>{tab.label}</TabsTrigger>
+          ))}
+        </TabsList>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setDiffMode(true)}
+          className="h-8 px-2 text-xs flex-shrink-0"
+          title="Diff 比对"
+        >
+          <ArrowLeftRight className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+      {tabs.map((tab) => (
+        <TabsContent key={tab.key} value={tab.key} className="flex-1 m-0 p-4 pt-2 flex flex-col min-h-0">
+          {tab.data ? (
+            <JsonViewer data={tab.data} height="auto" />
+          ) : (
+            <div className="flex items-center justify-center h-[200px] text-sm text-muted-foreground">
+              {tab.emptyText}
+            </div>
+          )}
+        </TabsContent>
+      ))}
+    </Tabs>
   )
 }
 
@@ -335,71 +376,46 @@ interface RequestPanelProps {
 }
 
 export function RequestPanel({ log, className }: RequestPanelProps) {
+  const hasMessageAnalysis = !!log.metadata?.messageSequence
+
   return (
-    <div className={cn("flex flex-col border-r last:border-r-0 bg-background", className)}>
-      <div className="px-4 py-2.5 border-b bg-muted/20 flex items-center justify-between">
+    <div className={cn("flex flex-col border-r last:border-r-0 bg-background overflow-hidden", className)}>
+      <div className="px-4 py-2.5 border-b bg-muted/20 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">
           <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />
           <h3 className="font-semibold text-sm">Request</h3>
         </div>
       </div>
-      <ScrollArea className="flex-1">
-        <Tabs defaultValue="client" className="w-full">
-          <div className="px-4 pt-3 pb-2 border-b bg-muted/10">
-            <TabsList className="grid w-full"
-              style={{
-                gridTemplateColumns: log.metadata?.messageSequence
-                  ? 'repeat(5, 1fr)'
-                  : 'repeat(4, 1fr)'
-              }}
-            >
-              <TabsTrigger value="client">客户端请求</TabsTrigger>
-              <TabsTrigger value="provider">Provider 请求</TabsTrigger>
-              <TabsTrigger value="standard">标准格式</TabsTrigger>
-              <TabsTrigger value="headers">Headers</TabsTrigger>
-              {log.metadata?.messageSequence && (
-                <TabsTrigger value="message-analysis">消息分析</TabsTrigger>
-              )}
-            </TabsList>
-          </div>
-
-          <TabsContent value="client" className="p-4 m-0">
-            {log.requestBody ? (
-              <JsonViewer data={log.requestBody} height="calc(100vh - 280px)" />
-            ) : (
-              <div className="flex items-center justify-center h-[200px] text-sm text-muted-foreground">
-                无客户端请求数据
-              </div>
+      <Tabs defaultValue="body" className="flex flex-col flex-1 min-h-0">
+        <div className="px-4 pt-3 pb-2 border-b bg-muted/10 flex-shrink-0">
+          <TabsList className="grid w-full"
+            style={{ gridTemplateColumns: hasMessageAnalysis ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)' }}
+          >
+            <TabsTrigger value="body">Body</TabsTrigger>
+            <TabsTrigger value="headers">Headers</TabsTrigger>
+            {hasMessageAnalysis && (
+              <TabsTrigger value="message-analysis">消息分析</TabsTrigger>
             )}
-          </TabsContent>
+          </TabsList>
+        </div>
 
-          <TabsContent value="provider" className="p-4 m-0">
-            {log.transformedRequestBody ? (
-              <JsonViewer data={log.transformedRequestBody} height="calc(100vh - 280px)" />
-            ) : (
-              <div className="flex items-center justify-center h-[200px] text-sm text-muted-foreground">
-                无 Provider 请求数据
-              </div>
-            )}
-          </TabsContent>
+        <TabsContent value="body" className="flex-1 m-0 flex flex-col min-h-0">
+          <BodySubTabs
+            tabs={[
+              { key: 'client', label: '客户端', data: log.requestBody, emptyText: '无客户端请求数据' },
+              { key: 'provider', label: 'Provider', data: log.transformedRequestBody, emptyText: '无 Provider 请求数据' },
+              { key: 'standard', label: '标准格式', data: log.standardRequestBody, emptyText: '无标准格式请求数据' },
+            ]}
+          />
+        </TabsContent>
 
-          <TabsContent value="standard" className="p-4 m-0">
-            {log.standardRequestBody ? (
-              <JsonViewer data={log.standardRequestBody} height="calc(100vh - 280px)" />
-            ) : (
-              <div className="flex items-center justify-center h-[200px] text-sm text-muted-foreground">
-                无标准格式请求数据
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="headers" className="p-4 m-0">
+        <TabsContent value="headers" className="flex-1 m-0 overflow-auto">
+          <div className="p-4">
             <Tabs defaultValue="client-headers" className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-4">
                 <TabsTrigger value="client-headers">客户端请求头</TabsTrigger>
                 <TabsTrigger value="provider-headers">Provider 请求头</TabsTrigger>
               </TabsList>
-
               <TabsContent value="client-headers">
                 {log.requestHeaders ? (
                   <HeadersViewer headers={log.requestHeaders} />
@@ -409,7 +425,6 @@ export function RequestPanel({ log, className }: RequestPanelProps) {
                   </div>
                 )}
               </TabsContent>
-
               <TabsContent value="provider-headers">
                 {log.providerRequestHeaders ? (
                   <HeadersViewer headers={log.providerRequestHeaders} />
@@ -420,18 +435,15 @@ export function RequestPanel({ log, className }: RequestPanelProps) {
                 )}
               </TabsContent>
             </Tabs>
-          </TabsContent>
+          </div>
+        </TabsContent>
 
-          {/* 新增：消息分析 Tab */}
-          {log.metadata?.messageSequence && (
-            <TabsContent value="message-analysis" className="p-0 m-0">
-              <ScrollArea className="h-[calc(100vh-280px)]">
-                <MessageTimelineSection messageSequence={log.metadata.messageSequence} />
-              </ScrollArea>
-            </TabsContent>
-          )}
-        </Tabs>
-      </ScrollArea>
+        {hasMessageAnalysis && (
+          <TabsContent value="message-analysis" className="flex-1 m-0 overflow-auto">
+            <MessageTimelineSection messageSequence={log.metadata!.messageSequence!} />
+          </TabsContent>
+        )}
+      </Tabs>
     </div>
   )
 }
@@ -443,61 +455,38 @@ interface ResponsePanelProps {
 
 export function ResponsePanel({ log, className }: ResponsePanelProps) {
   return (
-    <div className={cn("flex flex-col border-r last:border-r-0 bg-background", className)}>
-      <div className="px-4 py-2.5 border-b bg-muted/20 flex items-center justify-between">
+    <div className={cn("flex flex-col border-r last:border-r-0 bg-background overflow-hidden", className)}>
+      <div className="px-4 py-2.5 border-b bg-muted/20 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">
           <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
           <h3 className="font-semibold text-sm">Response</h3>
         </div>
       </div>
-      <ScrollArea className="flex-1">
-        <Tabs defaultValue="client" className="w-full">
-          <div className="px-4 pt-3 pb-2 border-b bg-muted/10">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="client">客户端响应</TabsTrigger>
-              <TabsTrigger value="provider">Provider 响应</TabsTrigger>
-              <TabsTrigger value="standard">标准格式</TabsTrigger>
-              <TabsTrigger value="headers">Headers</TabsTrigger>
-            </TabsList>
-          </div>
+      <Tabs defaultValue="body" className="flex flex-col flex-1 min-h-0">
+        <div className="px-4 pt-3 pb-2 border-b bg-muted/10 flex-shrink-0">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="body">Body</TabsTrigger>
+            <TabsTrigger value="headers">Headers</TabsTrigger>
+          </TabsList>
+        </div>
 
-          <TabsContent value="client" className="p-4 m-0">
-            {log.responseBody ? (
-              <JsonViewer data={log.responseBody} height="calc(100vh - 280px)" />
-            ) : (
-              <div className="flex items-center justify-center h-[200px] text-sm text-muted-foreground">
-                无客户端响应数据
-              </div>
-            )}
-          </TabsContent>
+        <TabsContent value="body" className="flex-1 m-0 flex flex-col min-h-0">
+          <BodySubTabs
+            tabs={[
+              { key: 'client', label: '客户端', data: log.responseBody, emptyText: '无客户端响应数据' },
+              { key: 'provider', label: 'Provider', data: log.providerResponseBody, emptyText: '无 Provider 响应数据' },
+              { key: 'standard', label: '标准格式', data: log.standardResponseBody, emptyText: '无标准格式数据' },
+            ]}
+          />
+        </TabsContent>
 
-          <TabsContent value="provider" className="p-4 m-0">
-            {log.providerResponseBody ? (
-              <JsonViewer data={log.providerResponseBody} height="calc(100vh - 280px)" />
-            ) : (
-              <div className="flex items-center justify-center h-[200px] text-sm text-muted-foreground">
-                无 Provider 响应数据
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="standard" className="p-4 m-0">
-            {log.standardResponseBody ? (
-              <JsonViewer data={log.standardResponseBody} height="calc(100vh - 280px)" />
-            ) : (
-              <div className="flex items-center justify-center h-[200px] text-sm text-muted-foreground">
-                无标准格式数据
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="headers" className="p-4 m-0">
+        <TabsContent value="headers" className="flex-1 m-0 overflow-auto">
+          <div className="p-4">
             <Tabs defaultValue="client-headers" className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-4">
                 <TabsTrigger value="client-headers">客户端响应头</TabsTrigger>
                 <TabsTrigger value="provider-headers">Provider 响应头</TabsTrigger>
               </TabsList>
-
               <TabsContent value="client-headers">
                 {log.clientResponseHeaders ? (
                   <HeadersViewer headers={log.clientResponseHeaders} />
@@ -507,7 +496,6 @@ export function ResponsePanel({ log, className }: ResponsePanelProps) {
                   </div>
                 )}
               </TabsContent>
-
               <TabsContent value="provider-headers">
                 {log.providerResponseHeaders ? (
                   <HeadersViewer headers={log.providerResponseHeaders} />
@@ -518,9 +506,9 @@ export function ResponsePanel({ log, className }: ResponsePanelProps) {
                 )}
               </TabsContent>
             </Tabs>
-          </TabsContent>
-        </Tabs>
-      </ScrollArea>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

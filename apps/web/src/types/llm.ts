@@ -7,9 +7,12 @@
 
 export type MessageRole = 'user' | 'assistant' | 'system' | 'tool';
 
+export type CacheControl = Record<string, unknown>;
+
 export interface TextContent {
   type: 'text';
   text: string;
+  cache_control?: CacheControl;
 }
 
 export interface ImageContent {
@@ -18,6 +21,7 @@ export interface ImageContent {
     url: string;
     detail?: 'auto' | 'low' | 'high';
   };
+  cache_control?: CacheControl;
 }
 
 export type MessageContent = TextContent | ImageContent;
@@ -29,6 +33,7 @@ export interface ToolCall {
     name: string;
     arguments: string;
   };
+  cache_control?: CacheControl;
 }
 
 export interface ToolMessage {
@@ -40,6 +45,7 @@ export interface ToolMessage {
 export interface ToolResult {
   tool_call_id: string;
   content: string;
+  cache_control?: CacheControl;
 }
 
 export interface StandardMessage {
@@ -70,6 +76,7 @@ export interface ToolDefinition {
       additionalProperties?: boolean;
     };
   };
+  cache_control?: CacheControl;
 }
 
 export type ToolChoice = 'auto' | 'none' | 'required' | { type: 'function'; function: { name: string } };
@@ -89,6 +96,7 @@ export interface ReasoningConfig {
 export interface SystemPrompt {
   type: 'text';
   text: string;
+  cache_control?: CacheControl;
 }
 
 // ==================== 输出配置 ====================

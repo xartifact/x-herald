@@ -27,11 +27,11 @@ interface AnthropicMessage {
   content:
     | string
     | Array<
-        | { type: 'text'; text: string }
-        | { type: 'image'; source: { type: 'base64'; media_type: string; data: string } | { type: 'url'; url: string } }
+        | { type: 'text'; text: string; cache_control?: Record<string, unknown> }
+        | { type: 'image'; source: { type: 'base64'; media_type: string; data: string } | { type: 'url'; url: string }; cache_control?: Record<string, unknown> }
         | { type: 'thinking'; thinking: string }
-        | { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> }
-        | { type: 'tool_result'; tool_use_id: string; content: string }
+        | { type: 'tool_use'; id: string; name: string; input: Record<string, unknown>; cache_control?: Record<string, unknown> }
+        | { type: 'tool_result'; tool_use_id: string; content: string; cache_control?: Record<string, unknown> }
       >;
 }
 
@@ -43,6 +43,7 @@ interface AnthropicTool {
     properties?: Record<string, unknown>;
     required?: string[];
   };
+  cache_control?: Record<string, unknown>;
 }
 
 interface AnthropicRequest {
@@ -59,7 +60,7 @@ interface AnthropicRequest {
     | Array<{
         type: 'text';
         text: string;
-        cache_control?: { type: 'ephemeral' };
+        cache_control?: Record<string, unknown>;
       }>;
   tools?: AnthropicTool[];
   tool_choice?: { type: 'auto' } | { type: 'any' } | { type: 'tool'; name: string };
@@ -175,10 +176,14 @@ export class AnthropicTransformer implements Transformer {
       if (typeof anthropicReq.system === 'string') {
         systemContent = anthropicReq.system;
       } else if (Array.isArray(anthropicReq.system)) {
-        // 将 Anthropic 的 system 数组转换为标准格式
+        // 将 Anthropic 的 system 数组转换为标准格式（保留 cache_control）
         systemContent = anthropicReq.system
           .filter((s) => s.type === 'text')
-          .map((s) => ({ type: 'text' as const, text: s.text }));
+          .map((s) => ({
+            type: 'text' as const,
+            text: s.text,
+            ...(s.cache_control && { cache_control: s.cache_control }),
+          }));
       }
     }
 
@@ -262,10 +267,11 @@ export class AnthropicTransformer implements Transformer {
       if (typeof request.system === 'string') {
         anthropicReq.system = request.system;
       } else if (Array.isArray(request.system)) {
-        // 转换为 Anthropic 支持的 system 数组格式
+        // 转换为 Anthropic 支持的 system 数组格式（保留 cache_control）
         anthropicReq.system = request.system.map((s) => ({
           type: 'text' as const,
           text: s.text,
+          ...(s.cache_control && { cache_control: s.cache_control }),
         }));
       }
     }
@@ -820,12 +826,14 @@ export class AnthropicTransformer implements Transformer {
               name: item.name || '',
               arguments: argsString,
             },
+            ...('cache_control' in item && item.cache_control && { cache_control: item.cache_control }),
           });
         } else if (item.type === 'tool_result') {
           // 收集所有 tool_result（支持多个）
           toolResults.push({
             tool_call_id: item.tool_use_id,
             content: typeof item.content === 'string' ? item.content : '',
+            ...('cache_control' in item && item.cache_control && { cache_control: item.cache_control }),
           });
           // 保留最后一个作为 tool_call_id（向后兼容）
           toolCallId = item.tool_use_id;
@@ -866,25 +874,32 @@ export class AnthropicTransformer implements Transformer {
       .filter((item) => item.type === 'text' || item.type === 'image')
       .map((item) => {
         if (item.type === 'text') {
-          return { type: 'text', text: item.text };
+          return {
+            type: 'text' as const,
+            text: item.text,
+            ...('cache_control' in item && item.cache_control && { cache_control: item.cache_control as Record<string, unknown> }),
+          };
         } else {
           // image
+          const cacheCtrl = 'cache_control' in item && item.cache_control ? { cache_control: item.cache_control as Record<string, unknown> } : {};
           if ('source' in item) {
             if (item.source.type === 'base64') {
               return {
-                type: 'image_url',
+                type: 'image_url' as const,
                 image_url: {
                   url: `data:${item.source.media_type};base64,${item.source.data}`,
                 },
+                ...cacheCtrl,
               };
             } else {
               return {
-                type: 'image_url',
+                type: 'image_url' as const,
                 image_url: { url: item.source.url },
+                ...cacheCtrl,
               };
             }
           }
-          return { type: 'text', text: '' };
+          return { type: 'text' as const, text: '' };
         }
       });
   }
@@ -898,6 +913,7 @@ export class AnthropicTransformer implements Transformer {
         // 清理 Schema 元数据字段
         parameters: cleanSchemaForOpenAI(tool.input_schema) as ToolDefinition['function']['parameters'],
       },
+      ...(tool.cache_control && { cache_control: tool.cache_control }),
     };
   }
 
@@ -948,6 +964,7 @@ export class AnthropicTransformer implements Transformer {
               id: tc.id,
               name: tc.function.name,
               input: parsedInput,
+              ...(tc.cache_control && { cache_control: tc.cache_control }),
             });
           }
         }
@@ -961,6 +978,7 @@ export class AnthropicTransformer implements Transformer {
               type: 'tool_result',
               tool_use_id: tr.tool_call_id,
               content: tr.content,
+              ...(tr.cache_control && { cache_control: tr.cache_control }),
             });
           }
         }
@@ -1006,9 +1024,14 @@ export class AnthropicTransformer implements Transformer {
 
     return msg.content.map((item) => {
       if (item.type === 'text') {
-        return { type: 'text', text: item.text };
+        return {
+          type: 'text' as const,
+          text: item.text,
+          ...(item.cache_control && { cache_control: item.cache_control }),
+        };
       } else {
         const url = item.image_url.url;
+        const cacheCtrl = item.cache_control ? { cache_control: item.cache_control } : {};
         if (url.startsWith('data:')) {
           const match = url.match(/^data:([^;]+);base64,(.+)$/);
           if (match) {
@@ -1019,12 +1042,14 @@ export class AnthropicTransformer implements Transformer {
                 media_type: match[1],
                 data: match[2],
               },
+              ...cacheCtrl,
             };
           }
         }
         return {
           type: 'image',
           source: { type: 'url', url },
+          ...cacheCtrl,
         };
       }
     });
@@ -1040,6 +1065,7 @@ export class AnthropicTransformer implements Transformer {
       name: tool.function.name,
       description: tool.function.description || '',
       input_schema: cleanedParams as AnthropicTool['input_schema'],
+      ...(tool.cache_control && { cache_control: tool.cache_control }),
     };
   }
 

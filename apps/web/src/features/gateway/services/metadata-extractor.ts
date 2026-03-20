@@ -13,6 +13,10 @@ export interface MetadataExtractionParams {
   errorType?: string;
   statusCode?: number;
   latencyMs: number;
+  // 链路分段时间戳
+  gatewayOverheadMs?: number;
+  providerTtfbMs?: number;
+  streamDurationMs?: number;
   conversationId?: string;
   userId?: string;
   organizationId?: string;
@@ -373,6 +377,9 @@ function extractPerformanceMetrics(params: MetadataExtractionParams): LogMetadat
 
   return {
     latencyTier,
+    gatewayOverheadMs: params.gatewayOverheadMs,
+    providerTtfbMs: params.providerTtfbMs,
+    streamDurationMs: params.streamDurationMs,
   };
 }
 

@@ -50,6 +50,10 @@ export interface LogRequestParams {
   organizationId?: string;
   tags?: string[];
   logId?: string;
+  // 链路分段时间戳
+  gatewayOverheadMs?: number;
+  providerTtfbMs?: number;
+  streamDurationMs?: number;
 }
 
 /**
@@ -74,6 +78,9 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
       errorType: params.errorType,
       statusCode: params.statusCode,
       latencyMs: params.latencyMs,
+      gatewayOverheadMs: params.gatewayOverheadMs,
+      providerTtfbMs: params.providerTtfbMs,
+      streamDurationMs: params.streamDurationMs,
       conversationId: params.conversationId,
       userId: params.userId,
       organizationId: params.organizationId,

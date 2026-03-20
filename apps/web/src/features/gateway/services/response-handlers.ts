@@ -31,6 +31,8 @@ interface ResponseHandlerParams {
   mappingType?: 'exact' | 'alias' | 'fallback' | null;
   isMapped?: boolean;
   startTime: number;
+  preprocessEndTime: number;
+  providerTtfbTime: number;
   requestHeaders: Record<string, string>;
   providerRequestHeaders?: Record<string, string>;
   rawBody: unknown;
@@ -177,6 +179,8 @@ export async function handleNonStreamingResponse(
     mappingType,
     isMapped,
     startTime,
+    preprocessEndTime,
+    providerTtfbTime,
     requestHeaders,
     rawBody,
     clientIp,
@@ -233,6 +237,8 @@ export async function handleNonStreamingResponse(
       conversationId: params.conversationId,
       clientType: params.clientType,
       logId: params.logId,
+      gatewayOverheadMs: preprocessEndTime - startTime,
+      providerTtfbMs: providerTtfbTime - preprocessEndTime,
     });
 
     return new Response(response.body, {
@@ -305,6 +311,8 @@ export async function handleNonStreamingResponse(
       conversationId: params.conversationId,
       clientType: params.clientType,
       logId: params.logId,
+      gatewayOverheadMs: preprocessEndTime - startTime,
+      providerTtfbMs: providerTtfbTime - preprocessEndTime,
     });
 
     // 模型映射时将响应体中的 model 字段回写为客户端请求的原始模型名
@@ -418,6 +426,8 @@ export async function handleNonStreamingResponse(
     conversationId: params.conversationId,
     clientType: params.clientType,
     logId: params.logId,
+    gatewayOverheadMs: preprocessEndTime - startTime,
+    providerTtfbMs: providerTtfbTime - preprocessEndTime,
   });
 
   // 模型映射时将响应体中的 model 字段回写为客户端请求的原始模型名
@@ -695,6 +705,8 @@ export async function handleStreamingResponse(
     mappingType,
     isMapped,
     startTime,
+    preprocessEndTime,
+    providerTtfbTime,
     requestHeaders,
     rawBody,
     clientIp,
@@ -840,6 +852,7 @@ export async function handleStreamingResponse(
       const fullContent = clientCollector.getFullContent();
       const progress = clientCollector.getProgress();
 
+      const now = Date.now();
       const metadata = extractMetadata({
         requestBody: rawBody,
         standardRequestBody: params.standardRequestBody,
@@ -848,7 +861,10 @@ export async function handleStreamingResponse(
           ? standardCollector.getFullContent()
           : providerCollector.getFullContent(),
         responseBody: fullContent,
-        latencyMs: Date.now() - startTime,
+        latencyMs: now - startTime,
+        gatewayOverheadMs: preprocessEndTime - startTime,
+        providerTtfbMs: providerTtfbTime - preprocessEndTime,
+        streamDurationMs: now - providerTtfbTime,
         conversationId: params.conversationId,
       });
 

@@ -50,6 +50,14 @@ export interface LogMetadata {
     hasToolInteraction?: boolean;
   };
 
+  performance?: {
+    latencyTier?: 'fast' | 'normal' | 'slow';
+    gatewayOverheadMs?: number;
+    providerTtfbMs?: number;
+    streamDurationMs?: number;
+    usageEstimated?: boolean;
+  };
+
   [key: string]: unknown;
 }
 

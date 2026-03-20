@@ -331,6 +331,9 @@ export async function handleChatCompletion(
       conversationId,
     });
 
+    // T2: 预处理完成，即将发起 Provider 请求
+    const preprocessEndTime = Date.now();
+
     // 创建 AbortController 用于超时和客户端断开控制
     const abortController = new AbortController();
     const CONNECT_TIMEOUT_MS = 30000; // 30 秒连接超时
@@ -397,6 +400,9 @@ export async function handleChatCompletion(
       throw fetchError;
     }
 
+    // T3: Provider 首字节返回
+    const providerTtfbTime = Date.now();
+
     // 清理超时和事件监听
     if (timeoutId) clearTimeout(timeoutId);
     c.req.raw.signal?.removeEventListener('abort', clientAbortHandler);
@@ -446,6 +452,8 @@ export async function handleChatCompletion(
       mappingType: mapping.mappingType,
       isMapped: mapping.isMapped,
       startTime,
+      preprocessEndTime,
+      providerTtfbTime,
       requestHeaders: clientRequestHeaders,
       providerRequestHeaders,
       rawBody,

@@ -207,7 +207,13 @@ function extractContentFeatures(log: Log): ContentFeatures | null {
       const inputRatio = totalTokens > 0 ? (log.inputTokens / totalTokens) * 100 : 0
       const outputRatio = totalTokens > 0 ? (log.outputTokens / totalTokens) * 100 : 0
 
-      const tokensPerSecond = log.latencyMs > 0 ? (log.outputTokens / (log.latencyMs / 1000)) : 0
+      // 排除 TTFB，优先用 streamDurationMs，回退用总延迟减去网关和 TTFB
+      const perf = log.metadata?.performance
+      const streamMs = perf?.streamDurationMs
+      const genMs = streamMs && streamMs > 0
+        ? streamMs
+        : log.latencyMs - (perf?.gatewayOverheadMs ?? 0) - (perf?.providerTtfbMs ?? 0)
+      const tokensPerSecond = genMs > 0 ? (log.outputTokens / (genMs / 1000)) : 0
       const tokensPerMessage = features.request?.messageCount
         ? log.inputTokens / features.request.messageCount
         : 0
@@ -586,6 +592,7 @@ export function LogDetailSheet({
           {/* 左侧面板：元数据 */}
           <div className="flex flex-col border-r bg-muted/20 overflow-hidden">
             <ScrollArea className="flex-1">
+              {/* === 基本信息 === */}
               <Section title="基本信息">
                 <InfoRow
                   label="状态"
@@ -658,9 +665,10 @@ export function LogDetailSheet({
                 )}
               </Section>
 
-              <Section title="性能指标">
+              {/* === 延迟分析 === */}
+              <Section title="延迟分析">
                 <InfoRow
-                  label="延迟"
+                  label="总延迟"
                   value={
                     <span className={cn(
                       "font-semibold",
@@ -672,10 +680,27 @@ export function LogDetailSheet({
                     </span>
                   }
                 />
+                {log.metadata?.performance && (
+                  log.metadata.performance.gatewayOverheadMs != null ||
+                  log.metadata.performance.providerTtfbMs != null ||
+                  log.metadata.performance.streamDurationMs != null
+                ) && (
+                  <LatencyBreakdown
+                    totalMs={log.latencyMs}
+                    gatewayOverheadMs={log.metadata.performance.gatewayOverheadMs}
+                    providerTtfbMs={log.metadata.performance.providerTtfbMs}
+                    streamDurationMs={log.metadata.performance.streamDurationMs}
+                    formatDuration={formatDuration}
+                  />
+                )}
                 <InfoRow
                   label="流式传输"
                   value={log.streaming ? '是' : '否'}
                 />
+              </Section>
+
+              {/* === Token 用量 === */}
+              <Section title="Token 用量">
                 <InfoRow
                   label="输入 Token"
                   value={formatTokens(log.inputTokens)}
@@ -695,8 +720,46 @@ export function LogDetailSheet({
                   }
                   mono
                 />
+                {contentFeatures?.tokens && (
+                  <>
+                    <InfoRow
+                      label="Token 分布"
+                      value={
+                        <div className="flex items-center gap-2 text-xs">
+                          <span>输入: {contentFeatures.tokens.inputOutputRatio.input}%</span>
+                          <span className="text-muted-foreground">|</span>
+                          <span>输出: {contentFeatures.tokens.inputOutputRatio.output}%</span>
+                        </div>
+                      }
+                    />
+                    {contentFeatures.tokens.tokensPerSecond > 0 && (
+                      <InfoRow
+                        label="生成速率"
+                        value={
+                          <span className={cn(
+                            "font-semibold",
+                            contentFeatures.tokens.tokensPerSecond >= 80 ? "text-green-600" :
+                            contentFeatures.tokens.tokensPerSecond >= 30 ? "text-blue-600" :
+                            "text-amber-600"
+                          )}>
+                            {contentFeatures.tokens.tokensPerSecond} tokens/s
+                          </span>
+                        }
+                        mono
+                      />
+                    )}
+                    {contentFeatures.tokens.tokensPerMessage > 0 && (
+                      <InfoRow
+                        label="每消息 Token"
+                        value={`${contentFeatures.tokens.tokensPerMessage} tokens`}
+                        mono
+                      />
+                    )}
+                  </>
+                )}
               </Section>
 
+              {/* === 请求信息 === */}
               <Section title="请求信息">
                 <InfoRow
                   label="方法"
@@ -746,8 +809,21 @@ export function LogDetailSheet({
                   copyable
                   mono
                 />
+                <InfoRow
+                  label="创建时间"
+                  value={new Date(log.createdAt).toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                  })}
+                  mono
+                />
               </Section>
 
+              {/* === 错误详情 === */}
               {log.errorMessage && (
                 <Section
                   title="错误详情"
@@ -770,67 +846,7 @@ export function LogDetailSheet({
                 </Section>
               )}
 
-              <Section title="时间戳">
-                <InfoRow
-                  label="创建时间"
-                  value={new Date(log.createdAt).toLocaleString('zh-CN', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                  })}
-                  mono
-                />
-              </Section>
-
-              {/* 工具调用信息 */}
-              {!!log.toolCallsCount && log.toolCallsCount > 0 && (
-                <>
-                  <Section title="工具调用" badge={log.toolCallsCount.toString()}>
-                    <InfoRow
-                      label="调用次数"
-                      value={log.toolCallsCount.toString()}
-                    />
-                    {(log.metadata?.toolCalls as Record<string, string> | undefined)?.pattern && (
-                      <InfoRow
-                        label="调用模式"
-                        value={
-                          <Badge variant="outline">
-                            {(log.metadata?.toolCalls as Record<string, string>).pattern === 'single' ? '单次' :
-                             (log.metadata?.toolCalls as Record<string, string>).pattern === 'parallel' ? '并行' : '顺序'}
-                          </Badge>
-                        }
-                      />
-                    )}
-                    {(log.metadata?.toolCalls as { tools?: string[] } | undefined)?.tools && (log.metadata?.toolCalls as { tools: string[] }).tools.length > 0 && (
-                      <InfoRow
-                        label="工具列表"
-                        value={
-                          <div className="flex flex-wrap gap-1">
-                            {(log.metadata?.toolCalls as { tools: string[] }).tools.map((tool: string, idx: number) => (
-                              <Badge key={idx} variant="secondary" className="text-xs">
-                                {tool}
-                              </Badge>
-                            ))}
-                          </div>
-                        }
-                      />
-                    )}
-                  </Section>
-
-                  {/* 新增：工具调用详情 */}
-                  {log.metadata?.toolCalls?.details && log.metadata.toolCalls.details.length > 0 && (
-                    <Section title="工具调用详情">
-                      <div className="px-3 pb-3">
-                        <ToolCallDetailsSection toolCalls={log.metadata.toolCalls} />
-                      </div>
-                    </Section>
-                  )}
-                </>
-              )}
-
+              {/* === 对话上下文 === */}
               {(log.conversationId || log.metadata?.messageSequence) && (
                 <Section title="对话上下文">
                   {log.conversationId && (
@@ -862,15 +878,15 @@ export function LogDetailSheet({
                 </Section>
               )}
 
-              {log.metadata?.content && (
-                <Section title="内容特征">
-                  {/* 原有的内容类型 */}
-                  {(log.metadata.content as { types?: string[] }).types && (log.metadata.content as { types: string[] }).types.length > 0 && (
+              {/* === 内容分析 === */}
+              {(log.metadata?.content || contentFeatures?.request || contentFeatures?.response || contentFeatures?.complexity) && (
+                <Section title="内容分析">
+                  {(log.metadata?.content as { types?: string[] } | undefined)?.types && (log.metadata!.content as { types: string[] }).types.length > 0 && (
                     <InfoRow
                       label="内容类型"
                       value={
                         <div className="flex flex-wrap gap-1">
-                          {(log.metadata.content as { types: string[] }).types.map((type: string, idx: number) => (
+                          {(log.metadata!.content as { types: string[] }).types.map((type: string, idx: number) => (
                             <Badge key={idx} variant="outline" className="text-xs">
                               {type}
                             </Badge>
@@ -879,33 +895,12 @@ export function LogDetailSheet({
                       }
                     />
                   )}
-                  {(log.metadata.content as { hasFunctionCalling?: boolean }).hasFunctionCalling && (
+                  {(log.metadata?.content as { hasFunctionCalling?: boolean } | undefined)?.hasFunctionCalling && (
                     <InfoRow
                       label="函数调用"
                       value={<Badge variant="secondary">是</Badge>}
                     />
                   )}
-                  {/* 使用工具 */}
-                  {(log.metadata.content as { toolNames?: string[] }).toolNames && (log.metadata.content as { toolNames: string[] }).toolNames.length > 0 && (
-                    <InfoRow
-                      label="使用工具"
-                      value={
-                        <div className="flex flex-wrap gap-1">
-                          {(log.metadata.content as { toolNames: string[] }).toolNames.map((tool: string, idx: number) => (
-                            <Badge
-                              key={idx}
-                              variant="secondary"
-                              className="text-xs font-mono bg-blue-50 text-blue-700 border-blue-200"
-                            >
-                              {tool}
-                            </Badge>
-                          ))}
-                        </div>
-                      }
-                    />
-                  )}
-
-                  {/* 新增：请求内容统计 */}
                   {contentFeatures?.request && (
                     <>
                       <InfoRow
@@ -948,8 +943,6 @@ export function LogDetailSheet({
                       )}
                     </>
                   )}
-
-                  {/* 新增：响应内容统计 */}
                   {contentFeatures?.response && (
                     <>
                       <InfoRow
@@ -988,38 +981,6 @@ export function LogDetailSheet({
                       )}
                     </>
                   )}
-
-                  {/* 新增：Token 使用详情 */}
-                  {contentFeatures?.tokens && (
-                    <>
-                      <InfoRow
-                        label="Token 分布"
-                        value={
-                          <div className="flex items-center gap-2 text-xs">
-                            <span>输入: {contentFeatures.tokens.inputOutputRatio.input}%</span>
-                            <span className="text-muted-foreground">|</span>
-                            <span>输出: {contentFeatures.tokens.inputOutputRatio.output}%</span>
-                          </div>
-                        }
-                      />
-                      {contentFeatures.tokens.tokensPerSecond > 0 && (
-                        <InfoRow
-                          label="生成速度"
-                          value={`${contentFeatures.tokens.tokensPerSecond} tokens/s`}
-                          mono
-                        />
-                      )}
-                      {contentFeatures.tokens.tokensPerMessage > 0 && (
-                        <InfoRow
-                          label="每消息 Token"
-                          value={`${contentFeatures.tokens.tokensPerMessage} tokens`}
-                          mono
-                        />
-                      )}
-                    </>
-                  )}
-
-                  {/* 新增：内容复杂度 */}
                   {contentFeatures?.complexity && (
                     <>
                       <InfoRow
@@ -1055,6 +1016,49 @@ export function LogDetailSheet({
                   )}
                 </Section>
               )}
+
+              {/* === 工具调用 === */}
+              {!!log.toolCallsCount && log.toolCallsCount > 0 && (
+                <Section
+                  title="工具调用"
+                  badge={
+                    <Badge variant="secondary" className="text-xs">
+                      {log.toolCallsCount}
+                    </Badge>
+                  }
+                >
+                  {(log.metadata?.toolCalls as Record<string, string> | undefined)?.pattern && (
+                    <InfoRow
+                      label="调用模式"
+                      value={
+                        <Badge variant="outline">
+                          {(log.metadata?.toolCalls as Record<string, string>).pattern === 'single' ? '单次' :
+                           (log.metadata?.toolCalls as Record<string, string>).pattern === 'parallel' ? '并行' : '顺序'}
+                        </Badge>
+                      }
+                    />
+                  )}
+                  {(log.metadata?.toolCalls as { tools?: string[] } | undefined)?.tools && (log.metadata?.toolCalls as { tools: string[] }).tools.length > 0 && (
+                    <InfoRow
+                      label="工具列表"
+                      value={
+                        <div className="flex flex-wrap gap-1">
+                          {(log.metadata?.toolCalls as { tools: string[] }).tools.map((tool: string, idx: number) => (
+                            <Badge key={idx} variant="secondary" className="text-xs font-mono bg-blue-50 text-blue-700 border-blue-200">
+                              {tool}
+                            </Badge>
+                          ))}
+                        </div>
+                      }
+                    />
+                  )}
+                  {log.metadata?.toolCalls?.details && log.metadata.toolCalls.details.length > 0 && (
+                    <div className="px-3 pb-3">
+                      <ToolCallDetailsSection toolCalls={log.metadata.toolCalls} />
+                    </div>
+                  )}
+                </Section>
+              )}
             </ScrollArea>
           </div>
 
@@ -1082,5 +1086,103 @@ export function LogDetailSheet({
         </div>
       </SheetContent>
     </Sheet>
+  )
+}
+
+/**
+ * 延迟链路分段可视化
+ */
+interface LatencyBreakdownProps {
+  totalMs: number
+  gatewayOverheadMs?: number
+  providerTtfbMs?: number
+  streamDurationMs?: number
+  formatDuration: (ms: number) => string
+}
+
+function LatencyBreakdown({
+  totalMs,
+  gatewayOverheadMs,
+  providerTtfbMs,
+  streamDurationMs,
+  formatDuration,
+}: LatencyBreakdownProps) {
+  const segments: Array<{
+    label: string
+    ms: number
+    color: string
+    bgColor: string
+  }> = []
+
+  if (gatewayOverheadMs != null && gatewayOverheadMs > 0) {
+    segments.push({
+      label: '网关预处理',
+      ms: gatewayOverheadMs,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-500',
+    })
+  }
+  if (providerTtfbMs != null && providerTtfbMs > 0) {
+    segments.push({
+      label: 'Provider TTFB',
+      ms: providerTtfbMs,
+      color: 'text-amber-600',
+      bgColor: 'bg-amber-500',
+    })
+  }
+  if (streamDurationMs != null && streamDurationMs > 0) {
+    segments.push({
+      label: '流式传输',
+      ms: streamDurationMs,
+      color: 'text-green-600',
+      bgColor: 'bg-green-500',
+    })
+  }
+
+  if (segments.length === 0) return null
+
+  const segmentTotal = segments.reduce((sum, s) => sum + s.ms, 0)
+  const otherMs = totalMs - segmentTotal
+  if (otherMs > 10) {
+    segments.push({
+      label: '其他',
+      ms: otherMs,
+      color: 'text-muted-foreground',
+      bgColor: 'bg-muted-foreground/40',
+    })
+  }
+
+  return (
+    <div className="px-4 py-3 space-y-2">
+      {/* 时间线条 */}
+      <div className="flex h-2 rounded-full overflow-hidden gap-px">
+        {segments.map((seg) => {
+          const pct = Math.max((seg.ms / totalMs) * 100, 2)
+          return (
+            <div
+              key={seg.label}
+              className={cn('rounded-sm transition-all', seg.bgColor)}
+              style={{ width: `${pct}%` }}
+              title={`${seg.label}: ${formatDuration(seg.ms)}`}
+            />
+          )
+        })}
+      </div>
+      {/* 图例 */}
+      <div className="flex flex-wrap gap-x-4 gap-y-1">
+        {segments.map((seg) => (
+          <div key={seg.label} className="flex items-center gap-1.5 text-[11px]">
+            <div className={cn('w-2 h-2 rounded-sm', seg.bgColor)} />
+            <span className="text-muted-foreground">{seg.label}</span>
+            <span className={cn('font-mono font-medium', seg.color)}>
+              {formatDuration(seg.ms)}
+            </span>
+            <span className="text-muted-foreground/60">
+              ({Math.round((seg.ms / totalMs) * 100)}%)
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }

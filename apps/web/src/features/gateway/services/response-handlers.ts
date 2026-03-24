@@ -850,7 +850,12 @@ export async function handleStreamingResponse(
     try {
       const usage = clientCollector.getUsage();
       const fullContent = clientCollector.getFullContent();
-      const progress = clientCollector.getProgress();
+      const providerProgress = providerCollector.getProgress();
+      // 统一使用 provider 的 lastChunkAt，避免因处理延迟导致时间戳不一致
+      const progress = {
+        ...clientCollector.getProgress(),
+        lastChunkAt: providerProgress.lastChunkAt,
+      };
 
       const now = Date.now();
       const metadata = extractMetadata({

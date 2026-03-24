@@ -31,7 +31,7 @@ interface AnthropicMessage {
         | { type: 'image'; source: { type: 'base64'; media_type: string; data: string } | { type: 'url'; url: string }; cache_control?: Record<string, unknown> }
         | { type: 'thinking'; thinking: string }
         | { type: 'tool_use'; id: string; name: string; input: Record<string, unknown>; cache_control?: Record<string, unknown> }
-        | { type: 'tool_result'; tool_use_id: string; content: string; cache_control?: Record<string, unknown> }
+        | { type: 'tool_result'; tool_use_id: string; content: string; is_error?: boolean; cache_control?: Record<string, unknown> }
       >;
 }
 
@@ -833,6 +833,7 @@ export class AnthropicTransformer implements Transformer {
           toolResults.push({
             tool_call_id: item.tool_use_id,
             content: typeof item.content === 'string' ? item.content : '',
+            ...(item.is_error !== undefined && { is_error: item.is_error }),
             ...('cache_control' in item && item.cache_control && { cache_control: item.cache_control }),
           });
           // 保留最后一个作为 tool_call_id（向后兼容）
@@ -978,6 +979,7 @@ export class AnthropicTransformer implements Transformer {
               type: 'tool_result',
               tool_use_id: tr.tool_call_id,
               content: tr.content,
+              ...(tr.is_error !== undefined && { is_error: tr.is_error }),
               ...(tr.cache_control && { cache_control: tr.cache_control }),
             });
           }

@@ -45,6 +45,7 @@ export interface ToolMessage {
 export interface ToolResult {
   tool_call_id: string;
   content: string;
+  is_error?: boolean;
   cache_control?: CacheControl;
 }
 

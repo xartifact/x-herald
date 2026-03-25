@@ -87,8 +87,6 @@ export function useLogPage() {
   const logs: LogListItem[] = logsData?.data || []
   const pagination = logsData?.pagination
   const storage = storageData?.data
-  const selectedLog = logDetailData?.data
-  const clientModelStats = clientModelStatsData?.data || []
 
   // 完整日志详情（从详情接口获取）
   const selectedLog = logDetailData?.data

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+
 import './styles/globals.css';
 import { QueryProvider } from '@/components/providers/QueryProvider';
 

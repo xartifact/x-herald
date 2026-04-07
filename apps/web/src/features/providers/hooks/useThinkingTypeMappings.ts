@@ -1,7 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
 import { get, put } from '@/core/lib/api-client';
-import type { ThinkingTypeMapping } from '../types';
+
 import type { SyntheticThinkingStrategy } from '../db';
+import type { ThinkingTypeMapping } from '../types';
 
 const API_BASE = '/api/providers';
 

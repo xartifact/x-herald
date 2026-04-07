@@ -1,6 +1,7 @@
 'use client'
 
 import { UseFormReturn } from 'react-hook-form'
+
 import { Button } from '@/ui/button'
 import {
   Dialog,
@@ -21,6 +22,7 @@ import {
 } from '@/ui/form'
 import { Input } from '@/ui/input'
 import { Switch } from '@/ui/switch'
+
 import { KeyAlert } from './key-display'
 interface KeyFormData {
   name: string

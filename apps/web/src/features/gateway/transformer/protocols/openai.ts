@@ -16,9 +16,9 @@ import type {
   MessageContent,
 } from '@/types';
 
+import { applyParameterTransforms, buildHeaders } from '../utils/parameter-transformer';
 import { cleanSchemaForOpenAI } from '../utils/schema-cleaner';
 import { parseToolArguments } from '../utils/tool-arguments-parser';
-import { applyParameterTransforms, buildHeaders } from '../utils/parameter-transformer';
 
 // OpenAI 特定类型
 interface OpenAIMessage {

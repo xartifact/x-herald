@@ -1,15 +1,18 @@
 'use client'
 
 import { useState } from 'react'
+
+import { Plus, Trash2, AlertCircle } from 'lucide-react'
+
+import { Badge } from '@/ui/badge'
 import { Button } from '@/ui/button'
-import { Textarea } from '@/ui/textarea'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card'
+import { Input } from '@/ui/input'
 import { Label } from '@/ui/label'
 import { Switch } from '@/ui/switch'
-import { Input } from '@/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/tabs'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card'
-import { Badge } from '@/ui/badge'
-import { Plus, Trash2, AlertCircle } from 'lucide-react'
+import { Textarea } from '@/ui/textarea'
+
 import type { InstanceFormData } from '../form-types'
 
 interface InstanceConfigEditorProps {

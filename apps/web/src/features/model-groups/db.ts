@@ -1,5 +1,6 @@
-import { pgTable, varchar, boolean, timestamp, jsonb, uuid, text, integer } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
+import { pgTable, varchar, boolean, timestamp, jsonb, uuid, text, integer } from 'drizzle-orm/pg-core';
+
 import { providers } from '@/features/providers/db';
 
 /**
@@ -8,9 +9,6 @@ import { providers } from '@/features/providers/db';
  * 模型组是对相同能力模型的抽象,可以包含来自不同供应商的相同模型。
  * 例如:"gpt-4" 模型组可以包含 OpenAI 的 gpt-4、Azure 的 gpt-4、Groq 的 gpt-4 等
  */
-
-// 路由策略类型
-export type RoutingStrategy = 'round_robin' | 'weighted' | 'least_latency' | 'priority' | 'cost_optimized' | 'smart';
 
 // 模型能力配置
 export interface ModelCapabilities {
@@ -33,29 +31,6 @@ export interface ModelCapabilities {
   [key: string]: unknown;
 }
 
-// 模型组路由配置
-export interface ModelGroupRoutingConfig {
-  strategy: RoutingStrategy;
-  fallbackEnabled: boolean;
-
-  // 策略参数
-  params?: {
-    // 权重策略: { modelInstanceId: weight }
-    weights?: Record<string, number>;
-
-    // 成本优化策略
-    costThreshold?: number; // 最大成本阈值
-
-    // 延迟优化策略
-    latencyThreshold?: number; // 最大延迟阈值(ms)
-
-    // 智能路由策略
-    preferProvider?: string[]; // 优先供应商列表
-
-    // 其他参数
-    [key: string]: unknown;
-  };
-}
 
 export const modelGroups = pgTable('model_groups', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -77,9 +52,6 @@ export const modelGroups = pgTable('model_groups', {
 
   // 模型能力配置
   capabilities: jsonb('capabilities').$type<ModelCapabilities>().notNull(),
-
-  // 路由配置
-  routingConfig: jsonb('routing_config').$type<ModelGroupRoutingConfig>().notNull(),
 
   // 支持的协议类型
   supportedProtocols: jsonb('supported_protocols').$type<string[]>().default(['openai']),
@@ -236,65 +208,20 @@ export type NewModelInstance = typeof modelInstances.$inferInsert;
 /**
  * 虚拟模型 (Virtual Model)
  *
- * 虚拟模型是对外暴露的模型名称，与内部模型组解耦。
- * 例如：虚拟模型 "my-gpt4" 映射到模型组 "gpt-4-turbo"
+ * 虚拟模型是对外暴露的模型名称，通过规则引擎路由到模型组或模型实例。
  */
-// 虚拟模型路由配置
-export interface VirtualModelRoutingConfig {
-  strategy: RoutingStrategy;
-  fallbackEnabled: boolean;
-}
-
 export const virtualModels = pgTable('virtual_models', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: varchar('name', { length: 255 }).notNull().unique(),
   displayName: varchar('display_name', { length: 255 }),
   description: text('description'),
-  modelGroupId: uuid('model_group_id')
-    .references(() => modelGroups.id, { onDelete: 'set null' }),
-  routingConfig: jsonb('routing_config').$type<VirtualModelRoutingConfig>(),
   enabled: boolean('enabled').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
-
-/**
- * 模型映射 (Model Mapping)
- *
- * 虚拟模型的多目标映射，支持关联模型组和模型实例
- */
-export const modelMappings = pgTable('model_mappings', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  virtualModelId: uuid('virtual_model_id').notNull()
-    .references(() => virtualModels.id, { onDelete: 'cascade' }),
-  targetType: varchar('target_type', { length: 20 }).notNull().$type<'model_group' | 'model_instance'>(),
-  targetId: uuid('target_id').notNull(),
-  weight: integer('weight').default(100).notNull(),
-  priority: integer('priority').default(0).notNull(),
-  enabled: boolean('enabled').default(true).notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
-
-export const virtualModelsRelations = relations(virtualModels, ({ one, many }) => ({
-  modelGroup: one(modelGroups, {
-    fields: [virtualModels.modelGroupId],
-    references: [modelGroups.id],
-  }),
-  mappings: many(modelMappings),
-}));
-
-export const modelMappingsRelations = relations(modelMappings, ({ one }) => ({
-  virtualModel: one(virtualModels, {
-    fields: [modelMappings.virtualModelId],
-    references: [virtualModels.id],
-  }),
-}));
 
 export type VirtualModel = typeof virtualModels.$inferSelect;
 export type NewVirtualModel = typeof virtualModels.$inferInsert;
-export type ModelMapping = typeof modelMappings.$inferSelect;
-export type NewModelMapping = typeof modelMappings.$inferInsert;
 
 /**
  * 路由规则 (Model Route)

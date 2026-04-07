@@ -1,0 +1,189 @@
+{
+  "schema_version": "1.0.0",
+  "title": "Model Request Rank System",
+  "swarm": "default",
+  "current_phase": 1,
+  "phases": [
+    {
+      "id": 1,
+      "name": "Database Schema & Core Infrastructure",
+      "status": "complete",
+      "tasks": [
+        {
+          "id": "1.1",
+          "phase": 1,
+          "status": "completed",
+          "size": "small",
+          "description": "Add model_request_stats table to database schema (features/logs/db.ts). Fields: modelId (PK), requestCount, lastRequestAt, currentScore, lastScoredAt. Add indexes on lastRequestAt and currentScore DESC. Verification: Query table structure in Drizzle Studio.",
+          "depends": [],
+          "acceptance": "Table schema created with Drizzle ORM, indexes defined, types exported",
+          "files_touched": []
+        },
+        {
+          "id": "1.2",
+          "phase": 1,
+          "status": "completed",
+          "size": "small",
+          "description": "Generate and run Drizzle migration for model_request_stats table. Run `bun run db:generate` and `bun run db:migrate`. Verification: Query model_request_stats in database returns empty table.",
+          "depends": [
+            "1.1"
+          ],
+          "acceptance": "Migration generated and executed successfully, table accessible",
+          "files_touched": []
+        },
+        {
+          "id": "1.3",
+          "phase": 1,
+          "status": "completed",
+          "size": "medium",
+          "description": "Create rank calculation service (features/logs/services/rank-calculator.ts). Implement exponential decay algorithm with λ = ln(2)/7, support hourly batch calculation, handle edge cases (cold start, timezone, drift). Verification: Unit tests pass with known inputs/outputs.",
+          "depends": [
+            "1.2"
+          ],
+          "acceptance": "Service exports calculateScore() and recalculateAll() functions, unit tests pass",
+          "files_touched": []
+        },
+        {
+          "id": "1.4",
+          "phase": 1,
+          "status": "completed",
+          "size": "small",
+          "description": "Create rank recalculation API endpoint (features/logs/routes.ts). Add POST /api/logs/rank-recalculate that triggers batch score update. Returns { updated: number, duration: ms }. This endpoint will be called by external cron service (e.g., Vercel Cron, cron-job.org). Verification: Manual API call updates scores.",
+          "depends": [
+            "1.3"
+          ],
+          "acceptance": "API endpoint functional, triggers recalculation, returns stats",
+          "files_touched": []
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Enhanced Model Recording",
+      "status": "pending",
+      "tasks": [
+        {
+          "id": "2.1",
+          "phase": 2,
+          "status": "pending",
+          "size": "small",
+          "description": "Enhance client-model-recorder.ts to also update model_request_stats table. On each request, increment requestCount and update lastRequestAt atomically using upsert. Verification: Make test request, query both tables show updated counts.",
+          "depends": [],
+          "acceptance": "Both client_requested_models and model_request_stats updated on each request",
+          "files_touched": []
+        },
+        {
+          "id": "2.2",
+          "phase": 2,
+          "status": "pending",
+          "size": "small",
+          "description": "Add migration script to initialize model_request_stats from existing client_requested_models data. Create features/logs/services/migrate-stats.ts script. Calculate initial scores based on current requestCount and lastSeenAt. Verification: Run script, query model_request_stats shows migrated data.",
+          "depends": [
+            "2.1"
+          ],
+          "acceptance": "Migration script created, existing data migrated successfully",
+          "files_touched": []
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Rank API Implementation",
+      "status": "pending",
+      "tasks": [
+        {
+          "id": "3.1",
+          "phase": 3,
+          "status": "pending",
+          "size": "small",
+          "description": "Create Rank API types and interfaces (features/logs/types.ts). Define ModelRank, RankQueryParams, RankStatistics types. Verification: TypeScript compilation succeeds, types exported from index.",
+          "depends": [],
+          "acceptance": "Types defined with TypeScript, exported from features/logs/index.ts",
+          "files_touched": []
+        },
+        {
+          "id": "3.2",
+          "phase": 3,
+          "status": "pending",
+          "size": "medium",
+          "description": "Implement Rank API routes (features/logs/routes.ts). Add GET /api/logs/model-ranks (list with pagination/sorting), GET /api/logs/model-ranks/:modelName (detail), GET /api/logs/model-ranks/statistics (aggregated stats). Verification: API endpoints return correct JSON, response time < 200ms.",
+          "depends": [
+            "1.3",
+            "3.1"
+          ],
+          "acceptance": "API endpoints functional, return correct JSON, handle errors",
+          "files_touched": []
+        },
+        {
+          "id": "3.3",
+          "phase": 3,
+          "status": "pending",
+          "size": "small",
+          "description": "Create React Query hooks for rank data (hooks/use-model-ranks.ts). Export useModelRanks(), useModelRankDetail(), useRankStatistics() hooks following existing use-logs.ts pattern. Verification: Hooks return data in React component.",
+          "depends": [
+            "3.2"
+          ],
+          "acceptance": "Hooks implemented with proper caching, error handling, TypeScript types",
+          "files_touched": []
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Router Integration",
+      "status": "pending",
+      "tasks": [
+        {
+          "id": "4.1",
+          "phase": 4,
+          "status": "pending",
+          "size": "medium",
+          "description": "Add rank-based weight adjustment to ModelGroupRouter smart strategy (features/gateway/services/model-group-router.ts). Inject rank data into scoring formula, fallback to default weights if rank unavailable. Verification: Make requests with smart strategy, check routing decisions correlate with rank.",
+          "depends": [],
+          "acceptance": "Smart strategy uses rank data, routing decisions correlate with rank, fallback works",
+          "files_touched": []
+        },
+        {
+          "id": "4.2",
+          "phase": 4,
+          "status": "pending",
+          "size": "small",
+          "description": "Add rank data caching layer (features/gateway/services/rank-cache.ts). In-memory cache for top 100 models with 5-minute TTL. Cache refreshes on TTL expiry (no explicit invalidation). Verification: Check cache hit rate > 90% during load test.",
+          "depends": [
+            "4.1"
+          ],
+          "acceptance": "Cache reduces database queries, TTL works correctly",
+          "files_touched": []
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Frontend Implementation",
+      "status": "pending",
+      "tasks": [
+        {
+          "id": "5.1",
+          "phase": 5,
+          "status": "pending",
+          "size": "medium",
+          "description": "Create Model Ranks list page (app/admin/logs/model-ranks/page.tsx). Display table with rank, model name, request count, score, last request time. Add sorting, search, pagination. Verification: Page loads < 2s, all interactions work.",
+          "depends": [],
+          "acceptance": "Page renders correctly, sorting/search works, pagination functional",
+          "files_touched": []
+        },
+        {
+          "id": "5.2",
+          "phase": 5,
+          "status": "pending",
+          "size": "small",
+          "description": "Create rank table components (features/logs/components/rank-table.tsx). Use shadcn/ui Table, add rank badge, format numbers and timestamps. Verification: Component renders correctly in Storybook or test page.",
+          "depends": [],
+          "acceptance": "Component reusable, accessible, matches design system",
+          "files_touched": []
+        }
+      ]
+    }
+  ],
+  "migration_status": "native"
+}

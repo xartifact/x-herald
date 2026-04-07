@@ -1,8 +1,9 @@
 'use client'
 
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { User, Bot, Settings, Wrench } from 'lucide-react'
+
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import type { LogMetadata } from '@/features/logs/db'
 
 interface MessageTimelineSectionProps {

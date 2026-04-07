@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+
 import { cleanSchemaForOpenAI } from '../schema-cleaner';
 
 describe('cleanSchemaForOpenAI', () => {

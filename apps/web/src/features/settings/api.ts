@@ -1,13 +1,14 @@
-import { Hono } from 'hono';
-import { authMiddleware } from '@/features/auth/middleware';
-import { getDatabase } from '@/core/db/client';
-import { modelGroups } from '@/features/model-groups/db';
 import { eq } from 'drizzle-orm';
+import { Hono } from 'hono';
+
+import { getDatabase } from '@/core/db/client';
 import logger from '@/core/lib/logger';
+import { authMiddleware } from '@/features/auth/middleware';
 import {
   getModelMappingConfig,
   setModelMappingConfig,
 } from '@/features/gateway-config';
+import { modelGroups } from '@/features/model-groups/db';
 
 const settingsRoutes = new Hono();
 

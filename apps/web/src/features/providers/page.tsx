@@ -1,13 +1,16 @@
 'use client'
 
-import { Plus, Search } from 'lucide-react'
 import { useState } from 'react'
+
+import { Plus, Search } from 'lucide-react'
+
+import { ModelInstanceForm } from '@/features/model-groups/components/model-instance-form'
 import { Button } from '@/ui/button'
-import { Input } from '@/ui/input'
 import { Card, CardContent } from '@/ui/card'
+import { Input } from '@/ui/input'
+
 import { ProviderFormDialog, SyncModelsDialog, ProviderCard } from './components'
 import { ThinkingTypeMappingDialog } from './components/ThinkingTypeMappingDialog'
-import { ModelInstanceForm } from '@/features/model-groups/components/model-instance-form'
 import { useProviderPage } from './useProviderPage'
 
 export default function ProvidersPage() {

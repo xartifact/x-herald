@@ -4,8 +4,10 @@
  */
 
 import { describe, it, expect } from 'bun:test';
-import { AnthropicTransformer } from '../anthropic';
+
 import type { TransformerContext } from '@/types';
+
+import { AnthropicTransformer } from '../anthropic';
 
 // 创建模拟的 TransformerContext
 function createMockContext(direction?: 'normalize' | 'adapt'): TransformerContext {

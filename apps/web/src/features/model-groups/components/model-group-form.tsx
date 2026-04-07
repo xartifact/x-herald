@@ -1,5 +1,7 @@
 'use client'
 
+import { UseFormReturn } from 'react-hook-form'
+
 import { Button } from '@/ui/button'
 import {
   Dialog,
@@ -27,7 +29,7 @@ import {
   SelectValue,
 } from '@/ui/select'
 import { Switch } from '@/ui/switch'
-import { UseFormReturn } from 'react-hook-form'
+
 import type { GroupFormData } from '../form-types'
 
 const ROUTING_STRATEGIES = [

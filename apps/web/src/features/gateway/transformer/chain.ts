@@ -3,6 +3,7 @@
  * 按顺序执行多个 Transformer，处理请求和响应的转换
  */
 
+import logger from '@/core/lib/logger';
 import type {
   StandardRequest,
   StandardResponse,
@@ -10,8 +11,8 @@ import type {
   TransformerContext,
   TransformerChainConfig,
 } from '@/types';
+
 import { getTransformer } from './registry';
-import logger from '@/core/lib/logger';
 
 export interface ChainResult<T> {
   data: T;
@@ -157,7 +158,7 @@ export class TransformerChain {
     const startTime = Date.now();
     const executed: string[] = [];
 
-    let current = response;
+    const current = response;
 
     for (const transformer of this.transformers) {
       if (transformer.normalizeResponse) {
@@ -195,7 +196,7 @@ export class TransformerChain {
     const startTime = Date.now();
     const executed: string[] = [];
 
-    let current = response;
+    const current = response;
 
     for (const transformer of this.transformers) {
       if (transformer.adaptResponse) {

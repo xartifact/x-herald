@@ -1,5 +1,6 @@
 import type { Context, Next } from 'hono';
 import { HTTPException } from 'hono/http-exception';
+
 import logger from '../lib/logger';
 
 export class AppError extends Error {

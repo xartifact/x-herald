@@ -1,0 +1,39 @@
+{
+  "agents": {
+    "architect": {
+      "model": "x-llm-gateway/GLM-5"
+    },
+    "explorer": {
+      "model": "x-llm-gateway/Kimi-K2.5"
+    },
+    "sme": {
+      "model": "x-llm-gateway/Qwen3.5-397B-A17B"
+    },
+    "critic": {
+      "model": "x-llm-gateway/GLM-5"
+    },
+    "coder": {
+      "model": "x-llm-gateway/MiniMax-M2.5"
+    },
+    "reviewer": {
+      "model": "x-llm-gateway/GLM-5"
+    },
+    "test_engineer": {
+      "model": "x-llm-gateway/MiniMax-M2.5"
+    },
+    "designer": {
+      "model": "x-llm-gateway/Kimi-K2.5"
+    },
+    "docs": {
+      "model": "x-llm-gateway/Qwen3.5-397B-A17B"
+    }
+  },
+  "guardrails": {
+    "max_tool_calls": 200,
+    "max_duration_minutes": 30
+  },
+  "knowledge": {
+    "enabled": true,
+    "hive_enabled": true
+  }
+}

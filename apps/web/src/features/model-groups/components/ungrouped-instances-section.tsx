@@ -1,10 +1,19 @@
 'use client'
 
 import { useState } from 'react'
+
 import { FolderOpen, MoveRight } from 'lucide-react'
-import { Button } from '@/ui/button'
+
 import { Badge } from '@/ui/badge'
+import { Button } from '@/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/ui/select'
 import {
   Table,
   TableBody,
@@ -13,13 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/ui/table'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/ui/select'
+
 import type { ModelInstance, ModelGroup } from '../types'
 import { useAssignInstance } from '../useModelGroups'
 

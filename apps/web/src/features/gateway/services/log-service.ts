@@ -1,11 +1,13 @@
+import { eq } from 'drizzle-orm';
+
 import { getDatabase } from '@/core/db/client';
-import { requestLogs } from '@/features/logs/db';
-import type { StreamProgress, StreamContent, LogMetadata } from '@/features/logs/db';
 import logger from '@/core/lib/logger';
 import type { VirtualKey } from '@/features/keys/db';
+import { requestLogs } from '@/features/logs/db';
+import type { StreamProgress, StreamContent, LogMetadata } from '@/features/logs/db';
+
 import { extractMetadata } from './metadata-extractor';
 import { estimateUsageFromContent } from './token-estimator';
-import { eq } from 'drizzle-orm';
 
 export interface LogRequestParams {
   virtualKey: VirtualKey;

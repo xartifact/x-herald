@@ -1,8 +1,11 @@
 'use client'
 
-import { Trash2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { Suspense } from 'react'
+
+import { Trash2 } from 'lucide-react'
+
+import { Button } from '@/components/ui/button'
+
 import {
   LogSearchFilter,
   LogTable,

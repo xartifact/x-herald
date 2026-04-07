@@ -15,12 +15,15 @@ export function loadConfig(): GatewayConfig {
     },
 
     database: {
+      type: (process.env.DB_TYPE as 'postgres' | 'pglite') ||
+        (process.env.NODE_ENV === 'production' ? 'postgres' : 'pglite'),
       host: process.env.DB_HOST || 'localhost',
       port: parseInt(process.env.DB_PORT || '5432'),
       database: process.env.DB_NAME || 'llm_gateway',
       user: process.env.DB_USER || 'postgres',
       password: process.env.DB_PASSWORD || '',
       ssl: process.env.DB_SSL === 'true',
+      dataDir: process.env.DB_DATA_DIR || './.pglite',
     },
 
     admin: {
@@ -73,16 +76,16 @@ export function validateConfig(config: GatewayConfig): void {
   }
 
   // Database validation
-  if (!config.database.host) {
-    throw new Error('Database host is required');
-  }
-
-  if (!config.database.database) {
-    throw new Error('Database name is required');
-  }
-
-  if (!config.database.password && process.env.NODE_ENV === 'production') {
-    console.warn('WARNING: No database password set in production!');
+  if (config.database.type === 'postgres') {
+    if (!config.database.host) {
+      throw new Error('Database host is required');
+    }
+    if (!config.database.database) {
+      throw new Error('Database name is required');
+    }
+    if (!config.database.password && process.env.NODE_ENV === 'production') {
+      console.warn('WARNING: No database password set in production!');
+    }
   }
 
   // Admin validation

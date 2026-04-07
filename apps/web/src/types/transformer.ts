@@ -3,13 +3,14 @@
  * 定义协议转换器的接口和上下文
  */
 
+import type { InstanceConfig } from '@/features/model-groups/db';
+
 import type {
   StandardRequest,
   StandardResponse,
   ProviderConfig,
   ProtocolType,
 } from './llm';
-import type { InstanceConfig } from '@/features/model-groups/db';
 
 // ==================== Transformer 上下文 ====================
 

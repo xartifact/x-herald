@@ -14,10 +14,10 @@ import { healthRoutes } from './features/health';
 import { keysRoutes } from './features/keys';
 import { logsRoutes } from './features/logs';
 import { modelGroupsRoutes } from './features/model-groups';
+import { modelRoutesApi } from './features/model-routes';
 import { providersRoutes } from './features/providers';
 import { settingsRoutes } from './features/settings';
 import { virtualModelRoutes } from './features/virtual-models';
-import { modelRoutesApi } from './features/model-routes';
 
 // Create API app
 export const createApiApp = () => {

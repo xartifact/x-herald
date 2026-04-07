@@ -1,7 +1,10 @@
 'use client'
 
 import { Pencil, Trash2, RefreshCw } from 'lucide-react'
+
+import { Badge } from '@/ui/badge'
 import { Button } from '@/ui/button'
+import { Card, CardContent } from '@/ui/card'
 import {
   Table,
   TableBody,
@@ -10,8 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/ui/table'
-import { Badge } from '@/ui/badge'
-import { Card, CardContent } from '@/ui/card'
+
 import { KeyDisplay } from './key-display'
 import type { VirtualKey } from '../types'
 

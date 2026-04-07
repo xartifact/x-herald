@@ -1,9 +1,10 @@
-import { Hono } from 'hono';
 import { eq, and } from 'drizzle-orm';
+import { Hono } from 'hono';
+
 import { getDatabase } from '@/core/db/client';
-import { modelRoutes, virtualModels } from '@/features/model-groups/db';
-import { authMiddleware } from '@/features/auth/middleware';
 import logger from '@/core/lib/logger';
+import { authMiddleware } from '@/features/auth/middleware';
+import { modelRoutes, virtualModels } from '@/features/model-groups/db';
 
 const modelRoutesApi = new Hono();
 

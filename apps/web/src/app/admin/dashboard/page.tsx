@@ -1,9 +1,12 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import Link from 'next/link'
-import { RefreshCw } from 'lucide-react'
+
 import { useQueryClient } from '@tanstack/react-query'
+import { RefreshCw } from 'lucide-react'
+import Link from 'next/link'
+
+import { LogStatsCards } from '@/components/log-stats-cards'
 import { Button } from '@/components/ui/button'
 import {
   Select,
@@ -12,7 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { LogStatsCards } from '@/components/log-stats-cards'
 import { useLogStats, useLogStorage, logKeys } from '@/hooks/use-logs'
 
 function getTimeRange(range: string): Record<string, string> {

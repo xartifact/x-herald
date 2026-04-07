@@ -1,13 +1,15 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+
 import { BarChart3, Clock, Hash, Activity, ArrowUpDown } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card'
-import { Badge } from '@/ui/badge'
-import { Button } from '@/ui/button'
-import { ScrollArea } from '@/ui/scroll-area'
+
 import { cn } from '@/core/lib/utils'
 import type { ClientModelStat } from '@/hooks/use-logs'
+import { Badge } from '@/ui/badge'
+import { Button } from '@/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card'
+import { ScrollArea } from '@/ui/scroll-area'
 
 type SortField = 'requestCount' | 'lastRequestAt' | 'totalTokens' | 'avgLatency'
 type SortOrder = 'desc' | 'asc'

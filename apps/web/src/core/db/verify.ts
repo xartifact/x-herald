@@ -1,4 +1,5 @@
 import postgres from 'postgres';
+
 import logger from '../lib/logger';
 
 const connectionString = process.env.DATABASE_URL ||

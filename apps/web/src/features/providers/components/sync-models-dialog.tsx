@@ -1,8 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+
 import { RefreshCw, Loader2 } from 'lucide-react'
+
+import { useModelGroups } from '@/features/model-groups/useModelGroups'
+import { Badge } from '@/ui/badge'
 import { Button } from '@/ui/button'
+import { Checkbox } from '@/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -12,6 +17,13 @@ import {
   DialogTitle,
 } from '@/ui/dialog'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/ui/select'
+import {
   Table,
   TableBody,
   TableCell,
@@ -19,17 +31,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/ui/table'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/ui/select'
-import { Checkbox } from '@/ui/checkbox'
-import { Badge } from '@/ui/badge'
+
 import { useProviderModels, useSyncProviderModels } from '../useProviders'
-import { useModelGroups } from '@/features/model-groups/useModelGroups'
+
 
 interface SyncModelsDialogProps {
   providerId: string

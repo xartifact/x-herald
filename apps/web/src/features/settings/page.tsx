@@ -1,20 +1,15 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useForm } from 'react-hook-form'
+
 import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
 import { Settings, AlertTriangle, CheckCircle, RefreshCw } from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
+
+import { Alert, AlertDescription, AlertTitle } from '@/ui/alert'
 import { Button } from '@/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card'
-import { Switch } from '@/ui/switch'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/ui/select'
 import {
   Form,
   FormControl,
@@ -24,7 +19,15 @@ import {
   FormLabel,
   FormMessage,
 } from '@/ui/form'
-import { Alert, AlertDescription, AlertTitle } from '@/ui/alert'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/ui/select'
+import { Switch } from '@/ui/switch'
+
 import { useSettings, useUpdateSettings } from './useSettings'
 
 const settingsFormSchema = z.object({

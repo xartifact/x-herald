@@ -1,7 +1,11 @@
 'use client'
 
 import { useState, useMemo, useCallback } from 'react'
+
 import { useForm } from 'react-hook-form'
+
+import type { GroupFormData, InstanceFormData } from './form-types'
+import type { ModelGroup, ModelInstance } from './types'
 import {
   useModelGroups,
   useModelInstances,
@@ -13,8 +17,6 @@ import {
   useDeleteModelInstance,
   useReorderInstances,
 } from './useModelGroups'
-import type { GroupFormData, InstanceFormData } from './form-types'
-import type { ModelGroup, ModelInstance } from './types'
 
 export function useModelGroupPage() {
   const [searchQuery, setSearchQuery] = useState('')
@@ -104,8 +106,6 @@ export function useModelGroupPage() {
       description: group.description || '',
       category: group.category as GroupFormData['category'],
       capabilities: group.capabilities,
-      routingStrategy: group.routingConfig.strategy as GroupFormData['routingStrategy'],
-      fallbackEnabled: group.routingConfig.fallbackEnabled,
     })
     setGroupDialogOpen(true)
   }

@@ -8,12 +8,16 @@ export interface ServerConfig {
 }
 
 export interface DatabaseConfig {
+  type: 'postgres' | 'pglite';
+  // postgres-only
   host: string;
   port: number;
   database: string;
   user: string;
   password: string;
   ssl: boolean;
+  // pglite-only
+  dataDir: string;
 }
 
 export interface AdminConfig {

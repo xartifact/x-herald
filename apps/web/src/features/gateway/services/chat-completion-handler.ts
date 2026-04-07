@@ -1,16 +1,19 @@
+import type { Context } from 'hono';
+
+import { loadConfig } from '@/core/config';
+import logger from '@/core/lib/logger';
+import type { VirtualKey } from '@/features/keys/db';
+
 import { getTransformer, createTransformerContext } from '../transformer';
-import { buildHeaders } from '../transformer/utils/parameter-transformer';
-import { modelGroupRouter } from './model-group-router';
-import { virtualModelRouter } from './virtual-model-router';
-import { detectProtocol, getProviderProtocol, getProviderUrl, getEndpoint } from './protocol-detector';
-import { logRequestStart } from './log-service';
-import { handleNonStreamingResponse, handleStreamingResponse } from './response-handlers';
 import { identifyClient } from './client-identifier';
 import { handleGatewayError, handleProviderError, handleProviderErrorPassthrough } from './error-handler';
-import logger from '@/core/lib/logger';
-import { loadConfig } from '@/core/config';
-import type { VirtualKey } from '@/features/keys/db';
-import type { Context } from 'hono';
+import { logRequestStart } from './log-service';
+import { ModelNotFoundError } from './model-group-router';
+import { detectProtocol, getProviderProtocol, getProviderUrl, getEndpoint } from './protocol-detector';
+import { handleNonStreamingResponse, handleStreamingResponse } from './response-handlers';
+import { virtualModelRouter } from './virtual-model-router';
+import { buildHeaders } from '../transformer/utils/parameter-transformer';
+
 
 /**
  * 智能拼接 URL，避免路径重复
@@ -120,7 +123,7 @@ export async function handleChatCompletion(
       );
     }
 
-    // 3. 使用路由器选择实例：先尝试虚拟模型路由，再 fallback 到模型组路由
+    // 3. 虚拟模型路由（唯一入口）
     const routingContext = {
       requestedModel: standardReq.model,
       streaming: standardReq.stream || false,
@@ -131,9 +134,11 @@ export async function handleChatCompletion(
       virtualKeyId: virtualKey.id,
     };
 
-    const routeResult =
-      (await virtualModelRouter.route(routingContext)) ??
-      (await modelGroupRouter.route(routingContext));
+    const routeResult = await virtualModelRouter.route(routingContext);
+
+    if (!routeResult) {
+      throw new ModelNotFoundError(standardReq.model);
+    }
 
     const { instance, provider, group, decision, mapping } = routeResult;
 

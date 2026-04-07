@@ -1,8 +1,9 @@
 'use client'
 
 import { FileText, Trash2, AlertCircle, CheckCircle2, ArrowUpRight, ArrowDownRight, Loader2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   Table,
   TableBody,
@@ -12,8 +13,8 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { cn } from '@/core/lib/utils'
-import type { LogListItem } from '@/hooks/use-logs'
 import { CLIENT_REGISTRY } from '@/features/gateway/services/client-identifier'
+import type { LogListItem } from '@/hooks/use-logs'
 
 interface LogTableProps {
   logs: LogListItem[]

@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { get, post, put, del as deleteRequest, patch } from '@/core/lib/api-client'
 import { toast } from 'sonner'
+
+import { get, post, put, del as deleteRequest, patch } from '@/core/lib/api-client'
+
 import type { ModelGroup, ModelInstance, ModelGroupDetail, ApiResponse } from './types'
 
 // 查询键
@@ -67,7 +69,6 @@ export function useCreateModelGroup() {
       description?: string
       category?: string
       capabilities?: ModelGroup['capabilities']
-      routingConfig?: ModelGroup['routingConfig']
       supportedProtocols?: string[]
       metadata?: Record<string, unknown>
     }) => {
@@ -103,7 +104,6 @@ export function useUpdateModelGroup() {
         description: string
         category: string
         capabilities: ModelGroup['capabilities']
-        routingConfig: ModelGroup['routingConfig']
         supportedProtocols: string[]
         metadata: Record<string, unknown>
       }>

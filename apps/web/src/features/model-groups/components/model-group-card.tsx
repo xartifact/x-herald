@@ -1,10 +1,12 @@
 'use client'
 
 import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, Layers } from 'lucide-react'
-import { Button } from '@/ui/button'
+
 import { Badge } from '@/ui/badge'
+import { Button } from '@/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card'
 import { Separator } from '@/ui/separator'
+
 import { ModelInstanceTable } from './model-instance-table'
 import type { ModelGroup, ModelInstance } from '../types'
 
@@ -86,12 +88,6 @@ export function ModelGroupCard({
               <p className="text-sm text-muted-foreground">{group.description}</p>
             )}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <div>
-                <span className="text-muted-foreground">路由策略:</span>
-                <Badge variant="outline" className="ml-2">
-                  {ROUTING_STRATEGY_LABELS[group.routingConfig.strategy] || group.routingConfig.strategy}
-                </Badge>
-              </div>
               <div>
                 <span className="text-muted-foreground">流式:</span>
                 <span className="ml-2">{group.capabilities.streaming ? '✓' : '✗'}</span>

@@ -1,7 +1,7 @@
 import { loadConfig } from '@/core/config';
 import { createDatabase } from '@/core/db/client';
-import { registerDefaultTransformers } from '@/features/gateway';
 import logger from '@/core/lib/logger';
+import { registerDefaultTransformers } from '@/features/gateway';
 
 console.log('[Instrumentation] 开始应用初始化...');
 

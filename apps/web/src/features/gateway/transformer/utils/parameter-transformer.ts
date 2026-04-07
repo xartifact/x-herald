@@ -3,9 +3,9 @@
  * 解析并执行 InstanceConfig 中定义的 parameterTransforms 规则
  */
 
+import logger from '@/core/lib/logger';
 import type { InstanceConfig } from '@/features/model-groups/db';
 import type { StandardRequest, TransformerContext } from '@/types';
-import logger from '@/core/lib/logger';
 
 /**
  * 参数转换规则

@@ -1,5 +1,6 @@
 import type { Context, Next } from 'hono';
 import { verify } from 'hono/jwt';
+
 import { loadConfig } from '@/core/config';
 import logger from '@/core/lib/logger';
 

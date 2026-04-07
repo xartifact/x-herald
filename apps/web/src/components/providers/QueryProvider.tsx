@@ -1,10 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { Toaster } from '@/ui/sonner';
+
 import DevTools from '@/components/dev/DevTools';
+import { Toaster } from '@/ui/sonner';
 
 interface QueryProviderProps {
   children: React.ReactNode;

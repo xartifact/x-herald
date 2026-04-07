@@ -4,9 +4,11 @@
  */
 
 import { describe, it, expect, beforeEach } from 'bun:test';
-import { OpenAITransformer } from '../protocols/openai';
-import { AnthropicTransformer } from '../protocols/anthropic';
+
 import type { TransformerContext, StandardRequest, StandardResponse } from '@/types';
+
+import { AnthropicTransformer } from '../protocols/anthropic';
+import { OpenAITransformer } from '../protocols/openai';
 
 /**
  * 跨协议转换测试

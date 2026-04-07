@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useCallback, useMemo } from 'react'
-import { useDeleteModelRoute, useToggleModelRoute } from './useModelRoutes'
+
 import type { ModelRoute } from './types'
+import { useDeleteModelRoute, useToggleModelRoute } from './useModelRoutes'
 
 export function useModelRoutePage(routes: ModelRoute[]) {
   // 对话框状态

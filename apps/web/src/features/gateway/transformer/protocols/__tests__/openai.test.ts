@@ -4,8 +4,10 @@
  */
 
 import { describe, it, expect, beforeEach } from 'bun:test';
-import { OpenAITransformer } from '../openai';
+
 import type { TransformerContext, StandardRequest, StandardResponse } from '@/types';
+
+import { OpenAITransformer } from '../openai';
 
 describe('OpenAITransformer', () => {
   let transformer: OpenAITransformer;

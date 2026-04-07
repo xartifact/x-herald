@@ -3,9 +3,11 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { get, post, put, del } from '@/core/lib/api-client'
-import type { VirtualKey } from './types'
 import { toast } from 'sonner'
+
+import { get, post, put, del } from '@/core/lib/api-client'
+
+import type { VirtualKey } from './types'
 
 // Query Keys
 export const keyKeys = {

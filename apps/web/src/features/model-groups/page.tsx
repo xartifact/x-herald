@@ -1,10 +1,12 @@
 'use client'
 
 import { Plus, Search } from 'lucide-react'
+
 import { useProviders } from '@/features/providers/useProviders'
 import { Button } from '@/ui/button'
-import { Input } from '@/ui/input'
 import { Card, CardContent } from '@/ui/card'
+import { Input } from '@/ui/input'
+
 import { ModelGroupCard, ModelGroupForm, ModelInstanceForm, UngroupedInstancesSection } from './components'
 import { useModelGroupPage } from './useModelGroupPage'
 

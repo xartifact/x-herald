@@ -1,7 +1,9 @@
-import { getDatabase } from '@/core/db/client';
-import { requestLogs } from './db';
 import { lt } from 'drizzle-orm';
+
+import { getDatabase } from '@/core/db/client';
 import logger from '@/core/lib/logger';
+
+import { requestLogs } from './db';
 
 /**
  * 清理过期日志

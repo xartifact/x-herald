@@ -3,10 +3,10 @@
  * 注册所有内置 Transformer
  */
 
-import { OpenAITransformer } from './protocols/openai';
-import { AnthropicTransformer } from './protocols/anthropic';
-import { registerTransformer } from './registry';
 import { TransformerChain, buildRequestChain, buildResponseChain } from './chain';
+import { AnthropicTransformer } from './protocols/anthropic';
+import { OpenAITransformer } from './protocols/openai';
+import { registerTransformer } from './registry';
 
 // 注册内置协议转换器
 export function registerDefaultTransformers(): void {

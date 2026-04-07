@@ -1,6 +1,7 @@
 'use client'
 
 import { Copy, Check } from 'lucide-react'
+
 import { Button } from '@/ui/button'
 import {
   Dialog,

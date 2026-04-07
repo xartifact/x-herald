@@ -17,9 +17,9 @@ import type {
   StreamChunk,
 } from '@/types';
 
+import { buildHeaders } from '../utils/parameter-transformer';
 import { cleanSchemaForOpenAI } from '../utils/schema-cleaner';
 import { parseToolArguments } from '../utils/tool-arguments-parser';
-import { buildHeaders } from '../utils/parameter-transformer';
 
 // Anthropic 特定类型
 interface AnthropicMessage {
@@ -581,8 +581,8 @@ export class AnthropicTransformer implements Transformer {
         let sentMessageStart = false;
         let sentThinkingStart = false;  // 追踪 thinking 块是否已开始
         let sentContentStart = false;
-        let thinkingBlockIndex = 0;     // thinking 块的索引
-        let textBlockIndex = 1;         // text 块的索引（与 thinking 分开）
+        const thinkingBlockIndex = 0;     // thinking 块的索引
+        const textBlockIndex = 1;         // text 块的索引（与 thinking 分开）
         const toolCallsMap = new Map<number, { id?: string; name?: string; arguments: string }>();
 
         try {

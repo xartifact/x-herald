@@ -1,13 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { LogIn } from "lucide-react"
 
+import { LogIn } from "lucide-react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+
+import { Alert, AlertDescription } from "@/ui/alert"
 import { Button } from "@/ui/button"
-import { Input } from "@/ui/input"
-import { Label } from "@/ui/label"
 import {
   Card,
   CardContent,
@@ -16,7 +16,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/ui/card"
-import { Alert, AlertDescription } from "@/ui/alert"
+import { Input } from "@/ui/input"
+import { Label } from "@/ui/label"
+
 import { useLogin } from "./useAuth"
 
 export default function AdminLogin() {

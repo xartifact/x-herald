@@ -1,11 +1,12 @@
 import { Hono } from 'hono';
+
 import { authRoutes } from '@/features/auth';
-import { providersRoutes } from '@/features/providers';
-import { modelGroupsRoutes } from '@/features/model-groups';
-import { keysRoutes } from '@/features/keys';
-import { logsRoutes } from '@/features/logs';
 import { gatewayRoutes } from '@/features/gateway';
 import { healthRoutes } from '@/features/health';
+import { keysRoutes } from '@/features/keys';
+import { logsRoutes } from '@/features/logs';
+import { modelGroupsRoutes } from '@/features/model-groups';
+import { providersRoutes } from '@/features/providers';
 
 const app = new Hono();
 

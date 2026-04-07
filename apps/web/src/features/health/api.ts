@@ -1,6 +1,7 @@
-import { Hono } from 'hono';
-import { getDatabase } from '@/core/db/client';
 import { sql } from 'drizzle-orm';
+import { Hono } from 'hono';
+
+import { getDatabase } from '@/core/db/client';
 
 const health = new Hono();
 

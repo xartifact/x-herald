@@ -1,11 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
+
+import { ChevronDown, ChevronUp, Wrench } from 'lucide-react'
+
+import { JsonViewer } from '@/components/admin/JsonViewer'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ChevronDown, ChevronUp, Wrench } from 'lucide-react'
-import { JsonViewer } from '@/components/admin/JsonViewer'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import type { LogMetadata } from '@/features/logs/db'
 
 interface ToolCallDetailsSectionProps {

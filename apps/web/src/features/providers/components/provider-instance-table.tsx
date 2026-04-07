@@ -1,8 +1,10 @@
 'use client'
 
 import { Pencil, Trash2 } from 'lucide-react'
-import { Button } from '@/ui/button'
+
+import type { ModelInstance } from '@/features/model-groups/types'
 import { Badge } from '@/ui/badge'
+import { Button } from '@/ui/button'
 import {
   Table,
   TableBody,
@@ -11,7 +13,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/ui/table'
-import type { ModelInstance } from '@/features/model-groups/types'
 
 interface ProviderInstanceTableProps {
   instances: ModelInstance[]

@@ -1,13 +1,15 @@
-import { Hono } from 'hono';
 import { eq } from 'drizzle-orm';
+import { Hono } from 'hono';
+
 import { getDatabase } from '@/core/db/client';
-import { modelGroups, virtualModels } from '@/features/model-groups/db';
-import type { VirtualKey } from '@/features/keys/db';
-import { virtualKeyMiddleware } from './middleware/virtual-key';
 import logger from '@/core/lib/logger';
-import { logRequest } from './services/log-service';
-import openaiRoutes from './routes/openai';
+import type { VirtualKey } from '@/features/keys/db';
+import { modelGroups, virtualModels } from '@/features/model-groups/db';
+
+import { virtualKeyMiddleware } from './middleware/virtual-key';
 import anthropicRoutes from './routes/anthropic';
+import openaiRoutes from './routes/openai';
+import { logRequest } from './services/log-service';
 
 const gatewayRoutes = new Hono<{
   Variables: {
@@ -33,16 +35,14 @@ gatewayRoutes.get('/models', async (c) => {
   try {
     const db = getDatabase();
 
-    // 先查询启用的虚拟模型
+    // 查询启用的虚拟模型
     const enabledVirtualModels = await db
       .select({
         name: virtualModels.name,
         displayName: virtualModels.displayName,
         createdAt: virtualModels.createdAt,
-        modelGroupCapabilities: modelGroups.capabilities,
       })
       .from(virtualModels)
-      .innerJoin(modelGroups, eq(virtualModels.modelGroupId, modelGroups.id))
       .where(eq(virtualModels.enabled, true));
 
     let modelList: Array<{ id: string; object: string; created: number; owned_by: string; capabilities?: unknown }>;
@@ -59,7 +59,6 @@ gatewayRoutes.get('/models', async (c) => {
         object: 'model',
         created: Math.floor(new Date(vm.createdAt).getTime() / 1000),
         owned_by: 'x-llm-gateway',
-        capabilities: vm.modelGroupCapabilities,
       }));
     } else {
       // 无虚拟模型时，回退到模型组列表

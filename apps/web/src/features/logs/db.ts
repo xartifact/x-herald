@@ -1,4 +1,4 @@
-import { pgTable, varchar, integer, timestamp, text, uuid, jsonb, index, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, varchar, integer, timestamp, text, uuid, jsonb, index, boolean, doublePrecision } from 'drizzle-orm/pg-core';
 
 /**
  * 日志元数据结构
@@ -222,3 +222,21 @@ export const clientRequestedModels = pgTable('client_requested_models', {
 
 export type ClientRequestedModel = typeof clientRequestedModels.$inferSelect;
 export type NewClientRequestedModel = typeof clientRequestedModels.$inferInsert;
+
+/**
+ * 模型请求统计表
+ * 用于跟踪每个模型的请求量和热度评分，支持基于时间的指数衰减算法
+ */
+export const modelRequestStats = pgTable('model_request_stats', {
+  modelId: varchar('model_id', { length: 255 }).primaryKey(),
+  requestCount: integer('request_count').default(0).notNull(),
+  lastRequestAt: timestamp('last_request_at').defaultNow().notNull(),
+  currentScore: doublePrecision('current_score').default(0).notNull(),
+  lastScoredAt: timestamp('last_scored_at').defaultNow().notNull(),
+}, (table) => ({
+  lastRequestAtIdx: index('idx_model_stats_last_request').on(table.lastRequestAt),
+  currentScoreIdx: index('idx_model_stats_current_score').on(table.currentScore),
+}));
+
+export type ModelRequestStat = typeof modelRequestStats.$inferSelect;
+export type NewModelRequestStat = typeof modelRequestStats.$inferInsert;

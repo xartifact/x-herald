@@ -1,5 +1,8 @@
 'use client'
 
+import { UseFormReturn } from 'react-hook-form'
+
+import type { Provider } from '@/features/providers/types'
 import { Button } from '@/ui/button'
 import {
   Dialog,
@@ -27,10 +30,9 @@ import {
   SelectValue,
 } from '@/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/tabs'
-import { UseFormReturn } from 'react-hook-form'
-import type { ModelGroup } from '../types'
-import type { Provider } from '@/features/providers/types'
+
 import type { InstanceFormData } from '../form-types'
+import type { ModelGroup } from '../types'
 import { InstanceConfigEditor } from './instance-config-editor'
 
 interface ModelInstanceFormProps {

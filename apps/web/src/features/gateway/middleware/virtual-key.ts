@@ -1,8 +1,9 @@
-import type { Context, Next } from 'hono';
 import { eq } from 'drizzle-orm';
+import type { Context, Next } from 'hono';
+
 import { getDatabase } from '@/core/db/client';
-import { virtualKeys } from '@/features/keys/db';
 import logger from '@/core/lib/logger';
+import { virtualKeys } from '@/features/keys/db';
 
 /**
  * 虚拟密钥认证中间件 - 验证 API 请求中的 x-api-key 或 Authorization

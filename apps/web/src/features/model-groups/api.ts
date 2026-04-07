@@ -1,11 +1,14 @@
-import { Hono } from 'hono';
 import { eq, desc } from 'drizzle-orm';
+import { Hono } from 'hono';
+
 import { getDatabase } from '@/core/db/client';
-import { modelGroups, modelInstances } from './db';
-import { providers } from '@/features/providers/db';
+import logger from '@/core/lib/logger';
 import { authMiddleware } from '@/features/auth/middleware';
 import { modelGroupRouter } from '@/features/gateway/services/model-group-router';
-import logger from '@/core/lib/logger';
+import { providers } from '@/features/providers/db';
+
+import { modelGroups, modelInstances } from './db';
+
 
 const modelGroupRoutes = new Hono();
 
@@ -94,10 +97,6 @@ modelGroupRoutes.post('/', async (c) => {
           maxTokens: 4096,
           contextWindow: 8192,
         },
-        routingConfig: data.routingConfig || {
-          strategy: 'round_robin',
-          fallbackEnabled: true,
-        },
         supportedProtocols: data.supportedProtocols || ['openai'],
         metadata: data.metadata,
       })
@@ -133,7 +132,6 @@ modelGroupRoutes.put('/:id', async (c) => {
         description: data.description,
         category: data.category,
         capabilities: data.capabilities,
-        routingConfig: data.routingConfig,
         supportedProtocols: data.supportedProtocols,
         metadata: data.metadata,
         updatedAt: new Date(),

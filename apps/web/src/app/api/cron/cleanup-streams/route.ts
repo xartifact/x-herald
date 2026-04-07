@@ -1,5 +1,6 @@
-import { cleanupStaleStreams } from '@/features/gateway/services/stream-cleanup';
 import { NextRequest, NextResponse } from 'next/server';
+
+import { cleanupStaleStreams } from '@/features/gateway/services/stream-cleanup';
 
 /**
  * Cron job endpoint for cleaning up stale streams

@@ -1,12 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { get, post, put, del as deleteRequest, patch } from '@/core/lib/api-client'
 import { toast } from 'sonner'
+
+import { get, post, put, del as deleteRequest, patch } from '@/core/lib/api-client'
+
 import type {
   VirtualModel,
   CreateVirtualModelPayload,
   UpdateVirtualModelPayload,
-  CreateMappingPayload,
-  UpdateMappingPayload,
 } from './types'
 
 interface ApiResponse<T> {
@@ -140,84 +140,6 @@ export function useToggleVirtualModel() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: virtualModelKeys.lists() })
-    },
-    onError: (error: Error) => {
-      toast.error(error.message)
-    },
-  })
-}
-
-// ==================== 映射 Mutations ====================
-
-export function useAddMapping() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async ({ virtualModelId, data }: { virtualModelId: string; data: CreateMappingPayload }) => {
-      const response = await post<ApiResponse<unknown>>(
-        `/api/virtual-models/${virtualModelId}/mappings`,
-        data as unknown as Record<string, unknown>,
-        { extractData: false }
-      )
-      if (!response.success) {
-        throw new Error(response.error || '添加映射失败')
-      }
-      return response.data
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: virtualModelKeys.detail(variables.virtualModelId) })
-      queryClient.invalidateQueries({ queryKey: virtualModelKeys.lists() })
-      toast.success('映射添加成功')
-    },
-    onError: (error: Error) => {
-      toast.error(error.message)
-    },
-  })
-}
-
-export function useUpdateMapping() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async ({ virtualModelId, mappingId, data }: { virtualModelId: string; mappingId: string; data: UpdateMappingPayload }) => {
-      const response = await put<ApiResponse<unknown>>(
-        `/api/virtual-models/${virtualModelId}/mappings/${mappingId}`,
-        data as unknown as Record<string, unknown>,
-        { extractData: false }
-      )
-      if (!response.success) {
-        throw new Error(response.error || '更新映射失败')
-      }
-      return response.data
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: virtualModelKeys.detail(variables.virtualModelId) })
-      toast.success('映射更新成功')
-    },
-    onError: (error: Error) => {
-      toast.error(error.message)
-    },
-  })
-}
-
-export function useDeleteMapping() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async ({ virtualModelId, mappingId }: { virtualModelId: string; mappingId: string }) => {
-      const response = await deleteRequest<ApiResponse<unknown>>(
-        `/api/virtual-models/${virtualModelId}/mappings/${mappingId}`,
-        { extractData: false }
-      )
-      if (!response.success) {
-        throw new Error(response.error || '删除映射失败')
-      }
-      return response.data
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: virtualModelKeys.detail(variables.virtualModelId) })
-      queryClient.invalidateQueries({ queryKey: virtualModelKeys.lists() })
-      toast.success('映射删除成功')
     },
     onError: (error: Error) => {
       toast.error(error.message)

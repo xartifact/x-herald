@@ -1,20 +1,17 @@
 /**
  * 模型组路由器
- * 实现从虚拟模型名称到具体模型实例的智能路由
+ * 按实例 priority 升序选取第一个可用实例
  */
 
-import { eq, and, desc, asc } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
+
 import { getDatabase } from '@/core/db/client';
-import { modelGroups, modelInstances } from '@/features/model-groups/db';
-import { providers } from '@/features/providers/db';
-import type {
-  ModelGroup,
-  ModelInstance,
-  ModelGroupRoutingConfig,
-  RoutingStrategy,
-} from '@/features/model-groups/types';
 import logger from '@/core/lib/logger';
-import { modelMappingService, type ModelMappingResult } from './model-mapping';
+import { modelGroups, modelInstances } from '@/features/model-groups/db';
+import type { ModelGroup, ModelInstance } from '@/features/model-groups/types';
+import { providers } from '@/features/providers/db';
+
+import type { ModelMappingResult } from './model-mapping';
 
 // 路由结果
 export interface RouteResult {
@@ -29,7 +26,7 @@ export interface RouteResult {
 
   // 路由决策信息
   decision: {
-    strategy: RoutingStrategy;
+    strategy: string;
     reason: string;
     candidates: number;
     latency?: number;
@@ -56,111 +53,18 @@ export interface RoutingContext {
   maxCost?: number;
 }
 
-// 实例得分 (用于智能路由)
-interface InstanceScore {
-  instance: ModelInstance;
-  provider: typeof providers.$inferSelect;
-  group: ModelGroup;
-  score: number;
-  latency?: number;
-  cost?: number;
-}
-
 /**
  * 模型组路由器
  */
 export class ModelGroupRouter {
-  private roundRobinIndex = new Map<string, number>();
-
   /**
-   * 路由请求到具体的模型实例
+   * 按模型组 ID 路由（由 VirtualModelRouter 调用）
+   * 组内实例按 priority 升序取第一个可用实例
    */
-  async route(context: RoutingContext): Promise<RouteResult> {
-    const startTime = Date.now();
-    const db = getDatabase();
-
-    // 1. 解析模型名称（支持 fallback 映射）
-    const mappingResult = await modelMappingService.resolveModel(
-      context.requestedModel,
-      context.virtualKeyId
-    );
-
-    // 2. 使用映射后的模型名查找模型组
-    const group = await this.findModelGroup(mappingResult.modelName);
-    if (!group) {
-      throw new ModelNotFoundError(context.requestedModel);
-    }
-
-    if (!group.enabled) {
-      throw new ModelDisabledError(mappingResult.modelName);
-    }
-
-    // 2. 获取所有可用的模型实例
-    const instances = await db
-      .select({
-        instance: modelInstances,
-        provider: providers,
-      })
-      .from(modelInstances)
-      .innerJoin(providers, eq(modelInstances.providerId, providers.id))
-      .where(
-        and(
-          eq(modelInstances.groupId, group.id),
-          eq(modelInstances.enabled, true),
-          eq(providers.enabled, true)
-        )
-      );
-
-    if (instances.length === 0) {
-      throw new NoAvailableInstanceError(mappingResult.modelName);
-    }
-
-    // 3. 过滤满足条件的实例
-    const candidates = this.filterCandidates(instances, context, group);
-
-    if (candidates.length === 0) {
-      throw new NoSuitableInstanceError(mappingResult.modelName);
-    }
-
-    // 4. 根据策略选择实例
-    const strategy = group.routingConfig?.strategy || 'round_robin';
-    const selected = await this.selectByStrategy(candidates, strategy, group.routingConfig);
-
-    const latency = Date.now() - startTime;
-
-    logger.info(
-      {
-        model: context.requestedModel,
-        resolvedModel: mappingResult.modelName,
-        mappingType: mappingResult.mappingType,
-        isMapped: mappingResult.isMapped,
-        strategy,
-        selectedProvider: selected.provider.name,
-        actualModel: selected.instance.actualModelName,
-        candidates: candidates.length,
-        latency,
-      },
-      'Model routed'
-    );
-
-    return {
-      instance: selected.instance,
-      provider: selected.provider,
-      group,
-      decision: {
-        strategy,
-        reason: selected.reason,
-        candidates: candidates.length,
-        latency,
-      },
-      mapping: mappingResult,
-    };
-  }
-
-  /**
-   * 按模型组 ID 直接路由（由 VirtualModelRouter 调用）
-   */
-  async routeByGroupId(groupId: string, context: RoutingContext): Promise<RouteResult | null> {
+  async routeByGroupId(
+    groupId: string,
+    context: RoutingContext
+  ): Promise<RouteResult | null> {
     const db = getDatabase();
 
     const groupResult = await db
@@ -195,8 +99,9 @@ export class ModelGroupRouter {
     const candidates = this.filterCandidates(instances, context, group);
     if (candidates.length === 0) return null;
 
-    const strategy = group.routingConfig?.strategy || 'round_robin';
-    const selected = await this.selectByStrategy(candidates, strategy, group.routingConfig);
+    // 按 priority 升序取第一个可用实例
+    const sorted = [...candidates].sort((a, b) => a.instance.priority - b.instance.priority);
+    const selected = sorted[0];
 
     const mappingResult: ModelMappingResult = {
       modelName: group.name,
@@ -205,51 +110,27 @@ export class ModelGroupRouter {
       mappingType: 'virtual',
     };
 
+    logger.debug(
+      {
+        groupId,
+        selectedInstance: selected.instance.name,
+        priority: selected.instance.priority,
+        candidates: candidates.length,
+      },
+      'Instance selected by priority'
+    );
+
     return {
       instance: selected.instance,
       provider: selected.provider,
       group,
       decision: {
-        strategy,
-        reason: selected.reason,
+        strategy: 'priority',
+        reason: `Priority selection (priority: ${selected.instance.priority})`,
         candidates: candidates.length,
       },
       mapping: mappingResult,
     };
-  }
-
-  /**
-   * 查找模型组
-   */
-  private async findModelGroup(name: string): Promise<ModelGroup | null> {
-    const db = getDatabase();
-
-    // 先按精确名称查找
-    const exactMatch = await db
-      .select()
-      .from(modelGroups)
-      .where(eq(modelGroups.name, name))
-      .limit(1);
-
-    if (exactMatch.length > 0) {
-      return exactMatch[0];
-    }
-
-    // 尝试按别名查找 (独立 aliases 字段)
-    const withAlias = await db
-      .select()
-      .from(modelGroups)
-      .where(eq(modelGroups.enabled, true));
-
-    return withAlias.find((g) => {
-      // 优先检查独立的 aliases 字段
-      if (g.aliases?.includes(name)) {
-        return true;
-      }
-      // 兼容旧数据：检查 metadata.aliases
-      const metadataAliases = g.metadata?.aliases as string[] | undefined;
-      return metadataAliases?.includes(name);
-    }) || null;
   }
 
   /**
@@ -298,193 +179,6 @@ export class ModelGroupRouter {
         provider,
         group,
       }));
-  }
-
-  /**
-   * 根据策略选择实例
-   */
-  private async selectByStrategy(
-    candidates: Array<{ instance: ModelInstance; provider: typeof providers.$inferSelect; group: ModelGroup }>,
-    strategy: RoutingStrategy,
-    config?: ModelGroupRoutingConfig
-  ): Promise<{ instance: ModelInstance; provider: typeof providers.$inferSelect; group: ModelGroup; reason: string }> {
-    switch (strategy) {
-      case 'round_robin':
-        return this.roundRobin(candidates, config);
-
-      case 'weighted':
-        return this.weighted(candidates, config);
-
-      case 'priority':
-        return this.priority(candidates);
-
-      case 'least_latency':
-        return this.leastLatency(candidates);
-
-      case 'cost_optimized':
-        return this.costOptimized(candidates, config);
-
-      case 'smart':
-        return this.smart(candidates, config);
-
-      default:
-        return this.roundRobin(candidates, config);
-    }
-  }
-
-  /**
-   * 轮询策略
-   */
-  private roundRobin(
-    candidates: Array<{ instance: ModelInstance; provider: typeof providers.$inferSelect; group: ModelGroup }>,
-    config?: ModelGroupRoutingConfig
-  ): { instance: ModelInstance; provider: typeof providers.$inferSelect; group: ModelGroup; reason: string } {
-    const groupId = candidates[0].group.id;
-    const current = this.roundRobinIndex.get(groupId) || 0;
-    const index = current % candidates.length;
-
-    this.roundRobinIndex.set(groupId, index + 1);
-
-    return {
-      ...candidates[index],
-      reason: `Round robin selection (index: ${index})`,
-    };
-  }
-
-  /**
-   * 权重策略
-   */
-  private weighted(
-    candidates: Array<{ instance: ModelInstance; provider: typeof providers.$inferSelect; group: ModelGroup }>,
-    config?: ModelGroupRoutingConfig
-  ): { instance: ModelInstance; provider: typeof providers.$inferSelect; group: ModelGroup; reason: string } {
-    const weights = candidates.map((c) => c.instance.weight);
-    const totalWeight = weights.reduce((sum, w) => sum + w, 0);
-    let random = Math.random() * totalWeight;
-
-    for (let i = 0; i < candidates.length; i++) {
-      random -= weights[i];
-      if (random <= 0) {
-        return {
-          ...candidates[i],
-          reason: `Weighted selection (weight: ${weights[i]}/${totalWeight})`,
-        };
-      }
-    }
-
-    return {
-      ...candidates[candidates.length - 1],
-      reason: 'Weighted selection (fallback)',
-    };
-  }
-
-  /**
-   * 优先级策略
-   */
-  private priority(
-    candidates: Array<{ instance: ModelInstance; provider: typeof providers.$inferSelect; group: ModelGroup }>
-  ): { instance: ModelInstance; provider: typeof providers.$inferSelect; group: ModelGroup; reason: string } {
-    const sorted = [...candidates].sort((a, b) => a.instance.priority - b.instance.priority);
-    return {
-      ...sorted[0],
-      reason: `Priority selection (priority: ${sorted[0].instance.priority})`,
-    };
-  }
-
-  /**
-   * 最少延迟策略
-   */
-  private leastLatency(
-    candidates: Array<{ instance: ModelInstance; provider: typeof providers.$inferSelect; group: ModelGroup }>
-  ): { instance: ModelInstance; provider: typeof providers.$inferSelect; group: ModelGroup; reason: string } {
-    // 这里可以根据历史延迟数据排序
-    // 简化实现：优先选择最近检查过的健康实例
-    const sorted = [...candidates].sort((a, b) => {
-      const aTime = a.instance.lastCheckedAt?.getTime() || 0;
-      const bTime = b.instance.lastCheckedAt?.getTime() || 0;
-      return bTime - aTime;
-    });
-
-    return {
-      ...sorted[0],
-      reason: 'Least latency (recently checked)',
-    };
-  }
-
-  /**
-   * 成本优化策略
-   */
-  private costOptimized(
-    candidates: Array<{ instance: ModelInstance; provider: typeof providers.$inferSelect; group: ModelGroup }>,
-    config?: ModelGroupRoutingConfig
-  ): { instance: ModelInstance; provider: typeof providers.$inferSelect; group: ModelGroup; reason: string } {
-    const withCost = candidates
-      .filter((c) => c.instance.costPer1kTokens)
-      .sort((a, b) => {
-        const aCost = (a.instance.costPer1kTokens?.input || 0) + (a.instance.costPer1kTokens?.output || 0);
-        const bCost = (b.instance.costPer1kTokens?.input || 0) + (b.instance.costPer1kTokens?.output || 0);
-        return aCost - bCost;
-      });
-
-    if (withCost.length > 0) {
-      const cost = withCost[0].instance.costPer1kTokens;
-      return {
-        ...withCost[0],
-        reason: `Cost optimized ($${cost?.input}/$${cost?.output} per 1K tokens)`,
-      };
-    }
-
-    return this.weighted(candidates, config);
-  }
-
-  /**
-   * 智能路由策略
-   */
-  private smart(
-    candidates: Array<{ instance: ModelInstance; provider: typeof providers.$inferSelect; group: ModelGroup }>,
-    config?: ModelGroupRoutingConfig
-  ): { instance: ModelInstance; provider: typeof providers.$inferSelect; group: ModelGroup; reason: string } {
-    // 综合评分：健康状态 + 权重 + 成本 + 延迟
-    const scores: InstanceScore[] = candidates.map((c) => {
-      let score = 0;
-      let reasons: string[] = [];
-
-      // 健康状态加分
-      if (c.instance.status === 'healthy') {
-        score += 30;
-        reasons.push('healthy');
-      }
-
-      // 权重加分 (归一化到 0-20)
-      score += (c.instance.weight / 100) * 20;
-      reasons.push(`weight:${c.instance.weight}`);
-
-      // 优先级加分 (优先级 0 最高)
-      score += Math.max(0, 10 - c.instance.priority);
-      reasons.push(`priority:${c.instance.priority}`);
-
-      // 成本加分 (如果知道成本)
-      if (c.instance.costPer1kTokens) {
-        const avgCost = (c.instance.costPer1kTokens.input + c.instance.costPer1kTokens.output) / 2;
-        // 成本越低分越高 (假设成本范围 0-0.1)
-        score += Math.max(0, 20 - avgCost * 200);
-        reasons.push(`cost:${avgCost.toFixed(4)}`);
-      }
-
-      return {
-        ...c,
-        score,
-      };
-    });
-
-    const best = scores.sort((a, b) => b.score - a.score)[0];
-
-    return {
-      instance: best.instance,
-      provider: best.provider,
-      group: best.group,
-      reason: `Smart selection (score: ${best.score.toFixed(2)})`,
-    };
   }
 
   /**

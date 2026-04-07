@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import RenderMonitor from './RenderMonitor';
+
 import { Button } from '@/ui/button';
+
+import RenderMonitor from './RenderMonitor';
 
 /**
  * 开发工具栏

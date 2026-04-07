@@ -1,8 +1,9 @@
 'use client'
 
 import { Pencil, Trash2, ArrowUp, ArrowDown } from 'lucide-react'
-import { Button } from '@/ui/button'
+
 import { Badge } from '@/ui/badge'
+import { Button } from '@/ui/button'
 import {
   Table,
   TableBody,
@@ -11,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/ui/table'
+
 import type { ModelInstance } from '../types'
 
 interface ModelInstanceTableProps {

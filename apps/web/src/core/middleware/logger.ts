@@ -1,4 +1,5 @@
 import type { Context, Next } from 'hono';
+
 import logger, { isRequestLogEnabled } from '../lib/logger';
 
 export async function requestLogger(c: Context, next: Next) {

@@ -1,5 +1,5 @@
-import type { LogMetadata } from '@/features/logs/db';
 import logger from '@/core/lib/logger';
+import type { LogMetadata } from '@/features/logs/db';
 
 /**
  * 元数据提取参数

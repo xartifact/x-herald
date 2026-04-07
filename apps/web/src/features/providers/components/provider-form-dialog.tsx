@@ -2,7 +2,9 @@
 
 import { Eye, EyeOff } from 'lucide-react'
 import { UseFormReturn } from 'react-hook-form'
+
 import { Button } from '@/ui/button'
+import { Checkbox } from '@/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -22,7 +24,7 @@ import {
 } from '@/ui/form'
 import { Input } from '@/ui/input'
 import { Switch } from '@/ui/switch'
-import { Checkbox } from '@/ui/checkbox'
+
 import type { ProtocolsConfig } from '../types'
 
 interface ProtocolOption {

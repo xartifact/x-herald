@@ -1,5 +1,6 @@
-import { cors } from 'hono/cors';
 import type { Context, Next } from 'hono';
+import { cors } from 'hono/cors';
+
 import type { GatewayConfig } from '@/core/config';
 
 export function createCorsMiddleware(config: GatewayConfig) {

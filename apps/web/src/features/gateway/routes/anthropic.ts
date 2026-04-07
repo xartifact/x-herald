@@ -1,10 +1,13 @@
 import { Hono } from 'hono';
-import type { VirtualKey } from '@/features/keys/db';
+
 import logger from '@/core/lib/logger';
+import type { VirtualKey } from '@/features/keys/db';
+
 import { handleChatCompletion } from '../services/chat-completion-handler';
-import { logRequest } from '../services/log-service';
-import { modelGroupRouter } from '../services/model-group-router';
 import { identifyClient } from '../services/client-identifier';
+import { logRequest } from '../services/log-service';
+import { ModelNotFoundError } from '../services/model-group-router';
+import { virtualModelRouter } from '../services/virtual-model-router';
 
 const anthropicRoutes = new Hono<{
   Variables: {
@@ -56,8 +59,8 @@ anthropicRoutes.post('/messages/count_tokens', async (c) => {
       }, 400);
     }
 
-    // 1. 使用模型组路由器选择实例（ Anthropic count_tokens 需要 Anthropic 协议）
-    const routeResult = await modelGroupRouter.route({
+    // 1. 通过虚拟模型路由器选择实例（ Anthropic count_tokens 需要 Anthropic 协议）
+    const routeResult = await virtualModelRouter.route({
       requestedModel: modelName,
       streaming: false,
       hasTools: !!body.tools?.length,
@@ -66,6 +69,10 @@ anthropicRoutes.post('/messages/count_tokens', async (c) => {
       ),
       virtualKeyId: virtualKey.id,
     });
+
+    if (!routeResult) {
+      throw new ModelNotFoundError(modelName);
+    }
 
     const { instance, provider, mapping } = routeResult;
 

@@ -1,9 +1,10 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
+
 import Editor, { DiffEditor, loader } from "@monaco-editor/react"
-import * as monaco from "monaco-editor"
 import { Copy, Check } from "lucide-react"
+import * as monaco from "monaco-editor"
 
 import { Button } from "@/ui/button"
 

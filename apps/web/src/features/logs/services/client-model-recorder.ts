@@ -1,7 +1,9 @@
 import { eq, sql } from 'drizzle-orm';
+
 import { getDatabase } from '@/core/db/client';
-import { clientRequestedModels } from '../db';
 import logger from '@/core/lib/logger';
+
+import { clientRequestedModels } from '../db';
 
 /**
  * 记录客户端请求的模型名称

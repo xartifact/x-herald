@@ -12,13 +12,16 @@ import {
   RefreshCw,
   Server,
 } from 'lucide-react'
-import { Button } from '@/ui/button'
+
+import type { ModelInstance } from '@/features/model-groups/types'
 import { Badge } from '@/ui/badge'
+import { Button } from '@/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card'
 import { Separator } from '@/ui/separator'
+
 import { ProviderInstanceTable } from './provider-instance-table'
 import type { Provider, ProtocolsConfig } from '../types'
-import type { ModelInstance } from '@/features/model-groups/types'
+
 
 interface ProviderCardProps {
   provider: Provider

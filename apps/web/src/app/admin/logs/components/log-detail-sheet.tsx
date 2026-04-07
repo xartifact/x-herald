@@ -1,21 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import {
-  Sheet,
-  SheetContent,
-} from '@/components/ui/sheet'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+
 import {
   Copy,
   Check,
@@ -26,10 +12,27 @@ import {
   Rows2,
   Filter,
 } from 'lucide-react'
+
 import { JsonViewer, JsonDiffViewer, HeadersViewer } from '@/components/admin/JsonViewer'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Separator } from '@/components/ui/separator'
+import {
+  Sheet,
+  SheetContent,
+} from '@/components/ui/sheet'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/core/lib/utils'
-import type { Log } from '@/hooks/use-logs'
 import { CLIENT_REGISTRY } from '@/features/gateway/services/client-identifier'
+import type { Log } from '@/hooks/use-logs'
+
 import { MessageTimelineSection } from './message-timeline-section'
 import { ToolCallDetailsSection } from './tool-call-details-section'
 

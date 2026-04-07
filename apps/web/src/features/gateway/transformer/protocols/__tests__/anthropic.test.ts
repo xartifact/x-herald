@@ -4,8 +4,10 @@
  */
 
 import { describe, it, expect, beforeEach } from 'bun:test';
-import { AnthropicTransformer } from '../anthropic';
+
 import type { TransformerContext, StandardRequest, StandardResponse } from '@/types';
+
+import { AnthropicTransformer } from '../anthropic';
 
 describe('AnthropicTransformer', () => {
   let transformer: AnthropicTransformer;

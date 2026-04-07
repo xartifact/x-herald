@@ -3,12 +3,13 @@
  * 实现三级匹配策略：精确匹配 → 别名匹配 → 默认模型组 fallback
  */
 
-import { eq, and } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
+
 import { getDatabase } from '@/core/db/client';
-import { modelGroups, virtualModels } from '@/features/model-groups/db';
-import type { ModelGroup } from '@/features/model-groups/types';
-import { getModelMappingConfig } from '@/features/gateway-config';
 import logger from '@/core/lib/logger';
+import { getModelMappingConfig } from '@/features/gateway-config';
+import { modelGroups } from '@/features/model-groups/db';
+import type { ModelGroup } from '@/features/model-groups/types';
 
 export interface ModelMappingResult {
   modelName: string;        // 映射后的模型名称
@@ -43,47 +44,7 @@ export class ModelMappingService {
 
     const db = getDatabase();
 
-    // Level 0: Virtual Model 匹配（仅处理有 modelGroupId 的旧模式）
-    // 新模式（有 modelMappings）由 VirtualModelRouter 在 chat-completion-handler 中先处理
-    const virtualMatch = await db
-      .select({
-        virtualModelName: virtualModels.name,
-        modelGroupId: virtualModels.modelGroupId,
-        modelGroupName: modelGroups.name,
-      })
-      .from(virtualModels)
-      .leftJoin(modelGroups, eq(virtualModels.modelGroupId, modelGroups.id))
-      .where(
-        and(
-          eq(virtualModels.name, requestedModel),
-          eq(virtualModels.enabled, true)
-        )
-      )
-      .limit(1);
-
-    if (virtualMatch.length > 0 && virtualMatch[0].modelGroupId && virtualMatch[0].modelGroupName) {
-      const resolved = virtualMatch[0].modelGroupName;
-      if (resolved !== requestedModel) {
-        logger.info(
-          { originalModel: requestedModel, resolvedModel: resolved, type: 'virtual' },
-          'Model resolved via virtual model'
-        );
-      }
-      return {
-        modelName: resolved,
-        isMapped: resolved !== requestedModel,
-        originalModel: requestedModel,
-        mappingType: 'virtual',
-      };
-    }
-
-    // 如果虚拟模型匹配了但没有 modelGroupId（纯新模式），跳过继续后面的匹配
-    if (virtualMatch.length > 0 && !virtualMatch[0].modelGroupId) {
-      // 新模式虚拟模型应该已被 VirtualModelRouter 处理
-      // 走到这里说明 VirtualModelRouter 返回了 null（无映射），继续后续匹配
-    }
-
-    // 2. 精确匹配
+    // 精确匹配（虚拟模型路由已由 VirtualModelRouter 在上游处理）
     const exactMatch = await db
       .select()
       .from(modelGroups)

@@ -1,13 +1,58 @@
-import { Hono } from 'hono';
 import { eq, and, gte, lte, sql, desc, lt, isNotNull } from 'drizzle-orm';
+import { Hono } from 'hono';
+
 import { getDatabase } from '@/core/db/client';
-import { requestLogs } from './db';
-import { authMiddleware } from '../auth/middleware';
 import logger from '@/core/lib/logger';
+
+import { requestLogs } from './db';
+import { recalculateAll } from './services/rank-calculator';
+import { authMiddleware } from '../auth/middleware';
 
 const logsRoutes = new Hono();
 
-// 所有路由都需要认证
+// Module-level concurrency guard
+let isRecalculating = false;
+
+// POST /api/logs/rank-recalculate - CRON endpoint with Bearer token authentication
+logsRoutes.post('/rank-recalculate', async (c) => {
+  const authHeader = c.req.header('authorization');
+  const cronSecret = process.env.CRON_SECRET;
+
+  // Fail-safe: reject if CRON_SECRET is not configured
+  if (!cronSecret) {
+    logger.error('CRON_SECRET environment variable not configured');
+    return c.json({ error: 'Server misconfiguration', code: 'CONFIG_ERROR' }, 500);
+  }
+
+  if (authHeader !== `Bearer ${cronSecret}`) {
+    return c.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, 401);
+  }
+
+  // Concurrency guard
+  if (isRecalculating) {
+    return c.json(
+      { error: 'Recalculation already in progress', code: 'RANK_RECALC_IN_PROGRESS' },
+      409
+    );
+  }
+
+  isRecalculating = true;
+  try {
+    const result = await recalculateAll();
+    logger.info(result, 'Rank recalculation completed');
+    return c.json({ success: true, data: result });
+  } catch (error) {
+    logger.error({ error }, 'Rank recalculation failed');
+    return c.json(
+      { error: 'Failed to recalculate ranks', code: 'RANK_RECALC_ERROR' },
+      500
+    );
+  } finally {
+    isRecalculating = false;
+  }
+});
+
+// Auth middleware applies to all routes AFTER this point
 logsRoutes.use('*', authMiddleware);
 
 // GET /api/logs - 列出日志（带分页和筛选）

@@ -1,6 +1,8 @@
 import { Hono, type Context } from 'hono';
-import type { VirtualKey } from '@/features/keys/db';
+
 import logger from '@/core/lib/logger';
+import type { VirtualKey } from '@/features/keys/db';
+
 import { handleChatCompletion } from '../services/chat-completion-handler';
 
 /**
@@ -202,7 +204,7 @@ function convertStreamToResponsesFormat(
   let outputItemId: string | undefined;
   let hasSentCreated = false;
   let hasSentOutputItem = false;
-  let outputIndex = 0;
+  const outputIndex = 0;
 
   // 创建转换流
   const transformStream = new TransformStream<Uint8Array, Uint8Array>({

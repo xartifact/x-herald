@@ -1,5 +1,7 @@
 'use client'
 
+import type { UseFormReturn } from 'react-hook-form'
+
 import { Button } from '@/ui/button'
 import {
   Dialog,
@@ -20,16 +22,9 @@ import {
 } from '@/ui/form'
 import { Input } from '@/ui/input'
 import { Switch } from '@/ui/switch'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/ui/select'
-import type { UseFormReturn } from 'react-hook-form'
+
 import type { VirtualModelFormData } from '../useVirtualModelPage'
-import type { ModelGroup } from '@/features/model-groups/types'
+
 
 interface VirtualModelFormDialogProps {
   open: boolean
@@ -37,18 +32,8 @@ interface VirtualModelFormDialogProps {
   form: UseFormReturn<VirtualModelFormData>
   editingId: string | null
   isPending: boolean
-  groups: ModelGroup[]
   onSubmit: (data: VirtualModelFormData) => void
 }
-
-const ROUTING_STRATEGIES = [
-  { value: 'round_robin', label: '轮询 (Round Robin)' },
-  { value: 'weighted', label: '权重随机 (Weighted)' },
-  { value: 'priority', label: '优先级 (Priority)' },
-  { value: 'smart', label: '智能路由 (Smart)' },
-  { value: 'least_latency', label: '最低延迟 (Least Latency)' },
-  { value: 'cost_optimized', label: '成本优化 (Cost Optimized)' },
-]
 
 export function VirtualModelFormDialog({
   open,
@@ -56,7 +41,6 @@ export function VirtualModelFormDialog({
   form,
   editingId,
   isPending,
-  groups,
   onSubmit,
 }: VirtualModelFormDialogProps) {
   return (
@@ -66,8 +50,8 @@ export function VirtualModelFormDialog({
           <DialogTitle>{editingId ? '编辑虚拟模型' : '创建虚拟模型'}</DialogTitle>
           <DialogDescription>
             {editingId
-              ? '修改虚拟模型配置。映射关系请在详情页管理。'
-              : '创建一个对外暴露的虚拟模型名称'}
+              ? '修改虚拟模型配置。路由规则请在详情页管理。'
+              : '创建一个对外暴露的虚拟模型名称，通过规则引擎路由到具体模型'}
           </DialogDescription>
         </DialogHeader>
 
@@ -110,62 +94,8 @@ export function VirtualModelFormDialog({
                 <FormItem>
                   <FormLabel>描述</FormLabel>
                   <FormControl>
-                    <Input placeholder="映射到 GPT-4 Turbo 的虚拟模型" {...field} />
+                    <Input placeholder="路由到 GPT-4 Turbo 的虚拟模型" {...field} />
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="modelGroupId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>默认模型组</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="选择模型组（可选）" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {groups.map((group) => (
-                        <SelectItem key={group.id} value={group.id}>
-                          {group.displayName} ({group.name})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    兼容旧模式的直接映射，新模式建议使用映射配置
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="routingStrategy"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>路由策略</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="选择路由策略" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {ROUTING_STRATEGIES.map((s) => (
-                        <SelectItem key={s.value} value={s.value}>
-                          {s.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>当有多个映射目标时，使用此策略选择</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

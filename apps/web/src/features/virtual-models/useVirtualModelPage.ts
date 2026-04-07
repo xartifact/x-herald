@@ -1,7 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+
 import { useForm } from 'react-hook-form'
+
+import type { VirtualModel } from './types'
 import {
   useVirtualModels,
   useCreateVirtualModel,
@@ -9,14 +12,11 @@ import {
   useDeleteVirtualModel,
   useToggleVirtualModel,
 } from './useVirtualModels'
-import type { VirtualModel } from './types'
 
 export interface VirtualModelFormData {
   name: string
   displayName: string
   description: string
-  modelGroupId: string
-  routingStrategy: string
   enabled: boolean
 }
 
@@ -36,8 +36,6 @@ export function useVirtualModelPage() {
       name: '',
       displayName: '',
       description: '',
-      modelGroupId: '',
-      routingStrategy: 'round_robin',
       enabled: true,
     },
   })
@@ -48,8 +46,6 @@ export function useVirtualModelPage() {
       name: '',
       displayName: '',
       description: '',
-      modelGroupId: '',
-      routingStrategy: 'round_robin',
       enabled: true,
     })
     setDialogOpen(true)
@@ -61,8 +57,6 @@ export function useVirtualModelPage() {
       name: vm.name,
       displayName: vm.displayName || '',
       description: vm.description || '',
-      modelGroupId: vm.modelGroupId || '',
-      routingStrategy: vm.routingConfig?.strategy || 'round_robin',
       enabled: vm.enabled,
     })
     setDialogOpen(true)
@@ -82,11 +76,6 @@ export function useVirtualModelPage() {
       name: data.name,
       displayName: data.displayName || undefined,
       description: data.description || undefined,
-      modelGroupId: data.modelGroupId || undefined,
-      routingConfig: {
-        strategy: data.routingStrategy,
-        fallbackEnabled: true,
-      },
       enabled: data.enabled,
     }
 

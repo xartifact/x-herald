@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useMemo } from 'react'
+
 import {
   ReactFlow,
   Controls,
@@ -15,11 +16,11 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 
-import { ModelTriggerNode } from './nodes/model-trigger-node'
-import { ConditionNode } from './nodes/condition-node'
-import { TargetNode } from './nodes/target-node'
-import { RejectNode } from './nodes/reject-node'
 import type { ModelRoute } from '../types'
+import { ConditionNode } from './nodes/condition-node'
+import { ModelTriggerNode } from './nodes/model-trigger-node'
+import { RejectNode } from './nodes/reject-node'
+import { TargetNode } from './nodes/target-node'
 
 // 虚拟模型类型
 interface VirtualModel {

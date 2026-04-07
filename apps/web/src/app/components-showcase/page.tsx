@@ -1,5 +1,10 @@
 "use client"
 
+import Link from "next/link"
+import { toast } from "sonner"
+
+import { Alert, AlertDescription, AlertTitle } from "@/ui/alert"
+import { Badge } from "@/ui/badge"
 import { Button } from "@/ui/button"
 import {
   Card,
@@ -9,18 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/ui/card"
-import { Input } from "@/ui/input"
-import { Label } from "@/ui/label"
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/ui/table"
-import { Badge } from "@/ui/badge"
+import { Checkbox } from "@/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -30,6 +24,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/ui/dialog"
+import { Input } from "@/ui/input"
+import { Label } from "@/ui/label"
 import {
   Select,
   SelectContent,
@@ -37,14 +33,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/tabs"
-import { Switch } from "@/ui/switch"
-import { Checkbox } from "@/ui/checkbox"
-import { Textarea } from "@/ui/textarea"
-import { Alert, AlertDescription, AlertTitle } from "@/ui/alert"
 import { Separator } from "@/ui/separator"
-import { toast } from "sonner"
-import Link from "next/link"
+import { Switch } from "@/ui/switch"
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/ui/table"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/tabs"
+import { Textarea } from "@/ui/textarea"
+
 
 export default function ComponentsShowcasePage() {
   return (

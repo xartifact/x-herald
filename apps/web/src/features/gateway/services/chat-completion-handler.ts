@@ -58,7 +58,7 @@ export async function handleChatCompletion(
   preprocessedBody?: Record<string, unknown>,
 ): Promise<Response> {
   const startTime = Date.now();
-  const requestId = crypto.randomUUID();
+  const requestId = c.get('requestId') ?? crypto.randomUUID();
   const virtualKey = c.get('virtualKey') as VirtualKey;
   const clientIp = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown';
   const userAgent = c.req.header('user-agent') || 'unknown';
@@ -312,7 +312,7 @@ export async function handleChatCompletion(
     );
 
     // 调试日志：记录发送给 Provider 的完整请求体
-    logger.debug(
+    logger.trace(
       {
         requestId,
         provider: provider.name,
@@ -349,80 +349,153 @@ export async function handleChatCompletion(
     // T2: 预处理完成，即将发起 Provider 请求
     const preprocessEndTime = Date.now();
 
-    // 创建 AbortController 用于超时和客户端断开控制
-    const abortController = new AbortController();
-    const CONNECT_TIMEOUT_MS = 30000; // 30 秒连接超时
-    // 首字节超时（TTFB）：等待 Provider 开始响应的最大时间
-    // 流式请求的 thinking 模型可能需要较长思考时间，因此给予更长的超时
+    const CONNECT_TIMEOUT_MS = 30000;
     const TTFB_TIMEOUT_MS = isStreaming ? 600000 : 300000; // 流式 10 分钟，非流式 5 分钟
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-    // 设置首字节超时
-    timeoutId = setTimeout(() => {
-      logger.warn({ requestId, timeout: TTFB_TIMEOUT_MS, streaming: isStreaming }, 'Request TTFB timeout, aborting');
-      abortController.abort();
-    }, TTFB_TIMEOUT_MS);
+    // 重试配置（来自实例配置，提供合理默认值）
+    const retryConfig = instance.config?.retryConfig;
+    const maxRetries = retryConfig?.maxRetries ?? 2;
+    const baseRetryDelay = retryConfig?.retryDelay ?? 500;
+    const retryableStatusCodes = retryConfig?.retryableStatusCodes ?? [429, 500, 502, 503, 504, 521];
 
-    // 监听客户端断开，同时取消上游请求
+    // 监听客户端断开（跨重试共用，不重复注册）
+    let isClientDisconnected = false;
     const clientAbortHandler = () => {
-      logger.info({ requestId }, 'Client disconnected, aborting upstream request');
-      abortController.abort();
+      isClientDisconnected = true;
     };
     c.req.raw.signal?.addEventListener('abort', clientAbortHandler);
 
-    let response: Response;
+    let response: Response | undefined;
+    let providerTtfbTime = 0;
+    let retryCount = 0;
+    let lastRetryableResponse: Response | undefined;
+
     try {
-      response = await fetch(targetUrl, {
-        method: 'POST',
-        headers: providerRequestHeaders,
-        body: requestBody,
-        signal: abortController.signal,
-        connectTimeout: CONNECT_TIMEOUT_MS,
-      } as RequestInit);
-    } catch (fetchError) {
-      // 清理超时和事件监听
-      if (timeoutId) clearTimeout(timeoutId);
-      c.req.raw.signal?.removeEventListener('abort', clientAbortHandler);
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        // 重试等待（首次直接发起，后续使用指数退避）
+        if (attempt > 0) {
+          if (isClientDisconnected) break;
 
-      // 处理超时或取消错误
-      if (fetchError instanceof Error && fetchError.name === 'AbortError') {
-        const isTimeout = !c.req.raw.signal?.aborted;
-        const errorMessage = isTimeout
-          ? `Request TTFB timeout after ${TTFB_TIMEOUT_MS / 1000}s`
-          : 'Client disconnected';
+          const retryAfterHeader = lastRetryableResponse?.headers.get('Retry-After');
+          const retryAfterSec = retryAfterHeader ? parseInt(retryAfterHeader, 10) : NaN;
+          const delay = !isNaN(retryAfterSec)
+            ? retryAfterSec * 1000
+            : Math.min(baseRetryDelay * Math.pow(2, attempt - 1), 30000) + Math.round(Math.random() * 200);
 
-        logger.warn({ requestId, isTimeout }, errorMessage);
+          logger.info(
+            { requestId, attempt, statusCode: lastRetryableResponse?.status, retryDelay: delay },
+            '[Retry] Retrying upstream request',
+          );
+          await new Promise<void>((r) => setTimeout(r, delay));
+          retryCount = attempt;
+        }
 
-        return handleGatewayError({
-          error: new Error(errorMessage),
-          c,
-          virtualKey,
-          requestHeaders: clientRequestHeaders,
-          providerRequestHeaders,
-          rawBody,
-          clientIp,
-          userAgent,
-          requestPath,
-          requestMethod,
-          isStreaming,
-          startTime,
-          transformedBody,
-          incomingProtocol,
-          targetProtocol,
-          logId,
-        });
+        if (isClientDisconnected) break;
+
+        // 每次尝试使用独立的 AbortController，避免已取消的信号污染重试
+        const abortController = new AbortController();
+        const propagateDisconnect = () => abortController.abort();
+        c.req.raw.signal?.addEventListener('abort', propagateDisconnect);
+
+        const timeoutId = setTimeout(() => {
+          logger.warn({ requestId, timeout: TTFB_TIMEOUT_MS, streaming: isStreaming }, 'Request TTFB timeout, aborting');
+          abortController.abort();
+        }, TTFB_TIMEOUT_MS);
+
+        let attemptResponse: Response;
+        try {
+          attemptResponse = await fetch(targetUrl, {
+            method: 'POST',
+            headers: providerRequestHeaders,
+            body: requestBody,
+            signal: abortController.signal,
+            connectTimeout: CONNECT_TIMEOUT_MS,
+          } as RequestInit);
+        } catch (fetchError) {
+          clearTimeout(timeoutId);
+          c.req.raw.signal?.removeEventListener('abort', propagateDisconnect);
+
+          if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+            const isTimeout = !isClientDisconnected;
+            const errorMessage = isTimeout
+              ? `Request TTFB timeout after ${TTFB_TIMEOUT_MS / 1000}s`
+              : 'Client disconnected';
+
+            logger.warn({ requestId, isTimeout }, errorMessage);
+
+            return handleGatewayError({
+              error: new Error(errorMessage),
+              c,
+              virtualKey,
+              requestHeaders: clientRequestHeaders,
+              providerRequestHeaders,
+              rawBody,
+              clientIp,
+              userAgent,
+              requestPath,
+              requestMethod,
+              isStreaming,
+              startTime,
+              transformedBody,
+              incomingProtocol,
+              targetProtocol,
+              logId,
+            });
+          }
+          throw fetchError;
+        }
+
+        clearTimeout(timeoutId);
+        c.req.raw.signal?.removeEventListener('abort', propagateDisconnect);
+        providerTtfbTime = Date.now();
+
+        // 判断是否需要重试
+        if (
+          !attemptResponse.ok &&
+          retryableStatusCodes.includes(attemptResponse.status) &&
+          attempt < maxRetries &&
+          !isClientDisconnected
+        ) {
+          lastRetryableResponse = attemptResponse;
+          continue;
+        }
+
+        response = attemptResponse;
+        break;
       }
-      throw fetchError;
+    } finally {
+      c.req.raw.signal?.removeEventListener('abort', clientAbortHandler);
     }
 
-    // T3: Provider 首字节返回
-    const providerTtfbTime = Date.now();
+    // T3: Provider 首字节返回（providerTtfbTime 在循环内赋值）
 
-    // 清理超时和事件监听
-    if (timeoutId) clearTimeout(timeoutId);
-    c.req.raw.signal?.removeEventListener('abort', clientAbortHandler);
+    // 客户端已断开且所有重试均未完成
+    if (!response) {
+      return handleGatewayError({
+        error: new Error('Client disconnected'),
+        c,
+        virtualKey,
+        requestHeaders: clientRequestHeaders,
+        providerRequestHeaders,
+        rawBody,
+        clientIp,
+        userAgent,
+        requestPath,
+        requestMethod,
+        isStreaming,
+        startTime,
+        transformedBody,
+        incomingProtocol,
+        targetProtocol,
+        logId,
+      });
+    }
 
     if (!response.ok) {
+      if (retryCount > 0) {
+        logger.info({ requestId, retryCount, statusCode: response.status }, '[Retry] All retries exhausted');
+      }
+
       // 透传模式：直接转发 Provider 原始错误响应，不做重写
       const errorHandler = isPassthroughEnabled
         ? handleProviderErrorPassthrough

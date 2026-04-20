@@ -2,7 +2,9 @@ import { eq, and, gte, lte, sql, desc, lt, isNotNull } from 'drizzle-orm';
 import { Hono } from 'hono';
 
 import { getDatabase } from '@/core/db/client';
-import logger from '@/core/lib/logger';
+import rootLogger from '@/core/lib/logger';
+
+const logger = rootLogger.child({ module: 'logs' });
 
 import { requestLogs } from './db';
 import { recalculateAll } from './services/rank-calculator';
@@ -174,7 +176,7 @@ logsRoutes.get('/', async (c) => {
       },
     });
   } catch (error) {
-    logger.error({ error }, 'Failed to list logs');
+    logger.warn({ err: error }, 'Failed to list logs');
     return c.json(
       {
         error: 'Failed to list logs',
@@ -248,7 +250,7 @@ logsRoutes.get('/client-models', async (c) => {
       data: processedStats,
     });
   } catch (error) {
-    logger.error({ error }, 'Failed to get client model stats');
+    logger.warn({ err: error }, 'Failed to get client model stats');
     return c.json(
       {
         error: 'Failed to get client model stats',
@@ -282,7 +284,7 @@ logsRoutes.get('/:id', async (c) => {
       data: log[0],
     });
   } catch (error) {
-    logger.error({ error }, 'Failed to get log');
+    logger.warn({ err: error }, 'Failed to get log');
     return c.json(
       {
         error: 'Failed to get log',
@@ -320,7 +322,7 @@ logsRoutes.delete('/:id', async (c) => {
       message: 'Log deleted successfully',
     });
   } catch (error) {
-    logger.error({ error }, 'Failed to delete log');
+    logger.warn({ err: error }, 'Failed to delete log');
     return c.json(
       {
         error: 'Failed to delete log',
@@ -482,7 +484,7 @@ logsRoutes.get('/stats/overview', async (c) => {
       },
     });
   } catch (error) {
-    logger.error({ error }, 'Failed to get log stats');
+    logger.warn({ err: error }, 'Failed to get log stats');
     return c.json(
       {
         error: 'Failed to get log stats',
@@ -539,7 +541,7 @@ logsRoutes.get('/stats/storage', async (c) => {
       },
     });
   } catch (error) {
-    logger.error({ error }, 'Failed to get storage stats');
+    logger.warn({ err: error }, 'Failed to get storage stats');
     return c.json(
       {
         error: 'Failed to get storage stats',
@@ -577,7 +579,7 @@ logsRoutes.post('/cleanup', async (c) => {
       message: `Deleted ${deletedCount} expired logs`,
     });
   } catch (error) {
-    logger.error({ error }, 'Failed to cleanup logs');
+    logger.warn({ err: error }, 'Failed to cleanup logs');
     return c.json(
       {
         error: 'Failed to cleanup logs',

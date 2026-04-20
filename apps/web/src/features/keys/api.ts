@@ -4,7 +4,9 @@ import { eq, desc } from 'drizzle-orm';
 import { Hono } from 'hono';
 
 import { getDatabase } from '@/core/db/client';
-import logger from '@/core/lib/logger';
+import rootLogger from '@/core/lib/logger';
+
+const logger = rootLogger.child({ module: 'keys' });
 import { authMiddleware } from '@/features/auth/middleware';
 
 import { virtualKeys, type NewVirtualKey } from './db';
@@ -35,7 +37,7 @@ keysRoutes.get('/', async (c) => {
       total: allKeys.length,
     });
   } catch (error) {
-    logger.error({ error }, 'Failed to list virtual keys');
+    logger.warn({ err: error }, 'Failed to list virtual keys');
     return c.json(
       {
         error: 'Failed to list virtual keys',
@@ -73,7 +75,7 @@ keysRoutes.get('/:id', async (c) => {
       data: key[0],
     });
   } catch (error) {
-    logger.error({ error }, 'Failed to get virtual key');
+    logger.warn({ err: error }, 'Failed to get virtual key');
     return c.json(
       {
         error: 'Failed to get virtual key',
@@ -128,7 +130,7 @@ keysRoutes.post('/', async (c) => {
       201
     );
   } catch (error) {
-    logger.error({ error }, 'Failed to create virtual key');
+    logger.warn({ err: error }, 'Failed to create virtual key');
     return c.json(
       {
         error: 'Failed to create virtual key',
@@ -193,7 +195,7 @@ keysRoutes.put('/:id', async (c) => {
       data: result[0],
     });
   } catch (error) {
-    logger.error({ error }, 'Failed to update virtual key');
+    logger.warn({ err: error }, 'Failed to update virtual key');
     return c.json(
       {
         error: 'Failed to update virtual key',
@@ -236,7 +238,7 @@ keysRoutes.delete('/:id', async (c) => {
       message: 'Virtual key deleted successfully',
     });
   } catch (error) {
-    logger.error({ error }, 'Failed to delete virtual key');
+    logger.warn({ err: error }, 'Failed to delete virtual key');
     return c.json(
       {
         error: 'Failed to delete virtual key',
@@ -290,7 +292,7 @@ keysRoutes.post('/:id/reset', async (c) => {
       message: 'API key has been reset successfully',
     });
   } catch (error) {
-    logger.error({ error }, 'Failed to reset virtual key');
+    logger.warn({ err: error }, 'Failed to reset virtual key');
     return c.json(
       {
         error: 'Failed to reset virtual key',

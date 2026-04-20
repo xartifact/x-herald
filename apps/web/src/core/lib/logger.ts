@@ -9,6 +9,10 @@ const finalLevel = enableDebug ? 'debug' : logLevel;
 
 export const logger = pino({
   level: finalLevel,
+  serializers: {
+    err: pino.stdSerializers.err,
+    error: pino.stdSerializers.err,
+  },
   transport: process.env.NODE_ENV === 'development' ? {
     target: 'pino-pretty',
     options: {

@@ -2,7 +2,9 @@ import { eq } from 'drizzle-orm';
 import type { Context, Next } from 'hono';
 
 import { getDatabase } from '@/core/db/client';
-import logger from '@/core/lib/logger';
+import rootLogger from '@/core/lib/logger';
+
+const logger = rootLogger.child({ module: 'gateway.auth' });
 import { virtualKeys } from '@/features/keys/db';
 
 /**
@@ -80,7 +82,7 @@ export async function virtualKeyMiddleware(c: Context, next: Next) {
 
     await next();
   } catch (error) {
-    logger.error({ error }, 'Virtual key authentication failed');
+    logger.warn({ err: error }, 'Virtual key authentication failed');
     return c.json(
       {
         error: 'Authentication failed',

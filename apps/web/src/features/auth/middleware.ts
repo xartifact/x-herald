@@ -2,7 +2,9 @@ import type { Context, Next } from 'hono';
 import { verify } from 'hono/jwt';
 
 import { loadConfig } from '@/core/config';
-import logger from '@/core/lib/logger';
+import rootLogger from '@/core/lib/logger';
+
+const logger = rootLogger.child({ module: 'auth' });
 
 const config = loadConfig();
 
@@ -34,7 +36,7 @@ export async function authMiddleware(c: Context, next: Next) {
 
     await next();
   } catch (error) {
-    logger.error({ error }, 'Authentication failed');
+    logger.warn({ err: error }, 'Authentication failed');
     return c.json(
       {
         error: 'Invalid or expired token',

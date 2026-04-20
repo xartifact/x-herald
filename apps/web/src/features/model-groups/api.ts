@@ -2,7 +2,9 @@ import { eq, desc } from 'drizzle-orm';
 import { Hono } from 'hono';
 
 import { getDatabase } from '@/core/db/client';
-import logger from '@/core/lib/logger';
+import rootLogger from '@/core/lib/logger';
+
+const logger = rootLogger.child({ module: 'model-groups' });
 import { authMiddleware } from '@/features/auth/middleware';
 import { modelGroupRouter } from '@/features/gateway/services/model-group-router';
 import { providers } from '@/features/providers/db';
@@ -46,7 +48,7 @@ modelGroupRoutes.get('/instances', async (c) => {
       data: instances,
     });
   } catch (error) {
-    logger.error({ error }, 'Failed to list model instances');
+    logger.warn({ err: error }, 'Failed to list model instances');
     return c.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       500
@@ -106,7 +108,7 @@ modelGroupRoutes.post('/', async (c) => {
 
     return c.json({ success: true, data: group }, 201);
   } catch (error) {
-    logger.error({ error }, 'Failed to create model group');
+    logger.warn({ err: error }, 'Failed to create model group');
     return c.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       500
@@ -145,7 +147,7 @@ modelGroupRoutes.put('/:id', async (c) => {
 
     return c.json({ success: true, data: updated });
   } catch (error) {
-    logger.error({ error }, 'Failed to update model group');
+    logger.warn({ err: error }, 'Failed to update model group');
     return c.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       500
@@ -172,7 +174,7 @@ modelGroupRoutes.delete('/:id', async (c) => {
 
     return c.json({ success: true, data: deleted });
   } catch (error) {
-    logger.error({ error }, 'Failed to delete model group');
+    logger.warn({ err: error }, 'Failed to delete model group');
     return c.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       500
@@ -205,7 +207,7 @@ modelGroupRoutes.patch('/:id/toggle', async (c) => {
 
     return c.json({ success: true, data: updated });
   } catch (error) {
-    logger.error({ error }, 'Failed to toggle model group');
+    logger.warn({ err: error }, 'Failed to toggle model group');
     return c.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       500
@@ -232,7 +234,7 @@ modelGroupRoutes.put('/instances/reorder', async (c) => {
 
     return c.json({ success: true });
   } catch (error) {
-    logger.error({ error }, 'Failed to reorder model instances');
+    logger.warn({ err: error }, 'Failed to reorder model instances');
     return c.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       500
@@ -294,7 +296,7 @@ modelGroupRoutes.post('/instances', async (c) => {
 
     return c.json({ success: true, data: instance }, 201);
   } catch (error) {
-    logger.error({ error }, 'Failed to create model instance');
+    logger.warn({ err: error }, 'Failed to create model instance');
     return c.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       500
@@ -334,7 +336,7 @@ modelGroupRoutes.put('/instances/:id', async (c) => {
 
     return c.json({ success: true, data: updated });
   } catch (error) {
-    logger.error({ error }, 'Failed to update model instance');
+    logger.warn({ err: error }, 'Failed to update model instance');
     return c.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       500
@@ -361,7 +363,7 @@ modelGroupRoutes.delete('/instances/:id', async (c) => {
 
     return c.json({ success: true, data: deleted });
   } catch (error) {
-    logger.error({ error }, 'Failed to delete model instance');
+    logger.warn({ err: error }, 'Failed to delete model instance');
     return c.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       500
@@ -410,7 +412,7 @@ modelGroupRoutes.patch('/instances/:id/assign', async (c) => {
 
     return c.json({ success: true, data: updated });
   } catch (error) {
-    logger.error({ error }, 'Failed to assign model instance');
+    logger.warn({ err: error }, 'Failed to assign model instance');
     return c.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       500
@@ -447,7 +449,7 @@ modelGroupRoutes.patch('/instances/:id/toggle', async (c) => {
 
     return c.json({ success: true, data: updated });
   } catch (error) {
-    logger.error({ error }, 'Failed to toggle model instance');
+    logger.warn({ err: error }, 'Failed to toggle model instance');
     return c.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       500

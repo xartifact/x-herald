@@ -2,7 +2,9 @@ import { eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 
 import { getDatabase } from '@/core/db/client';
-import logger from '@/core/lib/logger';
+import rootLogger from '@/core/lib/logger';
+
+const logger = rootLogger.child({ module: 'settings' });
 import { authMiddleware } from '@/features/auth/middleware';
 import {
   getModelMappingConfig,
@@ -57,7 +59,7 @@ settingsRoutes.get('/', async (c) => {
       },
     });
   } catch (error) {
-    logger.error({ error }, 'Failed to get settings');
+    logger.warn({ err: error }, 'Failed to get settings');
     return c.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       500
@@ -110,7 +112,7 @@ settingsRoutes.put('/', async (c) => {
       data: data.modelMapping,
     });
   } catch (error) {
-    logger.error({ error }, 'Failed to update settings');
+    logger.warn({ err: error }, 'Failed to update settings');
     return c.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       500

@@ -2,7 +2,9 @@ import { eq, and } from 'drizzle-orm';
 import { Hono } from 'hono';
 
 import { getDatabase } from '@/core/db/client';
-import logger from '@/core/lib/logger';
+import rootLogger from '@/core/lib/logger';
+
+const logger = rootLogger.child({ module: 'model-routes' });
 import { authMiddleware } from '@/features/auth/middleware';
 import { modelRoutes, virtualModels } from '@/features/model-groups/db';
 
@@ -59,7 +61,7 @@ modelRoutesApi.get('/', async (c) => {
 
     return c.json({ success: true, data });
   } catch (error) {
-    logger.error({ error }, 'Failed to list model routes');
+    logger.warn({ err: error }, 'Failed to list model routes');
     return c.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       500
@@ -98,7 +100,7 @@ modelRoutesApi.get('/flow', async (c) => {
 
     return c.json({ success: true, data: { routes, virtualModels: vms } });
   } catch (error) {
-    logger.error({ error }, 'Failed to get flow data');
+    logger.warn({ err: error }, 'Failed to get flow data');
     return c.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       500
@@ -146,7 +148,7 @@ modelRoutesApi.get('/:id', async (c) => {
       },
     });
   } catch (error) {
-    logger.error({ error }, 'Failed to get model route');
+    logger.warn({ err: error }, 'Failed to get model route');
     return c.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       500
@@ -177,7 +179,7 @@ modelRoutesApi.post('/', async (c) => {
     logger.info({ id: route.id, name: route.name }, 'Model route created');
     return c.json({ success: true, data: route }, 201);
   } catch (error) {
-    logger.error({ error }, 'Failed to create model route');
+    logger.warn({ err: error }, 'Failed to create model route');
     return c.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       500
@@ -214,7 +216,7 @@ modelRoutesApi.put('/:id', async (c) => {
 
     return c.json({ success: true, data: updated });
   } catch (error) {
-    logger.error({ error }, 'Failed to update model route');
+    logger.warn({ err: error }, 'Failed to update model route');
     return c.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       500
@@ -239,7 +241,7 @@ modelRoutesApi.delete('/:id', async (c) => {
 
     return c.json({ success: true, data: deleted });
   } catch (error) {
-    logger.error({ error }, 'Failed to delete model route');
+    logger.warn({ err: error }, 'Failed to delete model route');
     return c.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       500
@@ -274,7 +276,7 @@ modelRoutesApi.patch('/:id/toggle', async (c) => {
 
     return c.json({ success: true, data: updated });
   } catch (error) {
-    logger.error({ error }, 'Failed to toggle model route');
+    logger.warn({ err: error }, 'Failed to toggle model route');
     return c.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       500

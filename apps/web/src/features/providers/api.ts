@@ -2,7 +2,9 @@ import { eq, and, desc } from 'drizzle-orm';
 import { Hono } from 'hono';
 
 import { getDatabase } from '@/core/db/client';
-import logger from '@/core/lib/logger';
+import rootLogger from '@/core/lib/logger';
+
+const logger = rootLogger.child({ module: 'providers' });
 import { authMiddleware } from '@/features/auth/middleware';
 import { modelInstances } from '@/features/model-groups/db';
 
@@ -26,7 +28,7 @@ providersRoutes.get('/', async (c) => {
       total: allProviders.length,
     });
   } catch (error) {
-    logger.error({ error }, 'Failed to list providers');
+    logger.warn({ err: error }, 'Failed to list providers');
     return c.json(
       {
         error: 'Failed to list providers',
@@ -64,7 +66,7 @@ providersRoutes.get('/:id', async (c) => {
       data: provider[0],
     });
   } catch (error) {
-    logger.error({ error }, 'Failed to get provider');
+    logger.warn({ err: error }, 'Failed to get provider');
     return c.json(
       {
         error: 'Failed to get provider',
@@ -167,7 +169,7 @@ providersRoutes.post('/', async (c) => {
       201
     );
   } catch (error) {
-    logger.error({ error }, 'Failed to create provider');
+    logger.warn({ err: error }, 'Failed to create provider');
     return c.json(
       {
         error: 'Failed to create provider',
@@ -270,7 +272,7 @@ providersRoutes.put('/:id', async (c) => {
       data: result[0],
     });
   } catch (error) {
-    logger.error({ error }, 'Failed to update provider');
+    logger.warn({ err: error }, 'Failed to update provider');
     return c.json(
       {
         error: 'Failed to update provider',
@@ -313,7 +315,7 @@ providersRoutes.delete('/:id', async (c) => {
       message: 'Provider deleted successfully',
     });
   } catch (error) {
-    logger.error({ error }, 'Failed to delete provider');
+    logger.warn({ err: error }, 'Failed to delete provider');
     return c.json(
       {
         error: 'Failed to delete provider',
@@ -358,7 +360,7 @@ providersRoutes.get('/:id/thinking-type-mappings', async (c) => {
       syntheticThinking: anthropicConfig?.syntheticThinking ?? 'strip',
     });
   } catch (error) {
-    logger.error({ error }, 'Failed to get thinking type mappings');
+    logger.warn({ err: error }, 'Failed to get thinking type mappings');
     return c.json(
       { error: 'Failed to get thinking type mappings', code: 'MAPPINGS_GET_ERROR' },
       500
@@ -430,7 +432,7 @@ providersRoutes.put('/:id/thinking-type-mappings', async (c) => {
       data: Object.entries(mappings).map(([from, to]) => ({ from, to })),
     });
   } catch (error) {
-    logger.error({ error }, 'Failed to update thinking type mappings');
+    logger.warn({ err: error }, 'Failed to update thinking type mappings');
     return c.json(
       { error: 'Failed to update thinking type mappings', code: 'MAPPINGS_UPDATE_ERROR' },
       500
@@ -515,7 +517,7 @@ providersRoutes.get('/:id/models', async (c) => {
       }
     } catch (err) {
       fetchError = err instanceof Error ? err.message : 'Failed to fetch models';
-      logger.warn({ error: err, providerId: id }, 'Failed to fetch remote models');
+      logger.warn({ err, providerId: id }, 'Failed to fetch remote models');
     }
 
     // 查询已同步的实例
@@ -539,7 +541,7 @@ providersRoutes.get('/:id/models', async (c) => {
       fetchError,
     });
   } catch (error) {
-    logger.error({ error }, 'Failed to get provider models');
+    logger.warn({ err: error }, 'Failed to get provider models');
     return c.json(
       { error: 'Failed to get provider models', code: 'PROVIDER_MODELS_ERROR' },
       500
@@ -635,7 +637,7 @@ providersRoutes.post('/:id/sync-models', async (c) => {
       },
     });
   } catch (error) {
-    logger.error({ error }, 'Failed to sync models');
+    logger.warn({ err: error }, 'Failed to sync models');
     return c.json(
       { error: 'Failed to sync models', code: 'SYNC_MODELS_ERROR' },
       500

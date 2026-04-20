@@ -53,7 +53,7 @@ export interface ModelMappingConfig {
 }
 
 export interface LoggerConfig {
-  level: 'debug' | 'info' | 'warn' | 'error';  // 日志级别
+  level: 'trace' | 'debug' | 'info' | 'warn' | 'error';  // 日志级别
   enableRequestLog: boolean;                   // 是否启用请求日志
   enableDebug: boolean;                        // 是否启用 debug 日志
 }

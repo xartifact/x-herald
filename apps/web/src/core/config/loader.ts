@@ -59,7 +59,7 @@ export function loadConfig(): GatewayConfig {
     },
 
     logger: {
-      level: (process.env.LOG_LEVEL as 'debug' | 'info' | 'warn' | 'error') || 'info',
+      level: (process.env.LOG_LEVEL as 'trace' | 'debug' | 'info' | 'warn' | 'error') || 'info',
       enableRequestLog: process.env.LOG_ENABLE_REQUEST !== 'false',
       enableDebug: process.env.LOG_ENABLE_DEBUG === 'true',
     },

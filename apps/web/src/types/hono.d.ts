@@ -5,5 +5,6 @@ declare module 'hono' {
     virtualKey: VirtualKey;
     jwtPayload: unknown;
     user: unknown;
+    requestId: string;
   }
 }

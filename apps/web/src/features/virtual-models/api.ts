@@ -2,7 +2,9 @@ import { eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 
 import { getDatabase } from '@/core/db/client';
-import logger from '@/core/lib/logger';
+import rootLogger from '@/core/lib/logger';
+
+const logger = rootLogger.child({ module: 'virtual-models' });
 import { authMiddleware } from '@/features/auth/middleware';
 import { virtualModels } from '@/features/model-groups/db';
 
@@ -29,7 +31,7 @@ virtualModelRoutes.get('/', async (c) => {
 
     return c.json({ success: true, data: results });
   } catch (error) {
-    logger.error({ error }, 'Failed to list virtual models');
+    logger.warn({ err: error }, 'Failed to list virtual models');
     return c.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       500
@@ -63,7 +65,7 @@ virtualModelRoutes.get('/:id', async (c) => {
 
     return c.json({ success: true, data: results[0] });
   } catch (error) {
-    logger.error({ error }, 'Failed to get virtual model detail');
+    logger.warn({ err: error }, 'Failed to get virtual model detail');
     return c.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       500
@@ -90,7 +92,7 @@ virtualModelRoutes.post('/', async (c) => {
     logger.info({ id: vm.id, name: vm.name }, 'Virtual model created');
     return c.json({ success: true, data: vm }, 201);
   } catch (error) {
-    logger.error({ error }, 'Failed to create virtual model');
+    logger.warn({ err: error }, 'Failed to create virtual model');
     const msg = error instanceof Error ? error.message : 'Unknown error';
     const status = msg.includes('unique') ? 409 : 500;
     return c.json({ success: false, error: msg }, status);
@@ -124,7 +126,7 @@ virtualModelRoutes.put('/:id', async (c) => {
 
     return c.json({ success: true, data: updated });
   } catch (error) {
-    logger.error({ error }, 'Failed to update virtual model');
+    logger.warn({ err: error }, 'Failed to update virtual model');
     return c.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       500
@@ -149,7 +151,7 @@ virtualModelRoutes.delete('/:id', async (c) => {
 
     return c.json({ success: true, data: deleted });
   } catch (error) {
-    logger.error({ error }, 'Failed to delete virtual model');
+    logger.warn({ err: error }, 'Failed to delete virtual model');
     return c.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       500
@@ -184,7 +186,7 @@ virtualModelRoutes.patch('/:id/toggle', async (c) => {
 
     return c.json({ success: true, data: updated });
   } catch (error) {
-    logger.error({ error }, 'Failed to toggle virtual model');
+    logger.warn({ err: error }, 'Failed to toggle virtual model');
     return c.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       500

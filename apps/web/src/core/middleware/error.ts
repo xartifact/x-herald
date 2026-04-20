@@ -1,7 +1,9 @@
 import type { Context, Next } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 
-import logger from '../lib/logger';
+import rootLogger from '../lib/logger';
+
+const logger = rootLogger.child({ module: 'http' });
 
 export class AppError extends Error {
   constructor(
@@ -18,7 +20,7 @@ export async function errorHandler(c: Context, next: Next) {
   try {
     await next();
   } catch (error) {
-    logger.error({ error }, 'Request error');
+    logger.error({ err: error }, 'Request error');
 
     if (error instanceof HTTPException) {
       return c.json(

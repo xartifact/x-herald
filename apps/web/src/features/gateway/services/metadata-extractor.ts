@@ -1,4 +1,6 @@
-import logger from '@/core/lib/logger';
+import rootLogger from '@/core/lib/logger';
+
+const logger = rootLogger.child({ module: 'gateway' });
 import type { LogMetadata } from '@/features/logs/db';
 
 /**
@@ -91,7 +93,7 @@ export function extractMetadata(params: MetadataExtractionParams): LogMetadata {
       metadata.business = businessInfo;
     }
   } catch (error) {
-    logger.error({ error }, 'Failed to extract metadata');
+    logger.warn({ err: error }, 'Failed to extract metadata');
   }
 
   return metadata;

@@ -14,8 +14,6 @@ export {
 } from './model-group-router';
 
 export {
-  ModelMappingService,
-  modelMappingService,
   type ModelMappingResult,
 } from './model-mapping';
 

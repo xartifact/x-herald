@@ -215,6 +215,7 @@ export const virtualModels = pgTable('virtual_models', {
   name: varchar('name', { length: 255 }).notNull().unique(),
   displayName: varchar('display_name', { length: 255 }),
   description: text('description'),
+  isDefault: boolean('is_default').default(false).notNull(),
   enabled: boolean('enabled').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),

@@ -9,6 +9,7 @@ import { createCorsMiddleware } from './core/middleware/cors';
 import { errorHandler } from './core/middleware/error';
 import { requestLogger } from './core/middleware/logger';
 import { authRoutes } from './features/auth';
+import { configIORoutes } from './features/config-io';
 import { gatewayRoutes } from './features/gateway';
 import { healthRoutes } from './features/health';
 import { keysRoutes } from './features/keys';
@@ -57,6 +58,7 @@ export const createApiApp = () => {
   app.route('/api/settings', settingsRoutes);
   app.route('/api/virtual-models', virtualModelRoutes);
   app.route('/api/model-routes', modelRoutesApi);
+  app.route('/api/config', configIORoutes);
 
   // Gateway Routes (Anthropic/OpenAI 兼容 API)
   app.route('/api/v1', gatewayRoutes);

@@ -8,7 +8,7 @@ import { eq } from 'drizzle-orm';
 import { getDatabase } from '@/core/db/client';
 import logger from '@/core/lib/logger';
 
-import { gatewayConfigs, CONFIG_KEYS, type ModelMappingConfig } from './db';
+import { gatewayConfigs } from './db';
 
 // 内存缓存
 const configCache = new Map<string, unknown>();
@@ -75,35 +75,6 @@ export async function setConfig<T>(key: string, value: T, description?: string):
   configCache.set(key, value);
 
   logger.info({ key, value }, 'Config updated');
-}
-
-/**
- * 获取模型映射配置
- */
-export async function getModelMappingConfig(): Promise<ModelMappingConfig> {
-  const enabled = await getConfig<boolean>(CONFIG_KEYS.MODEL_MAPPING_ENABLED, true);
-  const defaultModelGroup = await getConfig<string>(CONFIG_KEYS.MODEL_MAPPING_DEFAULT_GROUP, '');
-
-  return {
-    enabled,
-    defaultModelGroup,
-  };
-}
-
-/**
- * 设置模型映射配置
- */
-export async function setModelMappingConfig(config: ModelMappingConfig): Promise<void> {
-  await setConfig(
-    CONFIG_KEYS.MODEL_MAPPING_ENABLED,
-    config.enabled,
-    '是否启用模型映射功能'
-  );
-  await setConfig(
-    CONFIG_KEYS.MODEL_MAPPING_DEFAULT_GROUP,
-    config.defaultModelGroup,
-    '默认模型组名称（当请求的模型不存在时fallback到此模型组）'
-  );
 }
 
 /**

@@ -1,0 +1,1 @@
+ALTER TABLE "virtual_models" ADD COLUMN "is_default" boolean DEFAULT false NOT NULL;

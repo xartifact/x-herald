@@ -92,6 +92,13 @@
       "when": 1775576165549,
       "tag": "0012_slim_mole_man",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1776759290874,
+      "tag": "0013_supreme_ultimates",
+      "breakpoints": true
     }
   ]
 }

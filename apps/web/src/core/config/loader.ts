@@ -53,11 +53,6 @@ export function loadConfig(): GatewayConfig {
       allowedProtocols: ['openai', 'anthropic'],
     },
 
-    modelMapping: {
-      enabled: process.env.MODEL_MAPPING_ENABLED !== 'false',
-      defaultModelGroup: process.env.MODEL_MAPPING_DEFAULT_GROUP || '',
-    },
-
     logger: {
       level: (process.env.LOG_LEVEL as 'trace' | 'debug' | 'info' | 'warn' | 'error') || 'info',
       enableRequestLog: process.env.LOG_ENABLE_REQUEST !== 'false',
@@ -93,8 +88,5 @@ export function validateConfig(config: GatewayConfig): void {
     throw new Error('Admin password must be changed in production');
   }
 
-  // Model mapping validation
-  if (config.modelMapping.enabled && !config.modelMapping.defaultModelGroup) {
-    console.warn('WARNING: Model mapping is enabled but defaultModelGroup is not set. Fallback will not work.');
-  }
+
 }

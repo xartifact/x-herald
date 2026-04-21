@@ -1,5 +1,6 @@
 import { loadConfig } from '@/core/config';
 import { createDatabase } from '@/core/db/client';
+import { seedSystemData } from '@/core/db/seed';
 import logger from '@/core/lib/logger';
 import { registerDefaultTransformers } from '@/features/gateway';
 
@@ -23,6 +24,10 @@ try {
   // 3. 初始化数据库（包含迁移）
   await createDatabase(config.database);
   logger.info('Database initialized');
+
+  // 4. 初始化系统内置数据
+  await seedSystemData();
+  logger.info('System seed data initialized');
 
   console.log('[Instrumentation] 应用初始化完成');
 } catch (error) {

@@ -1,4 +1,6 @@
-import { eq } from 'drizzle-orm';
+import { eq, and, ne } from 'drizzle-orm';
+
+import { CATCHALL_VM_NAME } from '@/core/db/seed';
 import { Hono } from 'hono';
 
 import { getDatabase } from '@/core/db/client';
@@ -23,6 +25,7 @@ virtualModelRoutes.get('/', async (c) => {
         name: virtualModels.name,
         displayName: virtualModels.displayName,
         description: virtualModels.description,
+        isDefault: virtualModels.isDefault,
         enabled: virtualModels.enabled,
         createdAt: virtualModels.createdAt,
         updatedAt: virtualModels.updatedAt,
@@ -51,6 +54,7 @@ virtualModelRoutes.get('/:id', async (c) => {
         name: virtualModels.name,
         displayName: virtualModels.displayName,
         description: virtualModels.description,
+        isDefault: virtualModels.isDefault,
         enabled: virtualModels.enabled,
         createdAt: virtualModels.createdAt,
         updatedAt: virtualModels.updatedAt,
@@ -79,17 +83,23 @@ virtualModelRoutes.post('/', async (c) => {
   const db = getDatabase();
 
   try {
+    // 若设为默认，先清除其他模型的 isDefault
+    if (data.isDefault) {
+      await db.update(virtualModels).set({ isDefault: false });
+    }
+
     const [vm] = await db
       .insert(virtualModels)
       .values({
         name: data.name,
         displayName: data.displayName || null,
         description: data.description || null,
+        isDefault: data.isDefault ?? false,
         enabled: data.enabled ?? true,
       })
       .returning();
 
-    logger.info({ id: vm.id, name: vm.name }, 'Virtual model created');
+    logger.info({ id: vm.id, name: vm.name, isDefault: vm.isDefault }, 'Virtual model created');
     return c.json({ success: true, data: vm }, 201);
   } catch (error) {
     logger.warn({ err: error }, 'Failed to create virtual model');
@@ -106,12 +116,39 @@ virtualModelRoutes.put('/:id', async (c) => {
   const db = getDatabase();
 
   try {
+    // 保护系统内置模型：name 和 isDefault 不可修改
+    const currentVm = await db
+      .select({ name: virtualModels.name })
+      .from(virtualModels)
+      .where(eq(virtualModels.id, id))
+      .limit(1);
+
+    if (currentVm.length === 0) {
+      return c.json({ success: false, error: 'Virtual model not found' }, 404);
+    }
+
+    const isSystem = currentVm[0].name === CATCHALL_VM_NAME;
+
+    if (isSystem && data.name !== undefined && data.name !== CATCHALL_VM_NAME) {
+      return c.json({ success: false, error: 'System virtual model name cannot be changed' }, 403);
+    }
+
+    // 若设为默认，先清除其他模型的 isDefault
+    if (data.isDefault && !isSystem) {
+      await db
+        .update(virtualModels)
+        .set({ isDefault: false })
+        .where(and(eq(virtualModels.isDefault, true), ne(virtualModels.id, id)));
+    }
+
     const updateData: Record<string, unknown> = {
       updatedAt: new Date(),
     };
-    if (data.name !== undefined) updateData.name = data.name;
+    // 系统模型的 name 和 isDefault 不可修改
+    if (data.name !== undefined && !isSystem) updateData.name = data.name;
     if (data.displayName !== undefined) updateData.displayName = data.displayName;
     if (data.description !== undefined) updateData.description = data.description;
+    if (data.isDefault !== undefined && !isSystem) updateData.isDefault = data.isDefault;
     if (data.enabled !== undefined) updateData.enabled = data.enabled;
 
     const [updated] = await db
@@ -140,14 +177,24 @@ virtualModelRoutes.delete('/:id', async (c) => {
   const db = getDatabase();
 
   try {
+    const target = await db
+      .select({ name: virtualModels.name })
+      .from(virtualModels)
+      .where(eq(virtualModels.id, id))
+      .limit(1);
+
+    if (target.length === 0) {
+      return c.json({ success: false, error: 'Virtual model not found' }, 404);
+    }
+
+    if (target[0].name === CATCHALL_VM_NAME) {
+      return c.json({ success: false, error: 'System virtual model cannot be deleted' }, 403);
+    }
+
     const [deleted] = await db
       .delete(virtualModels)
       .where(eq(virtualModels.id, id))
       .returning();
-
-    if (!deleted) {
-      return c.json({ success: false, error: 'Virtual model not found' }, 404);
-    }
 
     return c.json({ success: true, data: deleted });
   } catch (error) {

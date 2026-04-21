@@ -15,19 +15,3 @@ export const gatewayConfigs = pgTable('gateway_configs', {
 
 export type GatewayConfig = typeof gatewayConfigs.$inferSelect;
 export type NewGatewayConfig = typeof gatewayConfigs.$inferInsert;
-
-/**
- * 配置键名常量
- */
-export const CONFIG_KEYS = {
-  MODEL_MAPPING_ENABLED: 'model_mapping_enabled',
-  MODEL_MAPPING_DEFAULT_GROUP: 'model_mapping_default_group',
-} as const;
-
-/**
- * 模型映射配置类型
- */
-export interface ModelMappingConfig {
-  enabled: boolean;
-  defaultModelGroup: string;
-}

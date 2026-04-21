@@ -3,13 +3,11 @@
  * 管理网关动态配置
  */
 
-export { gatewayConfigs, CONFIG_KEYS, type GatewayConfig, type NewGatewayConfig, type ModelMappingConfig } from './db';
+export { gatewayConfigs, type GatewayConfig, type NewGatewayConfig } from './db';
 
 export {
   getConfig,
   setConfig,
-  getModelMappingConfig,
-  setModelMappingConfig,
   clearConfigCache,
   initConfigCache,
   getAllConfigs,

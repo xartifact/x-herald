@@ -38,7 +38,7 @@ export class VirtualModelRouter {
       .limit(1);
 
     if (vmResult.length === 0) {
-      return null;
+      return this.routeToDefaultVirtualModel(context);
     }
 
     const vm = vmResult[0];
@@ -83,6 +83,74 @@ export class VirtualModelRouter {
 
     if (action.type === 'route_to_instance' && action.targetId) {
       return this.routeToInstance(action.targetId, vm, context, mappingResult);
+    }
+
+    return null;
+  }
+
+  /**
+   * 兜底路由：当找不到虚拟模型时，使用标记为 isDefault 的虚拟模型处理请求
+   */
+  private async routeToDefaultVirtualModel(context: RoutingContext): Promise<RouteResult | null> {
+    const db = getDatabase();
+
+    const defaultVmResult = await db
+      .select()
+      .from(virtualModels)
+      .where(and(eq(virtualModels.isDefault, true), eq(virtualModels.enabled, true)))
+      .limit(1);
+
+    if (defaultVmResult.length === 0) {
+      return null;
+    }
+
+    const defaultVm = defaultVmResult[0];
+
+    const ruleMatch = await routeRuleEngine.match(defaultVm.id, {
+      model: context.requestedModel,
+      streaming: context.streaming,
+    });
+
+    if (!ruleMatch) {
+      return null;
+    }
+
+    const fallbackMapping: ModelMappingResult = {
+      modelName: context.requestedModel,
+      isMapped: false,
+      originalModel: context.requestedModel,
+      mappingType: 'fallback',
+    };
+
+    const action = ruleMatch.action;
+
+    if (action.type === 'reject') {
+      throw new Error(action.reason ?? `Rejected by default virtual model rule '${ruleMatch.name}'`);
+    }
+
+    if (action.type === 'fallback') {
+      return null;
+    }
+
+    if (action.type === 'route_to_group' && action.targetId) {
+      const result = await modelGroupRouter.routeByGroupId(action.targetId, context);
+      if (result) {
+        logger.info(
+          { requestedModel: context.requestedModel, defaultVm: defaultVm.name, groupId: action.targetId },
+          'Request routed via default virtual model fallback'
+        );
+        return { ...result, mapping: fallbackMapping };
+      }
+      return null;
+    }
+
+    if (action.type === 'route_to_instance' && action.targetId) {
+      return this.routeToInstance(
+        action.targetId,
+        { name: defaultVm.name, displayName: defaultVm.displayName },
+        context,
+        fallbackMapping
+      );
     }
 
     return null;

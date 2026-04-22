@@ -1,15 +1,14 @@
-import { eq, and } from 'drizzle-orm';
 import { Hono } from 'hono';
 
-import { getDatabase } from '@/core/db/client';
 import logger from '@/core/lib/logger';
 import type { VirtualKey } from '@/features/keys/db';
-import { modelGroups, virtualModels } from '@/features/model-groups/db';
 
 import { virtualKeyMiddleware } from './middleware/virtual-key';
+import actuatorRoutes from './routes/actuator';
 import anthropicRoutes from './routes/anthropic';
 import openaiRoutes from './routes/openai';
 import { logRequest } from './services/log-service';
+import { fetchAccessibleModels } from './services/model-list';
 
 const gatewayRoutes = new Hono<{
   Variables: {
@@ -19,12 +18,19 @@ const gatewayRoutes = new Hono<{
 
 gatewayRoutes.use('*', virtualKeyMiddleware);
 
-// 挂载协议子路由
+gatewayRoutes.route('/', actuatorRoutes);
 gatewayRoutes.route('/', openaiRoutes);
 gatewayRoutes.route('/', anthropicRoutes);
 
 /**
- * 模型列表端点 - 返回模型组列表
+ * GET /v1/models — 统一模型列表端点
+ * 通过请求头判断协议，返回对应格式
+ *
+ * 判断优先级：
+ * 1. x-protocol-type 显式声明
+ * 2. anthropic-version 头（Anthropic SDK 必带）
+ * 3. x-api-key 头（Anthropic 鉴权方式）
+ * 4. 默认 OpenAI
  */
 gatewayRoutes.get('/models', async (c) => {
   const startTime = Date.now();
@@ -32,92 +38,61 @@ gatewayRoutes.get('/models', async (c) => {
   const clientIp = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown';
   const userAgent = c.req.header('user-agent') || 'unknown';
 
+  const protocolHeader = c.req.header('x-protocol-type');
+  const isAnthropic =
+    protocolHeader === 'anthropic' ||
+    (!protocolHeader && (
+      !!c.req.header('anthropic-version') ||
+      (!c.req.header('authorization') && !!c.req.header('x-api-key'))
+    ));
+  const protocol: 'openai' | 'anthropic' = isAnthropic ? 'anthropic' : 'openai';
+
   try {
-    const db = getDatabase();
-
-    // 查询启用的虚拟模型，排除 isDefault（catchall）
-    const enabledVirtualModels = await db
-      .select({
-        name: virtualModels.name,
-        displayName: virtualModels.displayName,
-        createdAt: virtualModels.createdAt,
-      })
-      .from(virtualModels)
-      .where(and(eq(virtualModels.enabled, true), eq(virtualModels.isDefault, false)));
-
-    let modelList: Array<{
-      id: string;
-      object: 'model';
-      created: number;
-      owned_by: string;
-    }>;
-
-    if (enabledVirtualModels.length > 0) {
-      // 有虚拟模型时，返回虚拟模型列表（按 allowedModels 过滤）
-      const accessible = enabledVirtualModels.filter((vm) => {
-        if (!virtualKey.allowedModels?.length) return true;
-        return virtualKey.allowedModels.includes(vm.name);
-      });
-
-      modelList = accessible.map((vm) => ({
-        id: vm.name,
-        object: 'model',
-        created: Math.floor(new Date(vm.createdAt).getTime() / 1000),
-        owned_by: 'x-llm-gateway',
-      }));
-    } else {
-      // 无虚拟模型时，回退到模型组列表
-      const allGroups = await db
-        .select({
-          name: modelGroups.name,
-          createdAt: modelGroups.createdAt,
-        })
-        .from(modelGroups)
-        .where(eq(modelGroups.enabled, true));
-
-      const accessible = allGroups.filter((group) => {
-        if (!virtualKey.allowedModels?.length) return true;
-        return virtualKey.allowedModels.includes(group.name);
-      });
-
-      modelList = accessible.map((group) => ({
-        id: group.name,
-        object: 'model',
-        created: Math.floor(new Date(group.createdAt).getTime() / 1000),
-        owned_by: 'x-llm-gateway',
-      }));
-    }
-
-    const latencyMs = Date.now() - startTime;
+    const models = await fetchAccessibleModels(virtualKey);
 
     await logRequest({
       virtualKey,
       modelName: 'list',
       status: 'success',
       statusCode: 200,
-      latencyMs,
+      latencyMs: Date.now() - startTime,
       clientIp,
       userAgent,
       requestPath: c.req.path,
       requestMethod: 'GET',
       streaming: false,
+      incomingProtocol: protocol,
     });
 
-    return c.json({
-      object: 'list',
-      data: modelList,
-    });
+    if (protocol === 'anthropic') {
+      const data = models.map((m) => ({
+        type: 'model' as const,
+        id: m.name,
+        display_name: m.displayName || m.name,
+        created_at: new Date(m.createdAt).toISOString(),
+      }));
+      return c.json({
+        data,
+        has_more: false,
+        first_id: data[0]?.id ?? null,
+        last_id: data[data.length - 1]?.id ?? null,
+      });
+    }
+
+    const data = models.map((m) => ({
+      id: m.name,
+      object: 'model' as const,
+      created: Math.floor(new Date(m.createdAt).getTime() / 1000),
+      owned_by: 'x-llm-gateway',
+    }));
+    return c.json({ object: 'list', data });
+
   } catch (error) {
     logger.error({ error }, 'Models list error');
-    return c.json(
-      {
-        error: {
-          type: 'internal_error',
-          message: 'Failed to list models',
-        },
-      },
-      500,
-    );
+    if (protocol === 'anthropic') {
+      return c.json({ type: 'error', error: { type: 'internal_error', message: 'Failed to list models' } }, 500);
+    }
+    return c.json({ error: { type: 'internal_error', message: 'Failed to list models' } }, 500);
   }
 });
 

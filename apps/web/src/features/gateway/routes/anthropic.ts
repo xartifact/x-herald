@@ -5,6 +5,7 @@ import type { VirtualKey } from '@/features/keys/db';
 
 import { handleChatCompletion } from '../services/chat-completion-handler';
 import { identifyClient } from '../services/client-identifier';
+import { PROVIDER_FILTERED_HEADERS } from '../services/headers';
 import { logRequest } from '../services/log-service';
 import { ModelNotFoundError } from '../services/model-group-router';
 import { virtualModelRouter } from '../services/virtual-model-router';
@@ -98,12 +99,11 @@ anthropicRoutes.post('/messages/count_tokens', async (c) => {
       model: instance.actualModelName,
     };
 
-    // 5. 构建 Provider 请求头
-    const filteredHeaders = ['authorization', 'x-api-key', 'content-length', 'transfer-encoding', 'host'];
+    // 5. 构建 Provider 请求头：过滤认证/长度/代理注入类头
     const providerRequestHeaders: Record<string, string> = {
       ...Object.fromEntries(
         Object.entries(clientRequestHeaders).filter(
-          ([key]) => !filteredHeaders.includes(key)
+          ([key]) => !PROVIDER_FILTERED_HEADERS.has(key)
         )
       ),
       'content-type': 'application/json',

@@ -1,27 +1,15 @@
-/**
- * 系统配置类型定义
- */
-
-export interface ModelMappingSettings {
-  enabled: boolean;
-  defaultModelGroup: string;
-  defaultGroupExists: boolean;
-}
-
 export interface AvailableModelGroup {
   id: string;
   name: string;
   displayName: string;
+  instanceCount: number;
 }
 
 export interface SettingsData {
-  modelMapping: ModelMappingSettings;
+  defaultAnalysisModelGroupId: string | null;
   availableModelGroups: AvailableModelGroup[];
 }
 
 export interface SettingsFormData {
-  modelMapping: {
-    enabled: boolean;
-    defaultModelGroup: string;
-  };
+  defaultAnalysisModelGroupId: string | null;
 }

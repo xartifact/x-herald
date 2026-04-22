@@ -123,7 +123,7 @@ export default function ClientModelsPage() {
       <div>
         <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
           <Brain className="h-6 w-6" />
-          客户端模型统计
+          模型统计
         </h2>
         <p className="text-sm text-muted-foreground mt-1">
           查看和分析客户端请求的所有模型使用情况

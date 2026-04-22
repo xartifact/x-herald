@@ -309,3 +309,37 @@ export function useClientModelStats(filters?: Record<string, string>) {
     queryFn: () => get<ClientModelStatsResponse>(`/api/logs/client-models${queryString}`, { extractData: false }),
   })
 }
+
+// 供应商网络质量统计项
+export interface ProviderStat {
+  providerId: string | null
+  providerName: string | null
+  totalRequests: number
+  successCount: number
+  failureCount: number
+  avgLatency: number
+  minLatency: number
+  maxLatency: number
+  p95Latency: number
+  // Provider TTFB（首字节时间），仅有 performance 元数据的请求才有值
+  avgTtfb: number | null
+  p95Ttfb: number | null
+  ttfbCount: number
+  lastRequestAt: string
+}
+
+export interface ProviderStatsResponse {
+  success: boolean
+  data: ProviderStat[]
+}
+
+/**
+ * 获取供应商网络质量统计
+ */
+export function useProviderStats(filters?: Record<string, string>) {
+  const queryString = filters ? '?' + new URLSearchParams(filters).toString() : ''
+  return useQuery({
+    queryKey: [...logKeys.all, 'provider-stats', queryString],
+    queryFn: () => get<ProviderStatsResponse>(`/api/logs/stats/providers${queryString}`, { extractData: false }),
+  })
+}

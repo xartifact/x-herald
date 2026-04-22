@@ -1,5 +1,6 @@
 import { eq, and, gte, lte, sql, desc, lt, isNotNull } from 'drizzle-orm';
 import { Hono } from 'hono';
+import { stream } from 'hono/streaming';
 
 import { getDatabase } from '@/core/db/client';
 import rootLogger from '@/core/lib/logger';
@@ -9,6 +10,10 @@ const logger = rootLogger.child({ module: 'logs' });
 import { requestLogs } from './db';
 import { recalculateAll } from './services/rank-calculator';
 import { authMiddleware } from '../auth/middleware';
+import { modelInstances } from '../model-groups/db';
+import { providers } from '../providers/db';
+import { getConfig } from '../gateway-config/service';
+import { CONFIG_KEY_DEFAULT_ANALYSIS_MODEL } from '../settings/api';
 
 const logsRoutes = new Hono();
 
@@ -588,6 +593,224 @@ logsRoutes.post('/cleanup', async (c) => {
       500
     );
   }
+});
+
+// GET /api/logs/stats/providers - 供应商网络质量统计
+logsRoutes.get('/stats/providers', async (c) => {
+  try {
+    const db = getDatabase();
+    const query = c.req.query();
+
+    const conditions = [isNotNull(requestLogs.providerId)];
+
+    if (query.startDate) {
+      conditions.push(gte(requestLogs.createdAt, new Date(query.startDate)));
+    }
+    if (query.endDate) {
+      conditions.push(lte(requestLogs.createdAt, new Date(query.endDate)));
+    }
+
+    const ttfbExpr = sql`(${requestLogs.metadata}->'performance'->>'providerTtfbMs')::numeric`;
+
+    const results = await db
+      .select({
+        providerId: requestLogs.providerId,
+        providerName: requestLogs.providerName,
+        totalRequests: sql<number>`count(*)`.mapWith(Number),
+        successCount: sql<number>`count(*) filter (where ${requestLogs.status} = 'success')`.mapWith(Number),
+        failureCount: sql<number>`count(*) filter (where ${requestLogs.status} = 'failure')`.mapWith(Number),
+        avgLatency: sql<number>`round(avg(${requestLogs.latencyMs}))`.mapWith(Number),
+        minLatency: sql<number>`min(${requestLogs.latencyMs})`.mapWith(Number),
+        maxLatency: sql<number>`max(${requestLogs.latencyMs})`.mapWith(Number),
+        p95Latency: sql<number>`round(percentile_cont(0.95) within group (order by ${requestLogs.latencyMs}))`.mapWith(Number),
+        avgTtfb: sql<number | null>`round(avg(${ttfbExpr}))`.mapWith(Number),
+        p95Ttfb: sql<number | null>`round(percentile_cont(0.95) within group (order by ${ttfbExpr}))`.mapWith(Number),
+        ttfbCount: sql<number>`count(*) filter (where ${ttfbExpr} is not null)`.mapWith(Number),
+        lastRequestAt: sql<string>`max(${requestLogs.createdAt})`,
+      })
+      .from(requestLogs)
+      .where(and(...conditions))
+      .groupBy(requestLogs.providerId, requestLogs.providerName)
+      .orderBy(sql`avg(${requestLogs.latencyMs}) asc nulls last`);
+
+    return c.json({ success: true, data: results });
+  } catch (error) {
+    logger.warn({ err: error }, 'Failed to get provider stats');
+    return c.json(
+      { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
+      500
+    );
+  }
+});
+
+// POST /api/logs/:id/analyze - AI 对话分析
+logsRoutes.post('/:id/analyze', async (c) => {
+  const id = c.req.param('id');
+  const body = await c.req.json().catch(() => ({})) as { indices?: number[] };
+  const db = getDatabase();
+
+  // 1. 获取日志消息
+  const logResult = await db
+    .select({
+      standardRequestBody: requestLogs.standardRequestBody,
+      requestBody: requestLogs.requestBody,
+    })
+    .from(requestLogs)
+    .where(eq(requestLogs.id, id))
+    .limit(1);
+
+  if (logResult.length === 0) {
+    return c.json({ error: 'Log not found' }, 404);
+  }
+
+  const logData = logResult[0];
+  const rawMessages =
+    (logData.standardRequestBody as Record<string, unknown> | null)?.messages ??
+    (logData.requestBody as Record<string, unknown> | null)?.messages;
+
+  if (!Array.isArray(rawMessages) || rawMessages.length === 0) {
+    return c.json({ error: 'No messages in this log' }, 400);
+  }
+
+  type RawMessage = { role: string; content: unknown };
+  let messages = rawMessages as RawMessage[];
+  if (body.indices && body.indices.length > 0) {
+    messages = body.indices.map((i) => messages[i]).filter(Boolean);
+  }
+
+  // 2. 查找可用的模型实例：优先使用配置的默认模型组，按优先级取最高实例，否则全局回退
+  const defaultGroupId = await getConfig<string | null>(CONFIG_KEY_DEFAULT_ANALYSIS_MODEL, null);
+
+  let instanceResult: Array<{ actualModelName: string; providerId: string }> = [];
+
+  if (defaultGroupId) {
+    instanceResult = await db
+      .select({
+        actualModelName: modelInstances.actualModelName,
+        providerId: modelInstances.providerId,
+      })
+      .from(modelInstances)
+      .innerJoin(providers, eq(providers.id, modelInstances.providerId))
+      .where(
+        and(
+          eq(modelInstances.groupId, defaultGroupId),
+          eq(modelInstances.enabled, true),
+          eq(providers.enabled, true)
+        )
+      )
+      .orderBy(modelInstances.priority)
+      .limit(1);
+  }
+
+  // 全局回退：取任意优先级最高的可用实例
+  if (instanceResult.length === 0) {
+    instanceResult = await db
+      .select({
+        actualModelName: modelInstances.actualModelName,
+        providerId: modelInstances.providerId,
+      })
+      .from(modelInstances)
+      .innerJoin(providers, eq(providers.id, modelInstances.providerId))
+      .where(and(eq(modelInstances.enabled, true), eq(providers.enabled, true)))
+      .orderBy(modelInstances.priority)
+      .limit(1);
+  }
+
+  if (instanceResult.length === 0) {
+    return c.json({ error: 'No available model for analysis. Please configure a provider first.' }, 503);
+  }
+
+  const { actualModelName, providerId } = instanceResult[0];
+
+  // 3. 获取 Provider 协议配置
+  const providerResult = await db
+    .select({ apiKey: providers.apiKey, protocols: providers.protocols })
+    .from(providers)
+    .where(eq(providers.id, providerId))
+    .limit(1);
+
+  const provider = providerResult[0];
+  const openaiConfig = provider.protocols?.openai;
+
+  if (!openaiConfig?.enabled || !openaiConfig.baseUrl) {
+    return c.json({ error: 'No OpenAI-compatible provider available for analysis' }, 503);
+  }
+
+  // 4. 将消息格式化为可读文本
+  const formatContent = (content: unknown): string => {
+    if (typeof content === 'string') return content;
+    if (Array.isArray(content)) {
+      return content
+        .map((block) => {
+          if (typeof block !== 'object' || block === null) return '';
+          if ('text' in block) return String((block as { text: unknown }).text);
+          return '';
+        })
+        .filter(Boolean)
+        .join('\n');
+    }
+    return JSON.stringify(content);
+  };
+
+  const conversationText = messages
+    .map((m) => `[${m.role.toUpperCase()}]:\n${formatContent(m.content)}`)
+    .join('\n\n');
+
+  const analysisMessages = [
+    {
+      role: 'system',
+      content:
+        '你是一个专业的 AI 对话分析师。请用中文简洁地分析用户提供的对话内容，输出结构清晰、重点突出的分析报告。',
+    },
+    {
+      role: 'user',
+      content: `请对以下 AI 对话请求进行分析，包含：\n1. **对话目的**：这段对话的主要意图\n2. **内容摘要**：核心信息提取\n3. **质量评估**：清晰度、上下文完整性等\n4. **工具使用**（如有）：工具调用情况分析\n5. **优化建议**（如有明显问题）\n\n保持简洁，每项不超过 2-3 句话。\n\n---\n${conversationText}\n---`,
+    },
+  ];
+
+  // 5. 流式调用 Provider
+  const baseUrl = openaiConfig.baseUrl.replace(/\/+$/, '');
+
+  return stream(c, async (s) => {
+    try {
+      const response = await fetch(`${baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(provider.apiKey ? { Authorization: `Bearer ${provider.apiKey}` } : {}),
+        },
+        body: JSON.stringify({
+          model: actualModelName,
+          messages: analysisMessages,
+          stream: true,
+          max_tokens: 1024,
+        }),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        logger.warn({ status: response.status, body: errText }, 'Analysis provider error');
+        await s.write(
+          new TextEncoder().encode(
+            `data: {"error":"Provider returned ${response.status}"}\n\ndata: [DONE]\n\n`
+          )
+        );
+        return;
+      }
+
+      const reader = response.body!.getReader();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        await s.write(value);
+      }
+    } catch (err) {
+      logger.warn({ err }, 'Failed to stream analysis');
+      await s.write(
+        new TextEncoder().encode(`data: {"error":"Analysis request failed"}\n\ndata: [DONE]\n\n`)
+      );
+    }
+  });
 });
 
 export default logsRoutes;

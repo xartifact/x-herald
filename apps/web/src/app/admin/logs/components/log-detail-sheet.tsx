@@ -33,6 +33,7 @@ import { cn } from '@/core/lib/utils'
 import { CLIENT_REGISTRY } from '@/features/gateway/services/client-identifier'
 import type { Log } from '@/hooks/use-logs'
 
+import { MessageAnalysisPanel } from './message-analysis-panel'
 import { MessageTimelineSection } from './message-timeline-section'
 import { ToolCallDetailsSection } from './tool-call-details-section'
 
@@ -411,6 +412,13 @@ interface RequestPanelProps {
 
 export function RequestPanel({ log, className }: RequestPanelProps) {
   const hasMessageAnalysis = !!log.metadata?.messageSequence
+  const [selectedMessageIndices, setSelectedMessageIndices] = useState<number[]>([])
+
+  const messages = (
+    (log.standardRequestBody as { messages?: unknown[] } | null)?.messages ??
+    (log.requestBody as { messages?: unknown[] } | null)?.messages ??
+    []
+  ) as Array<{ role: string; content: unknown }>
 
   return (
     <div className={cn("flex flex-col border-r last:border-r-0 bg-background overflow-hidden", className)}>
@@ -474,7 +482,16 @@ export function RequestPanel({ log, className }: RequestPanelProps) {
 
         {hasMessageAnalysis && (
           <TabsContent value="message-analysis" className="flex-1 m-0 overflow-auto">
-            <MessageTimelineSection messageSequence={log.metadata!.messageSequence!} />
+            <MessageAnalysisPanel
+              logId={log.id}
+              selectedIndices={selectedMessageIndices}
+            />
+            <MessageTimelineSection
+              messageSequence={log.metadata!.messageSequence!}
+              messages={messages}
+              selectedIndices={selectedMessageIndices}
+              onSelectionChange={setSelectedMessageIndices}
+            />
           </TabsContent>
         )}
       </Tabs>

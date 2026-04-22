@@ -89,16 +89,39 @@ export class RouteRuleEngine {
   }
 
   /**
+   * 强制转换条件值到目标字段的类型，处理 UI 存储字符串但运行时为其他类型的情况
+   */
+  private coerceValue(fieldValue: unknown, condValue: unknown): unknown {
+    if (typeof fieldValue === 'number' && typeof condValue === 'string') {
+      const n = Number(condValue);
+      return isNaN(n) ? condValue : n;
+    }
+    if (typeof fieldValue === 'boolean' && typeof condValue === 'string') {
+      if (condValue === 'true') return true;
+      if (condValue === 'false') return false;
+    }
+    return condValue;
+  }
+
+  /**
    * 评估操作符
    */
   private evaluateOperator(operator: string, fieldValue: unknown, condValue: unknown): boolean {
+    const coerced = this.coerceValue(fieldValue, condValue);
     switch (operator) {
       case 'eq':
-        return fieldValue === condValue;
+        return fieldValue === coerced;
       case 'ne':
-        return fieldValue !== condValue;
-      case 'in':
-        return Array.isArray(condValue) && condValue.includes(fieldValue);
+        return fieldValue !== coerced;
+      case 'in': {
+        // 支持数组和逗号分隔字符串两种格式
+        const list = Array.isArray(condValue)
+          ? condValue
+          : typeof condValue === 'string'
+            ? condValue.split(',').map((v) => v.trim())
+            : [];
+        return list.some((v) => fieldValue === this.coerceValue(fieldValue, v));
+      }
       case 'starts_with':
         return typeof fieldValue === 'string' && typeof condValue === 'string' && fieldValue.startsWith(condValue);
       case 'exists':

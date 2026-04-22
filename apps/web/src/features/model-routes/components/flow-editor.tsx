@@ -181,8 +181,11 @@ function buildFlowFromData(
           position: { x: baseX - 60, y: baseY + 150 },
           data: {
             label: typeLabel,
-            targetType: action.type.replace('route_to_', ''),
+            targetType: action.type === 'route_to_group' ? 'model_group'
+              : action.type === 'route_to_instance' ? 'model_instance'
+              : 'virtual_model',
             targetName: targetName,
+            ruleName: route.name || '未命名规则',
           },
           style: isSelected ? { boxShadow: '0 0 0 3px #3b82f6' } : undefined,
         })
@@ -225,8 +228,11 @@ function buildFlowFromData(
           position: { x: baseX, y: baseY },
           data: {
             label: typeLabel,
-            targetType: action.type.replace('route_to_', ''),
+            targetType: action.type === 'route_to_group' ? 'model_group'
+              : action.type === 'route_to_instance' ? 'model_instance'
+              : 'virtual_model',
             targetName: targetName,
+            ruleName: route.name || '未命名规则',
           },
           style: isSelected ? { boxShadow: '0 0 0 3px #3b82f6' } : undefined,
         })

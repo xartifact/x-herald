@@ -791,6 +791,37 @@ export function MetadataSections({ log, isPending, isSuccess, contentFeatures, f
         )}
       </Section>
 
+      {/* === 路由追踪 === */}
+      {log.metadata?.routing && (
+        <Section title="路由追踪">
+          <InfoRow label="请求模型" value={log.metadata.routing.requestedModel} mono />
+          {log.metadata.routing.matchedRuleName && (
+            <InfoRow
+              label="命中规则"
+              value={
+                <span>
+                  {log.metadata.routing.matchedRuleName}
+                  {log.metadata.routing.matchedRulePriority !== undefined && (
+                    <span className="ml-1 text-xs text-muted-foreground">
+                      (优先级 {log.metadata.routing.matchedRulePriority})
+                    </span>
+                  )}
+                </span>
+              }
+            />
+          )}
+          {log.metadata.routing.modelGroupName && (
+            <InfoRow label="模型组" value={log.metadata.routing.modelGroupName} />
+          )}
+          {log.metadata.routing.actualModelName && (
+            <InfoRow label="实际模型" value={log.metadata.routing.actualModelName} mono />
+          )}
+          {log.metadata.routing.strategy && (
+            <InfoRow label="决策策略" value={log.metadata.routing.strategy} mono />
+          )}
+        </Section>
+      )}
+
       {/* === 延迟分析 === */}
       <Section title="延迟分析">
         <InfoRow

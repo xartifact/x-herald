@@ -34,6 +34,13 @@ export interface RouteResult {
 
   // 模型映射信息
   mapping: ModelMappingResult;
+
+  // 命中的路由规则（可选，由 VirtualModelRouter 写入）
+  matchedRule?: {
+    id: string;
+    name: string;
+    priority: number;
+  };
 }
 
 // 路由上下文

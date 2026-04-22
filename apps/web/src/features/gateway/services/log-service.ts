@@ -57,6 +57,16 @@ export interface LogRequestParams {
   providerTtfbMs?: number;
   streamDurationMs?: number;
   retryCount?: number;
+  routingTrace?: {
+    matchedRuleId?: string;
+    matchedRuleName?: string;
+    matchedRulePriority?: number;
+    modelGroupId?: string;
+    modelGroupName?: string;
+    instanceId?: string;
+    actualModelName?: string;
+    strategy?: string;
+  };
 }
 
 /**
@@ -96,6 +106,14 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
         originalModel: params.originalModelName,
         mappingType: params.mappingType,
         isMapped: params.isMapped,
+      };
+    }
+
+    // 添加路由追踪信息
+    if (params.routingTrace || params.originalModelName) {
+      metadata.routing = {
+        requestedModel: params.originalModelName || params.modelName,
+        ...params.routingTrace,
       };
     }
 
@@ -270,6 +288,16 @@ export async function logStreamStart(params: {
   incomingProtocol?: string;
   targetProtocol?: string;
   conversationId?: string;
+  routingTrace?: {
+    matchedRuleId?: string;
+    matchedRuleName?: string;
+    matchedRulePriority?: number;
+    modelGroupId?: string;
+    modelGroupName?: string;
+    instanceId?: string;
+    actualModelName?: string;
+    strategy?: string;
+  };
 }): Promise<string> {
   try {
     const db = getDatabase();
@@ -281,6 +309,12 @@ export async function logStreamStart(params: {
         originalModel: params.originalModelName,
         mappingType: params.mappingType,
         isMapped: params.isMapped,
+      };
+    }
+    if (params.routingTrace || params.originalModelName) {
+      metadata.routing = {
+        requestedModel: params.originalModelName || params.modelName,
+        ...params.routingTrace,
       };
     }
 
@@ -357,6 +391,16 @@ export async function logRequestStart(params: {
   incomingProtocol?: string;
   targetProtocol?: string;
   conversationId?: string;
+  routingTrace?: {
+    matchedRuleId?: string;
+    matchedRuleName?: string;
+    matchedRulePriority?: number;
+    modelGroupId?: string;
+    modelGroupName?: string;
+    instanceId?: string;
+    actualModelName?: string;
+    strategy?: string;
+  };
 }): Promise<string> {
   try {
     const db = getDatabase();
@@ -366,6 +410,12 @@ export async function logRequestStart(params: {
         originalModel: params.originalModelName,
         mappingType: params.mappingType,
         isMapped: params.isMapped,
+      };
+    }
+    if (params.routingTrace || params.originalModelName) {
+      metadata.routing = {
+        requestedModel: params.originalModelName || params.modelName,
+        ...params.routingTrace,
       };
     }
     const result = await db.insert(requestLogs).values({

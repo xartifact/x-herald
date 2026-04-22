@@ -72,7 +72,11 @@ export class VirtualModelRouter {
     if (action.type === 'route_to_group' && action.targetId) {
       const result = await modelGroupRouter.routeByGroupId(action.targetId, context);
       if (result) {
-        return { ...result, mapping: mappingResult };
+        return {
+          ...result,
+          mapping: mappingResult,
+          matchedRule: { id: ruleMatch.id, name: ruleMatch.name, priority: ruleMatch.priority },
+        };
       }
       logger.warn(
         { virtualModel: vm.name, targetGroupId: action.targetId },
@@ -82,7 +86,7 @@ export class VirtualModelRouter {
     }
 
     if (action.type === 'route_to_instance' && action.targetId) {
-      return this.routeToInstance(action.targetId, vm, context, mappingResult);
+      return this.routeToInstance(action.targetId, vm, context, mappingResult, ruleMatch);
     }
 
     return null;
@@ -139,7 +143,11 @@ export class VirtualModelRouter {
           { requestedModel: context.requestedModel, defaultVm: defaultVm.name, groupId: action.targetId },
           'Request routed via default virtual model fallback'
         );
-        return { ...result, mapping: fallbackMapping };
+        return {
+          ...result,
+          mapping: fallbackMapping,
+          matchedRule: { id: ruleMatch.id, name: ruleMatch.name, priority: ruleMatch.priority },
+        };
       }
       return null;
     }
@@ -149,7 +157,8 @@ export class VirtualModelRouter {
         action.targetId,
         { name: defaultVm.name, displayName: defaultVm.displayName },
         context,
-        fallbackMapping
+        fallbackMapping,
+        ruleMatch
       );
     }
 
@@ -163,7 +172,8 @@ export class VirtualModelRouter {
     instanceId: string,
     vm: { name: string; displayName: string | null },
     context: RoutingContext,
-    mappingResult: ModelMappingResult
+    mappingResult: ModelMappingResult,
+    ruleMatch?: { id: string; name: string; priority: number }
   ): Promise<RouteResult | null> {
     const db = getDatabase();
 
@@ -237,6 +247,7 @@ export class VirtualModelRouter {
         latency: 0,
       },
       mapping: mappingResult,
+      matchedRule: ruleMatch,
     };
   }
 }

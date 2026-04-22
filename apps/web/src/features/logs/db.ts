@@ -81,6 +81,19 @@ export interface LogMetadata {
     topP?: number;
   };
 
+  // 路由追踪
+  routing?: {
+    requestedModel: string;        // 客户端原始请求的模型名
+    matchedRuleId?: string;        // 命中的路由规则 ID
+    matchedRuleName?: string;      // 命中的路由规则名称
+    matchedRulePriority?: number;  // 命中规则的优先级
+    modelGroupId?: string;         // 路由到的模型组 ID
+    modelGroupName?: string;       // 模型组名称
+    instanceId?: string;           // 选中的实例 ID
+    actualModelName?: string;      // 实际发送给 Provider 的模型名
+    strategy?: string;             // 决策策略
+  };
+
   // 错误和重试
   error?: {
     retryCount?: number;

@@ -59,6 +59,18 @@ export interface LogMetadata {
     usageEstimated?: boolean;
   };
 
+  routing?: {
+    requestedModel: string;
+    matchedRuleId?: string;
+    matchedRuleName?: string;
+    matchedRulePriority?: number;
+    modelGroupId?: string;
+    modelGroupName?: string;
+    instanceId?: string;
+    actualModelName?: string;
+    strategy?: string;
+  };
+
   [key: string]: unknown;
 }
 

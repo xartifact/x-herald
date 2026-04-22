@@ -35,13 +35,19 @@ function joinUrl(baseUrl: string, endpoint: string): string {
   const basePath = baseUrlObj.pathname.replace(/\/+$/, '');
   const basePathParts = basePath.split('/').filter(Boolean);
 
-  // 检查是否有重复的前缀
+  // 查找 basePathParts 后缀与 endpointParts 前缀的最长重叠
   let skipCount = 0;
-  for (let i = 0; i < Math.min(basePathParts.length, endpointParts.length); i++) {
-    if (basePathParts[basePathParts.length - 1 - i] === endpointParts[i]) {
-      skipCount = i + 1;
-    } else {
-      break;
+  for (let overlapLen = 1; overlapLen <= Math.min(basePathParts.length, endpointParts.length); overlapLen++) {
+    let match = true;
+    for (let j = 0; j < overlapLen; j++) {
+      const baseIdx = basePathParts.length - overlapLen + j;
+      if (basePathParts[baseIdx] !== endpointParts[j]) {
+        match = false;
+        break;
+      }
+    }
+    if (match) {
+      skipCount = overlapLen;
     }
   }
 
@@ -141,7 +147,7 @@ export async function handleChatCompletion(
       throw new ModelNotFoundError(standardReq.model);
     }
 
-    const { instance, provider, group, decision, mapping } = routeResult;
+    const { instance, provider, group, decision, mapping, matchedRule } = routeResult;
 
     logger.debug(
       {
@@ -345,6 +351,16 @@ export async function handleChatCompletion(
       incomingProtocol,
       targetProtocol,
       conversationId,
+      routingTrace: {
+        matchedRuleId: matchedRule?.id,
+        matchedRuleName: matchedRule?.name,
+        matchedRulePriority: matchedRule?.priority,
+        modelGroupId: group.id,
+        modelGroupName: group.name,
+        instanceId: instance.id,
+        actualModelName: instance.actualModelName,
+        strategy: decision.strategy,
+      },
     });
 
     // T2: 预处理完成，即将发起 Provider 请求

@@ -20,6 +20,7 @@ interface ModelGroupCardProps {
   onAddInstance: () => void
   onEditInstance: (instance: ModelInstance) => void
   onDeleteInstance: (instance: ModelInstance) => void
+  onToggleInstance: (instance: ModelInstance) => void
   onMoveInstance: (instanceId: string, direction: 'up' | 'down') => void
   getProviderName: (providerId: string) => string
 }
@@ -43,6 +44,7 @@ export function ModelGroupCard({
   onAddInstance,
   onEditInstance,
   onDeleteInstance,
+  onToggleInstance,
   onMoveInstance,
   getProviderName,
 }: ModelGroupCardProps) {
@@ -117,6 +119,7 @@ export function ModelGroupCard({
                 getProviderName={getProviderName}
                 onEdit={onEditInstance}
                 onDelete={onDeleteInstance}
+                onToggle={onToggleInstance}
                 onMove={onMoveInstance}
               />
             </div>

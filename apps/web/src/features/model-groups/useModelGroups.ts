@@ -3,7 +3,7 @@ import { toast } from 'sonner'
 
 import { get, post, put, del as deleteRequest, patch } from '@/core/lib/api-client'
 
-import type { ModelGroup, ModelInstance, ModelGroupDetail, ApiResponse } from './types'
+import type { ModelGroup, ModelInstance, ModelGroupDetail, ApiResponse, RoutingConfig } from './types'
 
 // 查询键
 export const modelGroupKeys = {
@@ -70,6 +70,7 @@ export function useCreateModelGroup() {
       category?: string
       capabilities?: ModelGroup['capabilities']
       supportedProtocols?: string[]
+      routingConfig?: RoutingConfig
       metadata?: Record<string, unknown>
     }) => {
       const response = await post<ApiResponse<ModelGroup>>('/api/model-groups', data, { extractData: false })
@@ -105,6 +106,7 @@ export function useUpdateModelGroup() {
         category: string
         capabilities: ModelGroup['capabilities']
         supportedProtocols: string[]
+        routingConfig: RoutingConfig
         metadata: Record<string, unknown>
       }>
     }) => {

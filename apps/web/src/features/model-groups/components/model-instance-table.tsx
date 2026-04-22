@@ -2,7 +2,7 @@
 
 import { Pencil, Trash2, ArrowUp, ArrowDown } from 'lucide-react'
 
-import { Badge } from '@/ui/badge'
+import { StatusToggle } from '@/components/status-toggle'
 import { Button } from '@/ui/button'
 import {
   Table,
@@ -21,6 +21,7 @@ interface ModelInstanceTableProps {
   onEdit: (instance: ModelInstance) => void
   onDelete: (instance: ModelInstance) => void
   onMove: (instanceId: string, direction: 'up' | 'down') => void
+  onToggle: (instance: ModelInstance) => void
 }
 
 export function ModelInstanceTable({
@@ -29,6 +30,7 @@ export function ModelInstanceTable({
   onEdit,
   onDelete,
   onMove,
+  onToggle,
 }: ModelInstanceTableProps) {
   if (instances.length === 0) {
     return (
@@ -67,9 +69,7 @@ export function ModelInstanceTable({
               </code>
             </TableCell>
             <TableCell>
-              <Badge variant={instance.enabled ? 'default' : 'destructive'}>
-                {instance.enabled ? '启用' : '禁用'}
-              </Badge>
+              <StatusToggle enabled={instance.enabled} onToggle={() => onToggle(instance)} />
             </TableCell>
             <TableCell>
               <div className="flex gap-1">

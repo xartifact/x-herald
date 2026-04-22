@@ -231,6 +231,7 @@ export class VirtualModelRouter {
       },
       supportedProtocols: ['openai'],
       enabled: true,
+      routingConfig: null,
       metadata: null,
       createdAt: new Date(),
       updatedAt: new Date(),

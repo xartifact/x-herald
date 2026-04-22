@@ -13,6 +13,7 @@ import {
   Server,
 } from 'lucide-react'
 
+import { StatusToggle } from '@/components/status-toggle'
 import type { ModelInstance } from '@/features/model-groups/types'
 import { Badge } from '@/ui/badge'
 import { Button } from '@/ui/button'
@@ -30,6 +31,7 @@ interface ProviderCardProps {
   showApiKey: boolean
   onToggleExpand: () => void
   onToggleShowApiKey: () => void
+  onToggle: () => void
   onEdit: () => void
   onDelete: () => void
   onSyncModels: () => void
@@ -37,6 +39,7 @@ interface ProviderCardProps {
   onAddInstance: () => void
   onEditInstance: (instance: ModelInstance) => void
   onDeleteInstance: (instance: ModelInstance) => void
+  onToggleInstance: (instance: ModelInstance) => void
   getGroupName: (groupId: string | null) => string
 }
 
@@ -51,6 +54,7 @@ export function ProviderCard({
   showApiKey,
   onToggleExpand,
   onToggleShowApiKey,
+  onToggle,
   onEdit,
   onDelete,
   onSyncModels,
@@ -58,6 +62,7 @@ export function ProviderCard({
   onAddInstance,
   onEditInstance,
   onDeleteInstance,
+  onToggleInstance,
   getGroupName,
 }: ProviderCardProps) {
   const enabledProtocols = getEnabledProtocols(provider.protocols)
@@ -77,9 +82,7 @@ export function ProviderCard({
                   </Badge>
                 ))}
               </div>
-              <Badge variant={provider.enabled ? 'default' : 'destructive'}>
-                {provider.enabled ? '启用' : '禁用'}
-              </Badge>
+              <StatusToggle enabled={provider.enabled} onToggle={onToggle} />
               <Badge variant="secondary" className="text-xs">
                 {instances.length} 个实例
               </Badge>
@@ -162,6 +165,7 @@ export function ProviderCard({
                 getGroupName={getGroupName}
                 onEdit={onEditInstance}
                 onDelete={onDeleteInstance}
+                onToggle={onToggleInstance}
               />
             </div>
           </div>

@@ -326,6 +326,31 @@ providersRoutes.delete('/:id', async (c) => {
   }
 });
 
+// PATCH /api/providers/:id/toggle - 切换启用状态
+providersRoutes.patch('/:id/toggle', async (c) => {
+  try {
+    const { id } = c.req.param();
+    const db = getDatabase();
+
+    const [existing] = await db.select().from(providers).where(eq(providers.id, id)).limit(1);
+    if (!existing) {
+      return c.json({ error: 'Provider not found', code: 'PROVIDER_NOT_FOUND' }, 404);
+    }
+
+    const [updated] = await db
+      .update(providers)
+      .set({ enabled: !existing.enabled, updatedAt: new Date() })
+      .where(eq(providers.id, id))
+      .returning();
+
+    logger.info({ providerId: id, enabled: updated.enabled }, 'Provider toggled');
+    return c.json({ success: true, data: updated });
+  } catch (error) {
+    logger.warn({ err: error }, 'Failed to toggle provider');
+    return c.json({ error: 'Failed to toggle provider', code: 'PROVIDER_TOGGLE_ERROR' }, 500);
+  }
+});
+
 // GET /api/providers/:id/thinking-type-mappings - 获取 thinking 类型映射
 providersRoutes.get('/:id/thinking-type-mappings', async (c) => {
   try {

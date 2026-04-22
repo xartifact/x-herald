@@ -14,10 +14,11 @@ import {
   useCreateModelInstance,
   useUpdateModelInstance,
   useDeleteModelInstance,
+  useToggleModelInstance,
 } from '@/features/model-groups/useModelGroups'
 
 import type { ProtocolsConfig } from './types'
-import { useProviders, useCreateProvider, useUpdateProvider, useDeleteProvider } from './useProviders'
+import { useProviders, useCreateProvider, useUpdateProvider, useDeleteProvider, useToggleProvider } from './useProviders'
 
 
 const PROTOCOL_OPTIONS = [
@@ -79,12 +80,14 @@ export function useProviderPage() {
   const createProvider = useCreateProvider()
   const updateProvider = useUpdateProvider()
   const deleteProvider = useDeleteProvider()
+  const toggleProvider = useToggleProvider()
 
   const { data: instances = [] } = useModelInstances()
   const { data: groups = [] } = useModelGroups()
   const createInstance = useCreateModelInstance()
   const updateInstance = useUpdateModelInstance()
   const deleteInstance = useDeleteModelInstance()
+  const toggleInstance = useToggleModelInstance()
 
   const form = useForm<ProviderFormData>({
     resolver: zodResolver(providerSchema),
@@ -202,6 +205,10 @@ export function useProviderPage() {
     await deleteProvider.mutateAsync(id)
   }
 
+  const handleToggle = (id: string) => {
+    toggleProvider.mutate(id)
+  }
+
   const handleAddNew = () => {
     setEditingProviderId(null)
     setShowFormApiKey(false)
@@ -261,6 +268,10 @@ export function useProviderPage() {
     await deleteInstance.mutateAsync({ id: instance.id, groupId: instance.groupId || '' })
   }
 
+  const handleToggleInstance = (instance: ModelInstance) => {
+    toggleInstance.mutate({ id: instance.id, groupId: instance.groupId || '' })
+  }
+
   const onInstanceSubmit = async (data: InstanceFormData) => {
     const payload = {
       groupId: data.groupId || null,
@@ -309,6 +320,7 @@ export function useProviderPage() {
     onSubmit,
     handleEdit,
     handleDelete,
+    handleToggle,
     handleAddNew,
     toggleShowApiKey,
     // 实例相关
@@ -325,6 +337,7 @@ export function useProviderPage() {
     handleAddInstance,
     handleEditInstance,
     handleDeleteInstance,
+    handleToggleInstance,
     onInstanceSubmit,
   }
 }

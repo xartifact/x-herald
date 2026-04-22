@@ -32,6 +32,11 @@ export interface ModelCapabilities {
 }
 
 
+export interface RoutingConfig {
+  strategy: 'round_robin' | 'weighted' | 'least_latency' | 'priority' | 'cost_optimized' | 'smart';
+  fallbackEnabled: boolean;
+}
+
 export const modelGroups = pgTable('model_groups', {
   id: uuid('id').primaryKey().defaultRandom(),
 
@@ -58,6 +63,9 @@ export const modelGroups = pgTable('model_groups', {
 
   // 状态
   enabled: boolean('enabled').default(true).notNull(),
+
+  // 路由配置
+  routingConfig: jsonb('routing_config').$type<RoutingConfig>(),
 
   // 元数据
   metadata: jsonb('metadata').$type<Record<string, unknown>>(),

@@ -5,7 +5,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
-import { get, post, put, del } from '@/core/lib/api-client'
+import { get, post, put, del, patch } from '@/core/lib/api-client'
 
 import type { Provider, ProtocolsConfig } from './types'
 
@@ -147,6 +147,19 @@ export function useDeleteProvider() {
     onError: (error: unknown) => {
       const apiError = error as { data?: { error?: string } }
       toast.error(apiError.data?.error || '删除失败')
+    },
+  })
+}
+
+export function useToggleProvider() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => patch<Provider>(`/api/providers/${id}/toggle`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: providerKeys.lists() })
+    },
+    onError: () => {
+      toast.error('切换状态失败')
     },
   })
 }

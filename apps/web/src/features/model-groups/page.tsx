@@ -38,6 +38,7 @@ export default function ModelGroupsPage() {
     handleAddInstance,
     handleEditInstance,
     handleDeleteInstance,
+    handleToggleInstance,
     handleMoveInstance,
     onGroupSubmit,
     onInstanceSubmit,
@@ -110,6 +111,7 @@ export default function ModelGroupsPage() {
               onAddInstance={() => handleAddInstance(group.id)}
               onEditInstance={handleEditInstance}
               onDeleteInstance={handleDeleteInstance}
+              onToggleInstance={handleToggleInstance}
               onMoveInstance={(instanceId, direction) => handleMoveInstance(group.id, instanceId, direction)}
               getProviderName={getProviderName}
             />

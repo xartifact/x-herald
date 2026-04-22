@@ -31,6 +31,7 @@ export default function ProvidersPage() {
     onSubmit,
     handleEdit,
     handleDelete,
+    handleToggle,
     handleAddNew,
     toggleShowApiKey,
     // 实例相关
@@ -48,6 +49,7 @@ export default function ProvidersPage() {
     handleAddInstance,
     handleEditInstance,
     handleDeleteInstance,
+    handleToggleInstance,
     onInstanceSubmit,
   } = useProviderPage()
 
@@ -125,6 +127,7 @@ export default function ProvidersPage() {
                 setExpandedProvider(expandedProvider === provider.id ? null : provider.id)
               }
               onToggleShowApiKey={() => toggleShowApiKey(provider.id)}
+              onToggle={() => handleToggle(provider.id)}
               onEdit={() => handleEdit(provider.id)}
               onDelete={() => handleDelete(provider.id, provider.name)}
               onSyncModels={() => handleSyncModels(provider.id, provider.name)}
@@ -132,6 +135,7 @@ export default function ProvidersPage() {
               onAddInstance={() => handleAddInstance(provider.id)}
               onEditInstance={handleEditInstance}
               onDeleteInstance={handleDeleteInstance}
+              onToggleInstance={handleToggleInstance}
               getGroupName={getGroupName}
             />
           ))}

@@ -2,6 +2,7 @@
 
 import { Pencil, Trash2, Eye, EyeOff, BrainCircuit, RefreshCw } from 'lucide-react'
 
+import { StatusToggle } from '@/components/status-toggle'
 import { Badge } from '@/ui/badge'
 import { Button } from '@/ui/button'
 import { Card, CardContent } from '@/ui/card'
@@ -20,6 +21,7 @@ interface ProviderTableProps {
   providers: Provider[]
   showApiKey: Record<string, boolean>
   onToggleShowApiKey: (providerId: string) => void
+  onToggle: (providerId: string) => void
   onEdit: (providerId: string) => void
   onDelete: (providerId: string, name: string) => void
   onConfigureThinkingMapping: (providerId: string, name: string) => void
@@ -34,6 +36,7 @@ export function ProviderTable({
   providers,
   showApiKey,
   onToggleShowApiKey,
+  onToggle,
   onEdit,
   onDelete,
   onConfigureThinkingMapping,
@@ -98,9 +101,7 @@ export function ProviderTable({
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={provider.enabled ? 'default' : 'destructive'}>
-                      {provider.enabled ? '启用' : '禁用'}
-                    </Badge>
+                    <StatusToggle enabled={provider.enabled} onToggle={() => onToggle(provider.id)} />
                   </TableCell>
                   <TableCell>
                     <span className="text-sm text-muted-foreground">

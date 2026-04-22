@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { FolderOpen, MoveRight } from 'lucide-react'
 
 import { Badge } from '@/ui/badge'
+import { StatusToggle } from '@/components/status-toggle'
 import { Button } from '@/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card'
 import {
@@ -24,7 +25,7 @@ import {
 } from '@/ui/table'
 
 import type { ModelInstance, ModelGroup } from '../types'
-import { useAssignInstance } from '../useModelGroups'
+import { useAssignInstance, useToggleModelInstance } from '../useModelGroups'
 
 interface UngroupedInstancesSectionProps {
   instances: ModelInstance[]
@@ -39,6 +40,7 @@ export function UngroupedInstancesSection({
 }: UngroupedInstancesSectionProps) {
   const [assignGroupId, setAssignGroupId] = useState<Record<string, string>>({})
   const assignInstance = useAssignInstance()
+  const toggleInstance = useToggleModelInstance()
 
   if (instances.length === 0) return null
 
@@ -82,9 +84,10 @@ export function UngroupedInstancesSection({
                 </TableCell>
                 <TableCell>{getProviderName(instance.providerId)}</TableCell>
                 <TableCell>
-                  <Badge variant={instance.enabled ? 'default' : 'destructive'}>
-                    {instance.enabled ? '启用' : '禁用'}
-                  </Badge>
+                  <StatusToggle
+                    enabled={instance.enabled}
+                    onToggle={() => toggleInstance.mutate({ id: instance.id, groupId: instance.groupId || '' })}
+                  />
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center justify-end gap-2">

@@ -7,10 +7,11 @@ import type {
   ModelInstance as DbModelInstance,
   ModelCapabilities,
   InstanceConfig,
+  RoutingConfig,
 } from './db';
 
 // Re-export database types
-export type { ModelCapabilities, InstanceConfig };
+export type { ModelCapabilities, InstanceConfig, RoutingConfig };
 
 // Extended types for frontend use
 export interface ModelGroup extends DbModelGroup {
@@ -48,6 +49,7 @@ export interface CreateModelGroupPayload {
   category?: string;
   capabilities?: ModelCapabilities;
   supportedProtocols?: string[];
+  routingConfig?: RoutingConfig;
   metadata?: Record<string, unknown>;
 }
 
@@ -60,6 +62,7 @@ export interface UpdateModelGroupPayload {
   category?: string;
   capabilities?: ModelCapabilities;
   supportedProtocols?: string[];
+  routingConfig?: RoutingConfig;
   metadata?: Record<string, unknown>;
 }
 

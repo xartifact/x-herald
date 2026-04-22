@@ -2,6 +2,7 @@
 
 import { Pencil, Trash2 } from 'lucide-react'
 
+import { StatusToggle } from '@/components/status-toggle'
 import type { ModelInstance } from '@/features/model-groups/types'
 import { Badge } from '@/ui/badge'
 import { Button } from '@/ui/button'
@@ -19,6 +20,7 @@ interface ProviderInstanceTableProps {
   getGroupName: (groupId: string | null) => string
   onEdit: (instance: ModelInstance) => void
   onDelete: (instance: ModelInstance) => void
+  onToggle: (instance: ModelInstance) => void
 }
 
 export function ProviderInstanceTable({
@@ -26,6 +28,7 @@ export function ProviderInstanceTable({
   getGroupName,
   onEdit,
   onDelete,
+  onToggle,
 }: ProviderInstanceTableProps) {
   if (instances.length === 0) {
     return (
@@ -71,9 +74,7 @@ export function ProviderInstanceTable({
               )}
             </TableCell>
             <TableCell>
-              <Badge variant={instance.enabled ? 'default' : 'destructive'}>
-                {instance.enabled ? '启用' : '禁用'}
-              </Badge>
+              <StatusToggle enabled={instance.enabled} onToggle={() => onToggle(instance)} />
             </TableCell>
             <TableCell className="text-right">
               <div className="flex justify-end gap-1">

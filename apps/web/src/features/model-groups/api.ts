@@ -100,6 +100,7 @@ modelGroupRoutes.post('/', async (c) => {
           contextWindow: 8192,
         },
         supportedProtocols: data.supportedProtocols || ['openai'],
+        routingConfig: data.routingConfig,
         metadata: data.metadata,
       })
       .returning();
@@ -135,6 +136,7 @@ modelGroupRoutes.put('/:id', async (c) => {
         category: data.category,
         capabilities: data.capabilities,
         supportedProtocols: data.supportedProtocols,
+        routingConfig: data.routingConfig,
         metadata: data.metadata,
         updatedAt: new Date(),
       })

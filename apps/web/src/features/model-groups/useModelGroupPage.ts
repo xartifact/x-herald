@@ -15,6 +15,7 @@ import {
   useCreateModelInstance,
   useUpdateModelInstance,
   useDeleteModelInstance,
+  useToggleModelInstance,
   useReorderInstances,
 } from './useModelGroups'
 
@@ -35,6 +36,7 @@ export function useModelGroupPage() {
   const createInstance = useCreateModelInstance()
   const updateInstance = useUpdateModelInstance()
   const deleteInstance = useDeleteModelInstance()
+  const toggleInstance = useToggleModelInstance()
   const reorderInstances = useReorderInstances()
 
   const groupForm = useForm<GroupFormData>({
@@ -106,6 +108,8 @@ export function useModelGroupPage() {
       description: group.description || '',
       category: group.category as GroupFormData['category'],
       capabilities: group.capabilities,
+      routingStrategy: group.routingConfig?.strategy ?? 'smart',
+      fallbackEnabled: group.routingConfig?.fallbackEnabled ?? true,
     })
     setGroupDialogOpen(true)
   }
@@ -147,6 +151,10 @@ export function useModelGroupPage() {
   const handleDeleteInstance = async (instance: ModelInstance) => {
     if (!confirm(`确定要删除模型实例 "${instance.name}" 吗？`)) return
     await deleteInstance.mutateAsync({ id: instance.id, groupId: instance.groupId || '' })
+  }
+
+  const handleToggleInstance = (instance: ModelInstance) => {
+    toggleInstance.mutate({ id: instance.id, groupId: instance.groupId || '' })
   }
 
   const handleMoveInstance = useCallback(
@@ -256,6 +264,7 @@ export function useModelGroupPage() {
     handleAddInstance,
     handleEditInstance,
     handleDeleteInstance,
+    handleToggleInstance,
     handleMoveInstance,
     onGroupSubmit,
     onInstanceSubmit,

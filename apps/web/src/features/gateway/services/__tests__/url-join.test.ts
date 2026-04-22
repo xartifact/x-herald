@@ -14,12 +14,19 @@ function joinUrl(baseUrl: string, endpoint: string): string {
   const basePath = baseUrlObj.pathname.replace(/\/+$/, '');
   const basePathParts = basePath.split('/').filter(Boolean);
 
+  // 查找 basePathParts 后缀与 endpointParts 前缀的最长重叠
   let skipCount = 0;
-  for (let i = 0; i < Math.min(basePathParts.length, endpointParts.length); i++) {
-    if (basePathParts[basePathParts.length - 1 - i] === endpointParts[i]) {
-      skipCount = i + 1;
-    } else {
-      break;
+  for (let overlapLen = 1; overlapLen <= Math.min(basePathParts.length, endpointParts.length); overlapLen++) {
+    let match = true;
+    for (let j = 0; j < overlapLen; j++) {
+      const baseIdx = basePathParts.length - overlapLen + j;
+      if (basePathParts[baseIdx] !== endpointParts[j]) {
+        match = false;
+        break;
+      }
+    }
+    if (match) {
+      skipCount = overlapLen;
     }
   }
 
@@ -65,8 +72,9 @@ describe('joinUrl', () => {
     expect(result).toBe('https://api.openai.com/v1/chat/completions');
   });
 
-  it('应该处理复杂的嵌套路径', () => {
+  it('应该处理非重叠的嵌套路径（不误删路径段）', () => {
+    // /v1 不应被去重，因为 base 以 /proxy 结尾，而 endpoint 以 /v1 开头，无后缀重叠
     const result = joinUrl('https://api.example.com/api/v1/proxy', '/v1/chat/completions');
-    expect(result).toBe('https://api.example.com/api/v1/proxy/chat/completions');
+    expect(result).toBe('https://api.example.com/api/v1/proxy/v1/chat/completions');
   });
 });

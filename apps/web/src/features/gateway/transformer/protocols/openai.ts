@@ -230,7 +230,9 @@ export class OpenAITransformer implements Transformer {
 
     return {
       body: openaiReq,
-      headers: {},
+      headers: {
+        'Content-Type': 'application/json',
+      },
     };
   }
 

@@ -39,8 +39,8 @@ export function cleanSchemaForOpenAI(
   schema: unknown,
   config?: SchemaCleanConfig
 ): unknown {
-  // 如果清理被禁用或未提供配置，返回原 schema
-  if (!config || config.cleanEnabled === false) {
+  // 只有明确禁用清理时才跳过
+  if (config?.cleanEnabled === false) {
     return schema;
   }
 
@@ -52,12 +52,12 @@ export function cleanSchemaForOpenAI(
   const bannedFields = new Set([...DEFAULT_BANNED_FIELDS]);
 
   // 添加额外清理的字段
-  if (config.additionalBannedFields) {
+  if (config?.additionalBannedFields) {
     config.additionalBannedFields.forEach(field => bannedFields.add(field));
   }
 
   // 移除需要保留的字段
-  if (config.preserveFields) {
+  if (config?.preserveFields) {
     config.preserveFields.forEach(field => bannedFields.delete(field));
   }
 

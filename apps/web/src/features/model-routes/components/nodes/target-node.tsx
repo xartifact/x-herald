@@ -9,6 +9,7 @@ interface TargetData {
   label: string
   targetType: 'virtual_model' | 'model_group' | 'model_instance'
   targetName: string
+  ruleName?: string
   [key: string]: unknown
 }
 
@@ -30,6 +31,11 @@ function TargetNodeComponent({ data }: NodeProps) {
            nodeData.targetType === 'model_group' ? '模型组' : '实例'}
         </span>
       </div>
+      {nodeData.ruleName && (
+        <div className="text-xs text-muted-foreground truncate max-w-[180px]">
+          {nodeData.ruleName}
+        </div>
+      )}
       <div className="mt-1 text-sm font-medium text-green-900">
         {nodeData.targetName || nodeData.label}
       </div>

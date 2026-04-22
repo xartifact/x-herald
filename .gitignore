@@ -68,3 +68,5 @@ packages/llms
 
 # AI
 .opencode
+.swarm
+SWARM_PLAN.*

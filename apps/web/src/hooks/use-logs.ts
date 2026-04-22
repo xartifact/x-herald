@@ -89,6 +89,7 @@ export interface LogListItem {
   outputTokens: number
   totalTokens: number
   streaming: string
+  retryCount: number
   errorMessage: string | null
   errorType: string | null
   clientType: string | null
@@ -123,6 +124,7 @@ export interface Log extends LogListItem {
   // 标记系统
   metadata: LogMetadata | null
   toolCallsCount: number | null
+  retryCount: number
   conversationId?: string
 }
 

@@ -159,6 +159,7 @@ export const requestLogs = pgTable('request_logs', {
   // 新增字段：标记系统
   metadata: jsonb('metadata').$type<LogMetadata>(),              // 灵活的元数据标记
   toolCallsCount: integer('tool_calls_count').default(0),        // 工具调用计数
+  retryCount: integer('retry_count').default(0).notNull(),       // 重试次数
   conversationId: uuid('conversation_id'),                       // 对话追踪 ID
   
   // Phase 1 新增字段：流状态管理

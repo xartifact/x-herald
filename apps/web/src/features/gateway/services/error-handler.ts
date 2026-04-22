@@ -95,6 +95,7 @@ interface ErrorHandlerParams {
   targetProtocol?: string;
   providerRequestHeaders?: Record<string, string>;
   logId?: string;
+  retryCount?: number;
 }
 
 /**
@@ -177,6 +178,7 @@ export async function handleGatewayError(
       incomingProtocol: params.incomingProtocol,
       targetProtocol: params.targetProtocol,
       logId: params.logId,
+      retryCount: params.retryCount,
     });
     return c.json(
       {
@@ -208,6 +210,7 @@ export async function handleGatewayError(
       incomingProtocol: params.incomingProtocol,
       targetProtocol: params.targetProtocol,
       logId: params.logId,
+      retryCount: params.retryCount,
     });
     return c.json(
       {
@@ -239,6 +242,7 @@ export async function handleGatewayError(
       incomingProtocol: params.incomingProtocol,
       targetProtocol: params.targetProtocol,
       logId: params.logId,
+      retryCount: params.retryCount,
     });
     return c.json(
       {
@@ -273,6 +277,7 @@ export async function handleGatewayError(
     incomingProtocol: params.incomingProtocol,
     targetProtocol: params.targetProtocol,
     logId: params.logId,
+    retryCount: params.retryCount,
   });
 
   return c.json(
@@ -341,6 +346,7 @@ export async function handleProviderError(
   incomingProtocol?: string,
   targetProtocol?: string,
   logId?: string,
+  retryCount?: number,
 ): Promise<Response> {
   const errorData = await parseProviderError(response);
   const rawErrorMessage = errorData.error?.message || 'Provider request failed';
@@ -385,6 +391,7 @@ export async function handleProviderError(
     incomingProtocol,
     targetProtocol,
     logId,
+    retryCount,
   });
 
   return c.json(
@@ -423,6 +430,7 @@ export async function handleProviderErrorPassthrough(
   incomingProtocol?: string,
   targetProtocol?: string,
   logId?: string,
+  retryCount?: number,
 ): Promise<Response> {
   const responseClone = response.clone();
   const errorData = await parseProviderError(responseClone);
@@ -456,6 +464,7 @@ export async function handleProviderErrorPassthrough(
     incomingProtocol,
     targetProtocol,
     logId,
+    retryCount,
   });
 
   // 透传 Provider 原始响应：保留原始状态码和响应头

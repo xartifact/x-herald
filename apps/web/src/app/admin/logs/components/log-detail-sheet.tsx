@@ -820,6 +820,13 @@ export function MetadataSections({ log, isPending, isSuccess, contentFeatures, f
           />
         )}
         <InfoRow label="流式传输" value={log.streaming ? '是' : '否'} />
+        <InfoRow
+          label="重试次数"
+          value={log.retryCount > 0
+            ? <span className="text-orange-600 font-semibold">{log.retryCount}</span>
+            : '0'
+          }
+        />
       </Section>
 
       {/* === Token 用量 === */}

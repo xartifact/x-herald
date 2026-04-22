@@ -86,6 +86,7 @@ export async function handleChatCompletion(
   let targetProtocol: 'openai' | 'anthropic' | undefined;
   let providerRequestHeaders: Record<string, string> | undefined;
   let logId: string | undefined;
+  let retryCount = 0;
 
   try {
     // 使用预处理的 body 或从请求中解析
@@ -356,7 +357,7 @@ export async function handleChatCompletion(
     const retryConfig = instance.config?.retryConfig;
     const maxRetries = retryConfig?.maxRetries ?? 2;
     const baseRetryDelay = retryConfig?.retryDelay ?? 500;
-    const retryableStatusCodes = retryConfig?.retryableStatusCodes ?? [429, 500, 502, 503, 504, 521];
+    const retryableStatusCodes = retryConfig?.retryableStatusCodes ?? [429, 500, 502, 503, 504, 521, 524];
 
     // 监听客户端断开（跨重试共用，不重复注册）
     let isClientDisconnected = false;
@@ -367,7 +368,6 @@ export async function handleChatCompletion(
 
     let response: Response | undefined;
     let providerTtfbTime = 0;
-    let retryCount = 0;
     let lastRetryableResponse: Response | undefined;
 
     try {
@@ -488,6 +488,7 @@ export async function handleChatCompletion(
         incomingProtocol,
         targetProtocol,
         logId,
+        retryCount,
       });
     }
 
@@ -520,6 +521,7 @@ export async function handleChatCompletion(
         incomingProtocol,
         targetProtocol,
         logId,
+        retryCount,
       );
     }
 
@@ -555,6 +557,7 @@ export async function handleChatCompletion(
       isPassthroughEnabled,
       clientType,
       logId,
+      retryCount,
       request: c.req.raw, // 传递原始请求对象，用于监听客户端断开
     };
 
@@ -583,6 +586,7 @@ export async function handleChatCompletion(
       incomingProtocol,
       targetProtocol,
       logId,
+      retryCount,
     });
   }
 }

@@ -56,6 +56,7 @@ export interface LogRequestParams {
   gatewayOverheadMs?: number;
   providerTtfbMs?: number;
   streamDurationMs?: number;
+  retryCount?: number;
 }
 
 /**
@@ -152,6 +153,7 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
           lastUpdatedAt: new Date(),
           metadata: metadata as any,
           toolCallsCount,
+          retryCount: params.retryCount ?? 0,
         })
         .where(eq(requestLogs.id, params.logId));
       logger.debug({ logId: params.logId, modelName: params.modelName, status: params.status }, 'Request log updated');
@@ -194,6 +196,7 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
       // 新增字段：标记系统
       metadata: metadata as any,
       toolCallsCount,
+      retryCount: params.retryCount ?? 0,
       conversationId: params.conversationId,
 
       // Phase 1 新增：流状态字段
@@ -488,6 +491,7 @@ export async function finalizeStreamLog(
     streamProgress: StreamProgress;
     metadata?: LogMetadata;
     toolCallsCount?: number;
+    retryCount?: number;
   }
 ): Promise<void> {
   // 跳过临时 ID（初始日志创建失败时使用）
@@ -525,6 +529,7 @@ export async function finalizeStreamLog(
           },
         } as any,
         toolCallsCount: params.toolCallsCount,
+        retryCount: params.retryCount ?? 0,
         streamCompletedAt: new Date(),
         lastUpdatedAt: new Date(),
       })

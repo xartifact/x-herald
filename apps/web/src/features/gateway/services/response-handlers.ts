@@ -46,6 +46,7 @@ interface ResponseHandlerParams {
   isPassthroughEnabled?: boolean;
   clientType?: string;
   logId?: string;
+  retryCount?: number;
 }
 
 /**
@@ -239,6 +240,7 @@ export async function handleNonStreamingResponse(
       logId: params.logId,
       gatewayOverheadMs: preprocessEndTime - startTime,
       providerTtfbMs: providerTtfbTime - preprocessEndTime,
+      retryCount: params.retryCount,
     });
 
     return new Response(response.body, {
@@ -313,6 +315,7 @@ export async function handleNonStreamingResponse(
       logId: params.logId,
       gatewayOverheadMs: preprocessEndTime - startTime,
       providerTtfbMs: providerTtfbTime - preprocessEndTime,
+      retryCount: params.retryCount,
     });
 
     // 模型映射时将响应体中的 model 字段回写为客户端请求的原始模型名
@@ -428,6 +431,7 @@ export async function handleNonStreamingResponse(
     logId: params.logId,
     gatewayOverheadMs: preprocessEndTime - startTime,
     providerTtfbMs: providerTtfbTime - preprocessEndTime,
+    retryCount: params.retryCount,
   });
 
   // 模型映射时将响应体中的 model 字段回写为客户端请求的原始模型名
@@ -900,6 +904,7 @@ export async function handleStreamingResponse(
         streamProgress: progress,
         metadata,
         toolCallsCount: metadata.toolCalls?.tools?.length,
+        retryCount: params.retryCount,
       });
     } catch (error) {
       logger.error({ error, logId }, 'Failed to finalize stream log');

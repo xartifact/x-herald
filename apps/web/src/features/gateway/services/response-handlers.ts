@@ -458,6 +458,8 @@ class StreamResponseCollector {
   // 时间戳
   private firstChunkTime: number | null = null;
   private lastChunkTime: number | null = null;
+  private firstThinkingChunkTime: number | null = null;
+  private firstTextChunkTime: number | null = null;
 
   // 真实 usage（从流中提取）
   private realUsage: { prompt_tokens?: number; completion_tokens?: number } | null = null;
@@ -487,12 +489,14 @@ class StreamResponseCollector {
       // Phase 1: 提取完整 thinking content（无截断）
       const thinking = this.extractReasoning(json);
       if (thinking) {
+        if (!this.firstThinkingChunkTime) this.firstThinkingChunkTime = now;
         this.thinkingBlocks.push(thinking);
       }
 
       // Phase 1: 提取完整 content（无截断）
       const content = this.extractContent(json);
       if (content) {
+        if (!this.firstTextChunkTime) this.firstTextChunkTime = now;
         this.contentChunks.push(content);
       }
 
@@ -567,6 +571,16 @@ class StreamResponseCollector {
     }
 
     return reasoning;
+  }
+
+  /**
+   * 获取首 token 时间戳（绝对时间）
+   */
+  getFirstChunkTimes(): { firstThinkingChunkTime: number | null; firstTextChunkTime: number | null } {
+    return {
+      firstThinkingChunkTime: this.firstThinkingChunkTime,
+      firstTextChunkTime: this.firstTextChunkTime,
+    };
   }
 
   /**
@@ -862,6 +876,16 @@ export async function handleStreamingResponse(
       };
 
       const now = Date.now();
+
+      // 计算首 token 相对时间（从 providerTtfbTime 起算）
+      const { firstThinkingChunkTime, firstTextChunkTime } = clientCollector.getFirstChunkTimes();
+      const ttfbToFirstThinkingMs = firstThinkingChunkTime != null && providerTtfbTime > 0
+        ? firstThinkingChunkTime - providerTtfbTime
+        : undefined;
+      const ttfbToFirstTextMs = firstTextChunkTime != null && providerTtfbTime > 0
+        ? firstTextChunkTime - providerTtfbTime
+        : undefined;
+
       const metadata = extractMetadata({
         requestBody: rawBody,
         standardRequestBody: params.standardRequestBody,
@@ -905,6 +929,8 @@ export async function handleStreamingResponse(
         metadata,
         toolCallsCount: metadata.toolCalls?.tools?.length,
         retryCount: params.retryCount,
+        ttfbToFirstThinkingMs,
+        ttfbToFirstTextMs,
       });
     } catch (error) {
       logger.error({ error, logId }, 'Failed to finalize stream log');

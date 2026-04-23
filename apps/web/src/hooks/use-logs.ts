@@ -57,6 +57,8 @@ export interface LogMetadata {
     providerTtfbMs?: number;
     streamDurationMs?: number;
     usageEstimated?: boolean;
+    ttfbToFirstThinkingMs?: number;
+    ttfbToFirstTextMs?: number;
   };
 
   routing?: {

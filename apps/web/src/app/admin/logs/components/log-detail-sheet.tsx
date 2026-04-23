@@ -850,6 +850,26 @@ export function MetadataSections({ log, isPending, isSuccess, contentFeatures, f
             formatDuration={formatDuration}
           />
         )}
+        {log.metadata?.performance?.ttfbToFirstThinkingMs != null && (
+          <InfoRow
+            label="首 Thinking"
+            value={
+              <span className="font-mono text-purple-600">
+                {formatDuration(log.metadata.performance.ttfbToFirstThinkingMs)}
+              </span>
+            }
+          />
+        )}
+        {log.metadata?.performance?.ttfbToFirstTextMs != null && (
+          <InfoRow
+            label="首 Token (TTFT)"
+            value={
+              <span className="font-mono text-green-600">
+                {formatDuration(log.metadata.performance.ttfbToFirstTextMs)}
+              </span>
+            }
+          />
+        )}
         <InfoRow label="流式传输" value={log.streaming ? '是' : '否'} />
         <InfoRow
           label="重试次数"

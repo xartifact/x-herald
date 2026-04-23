@@ -70,6 +70,8 @@ export interface LogMetadata {
     gatewayOverheadMs?: number;                       // 网关预处理耗时（协议检测、路由、转换）
     providerTtfbMs?: number;                          // Provider 首字节延迟（网络 + Provider 思考）
     streamDurationMs?: number;                        // 流式传输持续时间
+    ttfbToFirstThinkingMs?: number;                   // HTTP TTFB → 第一个 thinking token
+    ttfbToFirstTextMs?: number;                       // HTTP TTFB → 第一个 text token（TTFT）
   };
 
   // 请求特征

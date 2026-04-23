@@ -47,6 +47,16 @@ interface ResponseHandlerParams {
   clientType?: string;
   logId?: string;
   retryCount?: number;
+  routingTrace?: {
+    matchedRuleId?: string;
+    matchedRuleName?: string;
+    matchedRulePriority?: number;
+    modelGroupId?: string;
+    modelGroupName?: string;
+    instanceId?: string;
+    actualModelName?: string;
+    strategy?: string;
+  };
 }
 
 /**
@@ -184,6 +194,7 @@ export async function handleNonStreamingResponse(
     providerTtfbTime,
     requestHeaders,
     rawBody,
+    routingTrace: routingTraceParam,
     clientIp,
     userAgent,
     requestPath,
@@ -241,6 +252,7 @@ export async function handleNonStreamingResponse(
       gatewayOverheadMs: preprocessEndTime - startTime,
       providerTtfbMs: providerTtfbTime - preprocessEndTime,
       retryCount: params.retryCount,
+      routingTrace: routingTraceParam,
     });
 
     return new Response(response.body, {
@@ -316,6 +328,7 @@ export async function handleNonStreamingResponse(
       gatewayOverheadMs: preprocessEndTime - startTime,
       providerTtfbMs: providerTtfbTime - preprocessEndTime,
       retryCount: params.retryCount,
+      routingTrace: routingTraceParam,
     });
 
     // 模型映射时将响应体中的 model 字段回写为客户端请求的原始模型名
@@ -432,6 +445,7 @@ export async function handleNonStreamingResponse(
     gatewayOverheadMs: preprocessEndTime - startTime,
     providerTtfbMs: providerTtfbTime - preprocessEndTime,
     retryCount: params.retryCount,
+    routingTrace: params.routingTrace,
   });
 
   // 模型映射时将响应体中的 model 字段回写为客户端请求的原始模型名
@@ -900,6 +914,14 @@ export async function handleStreamingResponse(
         streamDurationMs: now - providerTtfbTime,
         conversationId: params.conversationId,
       });
+
+      // 将路由追踪写入 metadata，防止 finalizeStreamLog 覆盖掉 logRequestStart 写入的值
+      if (params.routingTrace || params.originalModelName) {
+        metadata.routing = {
+          requestedModel: params.originalModelName,
+          ...params.routingTrace,
+        };
+      }
 
       await finalizeStreamLog(logId, {
         status,

@@ -570,6 +570,16 @@ export async function handleChatCompletion(
       logId,
       retryCount,
       request: c.req.raw, // 传递原始请求对象，用于监听客户端断开
+      routingTrace: {
+        matchedRuleId: matchedRule?.id,
+        matchedRuleName: matchedRule?.name,
+        matchedRulePriority: matchedRule?.priority,
+        modelGroupId: group.id,
+        modelGroupName: group.name,
+        instanceId: instance.id,
+        actualModelName: instance.actualModelName,
+        strategy: decision.strategy,
+      },
     };
 
     if (actualStreaming) {

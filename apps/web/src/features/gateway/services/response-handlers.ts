@@ -899,6 +899,11 @@ export async function handleStreamingResponse(
       const ttfbToFirstTextMs = firstTextChunkTime != null && providerTtfbTime > 0
         ? firstTextChunkTime - providerTtfbTime
         : undefined;
+      // 实际思考时长：首 thinking token → 首 text token
+      const thinkingDurationMs =
+        firstThinkingChunkTime != null && firstTextChunkTime != null
+          ? firstTextChunkTime - firstThinkingChunkTime
+          : undefined;
 
       const metadata = extractMetadata({
         requestBody: rawBody,
@@ -953,6 +958,7 @@ export async function handleStreamingResponse(
         retryCount: params.retryCount,
         ttfbToFirstThinkingMs,
         ttfbToFirstTextMs,
+        thinkingDurationMs,
       });
     } catch (error) {
       logger.error({ error, logId }, 'Failed to finalize stream log');

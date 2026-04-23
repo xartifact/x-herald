@@ -847,6 +847,7 @@ export function MetadataSections({ log, isPending, isSuccess, contentFeatures, f
             gatewayOverheadMs={log.metadata.performance.gatewayOverheadMs}
             providerTtfbMs={log.metadata.performance.providerTtfbMs}
             streamDurationMs={log.metadata.performance.streamDurationMs}
+            thinkingDurationMs={log.metadata.performance.thinkingDurationMs}
             formatDuration={formatDuration}
           />
         )}
@@ -866,6 +867,16 @@ export function MetadataSections({ log, isPending, isSuccess, contentFeatures, f
             value={
               <span className="font-mono text-green-600">
                 {formatDuration(log.metadata.performance.ttfbToFirstTextMs)}
+              </span>
+            }
+          />
+        )}
+        {log.metadata?.performance?.thinkingDurationMs != null && (
+          <InfoRow
+            label="思考时长"
+            value={
+              <span className="font-mono text-violet-600 font-semibold">
+                {formatDuration(log.metadata.performance.thinkingDurationMs)}
               </span>
             }
           />
@@ -1166,6 +1177,7 @@ interface LatencyBreakdownProps {
   gatewayOverheadMs?: number
   providerTtfbMs?: number
   streamDurationMs?: number
+  thinkingDurationMs?: number
   formatDuration: (ms: number) => string
 }
 
@@ -1174,6 +1186,7 @@ function LatencyBreakdown({
   gatewayOverheadMs,
   providerTtfbMs,
   streamDurationMs,
+  thinkingDurationMs,
   formatDuration,
 }: LatencyBreakdownProps) {
   const segments: Array<{
@@ -1199,13 +1212,32 @@ function LatencyBreakdown({
       bgColor: 'bg-amber-500',
     })
   }
+  // 有思考时长时，将流式传输拆分为"思考"和"文本生成"两段
   if (streamDurationMs != null && streamDurationMs > 0) {
-    segments.push({
-      label: '流式传输',
-      ms: streamDurationMs,
-      color: 'text-green-600',
-      bgColor: 'bg-green-500',
-    })
+    if (thinkingDurationMs != null && thinkingDurationMs > 0) {
+      segments.push({
+        label: '思考',
+        ms: thinkingDurationMs,
+        color: 'text-violet-600',
+        bgColor: 'bg-violet-500',
+      })
+      const textGenMs = streamDurationMs - thinkingDurationMs
+      if (textGenMs > 0) {
+        segments.push({
+          label: '文本生成',
+          ms: textGenMs,
+          color: 'text-green-600',
+          bgColor: 'bg-green-500',
+        })
+      }
+    } else {
+      segments.push({
+        label: '流式传输',
+        ms: streamDurationMs,
+        color: 'text-green-600',
+        bgColor: 'bg-green-500',
+      })
+    }
   }
 
   if (segments.length === 0) return null

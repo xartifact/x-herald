@@ -544,6 +544,7 @@ export async function finalizeStreamLog(
     retryCount?: number;
     ttfbToFirstThinkingMs?: number;
     ttfbToFirstTextMs?: number;
+    thinkingDurationMs?: number;
   }
 ): Promise<void> {
   // 跳过临时 ID（初始日志创建失败时使用）
@@ -580,6 +581,7 @@ export async function finalizeStreamLog(
             usageEstimated: params.usageEstimated,
             ...(params.ttfbToFirstThinkingMs != null && { ttfbToFirstThinkingMs: params.ttfbToFirstThinkingMs }),
             ...(params.ttfbToFirstTextMs != null && { ttfbToFirstTextMs: params.ttfbToFirstTextMs }),
+            ...(params.thinkingDurationMs != null && { thinkingDurationMs: params.thinkingDurationMs }),
           },
         } as any,
         toolCallsCount: params.toolCallsCount,

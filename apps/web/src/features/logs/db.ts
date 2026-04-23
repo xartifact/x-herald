@@ -72,6 +72,7 @@ export interface LogMetadata {
     streamDurationMs?: number;                        // 流式传输持续时间
     ttfbToFirstThinkingMs?: number;                   // HTTP TTFB → 第一个 thinking token
     ttfbToFirstTextMs?: number;                       // HTTP TTFB → 第一个 text token（TTFT）
+    thinkingDurationMs?: number;                      // 实际思考时长（首 thinking → 首 text token）
   };
 
   // 请求特征

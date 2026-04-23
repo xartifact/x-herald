@@ -59,6 +59,7 @@ export interface LogMetadata {
     usageEstimated?: boolean;
     ttfbToFirstThinkingMs?: number;
     ttfbToFirstTextMs?: number;
+    thinkingDurationMs?: number;
   };
 
   routing?: {

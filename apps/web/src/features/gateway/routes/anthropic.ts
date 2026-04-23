@@ -3,7 +3,7 @@ import { Hono } from 'hono';
 import logger from '@/core/lib/logger';
 import type { VirtualKey } from '@/features/keys/db';
 
-import { handleChatCompletion } from '../services/chat-completion-handler';
+import { handleAnthropicMessages } from '../handlers/anthropic/messages-handler';
 import { identifyClient } from '../services/client-identifier';
 import { PROVIDER_FILTERED_HEADERS } from '../services/headers';
 import { logRequest } from '../services/log-service';
@@ -17,14 +17,12 @@ const anthropicRoutes = new Hono<{
 }>();
 
 /**
- * Anthropic 兼容端点
+ * Anthropic Messages 兼容端点
  */
 anthropicRoutes.post('/messages', async (c) => {
-  // 从请求体中读取 stream 字段，用于日志记录
-  // 注意：实际的流式处理在 handleChatCompletion 内部根据 standardReq.stream 决定
   const body = await c.req.json().catch(() => ({}));
   const isStreaming = body.stream === true;
-  return handleChatCompletion(c, isStreaming);
+  return handleAnthropicMessages(c, isStreaming, body);
 });
 
 /**

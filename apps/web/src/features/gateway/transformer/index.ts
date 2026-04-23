@@ -6,14 +6,15 @@
 import { TransformerChain, buildRequestChain, buildResponseChain } from './chain';
 import { AnthropicTransformer } from './protocols/anthropic';
 import { OpenAITransformer } from './protocols/openai';
+import { GeminiTransformer } from './protocols/gemini';
 import { registerTransformer } from './registry';
 
 // 注册内置协议转换器
 export function registerDefaultTransformers(): void {
   registerTransformer('openai', OpenAITransformer);
   registerTransformer('anthropic', AnthropicTransformer);
+  registerTransformer('gemini', GeminiTransformer);
   // TODO: 添加更多协议支持
-  // registerTransformer('gemini', GeminiTransformer);
   // registerTransformer('vertex', VertexTransformer);
 }
 
@@ -37,6 +38,7 @@ export {
 // 导出协议转换器
 export { OpenAITransformer } from './protocols/openai';
 export { AnthropicTransformer } from './protocols/anthropic';
+export { GeminiTransformer } from './protocols/gemini';
 
 // 导出工具函数
 export function createTransformerContext(requestId: string): import('@/types').TransformerContext {

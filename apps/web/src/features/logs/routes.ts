@@ -595,6 +595,66 @@ logsRoutes.post('/cleanup', async (c) => {
   }
 });
 
+// GET /api/logs/stats/keys - 所有 API Key 的用量统计
+logsRoutes.get('/stats/keys', async (c) => {
+  try {
+    const db = getDatabase();
+    const period = c.req.query('period') ?? 'all';
+
+    const conditions: ReturnType<typeof isNotNull>[] = [isNotNull(requestLogs.virtualKeyId)];
+
+    if (period !== 'all') {
+      const now = new Date();
+      let periodStart: Date;
+      if (period === 'today') {
+        periodStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      } else if (period === '7d') {
+        periodStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      } else {
+        // 30d
+        periodStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      }
+      conditions.push(gte(requestLogs.createdAt, periodStart) as unknown as ReturnType<typeof isNotNull>);
+    }
+
+    const rows = await db
+      .select({
+        virtualKeyId: requestLogs.virtualKeyId,
+        virtualKeyName: requestLogs.virtualKeyName,
+        requestCount: sql<number>`count(*)`,
+        successCount: sql<number>`count(*) filter (where ${requestLogs.status} = 'success')`,
+        failureCount: sql<number>`count(*) filter (where ${requestLogs.status} = 'failure')`,
+        totalInputTokens: sql<number>`coalesce(sum(${requestLogs.inputTokens}), 0)`,
+        totalOutputTokens: sql<number>`coalesce(sum(${requestLogs.outputTokens}), 0)`,
+        totalTokens: sql<number>`coalesce(sum(${requestLogs.totalTokens}), 0)`,
+        avgLatencyMs: sql<number>`round(avg(${requestLogs.latencyMs}))`,
+        lastUsedAt: sql<string>`max(${requestLogs.createdAt})`,
+      })
+      .from(requestLogs)
+      .where(and(...conditions))
+      .groupBy(requestLogs.virtualKeyId, requestLogs.virtualKeyName);
+
+    return c.json({
+      success: true,
+      data: rows.map((r) => ({
+        virtualKeyId: r.virtualKeyId,
+        virtualKeyName: r.virtualKeyName,
+        requestCount: Number(r.requestCount),
+        successCount: Number(r.successCount),
+        failureCount: Number(r.failureCount),
+        totalInputTokens: Number(r.totalInputTokens),
+        totalOutputTokens: Number(r.totalOutputTokens),
+        totalTokens: Number(r.totalTokens),
+        avgLatencyMs: Number(r.avgLatencyMs),
+        lastUsedAt: r.lastUsedAt ?? null,
+      })),
+    });
+  } catch (error) {
+    logger.error({ error }, 'Failed to fetch key stats');
+    return c.json({ success: false, error: 'Failed to fetch key stats' }, 500);
+  }
+});
+
 // GET /api/logs/stats/providers - 供应商网络质量统计
 logsRoutes.get('/stats/providers', async (c) => {
   try {

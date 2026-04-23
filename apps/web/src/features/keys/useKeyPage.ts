@@ -1,10 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import * as z from 'zod'
+
+import { useKeysStats } from '@/hooks/use-logs'
 
 import type { KeyFormData } from './types'
 import { useKeys, useCreateKey, useUpdateKey, useDeleteKey, useResetKey } from './useKeys'
@@ -32,8 +34,11 @@ export function useKeyPage() {
   const [resetDialogOpen, setResetDialogOpen] = useState(false)
   const [resettingKeyId, setResettingKeyId] = useState<string | null>(null)
   const [resetKeyValue, setResetKeyValue] = useState<string | null>(null)
+  const [statsKeyId, setStatsKeyId] = useState<string | null>(null)
+  const [statsPeriod, setStatsPeriod] = useState<'today' | '7d' | '30d' | 'all'>('7d')
 
   const { data: keys = [], isLoading: loading } = useKeys()
+  const { data: keysStats = [] } = useKeysStats(statsPeriod)
   const createKey = useCreateKey()
   const updateKey = useUpdateKey()
   const deleteKey = useDeleteKey()
@@ -53,6 +58,14 @@ export function useKeyPage() {
   })
 
   const editingKey = editingKeyId ? keys.find((k) => k.id === editingKeyId) : null
+  const statsKey = statsKeyId ? keys.find((k) => k.id === statsKeyId) ?? null : null
+
+  const statsMap = useMemo(
+    () => new Map(keysStats.map((s) => [s.virtualKeyId, s])),
+    [keysStats],
+  )
+
+  const handleShowStats = (keyId: string) => setStatsKeyId(keyId)
 
   const onSubmit = async (data: KeyFormSchema) => {
     const allowedModels = data.allowedModels
@@ -212,5 +225,12 @@ export function useKeyPage() {
     closeDialog,
     closeResetDialog,
     formatDate,
+    statsKeyId,
+    setStatsKeyId,
+    statsKey,
+    statsPeriod,
+    setStatsPeriod,
+    statsMap,
+    handleShowStats,
   }
 }

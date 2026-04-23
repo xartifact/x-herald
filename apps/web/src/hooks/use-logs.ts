@@ -359,3 +359,34 @@ export function useProviderStats(filters?: Record<string, string>) {
     queryFn: () => get<ProviderStatsResponse>(`/api/logs/stats/providers${queryString}`, { extractData: false }),
   })
 }
+
+// API Key 用量统计项
+export interface KeyStat {
+  virtualKeyId: string
+  virtualKeyName: string
+  requestCount: number
+  successCount: number
+  failureCount: number
+  totalInputTokens: number
+  totalOutputTokens: number
+  totalTokens: number
+  avgLatencyMs: number
+  lastUsedAt: string | null
+}
+
+/**
+ * 获取所有 API Key 的用量统计
+ */
+export function useKeysStats(period?: 'today' | '7d' | '30d' | 'all') {
+  const p = period ?? 'all'
+  return useQuery({
+    queryKey: [...logKeys.all, 'keys-stats', p],
+    queryFn: async () => {
+      const res = await get<{ success: boolean; data: KeyStat[] }>(
+        `/api/logs/stats/keys?period=${p}`,
+        { extractData: false }
+      )
+      return res.data ?? []
+    },
+  })
+}

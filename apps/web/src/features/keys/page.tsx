@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/ui/card'
 import { Input } from '@/ui/input'
 
 import { KeyTable, KeyFormDialog, KeyResetDialog } from './components'
+import { KeyStatsSheet } from './components/key-stats-sheet'
 import { useKeyPage } from './useKeyPage'
 
 export default function KeysPage() {
@@ -39,6 +40,13 @@ export default function KeysPage() {
     closeDialog,
     closeResetDialog,
     formatDate,
+    statsKeyId,
+    setStatsKeyId,
+    statsKey,
+    statsPeriod,
+    setStatsPeriod,
+    statsMap,
+    handleShowStats,
   } = useKeyPage()
 
   return (
@@ -93,11 +101,13 @@ export default function KeysPage() {
           keys={filteredKeys}
           showKeyValue={showKeyValue}
           copiedKey={copiedKey}
+          statsMap={statsMap}
           onToggleShow={toggleShowKey}
           onCopy={copyToClipboard}
           onEdit={handleEdit}
           onDelete={handleDelete}
           onReset={handleReset}
+          onShowStats={handleShowStats}
           formatDate={formatDate}
         />
       )}
@@ -124,6 +134,15 @@ export default function KeysPage() {
         onConfirm={confirmReset}
         onCopy={() => resetKeyValue && copyToClipboard(resetKeyValue, 'reset')}
         onCancel={closeResetDialog}
+      />
+
+      <KeyStatsSheet
+        open={statsKeyId !== null}
+        onOpenChange={(open) => { if (!open) setStatsKeyId(null) }}
+        virtualKey={statsKey}
+        stat={statsKeyId ? statsMap.get(statsKeyId) : undefined}
+        period={statsPeriod}
+        onPeriodChange={setStatsPeriod}
       />
     </div>
   )

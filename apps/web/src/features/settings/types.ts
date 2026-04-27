@@ -6,10 +6,10 @@ export interface AvailableModelGroup {
 }
 
 export interface SettingsData {
-  defaultAnalysisModelGroupId: string | null;
+  aiModelGroupId: string | null;
   availableModelGroups: AvailableModelGroup[];
 }
 
 export interface SettingsFormData {
-  defaultAnalysisModelGroupId: string | null;
+  aiModelGroupId: string | null;
 }

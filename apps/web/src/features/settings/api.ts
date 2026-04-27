@@ -9,7 +9,9 @@ import { getConfig, setConfig } from '@/features/gateway-config/service';
 
 const logger = rootLogger.child({ module: 'settings' });
 
-export const CONFIG_KEY_DEFAULT_ANALYSIS_MODEL = 'DEFAULT_ANALYSIS_MODEL_GROUP_ID';
+/** @deprecated 请使用 CONFIG_KEY_AI_MODEL */
+export const CONFIG_KEY_DEFAULT_ANALYSIS_MODEL = 'AI_MODEL_GROUP_ID';
+export { CONFIG_KEY_AI_MODEL } from '@/core/lib/ai-caller';
 
 const settingsRoutes = new Hono();
 
@@ -20,7 +22,7 @@ settingsRoutes.get('/', async (c) => {
     const db = getDatabase();
 
     const [defaultGroupId, groups] = await Promise.all([
-      getConfig<string | null>(CONFIG_KEY_DEFAULT_ANALYSIS_MODEL, null),
+      getConfig<string | null>('AI_MODEL_GROUP_ID', null),
       db
         .select({
           id: modelGroups.id,
@@ -40,7 +42,7 @@ settingsRoutes.get('/', async (c) => {
     return c.json({
       success: true,
       data: {
-        defaultAnalysisModelGroupId: defaultGroupId,
+        aiModelGroupId: defaultGroupId,
         availableModelGroups: groups,
       },
     });
@@ -55,10 +57,10 @@ settingsRoutes.get('/', async (c) => {
 
 settingsRoutes.put('/', async (c) => {
   try {
-    const body = await c.req.json() as { defaultAnalysisModelGroupId?: string | null };
+    const body = await c.req.json() as { aiModelGroupId?: string | null };
 
-    if ('defaultAnalysisModelGroupId' in body) {
-      const id = body.defaultAnalysisModelGroupId ?? null;
+    if ('aiModelGroupId' in body) {
+      const id = body.aiModelGroupId ?? null;
 
       if (id !== null) {
         const db = getDatabase();
@@ -73,11 +75,7 @@ settingsRoutes.put('/', async (c) => {
         }
       }
 
-      await setConfig(
-        CONFIG_KEY_DEFAULT_ANALYSIS_MODEL,
-        id,
-        '系统 AI 调用（如日志分析）使用的默认模型组'
-      );
+      await setConfig('AI_MODEL_GROUP_ID', id, '系统所有 AI 功能（日志分析、配置助手等）使用的模型组');
     }
 
     return c.json({ success: true });

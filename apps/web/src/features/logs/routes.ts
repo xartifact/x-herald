@@ -1,8 +1,9 @@
-import { eq, and, gte, lte, sql, desc, lt, isNotNull } from 'drizzle-orm';
+import { eq, gte, lte, sql, desc, lt, isNotNull, and } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { stream } from 'hono/streaming';
 
 import { getDatabase } from '@/core/db/client';
+import { getAiModel, AiNotConfiguredError } from '@/core/lib/ai-caller';
 import rootLogger from '@/core/lib/logger';
 
 const logger = rootLogger.child({ module: 'logs' });
@@ -10,10 +11,6 @@ const logger = rootLogger.child({ module: 'logs' });
 import { requestLogs } from './db';
 import { recalculateAll } from './services/rank-calculator';
 import { authMiddleware } from '../auth/middleware';
-import { modelInstances } from '../model-groups/db';
-import { providers } from '../providers/db';
-import { getConfig } from '../gateway-config/service';
-import { CONFIG_KEY_DEFAULT_ANALYSIS_MODEL } from '../settings/api';
 
 const logsRoutes = new Hono();
 
@@ -738,65 +735,20 @@ logsRoutes.post('/:id/analyze', async (c) => {
     messages = body.indices.map((i) => messages[i]).filter(Boolean);
   }
 
-  // 2. 查找可用的模型实例：优先使用配置的默认模型组，按优先级取最高实例，否则全局回退
-  const defaultGroupId = await getConfig<string | null>(CONFIG_KEY_DEFAULT_ANALYSIS_MODEL, null);
-
-  let instanceResult: Array<{ actualModelName: string; providerId: string }> = [];
-
-  if (defaultGroupId) {
-    instanceResult = await db
-      .select({
-        actualModelName: modelInstances.actualModelName,
-        providerId: modelInstances.providerId,
-      })
-      .from(modelInstances)
-      .innerJoin(providers, eq(providers.id, modelInstances.providerId))
-      .where(
-        and(
-          eq(modelInstances.groupId, defaultGroupId),
-          eq(modelInstances.enabled, true),
-          eq(providers.enabled, true)
-        )
-      )
-      .orderBy(modelInstances.priority)
-      .limit(1);
+  // 2. 获取 AI 模型配置
+  let aiModel: Awaited<ReturnType<typeof getAiModel>>;
+  try {
+    aiModel = await getAiModel();
+  } catch (err) {
+    if (err instanceof AiNotConfiguredError) {
+      return c.json({ error: err.message }, 503);
+    }
+    throw err;
   }
 
-  // 全局回退：取任意优先级最高的可用实例
-  if (instanceResult.length === 0) {
-    instanceResult = await db
-      .select({
-        actualModelName: modelInstances.actualModelName,
-        providerId: modelInstances.providerId,
-      })
-      .from(modelInstances)
-      .innerJoin(providers, eq(providers.id, modelInstances.providerId))
-      .where(and(eq(modelInstances.enabled, true), eq(providers.enabled, true)))
-      .orderBy(modelInstances.priority)
-      .limit(1);
-  }
+  const { actualModelName, apiKey, baseUrl } = aiModel;
 
-  if (instanceResult.length === 0) {
-    return c.json({ error: 'No available model for analysis. Please configure a provider first.' }, 503);
-  }
-
-  const { actualModelName, providerId } = instanceResult[0];
-
-  // 3. 获取 Provider 协议配置
-  const providerResult = await db
-    .select({ apiKey: providers.apiKey, protocols: providers.protocols })
-    .from(providers)
-    .where(eq(providers.id, providerId))
-    .limit(1);
-
-  const provider = providerResult[0];
-  const openaiConfig = provider.protocols?.openai;
-
-  if (!openaiConfig?.enabled || !openaiConfig.baseUrl) {
-    return c.json({ error: 'No OpenAI-compatible provider available for analysis' }, 503);
-  }
-
-  // 4. 将消息格式化为可读文本
+  // 3. 将消息格式化为可读文本
   const formatContent = (content: unknown): string => {
     if (typeof content === 'string') return content;
     if (Array.isArray(content)) {
@@ -828,16 +780,14 @@ logsRoutes.post('/:id/analyze', async (c) => {
     },
   ];
 
-  // 5. 流式调用 Provider
-  const baseUrl = openaiConfig.baseUrl.replace(/\/+$/, '');
-
+  // 4. 流式调用 Provider
   return stream(c, async (s) => {
     try {
       const response = await fetch(`${baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(provider.apiKey ? { Authorization: `Bearer ${provider.apiKey}` } : {}),
+          ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
         },
         body: JSON.stringify({
           model: actualModelName,

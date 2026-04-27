@@ -3,6 +3,7 @@
 import { Pencil, Trash2, ArrowUp, ArrowDown } from 'lucide-react'
 
 import { StatusToggle } from '@/components/status-toggle'
+import { InstanceAiChat } from '@/features/ai-assist/components/instance-ai-chat'
 import { Button } from '@/ui/button'
 import {
   Table,
@@ -95,6 +96,7 @@ export function ModelInstanceTable({
             </TableCell>
             <TableCell className="text-right">
               <div className="flex justify-end gap-1">
+                <InstanceAiChat instanceId={instance.id} instanceName={instance.name} />
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(instance)}>
                   <Pencil className="h-3.5 w-3.5" />
                 </Button>

@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 
+import { aiRoutes } from '@/features/ai-assist/api';
 import { authRoutes } from '@/features/auth';
 import { gatewayRoutes } from '@/features/gateway';
 import { healthRoutes } from '@/features/health';
@@ -11,6 +12,7 @@ import { providersRoutes } from '@/features/providers';
 const app = new Hono();
 
 app.route('/auth', authRoutes);
+app.route('/ai', aiRoutes);
 app.route('/providers', providersRoutes);
 app.route('/model-groups', modelGroupsRoutes);
 app.route('/keys', keysRoutes);

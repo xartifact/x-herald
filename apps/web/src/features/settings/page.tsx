@@ -34,7 +34,7 @@ export default function SettingsPage() {
   // 未做过本地修改时显示已保存的值，否则显示用户选择
   const currentGroupId =
     selectedGroupId === undefined
-      ? (settings?.defaultAnalysisModelGroupId ?? null)
+      ? (settings?.aiModelGroupId ?? null)
       : selectedGroupId
 
   const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -47,7 +47,7 @@ export default function SettingsPage() {
 
   const handleSaveDefaultModel = () => {
     updateSettings.mutate(
-      { defaultAnalysisModelGroupId: currentGroupId ?? null },
+      { aiModelGroupId: currentGroupId ?? null },
       {
         onSuccess: () => {
           setSelectedGroupId(undefined)
@@ -68,10 +68,10 @@ export default function SettingsPage() {
         <CardHeader>
           <div className="flex items-center gap-2">
             <Bot className="h-5 w-5" />
-            <CardTitle>应用默认模型</CardTitle>
+            <CardTitle>AI 功能模型</CardTitle>
           </div>
           <CardDescription>
-            选择系统内部 AI 调用（如日志消息分析）使用的默认模型实例。未配置时自动选择第一个可用实例。
+            所有内置 AI 功能（日志分析、配置助手等）使用的模型。未配置时自动选择第一个可用实例。
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

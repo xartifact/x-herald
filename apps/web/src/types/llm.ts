@@ -70,14 +70,11 @@ export interface ToolDefinition {
   function: {
     name: string;
     description?: string;
-    parameters?: {
-      type: 'object';
-      properties?: Record<string, unknown>;
-      required?: string[];
-      additionalProperties?: boolean;
-    };
+    parameters?: Record<string, unknown>;
   };
   cache_control?: CacheControl;
+  // 协议特有的未知字段，ingress 时保留，egress 时透传回去
+  _passthrough?: Record<string, unknown>;
 }
 
 export type ToolChoice = 'auto' | 'none' | 'required' | { type: 'function'; function: { name: string } };

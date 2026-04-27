@@ -14,14 +14,15 @@ import {
   markStreamAborted,
 } from './log-service';
 import { extractMetadata } from './metadata-extractor';
-export { mergeResponseHeaders } from './response-handlers/shared';
 import {
   StreamResponseCollector,
   getClientNonStreamingHeaders,
   getClientStreamingHeaders,
   extractProviderResponseHeaders,
   createModelRemapStream,
+  mergeResponseHeaders,
 } from './response-handlers/shared';
+export { mergeResponseHeaders } from './response-handlers/shared';
 
 interface ResponseHandlerParams {
   c: Context;

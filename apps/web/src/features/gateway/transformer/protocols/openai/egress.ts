@@ -42,7 +42,7 @@ export async function adaptOpenAIRequest(
           additionalBannedFields: ctx.instanceConfig.schemaConfig.additionalBannedFields,
         }
       : undefined;
-    openaiReq.tools = transformedRequest.tools.map(tool => ({
+    openaiReq.tools = transformedRequest.tools.map(({ _passthrough: _, ...tool }) => ({
       ...tool,
       function: {
         ...tool.function,

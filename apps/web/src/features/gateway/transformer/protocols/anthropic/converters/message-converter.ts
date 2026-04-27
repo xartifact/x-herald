@@ -149,21 +149,6 @@ export function convertToAnthropicMessages(messages: StandardMessage[]): Anthrop
 
     const role: 'user' | 'assistant' = msg.role === 'assistant' ? 'assistant' : 'user';
 
-    if (role === 'user' && Array.isArray(content)) {
-      const hasToolResult = content.some((b) => b.type === 'tool_result');
-      const hasNonToolResult = content.some((b) => b.type !== 'tool_result');
-
-      if (hasToolResult && hasNonToolResult) {
-        const toolResultBlocks = content.filter((b) => b.type === 'tool_result');
-        const otherBlocks = content.filter((b) => b.type !== 'tool_result');
-        const result: AnthropicMessage[] = [{ role, content: toolResultBlocks }];
-        if (otherBlocks.length > 0) {
-          result.push({ role, content: otherBlocks });
-        }
-        return result;
-      }
-    }
-
     return [{ role, content }];
   });
 }

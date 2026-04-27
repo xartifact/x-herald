@@ -1,19 +1,21 @@
 import type { ToolDefinition, StandardRequest } from '@/types';
 import type { AnthropicTool, AnthropicRequest } from '../types';
-import { cleanSchemaForOpenAI } from '../../../shared/schema-cleaner';
 
 /**
  * Convert Anthropic tool to Standard tool definition
  */
 export function convertAnthropicTool(tool: AnthropicTool): ToolDefinition {
+  const { name, description, input_schema, cache_control, ...rest } = tool;
+  const passthrough = Object.keys(rest).length > 0 ? rest : undefined;
   return {
     type: 'function',
     function: {
-      name: tool.name,
-      description: tool.description,
-      parameters: cleanSchemaForOpenAI(tool.input_schema) as ToolDefinition['function']['parameters'],
+      name,
+      description,
+      parameters: input_schema as ToolDefinition['function']['parameters'],
     },
-    ...(tool.cache_control && { cache_control: tool.cache_control }),
+    ...(cache_control && { cache_control }),
+    ...(passthrough && { _passthrough: passthrough }),
   };
 }
 
@@ -39,15 +41,12 @@ export function convertToolChoice(
  * Convert Standard tool definition to Anthropic tool
  */
 export function convertToAnthropicTool(tool: ToolDefinition): AnthropicTool {
-  const cleanedParams = tool.function.parameters
-    ? cleanSchemaForOpenAI(tool.function.parameters)
-    : { type: 'object' };
-
   return {
     name: tool.function.name,
     description: tool.function.description || '',
-    input_schema: cleanedParams as AnthropicTool['input_schema'],
+    input_schema: (tool.function.parameters ?? { type: 'object' }) as AnthropicTool['input_schema'],
     ...(tool.cache_control && { cache_control: tool.cache_control }),
+    ...tool._passthrough,
   };
 }
 

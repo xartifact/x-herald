@@ -25,8 +25,10 @@ export interface AnthropicTool {
     type: 'object';
     properties?: Record<string, unknown>;
     required?: string[];
+    [key: string]: unknown;
   };
   cache_control?: Record<string, unknown>;
+  [key: string]: unknown;
 }
 
 export interface AnthropicRequest {

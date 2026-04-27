@@ -153,7 +153,7 @@ function emptySummary(): ImportSummaryItem {
   return { created: 0, updated: 0, errors: 0 };
 }
 
-export async function importConfig(data: ExportFormat): Promise<ImportResult> {
+export async function importConfig(data: ExportFormat["data"]): Promise<ImportResult> {
   const db = getDatabase();
   const errors: string[] = [];
 
@@ -174,7 +174,7 @@ export async function importConfig(data: ExportFormat): Promise<ImportResult> {
   const instanceRefToId = new Map<string, string>(); // "{providerName}/{actualModelName}" → id
 
   // ── 1. providers ────────────────────────────────────────────────────────
-  for (const p of data.data.providers) {
+  for (const p of data.providers) {
     try {
       const existing = await db
         .select({ id: providers.id })
@@ -206,7 +206,7 @@ export async function importConfig(data: ExportFormat): Promise<ImportResult> {
   }
 
   // ── 2. modelGroups ───────────────────────────────────────────────────────
-  for (const g of data.data.modelGroups) {
+  for (const g of data.modelGroups) {
     try {
       const existing = await db
         .select({ id: modelGroups.id })
@@ -258,7 +258,7 @@ export async function importConfig(data: ExportFormat): Promise<ImportResult> {
   }
 
   // ── 3. virtualModels ─────────────────────────────────────────────────────
-  for (const v of data.data.virtualModels) {
+  for (const v of data.virtualModels) {
     try {
       const existing = await db
         .select({ id: virtualModels.id })
@@ -290,7 +290,7 @@ export async function importConfig(data: ExportFormat): Promise<ImportResult> {
   }
 
   // ── 4. virtualKeys ───────────────────────────────────────────────────────
-  for (const k of data.data.virtualKeys) {
+  for (const k of data.virtualKeys) {
     try {
       const existing = await db
         .select({ id: virtualKeys.id })
@@ -337,7 +337,7 @@ export async function importConfig(data: ExportFormat): Promise<ImportResult> {
   }
 
   // ── 5. gatewayConfigs ────────────────────────────────────────────────────
-  for (const c of data.data.gatewayConfigs) {
+  for (const c of data.gatewayConfigs) {
     try {
       const existing = await db
         .select({ id: gatewayConfigs.id })
@@ -368,7 +368,7 @@ export async function importConfig(data: ExportFormat): Promise<ImportResult> {
   }
 
   // ── 6. modelInstances ────────────────────────────────────────────────────
-  for (const i of data.data.modelInstances) {
+  for (const i of data.modelInstances) {
     try {
       const providerId = providerNameToId.get(i.providerName);
       if (!providerId) {
@@ -442,7 +442,7 @@ export async function importConfig(data: ExportFormat): Promise<ImportResult> {
   }
 
   // ── 7. modelRoutes ───────────────────────────────────────────────────────
-  for (const r of data.data.modelRoutes) {
+  for (const r of data.modelRoutes) {
     try {
       const virtualModelId = r.virtualModelName
         ? (virtualModelNameToId.get(r.virtualModelName) ?? null)

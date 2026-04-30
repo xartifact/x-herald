@@ -42,6 +42,10 @@ function LogsPageContent() {
     retentionDays,
     isCleanupPending,
     isRefreshing,
+    autoRefresh,
+    autoRefreshInterval,
+    setAutoRefresh,
+    setAutoRefreshInterval,
     setDetailDialogOpen,
     setCleanupDialogOpen,
     setRetentionDays,
@@ -87,6 +91,10 @@ function LogsPageContent() {
           onTimeRangeChange={handleTimeRangeChange}
           onRefresh={handleRefresh}
           isRefreshing={isRefreshing}
+          autoRefresh={autoRefresh}
+          autoRefreshInterval={autoRefreshInterval}
+          onAutoRefreshChange={setAutoRefresh}
+          onAutoRefreshIntervalChange={setAutoRefreshInterval}
         />
 
         <div className="flex items-center justify-between">

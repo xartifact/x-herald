@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 
 import { useQueryClient } from '@tanstack/react-query'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -51,6 +51,9 @@ export function useLogPage() {
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [cleanupDialogOpen, setCleanupDialogOpen] = useState(false)
   const [retentionDays, setRetentionDays] = useState('30')
+  const [autoRefresh, setAutoRefresh] = useState(false)
+  const [autoRefreshInterval, setAutoRefreshInterval] = useState(10)
+  const autoRefreshRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // 从 URL search param 读取详情状态
   const selectedLogId = searchParams.get('detail')
@@ -146,9 +149,20 @@ export function useLogPage() {
     setCurrentPage(1)
   }
 
-  const handleRefresh = () => {
+  const handleRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['logs'] })
-  }
+  }, [queryClient])
+
+  // 自动刷新：interval 变化或开关切换时重建定时器
+  useEffect(() => {
+    if (autoRefreshRef.current) clearInterval(autoRefreshRef.current)
+    if (autoRefresh && !detailDialogOpen) {
+      autoRefreshRef.current = setInterval(handleRefresh, autoRefreshInterval * 1000)
+    }
+    return () => {
+      if (autoRefreshRef.current) clearInterval(autoRefreshRef.current)
+    }
+  }, [autoRefresh, autoRefreshInterval, detailDialogOpen, handleRefresh])
 
   const formatDuration = (ms: number) => {
     if (ms < 1000) return `${ms.toFixed(2).replace(/\.00$/, '')}ms`
@@ -179,6 +193,10 @@ export function useLogPage() {
     retentionDays,
     isCleanupPending: cleanupLogs.isPending,
     isRefreshing: isFetching,
+    autoRefresh,
+    autoRefreshInterval,
+    setAutoRefresh,
+    setAutoRefreshInterval,
     setDetailDialogOpen,
     setCleanupDialogOpen,
     setRetentionDays,

@@ -12,6 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 import { cn } from '@/core/lib/utils'
 import { CLIENT_REGISTRY } from '@/features/gateway/services/client-identifier'
 
@@ -26,6 +28,10 @@ interface LogSearchFilterProps {
   onTimeRangeChange: (value: string) => void
   onRefresh: () => void
   isRefreshing?: boolean
+  autoRefresh?: boolean
+  autoRefreshInterval?: number
+  onAutoRefreshChange?: (enabled: boolean) => void
+  onAutoRefreshIntervalChange?: (seconds: number) => void
 }
 
 export function LogSearchFilter({
@@ -39,6 +45,10 @@ export function LogSearchFilter({
   onTimeRangeChange,
   onRefresh,
   isRefreshing = false,
+  autoRefresh = false,
+  autoRefreshInterval = 10,
+  onAutoRefreshChange,
+  onAutoRefreshIntervalChange,
 }: LogSearchFilterProps) {
   return (
     <Card>
@@ -54,7 +64,7 @@ export function LogSearchFilter({
             />
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Select value={statusFilter} onValueChange={onStatusChange}>
               <SelectTrigger className="w-[140px]">
                 <SelectValue placeholder="状态筛选" />
@@ -93,6 +103,33 @@ export function LogSearchFilter({
                 <SelectItem value="30d">最近 30 天</SelectItem>
               </SelectContent>
             </Select>
+
+            <div className="flex items-center gap-2 border rounded-md px-3 py-1.5">
+              <Switch
+                id="auto-refresh"
+                checked={autoRefresh}
+                onCheckedChange={onAutoRefreshChange}
+              />
+              <Label htmlFor="auto-refresh" className="text-sm cursor-pointer whitespace-nowrap">
+                自动刷新
+              </Label>
+              {autoRefresh && (
+                <Select
+                  value={String(autoRefreshInterval)}
+                  onValueChange={(v) => onAutoRefreshIntervalChange?.(Number(v))}
+                >
+                  <SelectTrigger className="w-[80px] h-7 text-xs border-0 shadow-none px-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="5">5 秒</SelectItem>
+                    <SelectItem value="10">10 秒</SelectItem>
+                    <SelectItem value="30">30 秒</SelectItem>
+                    <SelectItem value="60">60 秒</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
 
             <Button
               variant="outline"

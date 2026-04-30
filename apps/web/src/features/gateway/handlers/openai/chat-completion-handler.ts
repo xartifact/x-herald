@@ -277,6 +277,7 @@ export async function handleOpenAIChatCompletion(
               { requestId, attempt, statusCode: lastResponse?.status, retryDelay: delay },
               '[Retry] Retrying upstream request',
             );
+            circuitBreakerRegistry.recordFailure(instance.id, { instanceName: instance.name, groupName: group.name, providerName: provider.name });
           },
         });
 

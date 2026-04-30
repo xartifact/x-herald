@@ -349,8 +349,8 @@ export async function handleAnthropicMessages(
           const shouldFailover = !isLastCandidate && FAILOVER_STATUS_CODES.has(response.status);
           if (shouldFailover) {
             circuitBreakerRegistry.recordFailure(instance.id, { instanceName: instance.name, groupName: group.name, providerName: provider.name });
-            await markLogAsFailed(logId, response.status, `Failover: HTTP ${response.status}`, retryCount, providerTtfbTime - preprocessEndTime);
-            response.body?.cancel().catch(() => {});
+            const failoverRespBody = await response.json().catch(() => null);
+            await markLogAsFailed(logId, response.status, `Failover: HTTP ${response.status}`, retryCount, providerTtfbTime - preprocessEndTime, failoverRespBody);
             logger.warn(
               { requestId, instanceId: instance.id, statusCode: response.status },
               '[Failover] Instance failed, switching to next candidate',

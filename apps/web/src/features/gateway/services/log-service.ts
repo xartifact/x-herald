@@ -649,6 +649,7 @@ export async function markLogAsFailed(
   errorMessage: string,
   retryCount?: number,
   latencyMs?: number,
+  providerResponseBody?: unknown,
 ): Promise<void> {
   if (logId.startsWith('temp-')) return;
   try {
@@ -664,6 +665,7 @@ export async function markLogAsFailed(
         lastUpdatedAt: new Date(),
         ...(retryCount !== undefined && { retryCount }),
         ...(latencyMs !== undefined && { latencyMs }),
+        ...(providerResponseBody !== undefined && { providerResponseBody }),
       })
       .where(eq(requestLogs.id, logId));
     logger.debug({ logId, statusCode }, 'Log marked as failed (failover)');

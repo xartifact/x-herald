@@ -643,7 +643,13 @@ export async function markStreamFailed(
 /**
  * 将 pending 日志标记为失败（故障转移时中间候选实例的日志清理）
  */
-export async function markLogAsFailed(logId: string, statusCode: number, errorMessage: string): Promise<void> {
+export async function markLogAsFailed(
+  logId: string,
+  statusCode: number,
+  errorMessage: string,
+  retryCount?: number,
+  latencyMs?: number,
+): Promise<void> {
   if (logId.startsWith('temp-')) return;
   try {
     const db = getDatabase();
@@ -656,6 +662,8 @@ export async function markLogAsFailed(logId: string, statusCode: number, errorMe
         isComplete: true,
         streamStatus: 'failed',
         lastUpdatedAt: new Date(),
+        ...(retryCount !== undefined && { retryCount }),
+        ...(latencyMs !== undefined && { latencyMs }),
       })
       .where(eq(requestLogs.id, logId));
     logger.debug({ logId, statusCode }, 'Log marked as failed (failover)');

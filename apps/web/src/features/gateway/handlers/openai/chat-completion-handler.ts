@@ -308,7 +308,7 @@ export async function handleOpenAIChatCompletion(
           const shouldFailover = !isLastCandidate && FAILOVER_STATUS_CODES.has(response.status);
           if (shouldFailover) {
             circuitBreakerRegistry.recordFailure(instance.id, { instanceName: instance.name, groupName: group.name, providerName: provider.name });
-            await markLogAsFailed(logId, response.status, `Failover: HTTP ${response.status}`);
+            await markLogAsFailed(logId, response.status, `Failover: HTTP ${response.status}`, retryCount, providerTtfbTime - preprocessEndTime);
             response.body?.cancel().catch(() => {});
             logger.warn(
               { requestId, instanceId: instance.id, statusCode: response.status },

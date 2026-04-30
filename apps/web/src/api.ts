@@ -19,6 +19,7 @@ import { modelRoutesApi } from './features/model-routes';
 import { providersRoutes } from './features/providers';
 import { settingsRoutes } from './features/settings';
 import { virtualModelRoutes } from './features/virtual-models';
+import { circuitBreakerRoutes } from './features/circuit-breaker';
 
 // Create API app
 export const createApiApp = () => {
@@ -59,6 +60,7 @@ export const createApiApp = () => {
   app.route('/api/virtual-models', virtualModelRoutes);
   app.route('/api/model-routes', modelRoutesApi);
   app.route('/api/config', configIORoutes);
+  app.route('/api/circuit-breaker', circuitBreakerRoutes);
 
   // Gateway Routes (Anthropic/OpenAI 兼容 API)
   app.route('/api/v1', gatewayRoutes);

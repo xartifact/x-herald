@@ -347,7 +347,7 @@ export async function handleAnthropicMessages(
           // 判断是否触发故障转移
           const shouldFailover = !isLastCandidate && FAILOVER_STATUS_CODES.has(response.status);
           if (shouldFailover) {
-            circuitBreakerRegistry.recordFailure(instance.id);
+            circuitBreakerRegistry.recordFailure(instance.id, { instanceName: instance.name, groupName: group.name, providerName: provider.name });
             await markLogAsFailed(logId, response.status, `Failover: HTTP ${response.status}`);
             response.body?.cancel().catch(() => {});
             logger.warn(
@@ -368,7 +368,7 @@ export async function handleAnthropicMessages(
         }
 
         // 成功：重置熔断器
-        circuitBreakerRegistry.recordSuccess(instance.id);
+        circuitBreakerRegistry.recordSuccess(instance.id, { instanceName: instance.name, groupName: group.name, providerName: provider.name });
 
         const actualStreaming = standardReq.stream === true;
         const modelName = rawBody.model || 'unknown';

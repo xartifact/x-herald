@@ -7,19 +7,21 @@ export interface CircuitBreakerSettings {
   openDurationMs: number;
 }
 
+export interface CircuitBreakerMeta {
+  instanceName: string;
+  groupName: string;
+  providerName: string;
+}
+
 const DEFAULT_CONFIG: CircuitBreakerSettings = {
   failureThreshold: 3,
   openDurationMs: 60_000,
 };
 
-// 运行时配置（通过 configure() 从 db 更新，默认值兜底）
 let runtimeConfig: CircuitBreakerSettings = { ...DEFAULT_CONFIG };
 let configLoadedAt = 0;
 const CONFIG_CACHE_TTL = 30_000;
 
-/**
- * 异步从 gateway-config 刷新熔断器配置（fire-and-forget，不阻塞同步接口）
- */
 function refreshConfigIfStale(): void {
   const now = Date.now();
   if (now - configLoadedAt < CONFIG_CACHE_TTL) return;
@@ -27,26 +29,49 @@ function refreshConfigIfStale(): void {
 
   import('@/features/gateway-config/service')
     .then(({ getConfig }) => getConfig<CircuitBreakerSettings | null>(CB_CONFIG_KEY, null))
-    .then((stored) => {
-      if (stored) runtimeConfig = stored;
-    })
+    .then((stored) => { if (stored) runtimeConfig = stored; })
     .catch(() => {});
 }
 
-/**
- * 立即更新运行时配置（由 settings API 在保存后调用）
- */
 export function configureCircuitBreaker(settings: CircuitBreakerSettings): void {
   runtimeConfig = settings;
   configLoadedAt = Date.now();
   logger.info({ settings }, '[CircuitBreaker] Config updated');
 }
 
+function persistEvent(
+  instanceId: string,
+  event: 'opened' | 'half_open' | 'closed',
+  failureCount: number,
+  openUntil: Date | null,
+  meta: CircuitBreakerMeta,
+): void {
+  import('@/core/db/client')
+    .then(({ getDatabase }) => {
+      const db = getDatabase();
+      return import('@/features/circuit-breaker/db').then(({ circuitBreakerEvents }) =>
+        db.insert(circuitBreakerEvents).values({
+          instanceId,
+          instanceName: meta.instanceName,
+          groupName: meta.groupName,
+          providerName: meta.providerName,
+          event,
+          failureCount,
+          openUntil: openUntil ?? undefined,
+        })
+      );
+    })
+    .catch((err) => logger.warn({ err, instanceId, event }, '[CircuitBreaker] Failed to persist event'));
+}
+
 interface InstanceState {
   failures: number;
   openUntil: number;
   state: 'closed' | 'open' | 'half_open';
+  meta: CircuitBreakerMeta;
 }
+
+const EMPTY_META: CircuitBreakerMeta = { instanceName: '', groupName: '', providerName: '' };
 
 class CircuitBreakerRegistry {
   private readonly states = new Map<string, InstanceState>();
@@ -59,36 +84,42 @@ class CircuitBreakerRegistry {
 
     if (s.state === 'open' && Date.now() >= s.openUntil) {
       s.state = 'half_open';
+      persistEvent(instanceId, 'half_open', s.failures, null, s.meta);
       return false;
     }
 
     return s.state === 'open';
   }
 
-  recordSuccess(instanceId: string): void {
-    if (this.states.has(instanceId)) {
+  recordSuccess(instanceId: string, meta?: CircuitBreakerMeta): void {
+    const s = this.states.get(instanceId);
+    if (s) {
       logger.debug({ instanceId }, '[CircuitBreaker] Circuit reset on success');
+      persistEvent(instanceId, 'closed', s.failures, null, meta ?? s.meta);
       this.states.delete(instanceId);
     }
   }
 
-  recordFailure(instanceId: string): void {
+  recordFailure(instanceId: string, meta?: CircuitBreakerMeta): void {
     refreshConfigIfStale();
 
     let s = this.states.get(instanceId);
     if (!s) {
-      s = { failures: 0, openUntil: 0, state: 'closed' };
+      s = { failures: 0, openUntil: 0, state: 'closed', meta: meta ?? EMPTY_META };
       this.states.set(instanceId, s);
     }
+    if (meta) s.meta = meta;
     s.failures++;
 
     if (s.state === 'half_open' || s.failures >= runtimeConfig.failureThreshold) {
       s.state = 'open';
       s.openUntil = Date.now() + runtimeConfig.openDurationMs;
+      const openUntilDate = new Date(s.openUntil);
       logger.warn(
         { instanceId, failures: s.failures, openDurationMs: runtimeConfig.openDurationMs },
         '[CircuitBreaker] Circuit opened',
       );
+      persistEvent(instanceId, 'opened', s.failures, openUntilDate, s.meta);
     }
   }
 

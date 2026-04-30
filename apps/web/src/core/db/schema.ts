@@ -12,3 +12,4 @@ export * from '@/features/keys/db';
 export * from '@/features/logs/db';
 export * from '@/features/health/db';
 export * from '@/features/gateway-config/db';
+export * from '@/features/circuit-breaker/db';

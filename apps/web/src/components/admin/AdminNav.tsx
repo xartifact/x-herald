@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import { LogOut, ChevronDown, LayoutDashboard, Server, Brain, Key, FileText, BarChart3, Settings, Layers, Cog, Network, GitBranch } from 'lucide-react';
+import { LogOut, ChevronDown, LayoutDashboard, Server, Brain, Key, FileText, BarChart3, Settings, Layers, Cog, Network, GitBranch, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -59,6 +59,7 @@ const navGroups: NavGroup[] = [
       { href: '/admin/logs', label: '请求日志', icon: <FileText className="h-4 w-4" /> },
       { href: "/admin/client-models", label: "模型统计", icon: <Brain className="h-4 w-4" /> },
       { href: "/admin/provider-stats", label: "供应商统计", icon: <BarChart3 className="h-4 w-4" /> },
+      { href: '/admin/circuit-breaker', label: '熔断记录', icon: <ShieldAlert className="h-4 w-4" /> },
     ],
   },
 ];

@@ -107,6 +107,9 @@ export interface InstanceConfig {
   // 自定义头
   customHeaders?: Record<string, string>;
 
+  // 是否支持 thinking/extended thinking（Claude 3.7+/4+）
+  supportsThinking?: boolean;
+
   // 重试配置
   retryConfig?: {
     maxRetries: number;

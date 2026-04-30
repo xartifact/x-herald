@@ -95,7 +95,7 @@ export async function handleAnthropicMessages(
       streaming: standardReq.stream || false,
       hasTools: !!standardReq.tools?.length,
       hasVision: standardReq.messages.some((m) =>
-        Array.isArray(m.content) && m.content.some((c) => c.type === 'image')
+        Array.isArray(m.content) && m.content.some((c) => c.type === 'image_url')
       ),
       virtualKeyId: virtualKey.id,
     };

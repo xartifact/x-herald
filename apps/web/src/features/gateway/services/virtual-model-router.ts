@@ -19,39 +19,30 @@ import { routeRuleEngine } from './route-rule-engine';
  */
 export class VirtualModelRouter {
   /**
-   * 通过规则引擎路由虚拟模型请求
-   * 返回 null 表示未找到匹配的虚拟模型或无规则命中
+   * 通过规则引擎路由虚拟模型请求，返回按策略排序的所有候选实例
+   * 第一个为首选，其余为故障转移备选；空数组表示无可用路由
    */
-  async route(context: RoutingContext): Promise<RouteResult | null> {
+  async routeCandidates(context: RoutingContext): Promise<RouteResult[]> {
     const db = getDatabase();
 
-    // 1. 查找匹配的虚拟模型
     const vmResult = await db
       .select()
       .from(virtualModels)
-      .where(
-        and(
-          eq(virtualModels.name, context.requestedModel),
-          eq(virtualModels.enabled, true)
-        )
-      )
+      .where(and(eq(virtualModels.name, context.requestedModel), eq(virtualModels.enabled, true)))
       .limit(1);
 
     if (vmResult.length === 0) {
-      return this.routeToDefaultVirtualModel(context);
+      return this.routeCandidatesViaDefault(context);
     }
 
     const vm = vmResult[0];
 
-    // 2. 规则引擎匹配
     const ruleMatch = await routeRuleEngine.match(vm.id, {
       model: context.requestedModel,
       streaming: context.streaming,
     });
 
-    if (!ruleMatch) {
-      return null;
-    }
+    if (!ruleMatch) return [];
 
     const action = ruleMatch.action;
     const mappingResult: ModelMappingResult = {
@@ -65,37 +56,45 @@ export class VirtualModelRouter {
       throw new Error(action.reason || `Request rejected by route rule '${ruleMatch.name}'`);
     }
 
-    if (action.type === 'fallback') {
-      return null;
-    }
+    if (action.type === 'fallback') return [];
 
     if (action.type === 'route_to_group' && action.targetId) {
-      const result = await modelGroupRouter.routeByGroupId(action.targetId, context);
-      if (result) {
-        return {
-          ...result,
+      const candidates = await modelGroupRouter.routeCandidatesByGroupId(action.targetId, context);
+      if (candidates.length > 0) {
+        return candidates.map((r) => ({
+          ...r,
           mapping: mappingResult,
           matchedRule: { id: ruleMatch.id, name: ruleMatch.name, priority: ruleMatch.priority },
-        };
+        }));
       }
       logger.warn(
         { virtualModel: vm.name, targetGroupId: action.targetId },
-        'Route rule target group returned no result'
+        'Route rule target group returned no candidates'
       );
-      return null;
+      return [];
     }
 
     if (action.type === 'route_to_instance' && action.targetId) {
-      return this.routeToInstance(action.targetId, vm, context, mappingResult, ruleMatch);
+      const result = await this.routeToInstance(action.targetId, vm, context, mappingResult, ruleMatch);
+      return result ? [result] : [];
     }
 
-    return null;
+    return [];
+  }
+
+  /**
+   * 通过规则引擎路由虚拟模型请求（返回首选实例）
+   * 如需故障转移请使用 routeCandidates
+   */
+  async route(context: RoutingContext): Promise<RouteResult | null> {
+    const candidates = await this.routeCandidates(context);
+    return candidates[0] ?? null;
   }
 
   /**
    * 兜底路由：当找不到虚拟模型时，使用标记为 isDefault 的虚拟模型处理请求
    */
-  private async routeToDefaultVirtualModel(context: RoutingContext): Promise<RouteResult | null> {
+  private async routeCandidatesViaDefault(context: RoutingContext): Promise<RouteResult[]> {
     const db = getDatabase();
 
     const defaultVmResult = await db
@@ -104,9 +103,7 @@ export class VirtualModelRouter {
       .where(and(eq(virtualModels.isDefault, true), eq(virtualModels.enabled, true)))
       .limit(1);
 
-    if (defaultVmResult.length === 0) {
-      return null;
-    }
+    if (defaultVmResult.length === 0) return [];
 
     const defaultVm = defaultVmResult[0];
 
@@ -115,9 +112,7 @@ export class VirtualModelRouter {
       streaming: context.streaming,
     });
 
-    if (!ruleMatch) {
-      return null;
-    }
+    if (!ruleMatch) return [];
 
     const fallbackMapping: ModelMappingResult = {
       modelName: context.requestedModel,
@@ -132,37 +127,36 @@ export class VirtualModelRouter {
       throw new Error(action.reason ?? `Rejected by default virtual model rule '${ruleMatch.name}'`);
     }
 
-    if (action.type === 'fallback') {
-      return null;
-    }
+    if (action.type === 'fallback') return [];
 
     if (action.type === 'route_to_group' && action.targetId) {
-      const result = await modelGroupRouter.routeByGroupId(action.targetId, context);
-      if (result) {
+      const candidates = await modelGroupRouter.routeCandidatesByGroupId(action.targetId, context);
+      if (candidates.length > 0) {
         logger.info(
-          { requestedModel: context.requestedModel, defaultVm: defaultVm.name, groupId: action.targetId },
+          { requestedModel: context.requestedModel, defaultVm: defaultVm.name },
           'Request routed via default virtual model fallback'
         );
-        return {
-          ...result,
+        return candidates.map((r) => ({
+          ...r,
           mapping: fallbackMapping,
           matchedRule: { id: ruleMatch.id, name: ruleMatch.name, priority: ruleMatch.priority },
-        };
+        }));
       }
-      return null;
+      return [];
     }
 
     if (action.type === 'route_to_instance' && action.targetId) {
-      return this.routeToInstance(
+      const result = await this.routeToInstance(
         action.targetId,
         { name: defaultVm.name, displayName: defaultVm.displayName },
         context,
         fallbackMapping,
         ruleMatch
       );
+      return result ? [result] : [];
     }
 
-    return null;
+    return [];
   }
 
   /**
@@ -178,10 +172,7 @@ export class VirtualModelRouter {
     const db = getDatabase();
 
     const instanceResult = await db
-      .select({
-        instance: modelInstances,
-        provider: providers,
-      })
+      .select({ instance: modelInstances, provider: providers })
       .from(modelInstances)
       .innerJoin(providers, eq(modelInstances.providerId, providers.id))
       .where(
@@ -203,7 +194,6 @@ export class VirtualModelRouter {
 
     const { instance, provider } = instanceResult[0];
 
-    // 查找实例所属的模型组
     let group = null;
     if (instance.groupId) {
       const groupResult = await db

@@ -1,6 +1,6 @@
 /**
  * 模型组路由器
- * 按实例 priority 升序选取第一个可用实例
+ * 支持 priority、round_robin、weighted 路由策略，集成熔断器
  */
 
 import { eq, and } from 'drizzle-orm';
@@ -11,31 +11,21 @@ import { modelGroups, modelInstances } from '@/features/model-groups/db';
 import type { ModelGroup, ModelInstance } from '@/features/model-groups/types';
 import { providers } from '@/features/providers/db';
 
+import { circuitBreakerRegistry } from './circuit-breaker';
 import type { ModelMappingResult } from './model-mapping';
 
 // 路由结果
 export interface RouteResult {
-  // 选中的模型实例
   instance: ModelInstance;
-
-  // 关联的供应商
   provider: typeof providers.$inferSelect;
-
-  // 关联的模型组
   group: ModelGroup;
-
-  // 路由决策信息
   decision: {
     strategy: string;
     reason: string;
     candidates: number;
     latency?: number;
   };
-
-  // 模型映射信息
   mapping: ModelMappingResult;
-
-  // 命中的路由规则（可选，由 VirtualModelRouter 写入）
   matchedRule?: {
     id: string;
     name: string;
@@ -45,33 +35,40 @@ export interface RouteResult {
 
 // 路由上下文
 export interface RoutingContext {
-  // 请求特征
   requestedModel: string;
   streaming: boolean;
   hasTools: boolean;
   hasVision: boolean;
-
-  // 用户上下文
   virtualKeyId: string;
-
-  // 偏好设置
   preferredProvider?: string;
   maxLatency?: number;
   maxCost?: number;
 }
+
+type Candidate = {
+  instance: ModelInstance;
+  provider: typeof providers.$inferSelect;
+  group: ModelGroup;
+};
+
+// 触发故障转移的状态码（服务端错误和限流），4xx 客户端错误不转移
+export const FAILOVER_STATUS_CODES = new Set([429, 500, 502, 503, 504, 521, 524]);
+
+// 轮询计数器（内存中，按 groupId）
+const roundRobinCounters = new Map<string, number>();
 
 /**
  * 模型组路由器
  */
 export class ModelGroupRouter {
   /**
-   * 按模型组 ID 路由（由 VirtualModelRouter 调用）
-   * 组内实例按 priority 升序取第一个可用实例
+   * 按模型组 ID 路由，返回按策略排序的所有候选实例
+   * 第一个候选为首选，其余为故障转移备选
    */
-  async routeByGroupId(
+  async routeCandidatesByGroupId(
     groupId: string,
     context: RoutingContext
-  ): Promise<RouteResult | null> {
+  ): Promise<RouteResult[]> {
     const db = getDatabase();
 
     const groupResult = await db
@@ -80,17 +77,12 @@ export class ModelGroupRouter {
       .where(eq(modelGroups.id, groupId))
       .limit(1);
 
-    if (groupResult.length === 0 || !groupResult[0].enabled) {
-      return null;
-    }
+    if (groupResult.length === 0 || !groupResult[0].enabled) return [];
 
     const group = groupResult[0];
 
     const instances = await db
-      .select({
-        instance: modelInstances,
-        provider: providers,
-      })
+      .select({ instance: modelInstances, provider: providers })
       .from(modelInstances)
       .innerJoin(providers, eq(modelInstances.providerId, providers.id))
       .where(
@@ -101,91 +93,121 @@ export class ModelGroupRouter {
         )
       );
 
-    if (instances.length === 0) return null;
+    if (instances.length === 0) return [];
 
-    const candidates = this.filterCandidates(instances, context, group);
-    if (candidates.length === 0) return null;
+    const filtered = this.filterCandidates(instances, context, group);
+    if (filtered.length === 0) return [];
 
-    // 按 priority 升序取第一个可用实例
-    const sorted = [...candidates].sort((a, b) => a.instance.priority - b.instance.priority);
-    const selected = sorted[0];
-
-    const mappingResult: ModelMappingResult = {
-      modelName: group.name,
-      isMapped: true,
-      originalModel: context.requestedModel,
-      mappingType: 'virtual',
-    };
+    const strategy = group.routingConfig?.strategy ?? 'priority';
+    const sorted = this.selectByStrategy(filtered, strategy, group.id);
 
     logger.debug(
-      {
-        groupId,
-        selectedInstance: selected.instance.name,
-        priority: selected.instance.priority,
-        candidates: candidates.length,
-      },
-      'Instance selected by priority'
+      { groupId, strategy, totalCandidates: filtered.length },
+      'Routing candidates resolved'
     );
 
-    return {
-      instance: selected.instance,
-      provider: selected.provider,
+    return sorted.map((c, idx) => ({
+      instance: c.instance,
+      provider: c.provider,
       group,
       decision: {
-        strategy: 'priority',
-        reason: `Priority selection (priority: ${selected.instance.priority})`,
-        candidates: candidates.length,
+        strategy,
+        reason: idx === 0
+          ? `${strategy} selection (priority: ${c.instance.priority})`
+          : `${strategy} failover candidate #${idx + 1}`,
+        candidates: filtered.length,
       },
-      mapping: mappingResult,
-    };
+      mapping: {
+        modelName: group.name,
+        isMapped: true,
+        originalModel: context.requestedModel,
+        mappingType: 'virtual' as const,
+      },
+    }));
   }
 
   /**
-   * 过滤候选实例
+   * 按模型组 ID 路由（兼容接口）
+   * 返回首选实例；如需故障转移请使用 routeCandidatesByGroupId
+   */
+  async routeByGroupId(
+    groupId: string,
+    context: RoutingContext
+  ): Promise<RouteResult | null> {
+    const candidates = await this.routeCandidatesByGroupId(groupId, context);
+    return candidates[0] ?? null;
+  }
+
+  /**
+   * 按策略对候选实例排序，返回有序列表
+   * 第一个元素为本轮首选，其余为故障转移顺序
+   */
+  private selectByStrategy(candidates: Candidate[], strategy: string, groupId: string): Candidate[] {
+    switch (strategy) {
+      case 'round_robin': {
+        // 先按 priority 稳定排序，再轮询起始位置
+        const sorted = [...candidates].sort((a, b) => a.instance.priority - b.instance.priority);
+        const count = roundRobinCounters.get(groupId) ?? 0;
+        roundRobinCounters.set(groupId, count + 1);
+        const idx = count % sorted.length;
+        return [...sorted.slice(idx), ...sorted.slice(0, idx)];
+      }
+
+      case 'weighted': {
+        // 按权重随机选起始实例，其余按 priority 排列
+        const totalWeight = candidates.reduce((sum, c) => sum + (c.instance.weight ?? 1), 0);
+        let rand = Math.random() * totalWeight;
+        let selectedIdx = candidates.length - 1;
+        for (let i = 0; i < candidates.length; i++) {
+          rand -= (candidates[i].instance.weight ?? 1);
+          if (rand <= 0) { selectedIdx = i; break; }
+        }
+        const rest = [...candidates.slice(0, selectedIdx), ...candidates.slice(selectedIdx + 1)]
+          .sort((a, b) => a.instance.priority - b.instance.priority);
+        return [candidates[selectedIdx], ...rest];
+      }
+
+      case 'priority':
+      default:
+        return [...candidates].sort((a, b) => a.instance.priority - b.instance.priority);
+    }
+  }
+
+  /**
+   * 过滤候选实例：排除熔断开路、down、能力不匹配的实例
    */
   private filterCandidates(
     instances: Array<{ instance: ModelInstance; provider: typeof providers.$inferSelect }>,
     context: RoutingContext,
     group: ModelGroup
-  ): Array<{ instance: ModelInstance; provider: typeof providers.$inferSelect; group: ModelGroup }> {
+  ): Candidate[] {
     return instances
       .filter(({ instance, provider }) => {
-        // 检查实例状态
-        if (instance.status === 'down') {
+        // 熔断检查
+        if (circuitBreakerRegistry.isOpen(instance.id)) {
+          logger.debug({ instanceId: instance.id }, '[CircuitBreaker] Skipping open circuit instance');
           return false;
         }
 
-        // 检查能力匹配
+        // 实例状态检查
+        if (instance.status === 'down') return false;
+
+        // 能力匹配
         const capabilities = {
           ...group.capabilities,
           ...instance.config?.capabilityOverrides,
         };
+        if (context.streaming && !capabilities.streaming) return false;
+        if (context.hasTools && !capabilities.functionCalling) return false;
+        if (context.hasVision && !capabilities.vision) return false;
 
-        if (context.streaming && !capabilities.streaming) {
-          return false;
-        }
-
-        if (context.hasTools && !capabilities.functionCalling) {
-          return false;
-        }
-
-        if (context.hasVision && !capabilities.vision) {
-          return false;
-        }
-
-        // 检查供应商协议配置
+        // 供应商协议配置检查
         const protocol = provider.protocols?.openai || provider.protocols?.anthropic;
-        if (!protocol?.enabled) {
-          return false;
-        }
+        if (!protocol?.enabled) return false;
 
         return true;
       })
-      .map(({ instance, provider }) => ({
-        instance,
-        provider,
-        group,
-      }));
+      .map(({ instance, provider }) => ({ instance, provider, group }));
   }
 
   /**
@@ -217,18 +239,12 @@ export class ModelGroupRouter {
     if (group.length === 0) return null;
 
     const instances = await db
-      .select({
-        instance: modelInstances,
-        provider: providers,
-      })
+      .select({ instance: modelInstances, provider: providers })
       .from(modelInstances)
       .innerJoin(providers, eq(modelInstances.providerId, providers.id))
       .where(eq(modelInstances.groupId, groupId));
 
-    return {
-      group: group[0],
-      instances,
-    };
+    return { group: group[0], instances };
   }
 }
 

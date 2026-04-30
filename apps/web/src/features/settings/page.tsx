@@ -2,11 +2,13 @@
 
 import { useRef, useState } from 'react'
 
-import { AlertTriangle, Bot, Download, RefreshCw, Upload } from 'lucide-react'
+import { AlertTriangle, Bot, Download, RefreshCw, ShieldAlert, Upload } from 'lucide-react'
 
 import { Alert, AlertDescription, AlertTitle } from '@/ui/alert'
 import { Button } from '@/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card'
+import { Input } from '@/ui/input'
+import { Label } from '@/ui/label'
 import {
   Select,
   SelectContent,
@@ -29,13 +31,19 @@ export default function SettingsPage() {
 
   const { data: settings, isLoading: settingsLoading } = useSettings()
   const updateSettings = useUpdateSettings()
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null | undefined>(undefined)
 
-  // 未做过本地修改时显示已保存的值，否则显示用户选择
+  // AI 模型配置状态
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null | undefined>(undefined)
   const currentGroupId =
     selectedGroupId === undefined
       ? (settings?.aiModelGroupId ?? null)
       : selectedGroupId
+
+  // 熔断器配置状态（null = 未修改，显示服务端值）
+  const [cbForm, setCbForm] = useState<{ failureThreshold: string; openDurationSec: string } | null>(null)
+  const serverCb = settings?.circuitBreaker ?? { failureThreshold: 3, openDurationMs: 60_000 }
+  const cbFailureThreshold = cbForm?.failureThreshold ?? String(serverCb.failureThreshold)
+  const cbOpenDurationSec = cbForm?.openDurationSec ?? String(Math.round(serverCb.openDurationMs / 1000))
 
   const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -48,11 +56,18 @@ export default function SettingsPage() {
   const handleSaveDefaultModel = () => {
     updateSettings.mutate(
       { aiModelGroupId: currentGroupId ?? null },
-      {
-        onSuccess: () => {
-          setSelectedGroupId(undefined)
-        },
-      }
+      { onSuccess: () => setSelectedGroupId(undefined) }
+    )
+  }
+
+  const handleSaveCircuitBreaker = () => {
+    const threshold = parseInt(cbFailureThreshold, 10)
+    const durationSec = parseInt(cbOpenDurationSec, 10)
+    if (isNaN(threshold) || isNaN(durationSec)) return
+
+    updateSettings.mutate(
+      { circuitBreaker: { failureThreshold: threshold, openDurationMs: durationSec * 1000 } },
+      { onSuccess: () => setCbForm(null) }
     )
   }
 
@@ -110,6 +125,79 @@ export default function SettingsPage() {
               <Button
                 onClick={handleSaveDefaultModel}
                 disabled={updateSettings.isPending || selectedGroupId === undefined}
+                size="sm"
+              >
+                {updateSettings.isPending ? (
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
+                保存
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* 熔断器配置 */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <ShieldAlert className="h-5 w-5" />
+            <CardTitle>熔断器配置</CardTitle>
+          </div>
+          <CardDescription>
+            模型实例连续失败达到阈值后自动熔断，保护下游请求。熔断期间该实例将被跳过，优先转移到其他实例。
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {settingsLoading ? (
+            <div className="text-sm text-muted-foreground">加载中...</div>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4 max-w-md">
+                <div className="space-y-2">
+                  <Label htmlFor="cb-threshold">失败阈值（次）</Label>
+                  <Input
+                    id="cb-threshold"
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={cbFailureThreshold}
+                    onChange={(e) =>
+                      setCbForm((prev) => ({
+                        failureThreshold: e.target.value,
+                        openDurationSec: prev?.openDurationSec ?? cbOpenDurationSec,
+                      }))
+                    }
+                    disabled={updateSettings.isPending}
+                    className="w-full"
+                  />
+                  <p className="text-xs text-muted-foreground">连续失败多少次后触发熔断</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="cb-duration">熔断持续时间（秒）</Label>
+                  <Input
+                    id="cb-duration"
+                    type="number"
+                    min={10}
+                    max={3600}
+                    value={cbOpenDurationSec}
+                    onChange={(e) =>
+                      setCbForm((prev) => ({
+                        failureThreshold: prev?.failureThreshold ?? cbFailureThreshold,
+                        openDurationSec: e.target.value,
+                      }))
+                    }
+                    disabled={updateSettings.isPending}
+                    className="w-full"
+                  />
+                  <p className="text-xs text-muted-foreground">熔断开路后等待多久进入半开状态</p>
+                </div>
+              </div>
+
+              <Button
+                onClick={handleSaveCircuitBreaker}
+                disabled={updateSettings.isPending || cbForm === null}
                 size="sm"
               >
                 {updateSettings.isPending ? (

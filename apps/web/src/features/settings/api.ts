@@ -4,14 +4,17 @@ import { Hono } from 'hono';
 import { getDatabase } from '@/core/db/client';
 import rootLogger from '@/core/lib/logger';
 import { authMiddleware } from '@/features/auth/middleware';
-import { modelGroups, modelInstances } from '@/features/model-groups/db';
 import { getConfig, setConfig } from '@/features/gateway-config/service';
+import { CB_CONFIG_KEY, configureCircuitBreaker } from '@/features/gateway/services/circuit-breaker';
+import { modelGroups, modelInstances } from '@/features/model-groups/db';
 
 const logger = rootLogger.child({ module: 'settings' });
 
 /** @deprecated 请使用 CONFIG_KEY_AI_MODEL */
 export const CONFIG_KEY_DEFAULT_ANALYSIS_MODEL = 'AI_MODEL_GROUP_ID';
 export { CONFIG_KEY_AI_MODEL } from '@/core/lib/ai-caller';
+
+const DEFAULT_CB_CONFIG = { failureThreshold: 3, openDurationMs: 60_000 };
 
 const settingsRoutes = new Hono();
 
@@ -21,7 +24,7 @@ settingsRoutes.get('/', async (c) => {
   try {
     const db = getDatabase();
 
-    const [defaultGroupId, groups] = await Promise.all([
+    const [defaultGroupId, groups, cbConfig] = await Promise.all([
       getConfig<string | null>('AI_MODEL_GROUP_ID', null),
       db
         .select({
@@ -31,12 +34,10 @@ settingsRoutes.get('/', async (c) => {
           instanceCount: sql<number>`count(${modelInstances.id})`.mapWith(Number),
         })
         .from(modelGroups)
-        .leftJoin(
-          modelInstances,
-          eq(modelInstances.groupId, modelGroups.id)
-        )
+        .leftJoin(modelInstances, eq(modelInstances.groupId, modelGroups.id))
         .groupBy(modelGroups.id, modelGroups.name, modelGroups.displayName)
         .orderBy(modelGroups.name),
+      getConfig(CB_CONFIG_KEY, DEFAULT_CB_CONFIG),
     ]);
 
     return c.json({
@@ -44,6 +45,7 @@ settingsRoutes.get('/', async (c) => {
       data: {
         aiModelGroupId: defaultGroupId,
         availableModelGroups: groups,
+        circuitBreaker: cbConfig,
       },
     });
   } catch (error) {
@@ -57,7 +59,10 @@ settingsRoutes.get('/', async (c) => {
 
 settingsRoutes.put('/', async (c) => {
   try {
-    const body = await c.req.json() as { aiModelGroupId?: string | null };
+    const body = await c.req.json() as {
+      aiModelGroupId?: string | null;
+      circuitBreaker?: { failureThreshold: number; openDurationMs: number };
+    };
 
     if ('aiModelGroupId' in body) {
       const id = body.aiModelGroupId ?? null;
@@ -76,6 +81,22 @@ settingsRoutes.put('/', async (c) => {
       }
 
       await setConfig('AI_MODEL_GROUP_ID', id, '系统所有 AI 功能（日志分析、配置助手等）使用的模型组');
+    }
+
+    if ('circuitBreaker' in body && body.circuitBreaker) {
+      const { failureThreshold, openDurationMs } = body.circuitBreaker;
+
+      if (!Number.isInteger(failureThreshold) || failureThreshold < 1 || failureThreshold > 100) {
+        return c.json({ success: false, error: 'failureThreshold 必须是 1-100 之间的整数' }, 400);
+      }
+      if (!Number.isInteger(openDurationMs) || openDurationMs < 1000 || openDurationMs > 3_600_000) {
+        return c.json({ success: false, error: 'openDurationMs 必须是 1000-3600000 之间的整数' }, 400);
+      }
+
+      const cbConfig = { failureThreshold, openDurationMs };
+      await setConfig(CB_CONFIG_KEY, cbConfig, '熔断器配置：失败阈值和熔断持续时间');
+      // 立即应用到运行时（无需重启）
+      configureCircuitBreaker(cbConfig);
     }
 
     return c.json({ success: true });

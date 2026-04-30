@@ -640,6 +640,30 @@ export async function markStreamFailed(
 /**
  * 标记流中止（客户端断开）
  */
+/**
+ * 将 pending 日志标记为失败（故障转移时中间候选实例的日志清理）
+ */
+export async function markLogAsFailed(logId: string, statusCode: number, errorMessage: string): Promise<void> {
+  if (logId.startsWith('temp-')) return;
+  try {
+    const db = getDatabase();
+    await db
+      .update(requestLogs)
+      .set({
+        status: 'failure',
+        statusCode,
+        errorMessage,
+        isComplete: true,
+        streamStatus: 'failed',
+        lastUpdatedAt: new Date(),
+      })
+      .where(eq(requestLogs.id, logId));
+    logger.debug({ logId, statusCode }, 'Log marked as failed (failover)');
+  } catch (error) {
+    logger.warn({ error, logId }, 'Failed to mark log as failed');
+  }
+}
+
 export async function markStreamAborted(logId: string): Promise<void> {
   if (logId.startsWith('temp-')) {
     logger.warn({ logId }, 'Skipping abort mark for temporary log ID');

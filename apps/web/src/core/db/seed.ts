@@ -50,17 +50,18 @@ export async function seedSystemData(): Promise<void> {
   }
 
   // 2. 确保 __catchall__ 有兜底路由规则
+  // 使用 name 匹配检查，避免数组操作符兼容性问题
   const existingRule = await db
     .select({ id: modelRoutes.id })
     .from(modelRoutes)
-    .where(eq(modelRoutes.virtualModelId, catchallId))
+    .where(eq(modelRoutes.name, '全局路由规则'))
     .limit(1);
 
   if (existingRule.length === 0) {
     await db.insert(modelRoutes).values({
       name: '全局路由规则',
       description: '系统内置兜底规则，未配置时拒绝未知模型请求',
-      virtualModelId: catchallId,
+      virtualModelIds: [catchallId],
       conditions: [],
       action: {
         type: 'reject',

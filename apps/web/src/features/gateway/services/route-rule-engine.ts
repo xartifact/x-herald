@@ -3,7 +3,7 @@
  * 按优先级匹配规则，执行条件判断
  */
 
-import { eq, and, asc } from 'drizzle-orm';
+import { eq, and, asc, sql } from 'drizzle-orm';
 
 import { getDatabase } from '@/core/db/client';
 import logger from '@/core/lib/logger';
@@ -32,7 +32,7 @@ export class RouteRuleEngine {
     // 查询启用的规则，按优先级排序
     const conditions = virtualModelId
       ? and(
-          eq(modelRoutes.virtualModelId, virtualModelId),
+          sql`${modelRoutes.virtualModelIds} @> ARRAY[${virtualModelId}]::text[]`,
           eq(modelRoutes.enabled, true)
         )
       : eq(modelRoutes.enabled, true);

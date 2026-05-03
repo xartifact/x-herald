@@ -186,12 +186,19 @@ export function RuleDetailPanel({
                 </div>
               </div>
               
-              {route.virtualModel && (
+              {route.virtualModelIds && route.virtualModelIds.length > 0 && (
                 <div>
                   <span className="text-xs text-muted-foreground">绑定虚拟模型</span>
-                  <p className="text-sm font-medium">
-                    {route.virtualModel.displayName || route.virtualModel.name}
-                  </p>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {route.virtualModelIds.map((vmId) => {
+                      const vm = vms.find(v => v.id === vmId)
+                      return (
+                        <Badge key={vmId} variant="outline" className="text-xs">
+                          {vm ? (vm.displayName || vm.name) : vmId}
+                        </Badge>
+                      )
+                    })}
+                  </div>
                 </div>
               )}
             </div>

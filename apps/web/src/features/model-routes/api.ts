@@ -1,4 +1,4 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 
 import { getDatabase } from '@/core/db/client';
@@ -23,7 +23,7 @@ modelRoutesApi.get('/', async (c) => {
         id: modelRoutes.id,
         name: modelRoutes.name,
         description: modelRoutes.description,
-        virtualModelId: modelRoutes.virtualModelId,
+        virtualModelIds: modelRoutes.virtualModelIds,
         conditions: modelRoutes.conditions,
         action: modelRoutes.action,
         priority: modelRoutes.priority,
@@ -31,15 +31,12 @@ modelRoutesApi.get('/', async (c) => {
         flowData: modelRoutes.flowData,
         createdAt: modelRoutes.createdAt,
         updatedAt: modelRoutes.updatedAt,
-        vmName: virtualModels.name,
-        vmDisplayName: virtualModels.displayName,
       })
       .from(modelRoutes)
-      .leftJoin(virtualModels, eq(modelRoutes.virtualModelId, virtualModels.id))
       .$dynamic();
 
     if (virtualModelId) {
-      query = query.where(eq(modelRoutes.virtualModelId, virtualModelId));
+      query = query.where(sql`${modelRoutes.virtualModelIds} @> ARRAY[${virtualModelId}]::text[]`);
     }
 
     const results = await query;
@@ -48,7 +45,7 @@ modelRoutesApi.get('/', async (c) => {
       id: r.id,
       name: r.name,
       description: r.description,
-      virtualModelId: r.virtualModelId,
+      virtualModelIds: r.virtualModelIds,
       conditions: r.conditions,
       action: r.action,
       priority: r.priority,
@@ -56,7 +53,7 @@ modelRoutesApi.get('/', async (c) => {
       flowData: r.flowData,
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
-      virtualModel: r.vmName ? { name: r.vmName, displayName: r.vmDisplayName } : null,
+      virtualModel: null,
     }));
 
     return c.json({ success: true, data });
@@ -78,7 +75,7 @@ modelRoutesApi.get('/flow', async (c) => {
       .select({
         id: modelRoutes.id,
         name: modelRoutes.name,
-        virtualModelId: modelRoutes.virtualModelId,
+        virtualModelIds: modelRoutes.virtualModelIds,
         conditions: modelRoutes.conditions,
         action: modelRoutes.action,
         priority: modelRoutes.priority,
@@ -119,7 +116,7 @@ modelRoutesApi.get('/:id', async (c) => {
         id: modelRoutes.id,
         name: modelRoutes.name,
         description: modelRoutes.description,
-        virtualModelId: modelRoutes.virtualModelId,
+        virtualModelIds: modelRoutes.virtualModelIds,
         conditions: modelRoutes.conditions,
         action: modelRoutes.action,
         priority: modelRoutes.priority,
@@ -127,11 +124,8 @@ modelRoutesApi.get('/:id', async (c) => {
         flowData: modelRoutes.flowData,
         createdAt: modelRoutes.createdAt,
         updatedAt: modelRoutes.updatedAt,
-        vmName: virtualModels.name,
-        vmDisplayName: virtualModels.displayName,
       })
       .from(modelRoutes)
-      .leftJoin(virtualModels, eq(modelRoutes.virtualModelId, virtualModels.id))
       .where(eq(modelRoutes.id, id))
       .limit(1);
 
@@ -144,7 +138,7 @@ modelRoutesApi.get('/:id', async (c) => {
       success: true,
       data: {
         ...r,
-        virtualModel: r.vmName ? { name: r.vmName, displayName: r.vmDisplayName } : null,
+        virtualModel: null,
       },
     });
   } catch (error) {
@@ -167,7 +161,7 @@ modelRoutesApi.post('/', async (c) => {
       .values({
         name: data.name,
         description: data.description || null,
-        virtualModelId: data.virtualModelId || null,
+        virtualModelIds: data.virtualModelIds || [],
         conditions: data.conditions || [],
         action: data.action,
         priority: data.priority ?? 0,
@@ -197,7 +191,7 @@ modelRoutesApi.put('/:id', async (c) => {
     const updateData: Record<string, unknown> = { updatedAt: new Date() };
     if (data.name !== undefined) updateData.name = data.name;
     if (data.description !== undefined) updateData.description = data.description;
-    if (data.virtualModelId !== undefined) updateData.virtualModelId = data.virtualModelId || null;
+    if (data.virtualModelIds !== undefined) updateData.virtualModelIds = data.virtualModelIds || [];
     if (data.conditions !== undefined) updateData.conditions = data.conditions;
     if (data.action !== undefined) updateData.action = data.action;
     if (data.priority !== undefined) updateData.priority = data.priority;

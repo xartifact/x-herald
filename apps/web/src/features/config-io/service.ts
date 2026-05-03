@@ -1,4 +1,4 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 
 import { getDatabase } from '@/core/db/client';
 import rootLogger from '@/core/lib/logger';
@@ -116,8 +116,8 @@ export async function exportConfig(): Promise<ExportFormat> {
         return {
           name: r.name,
           description: r.description,
-          virtualModelName: r.virtualModelId
-            ? (virtualModelIdToName.get(r.virtualModelId) ?? null)
+          virtualModelName: (r.virtualModelIds && r.virtualModelIds.length > 0)
+            ? (virtualModelIdToName.get(r.virtualModelIds[0]) ?? null)
             : null,
           conditions: (r.conditions as unknown[]) ?? [],
           action: { type: action.type, targetRef, reason: action.reason },
@@ -468,7 +468,7 @@ export async function importConfig(data: ExportFormat["data"]): Promise<ImportRe
         .where(
           and(
             virtualModelId
-              ? eq(modelRoutes.virtualModelId, virtualModelId)
+              ? sql`${modelRoutes.virtualModelIds} @> ARRAY[${virtualModelId}]::text[]`
               : eq(modelRoutes.name, r.name),
             eq(modelRoutes.name, r.name),
           ),
@@ -480,7 +480,7 @@ export async function importConfig(data: ExportFormat["data"]): Promise<ImportRe
           .update(modelRoutes)
           .set({
             description: r.description,
-            virtualModelId,
+            virtualModelIds: virtualModelId ? [virtualModelId] : [],
             conditions: r.conditions as never,
             action: action as never,
             priority: r.priority,
@@ -494,7 +494,7 @@ export async function importConfig(data: ExportFormat["data"]): Promise<ImportRe
         await db.insert(modelRoutes).values({
           name: r.name,
           description: r.description,
-          virtualModelId,
+          virtualModelIds: virtualModelId ? [virtualModelId] : [],
           conditions: r.conditions as never,
           action: action as never,
           priority: r.priority,

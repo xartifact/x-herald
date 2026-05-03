@@ -34,7 +34,7 @@ export interface ModelRoute {
   id: string
   name: string
   description: string | null
-  virtualModelId: string | null
+  virtualModelIds: string[]
   conditions: RouteCondition[]
   action: RouteAction
   priority: number
@@ -51,7 +51,7 @@ export interface ModelRoute {
 export interface CreateModelRoutePayload {
   name: string
   description?: string
-  virtualModelId?: string
+  virtualModelIds?: string[]
   conditions?: RouteCondition[]
   action: RouteAction
   priority?: number
@@ -62,10 +62,16 @@ export interface CreateModelRoutePayload {
 export interface UpdateModelRoutePayload {
   name?: string
   description?: string
-  virtualModelId?: string | null
+  virtualModelIds?: string[] | null
   conditions?: RouteCondition[]
   action?: RouteAction
   priority?: number
   enabled?: boolean
   flowData?: FlowData | null
+}
+
+export interface SyncResult {
+  updatedRoutes: string[]
+  newRoutes?: string[]
+  deletedRoutes?: string[]
 }

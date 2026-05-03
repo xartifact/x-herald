@@ -147,6 +147,9 @@ export interface InstanceConfig {
     preserveFields?: string[];  // 保留的字段（覆盖默认清理）
     additionalBannedFields?: string[];  // 额外清理的字段
   };
+
+  // 是否支持 extended thinking (Claude)
+  supportsThinking?: boolean;
 }
 
 export const modelInstances = pgTable('model_instances', {
@@ -266,8 +269,7 @@ export const modelRoutes = pgTable('model_routes', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: varchar('name', { length: 255 }).notNull(),
   description: text('description'),
-  virtualModelId: uuid('virtual_model_id')
-    .references(() => virtualModels.id, { onDelete: 'cascade' }),
+  virtualModelIds: text('virtual_model_ids').array().notNull().default([]),
   conditions: jsonb('conditions').$type<RouteCondition[]>().default([]),
   action: jsonb('action').$type<RouteAction>().notNull(),
   priority: integer('priority').default(0).notNull(),
@@ -277,11 +279,9 @@ export const modelRoutes = pgTable('model_routes', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-export const modelRoutesRelations = relations(modelRoutes, ({ one }) => ({
-  virtualModel: one(virtualModels, {
-    fields: [modelRoutes.virtualModelId],
-    references: [virtualModels.id],
-  }),
+export const modelRoutesRelations = relations(modelRoutes, ({ many }) => ({
+  // Note: virtualModelIds is a TEXT[] array - no FK relationship
+  // Virtual model lookup is done at application layer
 }));
 
 export type ModelRoute = typeof modelRoutes.$inferSelect;

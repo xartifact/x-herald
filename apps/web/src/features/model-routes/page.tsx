@@ -30,6 +30,7 @@ export default function ModelRoutesPage() {
     handleCloseDetail,
     setFormDialogOpen,
     handleNodeClick,
+    handleNodeDoubleClick,
     setSelectedRouteId,
   } = useModelRoutePage(routes)
 
@@ -72,7 +73,7 @@ export default function ModelRoutesPage() {
             />
           </Card>
 
-          {/* 中间：Flow 画布 */}
+          {/* 中间：Flow 画布（含节点模板侧栏） */}
           <Card className="overflow-hidden">
             <CardContent className="p-0 h-full">
               <FlowEditor
@@ -82,6 +83,7 @@ export default function ModelRoutesPage() {
                 instances={instances}
                 selectedRouteId={selectedRouteId}
                 onNodeClick={handleNodeClick}
+                onNodeDoubleClick={handleNodeDoubleClick}
               />
             </CardContent>
           </Card>

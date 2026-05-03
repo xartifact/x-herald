@@ -70,3 +70,7 @@ packages/llms
 .opencode
 .swarm
 SWARM_PLAN.*
+
+# Playwright
+test-results/
+playwright-report/

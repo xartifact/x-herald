@@ -22,6 +22,10 @@ mock.module('lucide-react', () => ({
   GitBranch: MockIcon,
   Network: MockIcon,
   Ban: MockIcon,
+  ArrowDownToLine: MockIcon,
+  Redo2: MockIcon,
+  Undo: MockIcon,
+  Save: MockIcon,
 }))
 
 mock.module('@xyflow/react', () => ({
@@ -44,6 +48,18 @@ mock.module('@xyflow/react', () => ({
   useNodesState: (initial: any) => [initial, () => {}, () => {}],
   useEdgesState: (initial: any) => [initial, () => {}, () => {}],
   addEdge: () => [],
+  ReactFlowProvider: function MockReactFlowProvider(props: any) {
+    return React.createElement('div', { 'data-testid': 'react-flow-provider' }, props.children)
+  },
+  MiniMap: function MockMiniMap() {
+    return React.createElement('div', { 'data-testid': 'mini-map' })
+  },
+  useReactFlow: () => ({
+    deleteElements: () => {},
+    fitView: () => {},
+    setNodes: () => {},
+    setEdges: () => {},
+  }),
 }))
 
 mock.module('@xyflow/react/dist/style.css', () => ({}))
@@ -64,7 +80,7 @@ function makeRoute(overrides: Record<string, any> = {}) {
     id: 'route-1',
     name: 'Test Rule',
     description: null,
-    virtualModelId: 'vm-1',
+    virtualModelIds: ['vm-1'],
     conditions: [] as any[],
     action: { type: 'route_to_instance' as const, targetId: 'inst-1' },
     priority: 1,
@@ -368,7 +384,7 @@ describe('buildFlowFromData — ruleName propagation', () => {
       makeRoute({
         id: 'r7',
         name: 'Group Fallback',
-        virtualModelId: 'vm-1',
+        virtualModelIds: ['vm-1'],
         conditions: [],
         action: { type: 'route_to_group', targetId: 'grp-1' },
       }),
@@ -379,7 +395,7 @@ describe('buildFlowFromData — ruleName propagation', () => {
     const target = getTargetNode()
     expect(target).toBeDefined()
     expect(target.data.ruleName).toBe('Group Fallback')
-    expect(target.data.targetType).toBe('group')
+    expect(target.data.targetType).toBe('model_group')
   })
 
   test('ruleName uses route_to_virtual_model action correctly', () => {
@@ -387,7 +403,7 @@ describe('buildFlowFromData — ruleName propagation', () => {
       makeRoute({
         id: 'r8',
         name: 'VM Redirect',
-        virtualModelId: 'vm-1',
+        virtualModelIds: ['vm-1'],
         conditions: [],
         action: { type: 'route_to_virtual_model', targetId: 'vm-2' },
       }),

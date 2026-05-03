@@ -177,9 +177,21 @@ export function RouteRulePanel({
                           </Badge>
                         )}
                       </div>
-                      {route.virtualModel && (
-                        <div className="text-xs text-muted-foreground mt-0.5">
-                          绑定: {route.virtualModel.displayName || route.virtualModel.name}
+                      {route.virtualModelIds && route.virtualModelIds.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {route.virtualModelIds.slice(0, 3).map((vmId) => {
+                            const vm = vms.find(v => v.id === vmId)
+                            return (
+                              <Badge key={vmId} variant="outline" className="text-[10px] h-4 px-1">
+                                {vm ? (vm.displayName || vm.name) : vmId}
+                              </Badge>
+                            )
+                          })}
+                          {route.virtualModelIds.length > 3 && (
+                            <Badge variant="outline" className="text-[10px] h-4 px-1">
+                              +{route.virtualModelIds.length - 3}
+                            </Badge>
+                          )}
                         </div>
                       )}
                     </div>

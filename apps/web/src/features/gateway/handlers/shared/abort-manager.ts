@@ -60,7 +60,9 @@ export class AbortManager {
     }, ttfbTimeoutMs);
 
     const cleanup = () => {
-      if (this.timeoutId !== null) clearTimeout(this.timeoutId);
+      if (this.timeoutId) {
+        clearTimeout(this.timeoutId);
+      }
       this.timeoutId = null;
       this.clientSignal?.removeEventListener('abort', propagateDisconnect);
     };

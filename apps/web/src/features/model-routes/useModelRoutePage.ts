@@ -76,6 +76,22 @@ export function useModelRoutePage(routes: ModelRoute[]) {
     }
   }, [getRouteFromNodeId])
 
+  // 处理 Flow 节点双击 — 打开编辑/创建对话框
+  const handleNodeDoubleClick = useCallback((_nodeData: unknown, routeId: string | null) => {
+    if (routeId) {
+      // 编辑已有规则
+      const route = routes.find(r => r.id === routeId)
+      if (route) {
+        setEditingRoute(route)
+        setFormDialogOpen(true)
+      }
+    } else {
+      // 从节点面板添加的新节点 — 创建模式
+      setEditingRoute(null)
+      setFormDialogOpen(true)
+    }
+  }, [routes])
+
   return {
     // 状态
     selectedRoute,
@@ -90,6 +106,7 @@ export function useModelRoutePage(routes: ModelRoute[]) {
     handleToggle,
     handleCloseDetail,
     handleNodeClick,
+    handleNodeDoubleClick,
     setFormDialogOpen,
     setSelectedRouteId,
   }

@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react'
 
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, X } from 'lucide-react'
 
 import { useModelGroups, useModelInstances } from '@/features/model-groups/useModelGroups'
 import { useVirtualModels } from '@/features/virtual-models/useVirtualModels'
+import { Badge } from '@/ui/badge'
 import { Button } from '@/ui/button'
 import {
   Dialog,
@@ -89,15 +90,17 @@ interface RuleFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   editingRoute?: ModelRoute | null
+  onSaved?: () => void
 }
 
-export function RuleFormDialog({ open, onOpenChange, editingRoute }: RuleFormDialogProps) {
+export function RuleFormDialog({ open, onOpenChange, editingRoute, onSaved }: RuleFormDialogProps) {
   const isEditing = !!editingRoute
   
   // 表单状态
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [virtualModelId, setVirtualModelId] = useState(NONE_VALUE)
+  const [virtualModelIds, setVirtualModelIds] = useState<string[]>([])
+  const [addVmValue, setAddVmValue] = useState(NONE_VALUE)
   const [priority, setPriority] = useState(0)
   const [enabled, setEnabled] = useState(true)
   const [conditions, setConditions] = useState<RouteCondition[]>([])
@@ -119,7 +122,7 @@ export function RuleFormDialog({ open, onOpenChange, editingRoute }: RuleFormDia
     if (editingRoute) {
       setName(editingRoute.name)
       setDescription(editingRoute.description || '')
-      setVirtualModelId(editingRoute.virtualModelId || NONE_VALUE)
+      setVirtualModelIds(editingRoute.virtualModelIds || [])
       setPriority(editingRoute.priority)
       setEnabled(editingRoute.enabled)
       setConditions(editingRoute.conditions || [])
@@ -141,7 +144,8 @@ export function RuleFormDialog({ open, onOpenChange, editingRoute }: RuleFormDia
   const resetForm = () => {
     setName('')
     setDescription('')
-    setVirtualModelId(NONE_VALUE)
+    setVirtualModelIds([])
+    setAddVmValue(NONE_VALUE)
     setPriority(0)
     setEnabled(true)
     setConditions([])
@@ -170,27 +174,29 @@ export function RuleFormDialog({ open, onOpenChange, editingRoute }: RuleFormDia
     if (targetId) action.targetId = targetId
     if (actionReason) action.reason = actionReason
 
-    const vmId = virtualModelId === NONE_VALUE ? undefined : virtualModelId
-
     const payload = {
       name,
       description: description || undefined,
-      virtualModelId: vmId,
+      virtualModelIds,
       priority,
       enabled,
       conditions,
       action,
     }
 
-    if (isEditing && editingRoute) {
-      await updateRoute.mutateAsync({ id: editingRoute.id, data: payload })
-    } else {
-      await createRoute.mutateAsync(payload)
-    }
-    
-    onOpenChange(false)
-    if (!isEditing) {
-      resetForm()
+    try {
+      if (isEditing && editingRoute) {
+        await updateRoute.mutateAsync({ id: editingRoute.id, data: payload })
+      } else {
+        await createRoute.mutateAsync(payload)
+      }
+      onSaved?.()
+      onOpenChange(false)
+      if (!isEditing) {
+        resetForm()
+      }
+    } catch {
+      // onError handler in mutation already shows toast
     }
   }
 
@@ -249,16 +255,38 @@ export function RuleFormDialog({ open, onOpenChange, editingRoute }: RuleFormDia
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>绑定虚拟模型</Label>
-              <Select 
-                value={virtualModelId} 
-                onValueChange={setVirtualModelId}
-              >
+              <div className="flex flex-wrap gap-1 min-h-[32px] p-1 border rounded bg-background">
+                {virtualModelIds.map((vmId) => {
+                  const vm = vms.find(v => v.id === vmId)
+                  if (!vm) return null
+                  return (
+                    <Badge key={vmId} variant="secondary" className="gap-1 text-xs">
+                      {vm.displayName || vm.name}
+                      <button
+                        type="button"
+                        className="ml-0.5 hover:text-destructive"
+                        onClick={() => setVirtualModelIds(prev => prev.filter(id => id !== vmId))}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  )
+                })}
+                {virtualModelIds.length === 0 && (
+                  <span className="text-xs text-muted-foreground px-1 py-0.5">全局规则</span>
+                )}
+              </div>
+              <Select value={addVmValue} onValueChange={(v) => {
+                if (v !== NONE_VALUE && !virtualModelIds.includes(v)) {
+                  setVirtualModelIds([...virtualModelIds, v])
+                }
+                setAddVmValue(NONE_VALUE)
+              }}>
                 <SelectTrigger>
-                  <SelectValue placeholder="可选，全局规则" />
+                  <SelectValue placeholder="添加虚拟模型..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={NONE_VALUE}>全局规则（不绑定）</SelectItem>
-                  {vms.map((vm) => (
+                  {vms.filter(vm => !virtualModelIds.includes(vm.id)).map((vm) => (
                     <SelectItem key={vm.id} value={vm.id}>
                       {vm.displayName || vm.name}
                     </SelectItem>

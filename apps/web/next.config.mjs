@@ -20,6 +20,9 @@ const nextConfig = {
   env: {
     APP_VERSION: `${pkg.version}+${gitHash}`,
   },
+  logging: {
+    incomingRequests: false,
+  },
 };
 
 export default nextConfig;

@@ -20,6 +20,7 @@ import { jsonrepair } from 'jsonrepair';
 export function parseToolArguments(
   argsString: string,
   logger?: {
+    trace?: (obj: unknown, msg?: string) => void;
     debug?: (obj: unknown, msg?: string) => void;
     warn?: (obj: unknown, msg?: string) => void;
   }
@@ -37,7 +38,7 @@ export function parseToolArguments(
     const parsed = JSON.parse(trimmed);
     // 验证解析结果是对象
     if (typeof parsed === 'object' && parsed !== null) {
-      logger?.debug?.({ argsString: trimmed }, '工具调用参数标准 JSON 解析成功');
+      logger?.trace?.({ argsString: trimmed }, '工具调用参数标准 JSON 解析成功');
       return trimmed;
     }
   } catch (error) {

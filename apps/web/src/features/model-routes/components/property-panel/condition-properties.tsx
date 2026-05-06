@@ -1,0 +1,119 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+
+import type { Node } from '@xyflow/react'
+import { GitBranch } from 'lucide-react'
+
+import { Input } from '@/ui/input'
+import { Label } from '@/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select'
+
+const FIELDS = [
+  { value: 'request.model', label: '模型名 (request.model)' },
+  { value: 'context.apiKeyName', label: 'API Key 名称 (context.apiKeyName)' },
+  { value: 'context.streaming', label: '是否流式 (context.streaming)' },
+  { value: 'context.hour', label: '当前小时 (context.hour)' },
+  { value: 'context.clientType', label: '客户端类型 (context.clientType)' },
+]
+
+const OPERATORS = [
+  { value: 'eq', label: '等于 (eq)' },
+  { value: 'ne', label: '不等于 (ne)' },
+  { value: 'in', label: '在列表中 (in)' },
+  { value: 'starts_with', label: '开头匹配 (starts_with)' },
+  { value: 'exists', label: '存在 (exists)' },
+]
+
+interface ConditionPropertiesProps {
+  node: Node
+  onUpdate: (nodeId: string, data: Record<string, unknown>) => void
+}
+
+export function ConditionProperties({ node, onUpdate }: ConditionPropertiesProps) {
+  const d = node.data as Record<string, unknown>
+  const [label, setLabel] = useState((d.label as string) || '')
+  const [field, setField] = useState((d.field as string) || '')
+  const [operator, setOperator] = useState((d.operator as string) || 'eq')
+  const [value, setValue] = useState(String(d.value ?? ''))
+
+  useEffect(() => {
+    setLabel((d.label as string) || '')
+    setField((d.field as string) || '')
+    setOperator((d.operator as string) || 'eq')
+    setValue(String(d.value ?? ''))
+  }, [node.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const update = (patch: Record<string, unknown>) => {
+    onUpdate(node.id, { label, field, operator, value, ...d, ...patch })
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 text-amber-600 font-semibold text-sm">
+        <GitBranch className="h-4 w-4" />
+        <span>条件节点配置</span>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className="text-xs text-muted-foreground">显示名称</Label>
+        <Input
+          value={label}
+          onChange={e => { setLabel(e.target.value); update({ label: e.target.value }) }}
+          placeholder="条件名称（可选）"
+          className="h-8 text-sm"
+        />
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className="text-xs text-muted-foreground">匹配字段</Label>
+        <Select value={field} onValueChange={v => { setField(v); update({ field: v }) }}>
+          <SelectTrigger className="h-8 text-sm">
+            <SelectValue placeholder="选择字段..." />
+          </SelectTrigger>
+          <SelectContent>
+            {FIELDS.map(f => (
+              <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className="text-xs text-muted-foreground">操作符</Label>
+        <Select value={operator} onValueChange={v => { setOperator(v); update({ operator: v }) }}>
+          <SelectTrigger className="h-8 text-sm">
+            <SelectValue placeholder="选择操作符..." />
+          </SelectTrigger>
+          <SelectContent>
+            {OPERATORS.map(op => (
+              <SelectItem key={op.value} value={op.value}>{op.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {operator !== 'exists' && (
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">
+            {operator === 'in' ? '值（逗号分隔）' : '值'}
+          </Label>
+          <Input
+            value={value}
+            onChange={e => { setValue(e.target.value); update({ value: e.target.value }) }}
+            placeholder={operator === 'in' ? '18,19,20,21,22' : operator === 'starts_with' ? 'premium-' : 'gpt-4'}
+            className="h-8 text-sm font-mono"
+          />
+          {operator === 'in' && (
+            <p className="text-xs text-muted-foreground">多个值用英文逗号分隔</p>
+          )}
+        </div>
+      )}
+
+      <div className="pt-2 border-t text-xs text-muted-foreground space-y-1">
+        <p>True → 下一节点或目标</p>
+        <p>False → 拒绝节点或其他分支</p>
+      </div>
+    </div>
+  )
+}

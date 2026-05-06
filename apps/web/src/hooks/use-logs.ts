@@ -51,6 +51,13 @@ export interface LogMetadata {
     hasToolInteraction?: boolean;
   };
 
+  request?: {
+    temperature?: number;
+    maxTokens?: number;
+    topP?: number;
+    thinkingMode?: boolean;
+  };
+
   performance?: {
     latencyTier?: 'fast' | 'normal' | 'slow';
     gatewayOverheadMs?: number;
@@ -111,6 +118,7 @@ export interface LogListItem {
   requestPath: string | null
   createdAt: string
   isComplete: boolean
+  thinkingMode?: boolean | null
 }
 
 

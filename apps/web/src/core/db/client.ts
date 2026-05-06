@@ -64,6 +64,9 @@ async function createPgliteDatabase(dataDir: string): Promise<PostgresDb> {
   logger.trace({ dataDir }, '[DB] 使用 PGlite 数据库');
 
   const pgliteClient = new PGlite(dataDir);
+  // drizzle-orm/pglite 会把时间戳字符串当 UTC 处理（拼接 +0000），
+  // 需确保 PGlite 会话时区为 UTC，否则 now() 返回本地时间，导致 8 小时偏差。
+  await pgliteClient.exec("SET timezone = 'UTC'");
   const db = drizzlePglite(pgliteClient, { schema }) as unknown as PostgresDb;
   setDbClient(db);
 
@@ -114,7 +117,7 @@ async function createDatabaseIfNotExists(options: DatabaseOptions): Promise<void
   const createClient = postgres(createConnString, { max: 1 });
   try {
     await createClient.unsafe(`CREATE DATABASE "${options.database}"`);
-    logger.trace(`[DB] 数据库 "${options.database}" 创建成功`);
+    logger.trace({ database: options.database }, '[DB] 数据库创建成功');
   } catch (error) {
     if (error instanceof Error && 'code' in error && error.code === '42P04') {
       // 静默处理：数据库已存在
@@ -148,7 +151,7 @@ async function initializePostgresDatabase(options: DatabaseOptions): Promise<voi
   try {
     const dbExists = await checkDatabaseExists(options);
     if (!dbExists) {
-      logger.trace(`[DB] 数据库 "${options.database}" 不存在，正在创建`);
+      logger.trace({ database: options.database }, '[DB] 数据库不存在，正在创建');
       await createDatabaseIfNotExists(options);
     }
 

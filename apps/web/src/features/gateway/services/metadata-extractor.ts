@@ -394,10 +394,20 @@ function extractRequestFeatures(standardRequestBody?: unknown): LogMetadata['req
     return null;
   }
 
+  const r = body.reasoning;
+  const thinkingMode =
+    r != null && (
+      r.enabled === true ||
+      r.enable_thinking === true ||
+      (typeof r.effort === 'string') ||
+      (typeof r.max_tokens === 'number' && r.max_tokens > 0)
+    );
+
   return {
     temperature: body.temperature,
     maxTokens: body.max_tokens,
     topP: body.top_p,
+    ...(thinkingMode && { thinkingMode: true }),
   };
 }
 

@@ -131,6 +131,7 @@ logsRoutes.get('/', async (c) => {
               requestPath: requestLogs.requestPath,
               createdAt: requestLogs.createdAt,
               isComplete: requestLogs.isComplete,
+              thinkingMode: sql<boolean | null>`((${requestLogs.metadata}->'request'->>'thinkingMode')::boolean)`,
             })
             .from(requestLogs)
             .where(and(...conditions))
@@ -159,6 +160,7 @@ logsRoutes.get('/', async (c) => {
               requestPath: requestLogs.requestPath,
               createdAt: requestLogs.createdAt,
               isComplete: requestLogs.isComplete,
+              thinkingMode: sql<boolean | null>`((${requestLogs.metadata}->'request'->>'thinkingMode')::boolean)`,
             })
             .from(requestLogs)
             .orderBy(desc(requestLogs.createdAt))

@@ -82,6 +82,7 @@ export interface LogMetadata {
     temperature?: number;
     maxTokens?: number;
     topP?: number;
+    thinkingMode?: boolean;           // 是否开启思考模式
   };
 
   // 路由追踪
@@ -190,14 +191,15 @@ export const requestLogs = pgTable('request_logs', {
   streamContent: jsonb('stream_content').$type<StreamContent>(),
   
   // 时间戳
-  streamStartedAt: timestamp('stream_started_at'),
-  streamCompletedAt: timestamp('stream_completed_at'),
-  lastUpdatedAt: timestamp('last_updated_at').defaultNow(),
-  
+  // 使用 $defaultFn 替代 defaultNow()，避免 PGlite 的 NOW() 返回本地时间导致时区偏差
+  streamStartedAt: timestamp('stream_started_at').$defaultFn(() => new Date()),
+  streamCompletedAt: timestamp('stream_completed_at').$defaultFn(() => new Date()),
+  lastUpdatedAt: timestamp('last_updated_at').$defaultFn(() => new Date()),
+
   // 完成标记（用于查询优化）
   isComplete: boolean('is_complete').default(false).notNull(),
-  
-  createdAt: timestamp('created_at').defaultNow().notNull(),
+
+  createdAt: timestamp('created_at').$defaultFn(() => new Date()).notNull(),
 }, (table) => ({
   // 添加常用查询索引
   virtualKeyIdIdx: index('idx_request_logs_virtual_key_id').on(table.virtualKeyId),

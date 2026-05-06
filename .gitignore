@@ -47,6 +47,8 @@ Thumbs.db
 *.sqlite3
 .pglite/
 **/.pglite/
+.pglite-test/
+.pglite-test*/
 
 # Bun
 .bun/

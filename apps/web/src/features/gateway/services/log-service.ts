@@ -221,6 +221,8 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
       // 无论流式还是非流式，都标记为已完成
       streamStatus: 'completed',
       isComplete: true,
+      // 显式设置 UTC 时间戳，避免 PGlite defaultNow() 时区偏差
+      createdAt: new Date(),
       streamStartedAt: params.streaming ? new Date(Date.now() - params.latencyMs) : new Date(),
       streamCompletedAt: new Date(),
       lastUpdatedAt: new Date(),
@@ -350,6 +352,8 @@ export async function logStreamStart(params: {
         targetProtocol: params.targetProtocol,
         conversationId: params.conversationId,
         metadata: metadata as any,
+        // 显式设置 UTC 时间戳，避免 PGlite defaultNow() 时区偏差
+        createdAt: new Date(),
         streamStartedAt: new Date(),
       })
       .returning({ id: requestLogs.id });
@@ -448,6 +452,8 @@ export async function logRequestStart(params: {
       targetProtocol: params.targetProtocol,
       conversationId: params.conversationId,
       metadata: metadata as any,
+      // 显式设置 UTC 时间戳，避免 PGlite defaultNow() 时区偏差
+      createdAt: new Date(),
       streamStartedAt: new Date(),
     }).returning({ id: requestLogs.id });
     logger.debug({ logId: result[0].id }, 'Request log created');

@@ -149,6 +149,11 @@ export function LogTable({
                         流式
                       </Badge>
                     )}
+                    {log.thinkingMode && (
+                      <Badge variant="outline" className="text-xs h-5 px-1.5 text-violet-600 border-violet-300">
+                        思考
+                      </Badge>
+                    )}
                     {log.retryCount > 0 && (
                       <Badge variant="outline" className="text-xs h-5 px-1.5 text-orange-600 border-orange-300">
                         重试×{log.retryCount}

@@ -883,6 +883,14 @@ export function MetadataSections({ log, isPending, isSuccess, contentFeatures, f
             }
           />
         )}
+        <InfoRow
+          label="思考模式"
+          value={
+            log.metadata?.request?.thinkingMode
+              ? <span className="text-violet-600 font-semibold">开启</span>
+              : <span className="text-muted-foreground">关闭</span>
+          }
+        />
         <InfoRow label="流式传输" value={log.streaming ? '是' : '否'} />
         <InfoRow
           label="重试次数"

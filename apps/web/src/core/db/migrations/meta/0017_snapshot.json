@@ -341,11 +341,12 @@
           "primaryKey": false,
           "notNull": false
         },
-        "virtual_model_id": {
-          "name": "virtual_model_id",
-          "type": "uuid",
+        "virtual_model_ids": {
+          "name": "virtual_model_ids",
+          "type": "text[]",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true,
+          "default": "'{}'::text[]"
         },
         "conditions": {
           "name": "conditions",
@@ -396,21 +397,7 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {
-        "model_routes_virtual_model_id_virtual_models_id_fk": {
-          "name": "model_routes_virtual_model_id_virtual_models_id_fk",
-          "tableFrom": "model_routes",
-          "tableTo": "virtual_models",
-          "columnsFrom": [
-            "virtual_model_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},

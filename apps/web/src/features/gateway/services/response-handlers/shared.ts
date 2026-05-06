@@ -237,8 +237,8 @@ export class StreamResponseCollector {
     if (json.choices?.[0]?.delta?.reasoning_content) {
       reasoning = json.choices[0].delta.reasoning_content;
     }
-    // Anthropic 格式 - thinking_delta 事件
-    else if (json.type === 'content_block_delta' && json.delta?.type === 'thinking_delta') {
+    // Anthropic 格式 - thinking_delta / thinking 事件
+    else if (json.type === 'content_block_delta' && (json.delta?.type === 'thinking_delta' || json.delta?.type === 'thinking')) {
       reasoning = json.delta.thinking;
     }
 

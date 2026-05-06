@@ -26,7 +26,7 @@ export function convertStreamEventToChunk(event: AnthropicStreamEvent): StreamCh
         if (!cleanedText) return null;
         return { id: '', object: 'chat.completion.chunk', created: Math.floor(Date.now() / 1000), model: '', choices: [{ index: event.index || 0, delta: { content: cleanedText }, finish_reason: null }] };
       }
-      if (event.delta?.type === 'thinking') {
+      if (event.delta?.type === 'thinking_delta' || event.delta?.type === 'thinking') {
         const cleanedThinking = event.delta.thinking ? sanitizeContent(event.delta.thinking) : '';
         if (!cleanedThinking) return null;
         return { id: '', object: 'chat.completion.chunk', created: Math.floor(Date.now() / 1000), model: '', choices: [{ index: event.index || 0, delta: { reasoning_content: cleanedThinking }, finish_reason: null }] };
@@ -145,7 +145,7 @@ export function adaptStreamToAnthropic(stream: ReadableStream, ctx: TransformerC
                   controller.enqueue(encoder.encode(`event: content_block_start\ndata: ${JSON.stringify({ type: 'content_block_start', index: thinkingBlockIndex, content_block: { type: 'thinking', thinking: '' } })}\n\n`));
                   sentThinkingStart = true;
                 }
-                controller.enqueue(encoder.encode(`event: content_block_delta\ndata: ${JSON.stringify({ type: 'content_block_delta', index: thinkingBlockIndex, delta: { type: 'thinking', thinking: delta.reasoning_content } })}\n\n`));
+                controller.enqueue(encoder.encode(`event: content_block_delta\ndata: ${JSON.stringify({ type: 'content_block_delta', index: thinkingBlockIndex, delta: { type: 'thinking_delta', thinking: delta.reasoning_content } })}\n\n`));
               }
 
               if (delta?.content) {

@@ -847,6 +847,8 @@ export function MetadataSections({ log, isPending, isSuccess, contentFeatures, f
             gatewayOverheadMs={log.metadata.performance.gatewayOverheadMs}
             providerTtfbMs={log.metadata.performance.providerTtfbMs}
             streamDurationMs={log.metadata.performance.streamDurationMs}
+            ttfbToFirstThinkingMs={log.metadata.performance.ttfbToFirstThinkingMs}
+            ttfbToFirstTextMs={log.metadata.performance.ttfbToFirstTextMs}
             thinkingDurationMs={log.metadata.performance.thinkingDurationMs}
             formatDuration={formatDuration}
           />
@@ -1177,6 +1179,8 @@ interface LatencyBreakdownProps {
   gatewayOverheadMs?: number
   providerTtfbMs?: number
   streamDurationMs?: number
+  ttfbToFirstThinkingMs?: number
+  ttfbToFirstTextMs?: number
   thinkingDurationMs?: number
   formatDuration: (ms: number) => string
 }
@@ -1186,6 +1190,8 @@ function LatencyBreakdown({
   gatewayOverheadMs,
   providerTtfbMs,
   streamDurationMs,
+  ttfbToFirstThinkingMs,
+  ttfbToFirstTextMs,
   thinkingDurationMs,
   formatDuration,
 }: LatencyBreakdownProps) {
@@ -1212,16 +1218,48 @@ function LatencyBreakdown({
       bgColor: 'bg-amber-500',
     })
   }
-  // 有思考时长时，将流式传输拆分为"思考"和"文本生成"两段
+
   if (streamDurationMs != null && streamDurationMs > 0) {
-    if (thinkingDurationMs != null && thinkingDurationMs > 0) {
+    const isThinking = thinkingDurationMs != null && thinkingDurationMs > 0
+
+    if (isThinking && ttfbToFirstThinkingMs != null) {
+      // 思考 + 流式：首字时间 = providerTtfbMs + ttfbToFirstThinkingMs
+      // HTTP头 → 首thinking token（首字边界）
+      segments.push({
+        label: '首思考等待',
+        ms: ttfbToFirstThinkingMs,
+        color: 'text-orange-600',
+        bgColor: 'bg-orange-400',
+      })
+      // 首thinking token → 首text token（思考流）
       segments.push({
         label: '思考',
         ms: thinkingDurationMs,
         color: 'text-violet-600',
         bgColor: 'bg-violet-500',
       })
-      const textGenMs = streamDurationMs - thinkingDurationMs
+      // 首text token → 流结束（纯文本生成）
+      const textGenMs = ttfbToFirstTextMs != null
+        ? streamDurationMs - ttfbToFirstTextMs
+        : streamDurationMs - ttfbToFirstThinkingMs - thinkingDurationMs
+      if (textGenMs > 0) {
+        segments.push({
+          label: '文本生成',
+          ms: textGenMs,
+          color: 'text-green-600',
+          bgColor: 'bg-green-500',
+        })
+      }
+    } else if (ttfbToFirstTextMs != null && ttfbToFirstTextMs > 0) {
+      // 非思考 + 流式：首字时间 = providerTtfbMs + ttfbToFirstTextMs
+      // HTTP头 → 首text token（首字边界）
+      segments.push({
+        label: '首字等待',
+        ms: ttfbToFirstTextMs,
+        color: 'text-amber-500',
+        bgColor: 'bg-amber-400',
+      })
+      const textGenMs = streamDurationMs - ttfbToFirstTextMs
       if (textGenMs > 0) {
         segments.push({
           label: '文本生成',
@@ -1231,6 +1269,7 @@ function LatencyBreakdown({
         })
       }
     } else {
+      // 无首token时间数据，整体显示
       segments.push({
         label: '流式传输',
         ms: streamDurationMs,
@@ -1238,6 +1277,7 @@ function LatencyBreakdown({
         bgColor: 'bg-green-500',
       })
     }
+    // 非流式：不加streaming段，providerTtfbMs 已包含网络+推理全部时间
   }
 
   if (segments.length === 0) return null

@@ -1,4 +1,4 @@
--- 修复旧版数据库中 model_routes.virtual_model_ids → virtual_model_id 列名不一致问题
+-- 将 model_routes.virtual_model_id (uuid FK) 迁移到 virtual_model_ids (text[] 数组)
 -- 仅当旧列存在且新列不存在时执行，对已正确迁移的库无副作用
 DO $$
 BEGIN
@@ -6,30 +6,24 @@ BEGIN
     SELECT 1 FROM information_schema.columns
     WHERE table_schema = 'public'
       AND table_name = 'model_routes'
-      AND column_name = 'virtual_model_ids'
+      AND column_name = 'virtual_model_id'
   ) AND NOT EXISTS (
     SELECT 1 FROM information_schema.columns
     WHERE table_schema = 'public'
       AND table_name = 'model_routes'
-      AND column_name = 'virtual_model_id'
+      AND column_name = 'virtual_model_ids'
   ) THEN
-    -- 删除旧外键约束（如果存在）
-    IF EXISTS (
-      SELECT 1 FROM information_schema.table_constraints
-      WHERE constraint_name = 'model_routes_virtual_model_ids_virtual_models_id_fk'
-        AND table_name = 'model_routes'
-    ) THEN
-      ALTER TABLE "model_routes" DROP CONSTRAINT "model_routes_virtual_model_ids_virtual_models_id_fk";
-    END IF;
+    -- 添加新数组列
+    ALTER TABLE "model_routes" ADD COLUMN "virtual_model_ids" text[] DEFAULT '{}' NOT NULL;
 
-    -- 重命名列
-    ALTER TABLE "model_routes" RENAME COLUMN "virtual_model_ids" TO "virtual_model_id";
+    -- 迁移现有数据
+    UPDATE "model_routes" SET "virtual_model_ids" = ARRAY["virtual_model_id"]::text[] WHERE "virtual_model_id" IS NOT NULL;
 
-    -- 重新添加外键
-    ALTER TABLE "model_routes"
-      ADD CONSTRAINT "model_routes_virtual_model_id_virtual_models_id_fk"
-      FOREIGN KEY ("virtual_model_id")
-      REFERENCES "public"."virtual_models"("id")
-      ON DELETE CASCADE ON UPDATE NO ACTION;
+    -- 删除外键约束（如果存在）
+    ALTER TABLE "model_routes" DROP CONSTRAINT IF EXISTS "model_routes_virtual_model_id_virtual_models_id_fk";
+
+    -- 删除旧列
+    ALTER TABLE "model_routes" DROP COLUMN "virtual_model_id";
   END IF;
+  -- 如果 virtual_model_ids 已存在（text[] 数组）：已是正确状态，无需操作
 END $$;

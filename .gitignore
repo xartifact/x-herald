@@ -74,3 +74,4 @@ SWARM_PLAN.*
 # Playwright
 test-results/
 playwright-report/
+.gitnexus

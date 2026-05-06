@@ -1,6 +1,6 @@
 'use client'
 
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useState } from 'react'
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
 
 import {
   ReactFlow,
@@ -29,6 +29,7 @@ import { ConditionNode } from './nodes/condition-node'
 import { ModelTriggerNode } from './nodes/model-trigger-node'
 import { StrategyNode } from './nodes/strategy-node'
 import { TargetNode } from './nodes/target-node'
+import { getLayoutedElements } from '../core/layout-flow'
 
 const nodeTypes = {
   modelTrigger: ModelTriggerNode,
@@ -92,11 +93,17 @@ const FlowCanvas = forwardRef<FlowEditorHandle, FlowCanvasProps>(function FlowCa
   { initialNodes, initialEdges, refreshKey, onNodesEdgesChange, onNodeSelect },
   ref,
 ) {
-  const { screenToFlowPosition, deleteElements } = useReactFlow()
+  const { screenToFlowPosition, deleteElements, fitView } = useReactFlow()
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [addPosition, setAddPosition] = useState({ x: 300, y: 300 })
+
+  // Refs to always point to latest state values, avoiding stale closures in setTimeout callbacks
+  const nodesRef = useRef(nodes)
+  nodesRef.current = nodes
+  const edgesRef = useRef(edges)
+  edgesRef.current = edges
 
   // 暴露命令式 API 给父组件
   useImperativeHandle(ref, () => ({
@@ -119,7 +126,20 @@ const FlowCanvas = forwardRef<FlowEditorHandle, FlowCanvasProps>(function FlowCa
       c => c.type === 'remove' || (c.type === 'position' && c.dragging),
     )
     if (isUserAction) onNodesEdgesChange([], [])
-  }, [onNodesChange, onNodesEdgesChange])
+    // Only trigger layout on node removal, not on drag
+    if (changes.some(c => c.type === 'remove')) {
+      setTimeout(() => {
+        const remainingNodes = nodesRef.current
+        const currentEdges = edgesRef.current.filter(e =>
+          remainingNodes.some(n => n.id === e.source) && remainingNodes.some(n => n.id === e.target)
+        )
+        const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(remainingNodes, currentEdges)
+        setNodes(layoutedNodes)
+        setEdges(layoutedEdges)
+        fitView({ duration: 200 })
+      }, 0)
+    }
+  }, [onNodesChange, onNodesEdgesChange, setEdges, fitView])
 
   const handleEdgesChange = useCallback((changes: EdgeChange[]) => {
     onEdgesChange(changes)
@@ -131,6 +151,15 @@ const FlowCanvas = forwardRef<FlowEditorHandle, FlowCanvasProps>(function FlowCa
     (params: Connection) => {
       setEdges(eds => addEdge(params, eds))
       onNodesEdgesChange([], [])
+      // Trigger layout after connecting
+      setTimeout(() => {
+        const newEdge = addEdge(params, edgesRef.current)
+        const currentEdges = newEdge.length > edgesRef.current.length ? newEdge : edgesRef.current
+        const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(nodesRef.current, currentEdges)
+        setNodes(layoutedNodes)
+        fitView({ duration: 200 })
+        setEdges(layoutedEdges)
+      }, 0)
     },
     [setEdges, onNodesEdgesChange],
   )
@@ -166,6 +195,18 @@ const FlowCanvas = forwardRef<FlowEditorHandle, FlowCanvasProps>(function FlowCa
       setNodes(nds => [...nds, newNode])
       setAddDialogOpen(false)
       onNodesEdgesChange([], [])
+      // Trigger layout after adding node
+      setTimeout(() => {
+        // nodesRef.current may already include newNode (if React re-rendered before setTimeout fires)
+        // so check before appending to avoid duplication
+        const alreadyHasNewNode = nodesRef.current.some(n => n.id === newNode.id)
+        const currentNodes = alreadyHasNewNode ? nodesRef.current : [...nodesRef.current, newNode]
+        const currentEdges = edgesRef.current
+        const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(currentNodes, currentEdges)
+        setNodes(layoutedNodes)
+        fitView({ duration: 200 })
+        setEdges(layoutedEdges)
+      }, 0)
     },
     [addPosition, setNodes, onNodesEdgesChange],
   )

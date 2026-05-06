@@ -1,5 +1,6 @@
 import type { Node, Edge } from '@xyflow/react'
 
+import { getLayoutedElements } from './layout-flow'
 import type { ModelRoute } from '../types'
 
 export interface VirtualModelFlowData {
@@ -61,11 +62,11 @@ export function buildFlowFromData(
   const instanceMap = new Map(instances.map(i => [i.id, i.name]))
 
   // VM 入口节点（顶部行）
-  vms.forEach((vm, index) => {
+  vms.forEach((vm) => {
     nodes.push({
       id: `vm-${vm.id}`,
       type: 'modelTrigger',
-      position: { x: index * 260, y: 0 },
+      position: { x: 0, y: 0 },
       data: {
         label: vm.displayName || vm.name,
         modelName: vm.name,
@@ -77,8 +78,7 @@ export function buildFlowFromData(
   // 按优先级排序路由
   const sortedRoutes = [...routes].sort((a, b) => a.priority - b.priority)
 
-  sortedRoutes.forEach((route, colIndex) => {
-    const baseX = colIndex * 320
+  sortedRoutes.forEach((route) => {
     const opacityStyle = route.enabled ? undefined : { opacity: 0.4 }
     const conditions = route.conditions || []
     const condCount = conditions.length
@@ -87,12 +87,11 @@ export function buildFlowFromData(
     for (let i = 0; i < condCount; i++) {
       const cond = conditions[i]
       const condNodeId = `cond-${route.id}-${i}`
-      const y = 200 + i * 160
 
       nodes.push({
         id: condNodeId,
         type: 'condition',
-        position: { x: baseX, y },
+        position: { x: 0, y: 0 },
         data: {
           label: i === 0 ? (route.name || '条件') : `条件 ${i + 1}`,
           field: cond.field,
@@ -125,7 +124,6 @@ export function buildFlowFromData(
     }
 
     // 叶节点（目标 / 拒绝 / 降级）
-    const leafY = 200 + condCount * 160
     const action = route.action
 
     const connectLeaf = (leafId: string) => {
@@ -154,7 +152,7 @@ export function buildFlowFromData(
       nodes.push({
         id: leafId,
         type: 'reject',
-        position: { x: baseX, y: leafY },
+        position: { x: 0, y: 0 },
         data: { label: '拒绝', strategyType: 'reject', reason: action.reason || '', routeId: route.id },
         style: opacityStyle,
       })
@@ -164,7 +162,7 @@ export function buildFlowFromData(
       nodes.push({
         id: leafId,
         type: 'fallback',
-        position: { x: baseX, y: leafY },
+        position: { x: 0, y: 0 },
         data: { label: '降级', strategyType: 'fallback', routeId: route.id },
         style: opacityStyle,
       })
@@ -176,7 +174,7 @@ export function buildFlowFromData(
       nodes.push({
         id: leafId,
         type: 'target',
-        position: { x: baseX, y: leafY },
+        position: { x: 0, y: 0 },
         data: {
           label: typeLabel,
           actionType: action.type,
@@ -193,5 +191,5 @@ export function buildFlowFromData(
     }
   })
 
-  return { nodes, edges }
+  return getLayoutedElements(nodes, edges, 'TB')
 }

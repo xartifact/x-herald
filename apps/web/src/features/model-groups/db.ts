@@ -147,9 +147,6 @@ export interface InstanceConfig {
     preserveFields?: string[];  // 保留的字段（覆盖默认清理）
     additionalBannedFields?: string[];  // 额外清理的字段
   };
-
-  // 是否支持 extended thinking (Claude)
-  supportsThinking?: boolean;
 }
 
 export const modelInstances = pgTable('model_instances', {

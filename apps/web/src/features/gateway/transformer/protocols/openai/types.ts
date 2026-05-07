@@ -44,6 +44,7 @@ export interface OpenAIRequest {
   };
   stop?: string | string[];
   seed?: number;
+  reasoning_effort?: 'low' | 'medium' | 'high';
 }
 
 // ==================== 流式类型 ====================

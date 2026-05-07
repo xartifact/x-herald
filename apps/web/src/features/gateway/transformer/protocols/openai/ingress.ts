@@ -34,6 +34,9 @@ export function normalizeOpenAIRequest(
     stream_options: openaiReq.stream_options,
     response_format: openaiReq.response_format,
     output_config: outputConfig,
+    reasoning: openaiReq.reasoning_effort
+      ? { effort: openaiReq.reasoning_effort, enabled: true }
+      : undefined,
     metadata: {
       originalProvider: 'openai',
       ...ctx.metadata,

@@ -8,11 +8,11 @@ import { getTransformer } from '../transformer';
 import {
   logRequest,
   upgradeToStreamLog,
-  updateStreamProgress,
   finalizeStreamLog,
   markStreamFailed,
   markStreamAborted,
 } from './log-service';
+import { logEventBus } from './log-event-bus';
 import { extractMetadata } from './metadata-extractor';
 import {
   StreamResponseCollector,
@@ -63,6 +63,7 @@ interface ResponseHandlerParams {
     instanceId?: string;
     actualModelName?: string;
     strategy?: string;
+    responseModelName?: string;
   };
 }
 
@@ -340,7 +341,10 @@ export async function handleNonStreamingResponse(
     gatewayOverheadMs: preprocessEndTime - startTime,
     providerTtfbMs: providerTtfbTime - preprocessEndTime,
     retryCount: params.retryCount,
-    routingTrace: params.routingTrace,
+    routingTrace: {
+      ...params.routingTrace,
+      responseModelName: providerResponseData?.model ?? undefined,
+    },
   });
 
   // 模型映射时将响应体中的 model 字段回写为客户端请求的原始模型名
@@ -383,14 +387,26 @@ export async function handleStreamingResponse(
   const logId = params.logId || 'temp-' + Date.now();
   await upgradeToStreamLog(logId);
 
+  // 通知实时面板：流式请求已开始
+  logEventBus.emitLog({
+    event: 'started',
+    logId,
+    modelName: resolvedModelName || originalModelName || 'unknown',
+    originalModelName: originalModelName ?? undefined,
+    providerName: provider.name,
+    virtualKeyName: virtualKey.name ?? undefined,
+    startTime,
+    incomingProtocol,
+  });
+
   // 创建三个收集器，分别收集响应链路的三个阶段
   const providerCollector = new StreamResponseCollector();
   const standardCollector = new StreamResponseCollector();
   const clientCollector = new StreamResponseCollector();
 
-  // Phase 2: 定期更新配置
-  let lastUpdateTime = Date.now();
-  const UPDATE_INTERVAL = parseInt(process.env.LOG_UPDATE_INTERVAL_MS || '5000', 10); // 默认 5 秒
+  // chunk 事件节流：每 N 个 chunk 或每 500ms emit 一次，避免频繁触发
+  let chunkEmitCount = 0;
+  let lastChunkEmitTime = Date.now();
 
   // 提前提取响应头（流式响应在开始时即可获取）
   const providerResponseHeaders = extractProviderResponseHeaders(response);
@@ -555,6 +571,7 @@ export async function handleStreamingResponse(
         metadata.routing = {
           requestedModel: params.originalModelName,
           ...params.routingTrace,
+          responseModelName: providerCollector.getProviderModel() ?? params.routingTrace?.responseModelName,
         };
       }
 
@@ -588,6 +605,17 @@ export async function handleStreamingResponse(
         retryCount: params.retryCount,
         ttfbToFirstThinkingMs,
         ttfbToFirstTextMs,
+        thinkingDurationMs,
+      });
+
+      // 通知实时面板：流已完成
+      logEventBus.emitLog({
+        event: 'completed',
+        logId,
+        status,
+        inputTokens: usage.inputTokens,
+        outputTokens: usage.outputTokens,
+        latencyMs: now - startTime,
         thinkingDurationMs,
       });
     } catch (error) {
@@ -629,22 +657,21 @@ export async function handleStreamingResponse(
           // Phase 1: 完整收集（无截断）
           clientCollector.processEvent(data);
 
-          // Phase 2: 定期更新日志
-          const now = Date.now();
-          if (now - lastUpdateTime > UPDATE_INTERVAL) {
-            const progress = clientCollector.getProgress();
-            const partialContent = clientCollector.getFullContent();
-
-            // 异步更新，不阻塞流
-            updateStreamProgress(logId, progress, {
-              thinkingBlocks: partialContent.thinkingBlocks,
-              contentChunks: partialContent.contentChunks,
-              // 不在增量更新中发送所有 chunks（节省写入成本）
-            }).catch((err) => {
-              logger.warn({ error: err, logId }, 'Stream progress update failed');
+          // 节流：每 10 个 chunk 或每 500ms 发送一次实时事件（不写 DB）
+          chunkEmitCount++;
+          const nowEmit = Date.now();
+          if (chunkEmitCount % 10 === 0 || nowEmit - lastChunkEmitTime >= 500) {
+            const usage = clientCollector.getUsage();
+            const fullContent = clientCollector.getFullContent();
+            logEventBus.emitLog({
+              event: 'chunk',
+              logId,
+              outputTokens: usage.outputTokens,
+              totalChunks: chunkEmitCount,
+              hasThinking: fullContent.thinkingBlocks.length > 0,
+              elapsedMs: nowEmit - startTime,
             });
-
-            lastUpdateTime = now;
+            lastChunkEmitTime = nowEmit;
           }
         }
       }
@@ -675,10 +702,11 @@ export async function handleStreamingResponse(
     params.request.signal.addEventListener('abort', async () => {
       logger.info({ logId }, 'Client disconnected, finalizing stream log');
       if (streamIdleTimer) clearTimeout(streamIdleTimer);
-      // 客户端断开时，完成日志记录（使用已收集的数据）
-      // isLogFinalized 标记会防止 flush() 重复调用
-      await finalizeLog('success');
-    }, { once: true }); // 使用 once: true 确保只触发一次
+      // 先保存已收集的部分数据（status=failure），再覆盖 streamStatus=aborted
+      await finalizeLog('failure');
+      await markStreamAborted(logId);
+      logEventBus.emitLog({ event: 'aborted', logId });
+    }, { once: true });
   }
 
   return new Response(finalStream, {

@@ -96,6 +96,7 @@ export interface LogMetadata {
     instanceId?: string;           // 选中的实例 ID
     actualModelName?: string;      // 实际发送给 Provider 的模型名
     strategy?: string;             // 决策策略
+    responseModelName?: string;    // Provider 响应中的实际模型名
   };
 
   // 错误和重试

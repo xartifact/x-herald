@@ -79,6 +79,7 @@ export interface LogMetadata {
     instanceId?: string;
     actualModelName?: string;
     strategy?: string;
+    responseModelName?: string;
   };
 
   [key: string]: unknown;
@@ -119,6 +120,7 @@ export interface LogListItem {
   createdAt: string
   isComplete: boolean
   thinkingMode?: boolean | null
+  responseModelName?: string | null
 }
 
 

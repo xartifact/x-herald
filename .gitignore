@@ -1,6 +1,10 @@
 # Worktrees
 .worktrees/
 
+# Dev server instance lock
+.xllm-server.pid
+**/.xllm.pid
+
 # Dependencies
 node_modules/
 .pnp

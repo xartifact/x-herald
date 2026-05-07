@@ -1,3 +1,4 @@
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -56,12 +57,61 @@ function getMigrationsFolder(): string {
 
 // ─── PGlite 路径 ────────────────────────────────────────────────────────────
 
+const PGLITE_LOCK_FILE = '.xllm.pid';
+
+/**
+ * 获取 PGlite 文件锁。
+ * 利用 O_EXCL 原子性写入防止多实例（Turbopack 多 worker 线程）同时打开同一目录。
+ * 返回 true 表示成功获取锁，false 表示当前有另一实例正在运行。
+ */
+function acquirePgliteLock(dataDir: string): boolean {
+  const lockPath = path.join(dataDir, PGLITE_LOCK_FILE);
+  try {
+    // 检查锁文件是否已存在
+    if (fs.existsSync(lockPath)) {
+      const existingPid = parseInt(fs.readFileSync(lockPath, 'utf-8').trim(), 10);
+      // 同一进程内（Turbopack worker 线程重载）：放行，复用同一数据目录
+      if (existingPid === process.pid) return true;
+      // 不同进程：检查是否仍在运行
+      try {
+        process.kill(existingPid, 0); // 不发信号，只检查进程是否存在
+        logger.warn({ existingPid }, '[DB] PGlite 已被另一进程占用，跳过初始化');
+        return false;
+      } catch {
+        // 进程已死，清除残留锁
+        fs.unlinkSync(lockPath);
+      }
+    }
+    fs.mkdirSync(dataDir, { recursive: true });
+    fs.writeFileSync(lockPath, String(process.pid));
+    // 注册进程退出时清理锁文件
+    const cleanup = () => { try { fs.unlinkSync(lockPath); } catch { /* ignore */ } };
+    process.once('exit', cleanup);
+    process.once('SIGINT', () => { cleanup(); process.exit(0); });
+    process.once('SIGTERM', () => { cleanup(); process.exit(0); });
+    return true;
+  } catch (err) {
+    logger.warn({ err }, '[DB] PGlite 锁文件操作失败，继续尝试初始化');
+    return true;
+  }
+}
+
 async function createPgliteDatabase(dataDir: string): Promise<PostgresDb> {
   const { PGlite } = await import('@electric-sql/pglite');
   const { drizzle: drizzlePglite } = await import('drizzle-orm/pglite');
   const { migrate: migratePglite } = await import('drizzle-orm/pglite/migrator');
 
   logger.trace({ dataDir }, '[DB] 使用 PGlite 数据库');
+
+  if (!acquirePgliteLock(dataDir)) {
+    // 另一进程持有锁：等待它完成初始化后复用其 client
+    const deadline = Date.now() + 10_000;
+    while (Date.now() < deadline) {
+      await new Promise(r => setTimeout(r, 200));
+      if (getDbClient()) return getDbClient()!;
+    }
+    throw new Error('[DB] 等待 PGlite 初始化超时（另一进程持有锁）');
+  }
 
   const pgliteClient = new PGlite(dataDir);
   // drizzle-orm/pglite 会把时间戳字符串当 UTC 处理（拼接 +0000），

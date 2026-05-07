@@ -74,7 +74,12 @@ export function extractMetadata(params: MetadataExtractionParams): LogMetadata {
     }
 
     // 6. 提取请求特征
-    const requestInfo = extractRequestFeatures(params.standardRequestBody);
+    const requestInfo = extractRequestFeatures(
+      params.standardRequestBody,
+      params.requestBody,
+      params.responseBody,
+      params.standardResponseBody,
+    );
     if (requestInfo) {
       metadata.request = requestInfo;
     }
@@ -388,14 +393,22 @@ function extractPerformanceMetrics(params: MetadataExtractionParams): LogMetadat
 /**
  * 提取请求特征
  */
-function extractRequestFeatures(standardRequestBody?: unknown): LogMetadata['request'] | null {
+function extractRequestFeatures(
+  standardRequestBody?: unknown,
+  rawRequestBody?: unknown,
+  responseBody?: unknown,
+  standardResponseBody?: unknown,
+): LogMetadata['request'] | null {
   const body = standardRequestBody as any;
-  if (!body || typeof body !== 'object') {
+  const raw = rawRequestBody as any;
+
+  const primaryBody = (body && typeof body === 'object') ? body : (raw && typeof raw === 'object') ? raw : null;
+  if (!primaryBody) {
     return null;
   }
 
-  const r = body.reasoning;
-  const thinkingMode =
+  const r = primaryBody.reasoning;
+  let thinkingMode =
     r != null && (
       r.enabled === true ||
       r.enable_thinking === true ||
@@ -403,10 +416,38 @@ function extractRequestFeatures(standardRequestBody?: unknown): LogMetadata['req
       (typeof r.max_tokens === 'number' && r.max_tokens > 0)
     );
 
+  // fallback：passthrough 模式下检查原始协议字段
+  if (!thinkingMode) {
+    const rawBody = (raw && typeof raw === 'object') ? raw : primaryBody;
+    thinkingMode =
+      typeof rawBody.reasoning_effort === 'string' ||
+      (rawBody.thinking != null && (
+        rawBody.thinking.type === 'enabled' ||
+        rawBody.thinking.type === 'adaptive'
+      ));
+  }
+
+  // 响应侧兜底：从实际响应内容中检测 thinking（模型默认思考 / 请求侧检测失败时）
+  if (!thinkingMode) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const res = responseBody as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sRes = standardResponseBody as any;
+    if (Array.isArray(res?.thinkingBlocks) && res.thinkingBlocks.length > 0) {
+      thinkingMode = true;
+    } else if (Array.isArray(sRes?.thinkingBlocks) && sRes.thinkingBlocks.length > 0) {
+      thinkingMode = true;
+    } else if (Array.isArray(res?.content) && res.content.some((b: { type?: string }) => b.type === 'thinking')) {
+      thinkingMode = true;
+    } else if (res?.choices?.[0]?.message?.reasoning_content) {
+      thinkingMode = true;
+    }
+  }
+
   return {
-    temperature: body.temperature,
-    maxTokens: body.max_tokens,
-    topP: body.top_p,
+    temperature: primaryBody.temperature,
+    maxTokens: primaryBody.max_tokens,
+    topP: primaryBody.top_p,
     ...(thinkingMode && { thinkingMode: true }),
   };
 }

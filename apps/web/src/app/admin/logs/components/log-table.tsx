@@ -77,9 +77,9 @@ export function LogTable({
                 {/* 模型 */}
                 <TableCell>
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium text-sm truncate">
-                        {log.modelName}
+                        {log.originalModelName ?? log.modelName}
                       </span>
                       <Badge
                         variant={isPending ? 'outline' : isSuccess ? 'default' : 'destructive'}
@@ -90,10 +90,16 @@ export function LogTable({
                       >
                         {isPending ? "请求中" : log.statusCode || log.status}
                       </Badge>
+                      {log.retryCount > 0 && (
+                        <Badge variant="outline" className="text-xs h-5 px-1.5 text-orange-600 border-orange-300">
+                          重试×{log.retryCount}
+                        </Badge>
+                      )}
                     </div>
-                    {log.originalModelName && log.originalModelName !== log.modelName && (
+                    {/* 实际模型：provider 响应中的模型名，与请求不同时显示 */}
+                    {log.responseModelName && log.responseModelName !== (log.originalModelName ?? log.modelName) && (
                       <div className="text-xs text-muted-foreground truncate">
-                        原始: {log.originalModelName}
+                        <span className="text-muted-foreground/60">实际</span>{' '}{log.responseModelName}
                       </div>
                     )}
                     {log.providerName && (
@@ -152,11 +158,6 @@ export function LogTable({
                     {log.thinkingMode && (
                       <Badge variant="outline" className="text-xs h-5 px-1.5 text-violet-600 border-violet-300">
                         思考
-                      </Badge>
-                    )}
-                    {log.retryCount > 0 && (
-                      <Badge variant="outline" className="text-xs h-5 px-1.5 text-orange-600 border-orange-300">
-                        重试×{log.retryCount}
                       </Badge>
                     )}
                   </div>

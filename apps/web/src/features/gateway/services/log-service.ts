@@ -66,6 +66,7 @@ export interface LogRequestParams {
     instanceId?: string;
     actualModelName?: string;
     strategy?: string;
+    responseModelName?: string;
   };
 }
 
@@ -299,6 +300,7 @@ export async function logStreamStart(params: {
     instanceId?: string;
     actualModelName?: string;
     strategy?: string;
+    responseModelName?: string;
   };
 }): Promise<string> {
   try {
@@ -404,6 +406,7 @@ export async function logRequestStart(params: {
     instanceId?: string;
     actualModelName?: string;
     strategy?: string;
+    responseModelName?: string;
   };
 }): Promise<string> {
   try {
@@ -589,6 +592,14 @@ export async function finalizeStreamLog(
             ...(params.ttfbToFirstTextMs != null && { ttfbToFirstTextMs: params.ttfbToFirstTextMs }),
             ...(params.thinkingDurationMs != null && { thinkingDurationMs: params.thinkingDurationMs }),
           },
+          // 响应中有 thinking 内容时，覆盖请求端检测的 thinkingMode（模型可能默认开启 thinking）
+          // ttfbToFirstThinkingMs != null 表示 stream 中检测到了 thinking chunk（即使后续没有文本）
+          ...((params.thinkingDurationMs != null || params.ttfbToFirstThinkingMs != null) && {
+            request: {
+              ...params.metadata?.request,
+              thinkingMode: true,
+            },
+          }),
         } as any,
         toolCallsCount: params.toolCallsCount,
         retryCount: params.retryCount ?? 0,

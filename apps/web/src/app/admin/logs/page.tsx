@@ -12,6 +12,7 @@ import {
   LogPagination,
   LogDetailSheet,
   LogCleanupDialog,
+  LiveLogsPanel,
 } from './components'
 import { useLogPage } from './useLogPage'
 
@@ -97,8 +98,10 @@ function LogsPageContent() {
           onAutoRefreshIntervalChange={setAutoRefreshInterval}
         />
 
+        <LiveLogsPanel />
+
         <div className="flex items-center justify-between">
-          <h3 className="text-base font-medium">日志列表</h3>
+          <h3 className="text-base font-medium">历史记录</h3>
           {pagination && pagination.total > 0 && (
             <span className="text-sm text-muted-foreground">共 {pagination.total} 条记录</span>
           )}

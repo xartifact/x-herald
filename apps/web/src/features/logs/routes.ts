@@ -1,4 +1,4 @@
-import { eq, gte, lte, sql, desc, lt, isNotNull, and } from 'drizzle-orm';
+import { eq, gte, lte, sql, desc, lt, isNotNull, and, ne } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { stream } from 'hono/streaming';
 
@@ -11,6 +11,8 @@ const logger = rootLogger.child({ module: 'logs' });
 import { requestLogs } from './db';
 import { recalculateAll } from './services/rank-calculator';
 import { authMiddleware } from '../auth/middleware';
+import { logEventBus } from '@/features/gateway/services/log-event-bus';
+import type { LiveStreamEvent } from '@/features/gateway/services/log-event-bus';
 
 const logsRoutes = new Hono();
 
@@ -59,6 +61,44 @@ logsRoutes.post('/rank-recalculate', async (c) => {
 // Auth middleware applies to all routes AFTER this point
 logsRoutes.use('*', authMiddleware);
 
+// GET /api/logs/live - 实时流事件 SSE 推送
+logsRoutes.get('/live', (c) => {
+  const encoder = new TextEncoder();
+
+  return stream(c, async (s) => {
+    // 新连接时先发送当前所有活跃流快照，让客户端追赶状态
+    for (const snapshot of logEventBus.activeStreams.values()) {
+      await s.write(encoder.encode(`data: ${JSON.stringify(snapshot)}\n\n`));
+    }
+
+    const handler = async (payload: LiveStreamEvent) => {
+      try {
+        await s.write(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
+      } catch {
+        // 客户端已断开
+      }
+    };
+
+    logEventBus.on('log', handler);
+
+    // 每 25s 发送心跳，防止代理或客户端因空闲超时断连
+    const heartbeat = setInterval(async () => {
+      try {
+        await s.write(encoder.encode(': heartbeat\n\n'));
+      } catch {
+        clearInterval(heartbeat);
+      }
+    }, 25000);
+
+    await new Promise<void>((resolve) => {
+      c.req.raw.signal.addEventListener('abort', () => resolve(), { once: true });
+    });
+
+    clearInterval(heartbeat);
+    logEventBus.off('log', handler);
+  });
+});
+
 // GET /api/logs - 列出日志（带分页和筛选）
 logsRoutes.get('/', async (c) => {
   try {
@@ -82,7 +122,10 @@ logsRoutes.get('/', async (c) => {
     }
 
     if (query.status) {
-      conditions.push(eq(requestLogs.status, query.status as 'success' | 'failure' | 'pending'| 'failure'));
+      conditions.push(eq(requestLogs.status, query.status as 'success' | 'failure' | 'pending' | 'failure'));
+    } else {
+      // 默认排除 pending（进行中的流式请求由实时面板展示）
+      conditions.push(ne(requestLogs.status, 'pending'));
     }
 
     if (query.startDate) {
@@ -132,6 +175,7 @@ logsRoutes.get('/', async (c) => {
               createdAt: requestLogs.createdAt,
               isComplete: requestLogs.isComplete,
               thinkingMode: sql<boolean | null>`((${requestLogs.metadata}->'request'->>'thinkingMode')::boolean)`,
+              responseModelName: sql<string | null>`(${requestLogs.metadata}->'routing'->>'responseModelName')`,
             })
             .from(requestLogs)
             .where(and(...conditions))
@@ -161,6 +205,7 @@ logsRoutes.get('/', async (c) => {
               createdAt: requestLogs.createdAt,
               isComplete: requestLogs.isComplete,
               thinkingMode: sql<boolean | null>`((${requestLogs.metadata}->'request'->>'thinkingMode')::boolean)`,
+              responseModelName: sql<string | null>`(${requestLogs.metadata}->'routing'->>'responseModelName')`,
             })
             .from(requestLogs)
             .orderBy(desc(requestLogs.createdAt))

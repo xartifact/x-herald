@@ -68,6 +68,10 @@ export async function adaptOpenAIRequest(
     };
   }
 
+  if (transformedRequest.reasoning?.effort) {
+    openaiReq.reasoning_effort = transformedRequest.reasoning.effort;
+  }
+
   if (ctx.instanceConfig?.parameterMapping) {
     for (const [param, config] of Object.entries(ctx.instanceConfig.parameterMapping)) {
       if (config.default !== undefined && openaiReq[param as keyof OpenAIRequest] === undefined) {

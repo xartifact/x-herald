@@ -136,6 +136,9 @@ export class StreamResponseCollector {
   // 真实 usage（从流中提取）
   private realUsage: { prompt_tokens?: number; completion_tokens?: number } | null = null;
 
+  // Provider 响应中的模型名（从第一个包含 model 的 chunk 中提取）
+  private providerModel: string | null = null;
+
   // 保留原有字段
   private hasToolCalls = false;
   private finishReason: string | null = null;
@@ -158,6 +161,13 @@ export class StreamResponseCollector {
       // Phase 1: 存储所有原始 chunks（小规模完整存储）
       this.allChunks.push(json);
 
+      // Anthropic: content_block_start with type=thinking 比 delta 更早到达，提前记录首帧时间
+      if (!this.firstThinkingChunkTime &&
+          json.type === 'content_block_start' &&
+          (json.content_block as Record<string, unknown>)?.type === 'thinking') {
+        this.firstThinkingChunkTime = now;
+      }
+
       // Phase 1: 提取完整 thinking content（无截断）
       const thinking = this.extractReasoning(json);
       if (thinking) {
@@ -170,6 +180,16 @@ export class StreamResponseCollector {
       if (content) {
         if (!this.firstTextChunkTime) this.firstTextChunkTime = now;
         this.contentChunks.push(content);
+      }
+
+      // 提取 Provider 响应模型名（仅取第一次出现）
+      // OpenAI: 顶层 json.model；Anthropic: message_start 事件中 json.message.model
+      if (!this.providerModel) {
+        if (typeof json.model === 'string') {
+          this.providerModel = json.model;
+        } else if (json.type === 'message_start' && typeof (json.message as Record<string, unknown>)?.model === 'string') {
+          this.providerModel = (json.message as Record<string, unknown>).model as string;
+        }
       }
 
       // Phase 1: 提取真实 usage
@@ -231,18 +251,25 @@ export class StreamResponseCollector {
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private extractReasoning(json: any): string | null {
-    let reasoning: string | null = null;
-
-    // OpenAI 格式（阿里云百炼）
+    // OpenAI: reasoning_content（阿里云百炼、DeepSeek 等）
     if (json.choices?.[0]?.delta?.reasoning_content) {
-      reasoning = json.choices[0].delta.reasoning_content;
+      return json.choices[0].delta.reasoning_content;
     }
-    // Anthropic 格式 - thinking_delta / thinking 事件
-    else if (json.type === 'content_block_delta' && (json.delta?.type === 'thinking_delta' || json.delta?.type === 'thinking')) {
-      reasoning = json.delta.thinking;
+    // OpenAI 变体：delta.reasoning（部分厂商使用不同字段名）
+    if (json.choices?.[0]?.delta?.reasoning) {
+      return json.choices[0].delta.reasoning;
     }
-
-    return reasoning;
+    // Anthropic: thinking_delta / thinking
+    if (json.type === 'content_block_delta') {
+      if (json.delta?.type === 'thinking_delta' || json.delta?.type === 'thinking') {
+        return json.delta.thinking || null;
+      }
+      // Anthropic: redacted thinking（已思考但内容被隐藏，data 为 base64 编码）
+      if (json.delta?.type === 'redacted_thinking_delta') {
+        return (json.delta.data as string) ?? '<redacted>';
+      }
+    }
+    return null;
   }
 
   /**
@@ -326,7 +353,12 @@ export class StreamResponseCollector {
       bytesReceived: this.bytesReceived,
       hasToolCalls: this.hasToolCalls,
       finishReason: this.finishReason,
+      ...(this.providerModel && { model: this.providerModel }),
     };
+  }
+
+  getProviderModel(): string | null {
+    return this.providerModel;
   }
 }
 

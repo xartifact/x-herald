@@ -38,7 +38,7 @@ export function parseToolArguments(
     const parsed = JSON.parse(trimmed);
     // 验证解析结果是对象
     if (typeof parsed === 'object' && parsed !== null) {
-      logger?.trace?.({ argsString: trimmed }, '工具调用参数标准 JSON 解析成功');
+      logger?.trace?.({ args: parsed }, '工具调用参数标准 JSON 解析成功');
       return trimmed;
     }
   } catch (error) {
@@ -55,7 +55,7 @@ export function parseToolArguments(
     if (typeof parsed === 'object' && parsed !== null) {
       const normalized = JSON.stringify(parsed);
       logger?.debug?.(
-        { original: trimmed, normalized },
+        { args: parsed },
         '工具调用参数 JSON5 解析成功'
       );
       return normalized;
@@ -74,7 +74,7 @@ export function parseToolArguments(
     const parsed = JSON.parse(repaired);
     if (typeof parsed === 'object' && parsed !== null) {
       logger?.warn?.(
-        { original: trimmed, repaired },
+        { args: parsed },
         '工具调用参数通过 jsonrepair 修复成功'
       );
       return repaired;

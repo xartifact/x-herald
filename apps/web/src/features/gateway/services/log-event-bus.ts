@@ -2,6 +2,16 @@ import EventEmitter from 'node:events';
 
 export type LiveStreamEvent =
   | {
+      event: 'waiting'; // 请求已发出，等待 provider TTFB
+      logId: string;
+      modelName: string;
+      originalModelName?: string;
+      providerName: string;
+      virtualKeyName?: string;
+      startTime: number;
+      incomingProtocol: string;
+    }
+  | {
       event: 'started';
       logId: string;
       modelName: string;
@@ -32,6 +42,7 @@ export type LiveStreamEvent =
 
 // 当前活跃流快照（新连接时追赶状态用）
 type ActiveStreamSnapshot =
+  | (LiveStreamEvent & { event: 'waiting' })
   | (LiveStreamEvent & { event: 'started' })
   | (LiveStreamEvent & { event: 'chunk' });
 
@@ -39,7 +50,7 @@ class LogEventBus extends EventEmitter {
   readonly activeStreams = new Map<string, ActiveStreamSnapshot>();
 
   emitLog(payload: LiveStreamEvent): void {
-    if (payload.event === 'started' || payload.event === 'chunk') {
+    if (payload.event === 'waiting' || payload.event === 'started' || payload.event === 'chunk') {
       this.activeStreams.set(payload.logId, payload);
     } else {
       this.activeStreams.delete(payload.logId);

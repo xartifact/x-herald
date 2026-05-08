@@ -4,6 +4,9 @@ import { convertAnthropicContent, convertToAnthropicContent } from './content-co
 import { parseToolArguments } from '../../../shared/tool-arguments-parser';
 import logger from '@/core/lib/logger';
 
+type MsgContentItem = Extract<AnthropicMessage['content'], unknown[]>[number];
+type OriginalContent = Extract<AnthropicMessage['content'], unknown[]>;
+
 /**
  * Extract tool_call and tool_use blocks from Anthropic content
  */
@@ -29,7 +32,6 @@ function extractToolInfo(content: AnthropicMessage['content']): {
           JSON.stringify(item.input || {}),
           logger
         );
-
         toolCalls.push({
           id: item.id || '',
           type: 'function' as const,
@@ -83,72 +85,96 @@ export function convertMessage(msg: AnthropicMessage): StandardMessage {
       anthropicOriginalRole,
       hasToolResult: !!toolCallId || toolResults.length > 0,
       hasToolUse: !!toolCalls?.length,
+      // 保留原始 content 数组，egress 时直接透传，避免任何字段丢失
+      _originalContent: Array.isArray(msg.content) ? msg.content : undefined,
     },
   };
+}
+
+function buildToolUseBlocks(toolCalls: ToolCall[] | undefined): MsgContentItem[] {
+  if (!toolCalls) return [];
+  return toolCalls.map((tc) => {
+    let parsedInput = {};
+    try {
+      const argumentsStr = tc.function.arguments || '{}';
+      const validatedArgs = parseToolArguments(argumentsStr, logger);
+      parsedInput = JSON.parse(validatedArgs);
+    } catch (error) {
+      logger.warn({ error, toolCall: tc }, 'Failed to parse tool arguments');
+      parsedInput = { text: tc.function.arguments || '' };
+    }
+    return {
+      type: 'tool_use' as const,
+      id: tc.id,
+      name: tc.function.name,
+      input: parsedInput,
+      ...(tc.cache_control && { cache_control: tc.cache_control }),
+    };
+  });
+}
+
+function buildToolResultBlocks(msg: StandardMessage): MsgContentItem[] {
+  if (msg.tool_results && msg.tool_results.length > 0) {
+    return msg.tool_results.map((tr) => ({
+      type: 'tool_result' as const,
+      tool_use_id: tr.tool_call_id,
+      content: tr.content,
+      ...(tr.is_error !== undefined && { is_error: tr.is_error }),
+      ...(tr.cache_control && { cache_control: tr.cache_control }),
+    }));
+  }
+  if (msg.tool_call_id) {
+    return [{
+      type: 'tool_result' as const,
+      tool_use_id: msg.tool_call_id,
+      content: typeof msg.content === 'string' ? msg.content : '',
+    }];
+  }
+  return [];
 }
 
 /**
  * Convert Standard messages to Anthropic format
  */
 export function convertToAnthropicMessages(messages: StandardMessage[]): AnthropicMessage[] {
-  return messages.flatMap((msg) => {
-    const content: AnthropicMessage['content'] = convertToAnthropicContent(msg);
+  return messages.map((msg): AnthropicMessage => {
+    const originalContent = msg.metadata?._originalContent as OriginalContent | undefined;
+    const role: 'user' | 'assistant' = msg.role === 'assistant' ? 'assistant' : 'user';
 
-    if (msg.reasoning_content && Array.isArray(content)) {
+    // 透明代理路径：有原始 content 时直接透传，完整保留所有字段
+    if (originalContent) {
+      // 若 reasoning_content 被网关修改过（如 synthetic thinking 注入），同步更新 thinking 块
+      const finalContent: AnthropicMessage['content'] = msg.reasoning_content !== undefined
+        ? originalContent.map((block) =>
+            block.type === 'thinking'
+              ? { ...block, thinking: msg.reasoning_content as string }
+              : block
+          )
+        : originalContent;
+
+      return { role, content: finalContent };
+    }
+
+    // 跨协议转换路径（如 OpenAI → Anthropic）：从 Standard 格式重建
+    const textBlocks = convertToAnthropicContent(msg);
+
+    if (typeof textBlocks === 'string') {
+      return { role, content: textBlocks };
+    }
+
+    const content: MsgContentItem[] = [...textBlocks as MsgContentItem[]];
+
+    if (msg.reasoning_content) {
       content.unshift({
-        type: 'thinking',
+        type: 'thinking' as const,
         thinking: msg.reasoning_content,
+        ...(msg.reasoning_signature !== undefined ? { signature: msg.reasoning_signature } : {}),
       });
     }
 
-    if (msg.tool_calls) {
-      for (const tc of msg.tool_calls) {
-        if (Array.isArray(content)) {
-          let parsedInput = {};
-          try {
-            const argumentsStr = tc.function.arguments || '{}';
-            const validatedArgs = parseToolArguments(argumentsStr, logger);
-            parsedInput = JSON.parse(validatedArgs);
-          } catch (error) {
-            logger.warn({ error, toolCall: tc }, 'Failed to parse tool arguments');
-            parsedInput = { text: tc.function.arguments || '' };
-          }
+    content.push(...buildToolUseBlocks(msg.tool_calls));
+    content.push(...buildToolResultBlocks(msg));
 
-          content.push({
-            type: 'tool_use',
-            id: tc.id,
-            name: tc.function.name,
-            input: parsedInput,
-            ...(tc.cache_control && { cache_control: tc.cache_control }),
-          });
-        }
-      }
-    }
-
-    if (msg.tool_results && msg.tool_results.length > 0) {
-      for (const tr of msg.tool_results) {
-        if (Array.isArray(content)) {
-          content.push({
-            type: 'tool_result',
-            tool_use_id: tr.tool_call_id,
-            content: tr.content,
-            ...(tr.is_error !== undefined && { is_error: tr.is_error }),
-            ...(tr.cache_control && { cache_control: tr.cache_control }),
-          });
-        }
-      }
-    } else if (msg.tool_call_id) {
-      if (Array.isArray(content)) {
-        content.push({
-          type: 'tool_result',
-          tool_use_id: msg.tool_call_id,
-          content: typeof msg.content === 'string' ? msg.content : '',
-        });
-      }
-    }
-
-    const role: 'user' | 'assistant' = msg.role === 'assistant' ? 'assistant' : 'user';
-
-    return [{ role, content }];
+    return { role, content };
   });
 }

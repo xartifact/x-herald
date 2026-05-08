@@ -27,6 +27,8 @@ import { Separator } from '@/components/ui/separator'
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
+  SheetTitle,
 } from '@/components/ui/sheet'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/core/lib/utils'
@@ -584,6 +586,8 @@ export function LogDetailSheet({
         className="w-full max-w-full md:w-[85vw] md:max-w-[85vw] 2xl:w-[70vw] 2xl:max-w-[70vw] p-0 flex flex-col gap-0"
         hideCloseButton
       >
+        <SheetTitle className="sr-only">日志详情</SheetTitle>
+        <SheetDescription className="sr-only">请求日志详细信息</SheetDescription>
         {/* 顶部工具栏 */}
         <div className="flex items-center justify-between px-3 md:px-6 py-3 md:py-3.5 border-b bg-background">
           <div className="flex items-center gap-2 md:gap-3 min-w-0">

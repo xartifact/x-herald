@@ -1,6 +1,6 @@
 import { eq, gte, lte, sql, desc, lt, isNotNull, and, ne } from 'drizzle-orm';
 import { Hono } from 'hono';
-import { stream } from 'hono/streaming';
+import { stream, streamSSE } from 'hono/streaming';
 
 import { getDatabase } from '@/core/db/client';
 import { getAiModel, AiNotConfiguredError } from '@/core/lib/ai-caller';
@@ -63,17 +63,15 @@ logsRoutes.use('*', authMiddleware);
 
 // GET /api/logs/live - 实时流事件 SSE 推送
 logsRoutes.get('/live', (c) => {
-  const encoder = new TextEncoder();
-
-  return stream(c, async (s) => {
+  return streamSSE(c, async (s) => {
     // 新连接时先发送当前所有活跃流快照，让客户端追赶状态
     for (const snapshot of logEventBus.activeStreams.values()) {
-      await s.write(encoder.encode(`data: ${JSON.stringify(snapshot)}\n\n`));
+      await s.writeSSE({ data: JSON.stringify(snapshot) });
     }
 
     const handler = async (payload: LiveStreamEvent) => {
       try {
-        await s.write(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
+        await s.writeSSE({ data: JSON.stringify(payload) });
       } catch {
         // 客户端已断开
       }
@@ -84,7 +82,7 @@ logsRoutes.get('/live', (c) => {
     // 每 25s 发送心跳，防止代理或客户端因空闲超时断连
     const heartbeat = setInterval(async () => {
       try {
-        await s.write(encoder.encode(': heartbeat\n\n'));
+        await s.writeSSE({ data: '', event: 'ping' });
       } catch {
         clearInterval(heartbeat);
       }

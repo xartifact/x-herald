@@ -24,12 +24,22 @@ function StreamCard({ item }: { item: LiveStreamItem }) {
   }, [item.startTime]);
 
   const displayName = item.originalModelName ?? item.modelName;
+  const isWaiting = item.status === 'waiting';
 
   return (
     <div className="flex items-center gap-3 rounded-lg border bg-card px-4 py-3 text-sm">
       <span className="relative flex h-2 w-2 shrink-0">
-        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
-        <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
+        {isWaiting ? (
+          <>
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500" />
+          </>
+        ) : (
+          <>
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
+          </>
+        )}
       </span>
 
       <span className="min-w-0 flex-1 truncate font-medium" title={displayName}>
@@ -48,10 +58,14 @@ function StreamCard({ item }: { item: LiveStreamItem }) {
         <Brain className="text-violet-500 h-3.5 w-3.5 shrink-0" />
       )}
 
-      <div className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
-        <Zap className="h-3 w-3" />
-        <span>{item.outputTokens} tok</span>
-      </div>
+      {isWaiting ? (
+        <span className="shrink-0 text-xs text-amber-600 dark:text-amber-400">等待响应</span>
+      ) : (
+        <div className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
+          <Zap className="h-3 w-3" />
+          <span>{item.outputTokens} tok</span>
+        </div>
+      )}
 
       <div className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
         <Clock className="h-3 w-3" />

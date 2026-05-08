@@ -12,7 +12,7 @@ export interface AnthropicMessage {
     | Array<
         | { type: 'text'; text: string; cache_control?: Record<string, unknown> }
         | { type: 'image'; source: { type: 'base64'; media_type: string; data: string } | { type: 'url'; url: string }; cache_control?: Record<string, unknown> }
-        | { type: 'thinking'; thinking: string }
+        | { type: 'thinking'; thinking: string; signature?: string }
         | { type: 'tool_use'; id: string; name: string; input: Record<string, unknown>; cache_control?: Record<string, unknown> }
         | { type: 'tool_result'; tool_use_id: string; content: string; is_error?: boolean; cache_control?: Record<string, unknown> }
       >;

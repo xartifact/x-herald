@@ -18,6 +18,7 @@ export interface LiveStreamItem {
   totalChunks: number;
   hasThinking: boolean;
   elapsedMs: number;
+  status: 'waiting' | 'streaming';
 }
 
 export function useLiveLogs() {
@@ -76,7 +77,7 @@ export function useLiveLogs() {
 
   const handleEvent = useCallback(
     (event: LiveStreamEvent) => {
-      if (event.event === 'started') {
+      if (event.event === 'waiting') {
         setStreams((prev) => {
           const next = new Map(prev);
           next.set(event.logId, {
@@ -91,6 +92,29 @@ export function useLiveLogs() {
             totalChunks: 0,
             hasThinking: false,
             elapsedMs: 0,
+            status: 'waiting',
+          });
+          return next;
+        });
+      } else if (event.event === 'started') {
+        setStreams((prev) => {
+          const next = new Map(prev);
+          const existing = prev.get(event.logId);
+          next.set(event.logId, {
+            ...(existing ?? {
+              outputTokens: 0,
+              totalChunks: 0,
+              hasThinking: false,
+              elapsedMs: 0,
+            }),
+            logId: event.logId,
+            modelName: event.modelName,
+            originalModelName: event.originalModelName,
+            providerName: event.providerName,
+            virtualKeyName: event.virtualKeyName,
+            startTime: event.startTime,
+            incomingProtocol: event.incomingProtocol,
+            status: 'streaming',
           });
           return next;
         });

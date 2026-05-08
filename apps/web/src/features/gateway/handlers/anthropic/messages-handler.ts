@@ -14,6 +14,7 @@ import { logRequestStart, markLogAsFailed } from '../../services/log-service';
 import { ModelNotFoundError, FAILOVER_STATUS_CODES } from '../../services/model-group-router';
 import { getProviderProtocol, getProviderUrl, getEndpoint } from '../../services/protocol-detector';
 import { handleNonStreamingResponse, handleStreamingResponse } from '../../services/response-handlers';
+import { logEventBus } from '../../services/log-event-bus';
 import { virtualModelRouter } from '../../services/virtual-model-router';
 import { AbortManager } from '../shared/abort-manager';
 import { joinUrl } from '../shared/join-url';
@@ -283,6 +284,20 @@ export async function handleAnthropicMessages(
           },
         });
 
+        // 流式请求：提前发出 waiting 事件，让 Live 面板在 TTFB 前即可显示
+        if (isStreaming && logId) {
+          logEventBus.emitLog({
+            event: 'waiting',
+            logId,
+            modelName: mapping.modelName || mapping.originalModel || rawBody.model || 'unknown',
+            originalModelName: mapping.originalModel ?? undefined,
+            providerName: provider.name,
+            virtualKeyName: virtualKey.name ?? undefined,
+            startTime,
+            incomingProtocol,
+          });
+        }
+
         const preprocessEndTime = Date.now();
 
         const CONNECT_TIMEOUT_MS = 30000;
@@ -327,6 +342,7 @@ export async function handleAnthropicMessages(
 
         // 客户端断开或超时：立即返回，不进行故障转移
         if (retryResult.aborted || !retryResult.response) {
+          if (isStreaming && logId) logEventBus.emitLog({ event: 'aborted', logId });
           const abortMessage = retryResult.aborted === 'client_disconnect'
             ? 'Client disconnected'
             : `Request TTFB timeout after ${TTFB_TIMEOUT_MS / 1000}s`;
@@ -351,6 +367,7 @@ export async function handleAnthropicMessages(
             circuitBreakerRegistry.recordFailure(instance.id, { instanceName: instance.name, groupName: group.name, providerName: provider.name });
             const failoverRespBody = await response.json().catch(() => null);
             await markLogAsFailed(logId, response.status, `Failover: HTTP ${response.status}`, retryCount, providerTtfbTime - preprocessEndTime, failoverRespBody);
+            if (isStreaming && logId) logEventBus.emitLog({ event: 'aborted', logId });
             logger.warn(
               { requestId, instanceId: instance.id, statusCode: response.status },
               '[Failover] Instance failed, switching to next candidate',
@@ -359,6 +376,7 @@ export async function handleAnthropicMessages(
           }
 
           // 最后一个候选或不可转移的错误码（4xx）：返回错误
+          if (isStreaming && logId) logEventBus.emitLog({ event: 'aborted', logId });
           const errorHandler = isPassthroughEnabled ? handleProviderErrorPassthrough : handleProviderError;
           return errorHandler(
             c, response, provider, virtualKey, rawBody.model || 'unknown',
@@ -406,6 +424,7 @@ export async function handleAnthropicMessages(
     throw new Error('All candidate instances exhausted');
   } catch (error) {
     logger.error({ error, requestId }, 'Gateway error');
+    if (isStreaming && logId) logEventBus.emitLog({ event: 'aborted', logId });
     return handleGatewayError({
       error, c, virtualKey, requestHeaders: clientRequestHeaders, providerRequestHeaders,
       rawBody, clientIp, userAgent, requestPath, requestMethod,

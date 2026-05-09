@@ -10,14 +10,19 @@ import { Label } from '@/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select'
 
 const FIELDS = [
-  { value: 'request.model', label: '模型名 (request.model)' },
-  { value: 'context.apiKeyName', label: 'API Key 名称 (context.apiKeyName)' },
-  { value: 'context.streaming', label: '是否流式 (context.streaming)' },
-  { value: 'context.hour', label: '当前小时 (context.hour)' },
-  { value: 'context.clientType', label: '客户端类型 (context.clientType)' },
+  { value: 'request.model', label: '模型名 (request.model)', numeric: false },
+  { value: 'context.apiKeyName', label: 'API Key 名称 (context.apiKeyName)', numeric: false },
+  { value: 'context.streaming', label: '是否流式 (context.streaming)', numeric: false },
+  { value: 'context.hour', label: '当前小时 (context.hour)', numeric: true },
+  { value: 'context.clientType', label: '客户端类型 (context.clientType)', numeric: false },
+  { value: 'perf.anomalyLevel', label: '实例异常等级 (perf.anomalyLevel)', numeric: false },
+  { value: 'perf.anomalyScore', label: '最高异常分数 (perf.anomalyScore)', numeric: true },
+  { value: 'perf.successRate', label: '最低成功率 0~1 (perf.successRate)', numeric: true },
+  { value: 'perf.ttfbP95', label: '最高 TTFB P95 ms (perf.ttfbP95)', numeric: true },
+  { value: 'perf.healthyRatio', label: '健康实例占比 0~1 (perf.healthyRatio)', numeric: true },
 ]
 
-const OPERATORS = [
+const STRING_OPERATORS = [
   { value: 'eq', label: '等于 (eq)' },
   { value: 'ne', label: '不等于 (ne)' },
   { value: 'in', label: '在列表中 (in)' },
@@ -25,9 +30,22 @@ const OPERATORS = [
   { value: 'exists', label: '存在 (exists)' },
 ]
 
+const NUMERIC_OPERATORS = [
+  { value: 'eq', label: '等于 (eq)' },
+  { value: 'ne', label: '不等于 (ne)' },
+  { value: 'gt', label: '大于 (>)' },
+  { value: 'lt', label: '小于 (<)' },
+  { value: 'gte', label: '大于等于 (>=)' },
+  { value: 'lte', label: '小于等于 (<=)' },
+]
+
 interface ConditionPropertiesProps {
   node: Node
   onUpdate: (nodeId: string, data: Record<string, unknown>) => void
+}
+
+function isNumericField(f: string) {
+  return FIELDS.find((x) => x.value === f)?.numeric ?? false
 }
 
 export function ConditionProperties({ node, onUpdate }: ConditionPropertiesProps) {
@@ -44,8 +62,19 @@ export function ConditionProperties({ node, onUpdate }: ConditionPropertiesProps
     setValue(String(d.value ?? ''))
   }, [node.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const operators = isNumericField(field) ? NUMERIC_OPERATORS : STRING_OPERATORS
+
   const update = (patch: Record<string, unknown>) => {
     onUpdate(node.id, { label, field, operator, value, ...d, ...patch })
+  }
+
+  const handleFieldChange = (v: string) => {
+    const numeric = isNumericField(v)
+    const validOps = (numeric ? NUMERIC_OPERATORS : STRING_OPERATORS).map((o) => o.value)
+    const nextOp = validOps.includes(operator) ? operator : 'eq'
+    setField(v)
+    setOperator(nextOp)
+    update({ field: v, operator: nextOp })
   }
 
   return (
@@ -67,7 +96,7 @@ export function ConditionProperties({ node, onUpdate }: ConditionPropertiesProps
 
       <div className="space-y-1.5">
         <Label className="text-xs text-muted-foreground">匹配字段</Label>
-        <Select value={field} onValueChange={v => { setField(v); update({ field: v }) }}>
+        <Select value={field} onValueChange={handleFieldChange}>
           <SelectTrigger className="h-8 text-sm">
             <SelectValue placeholder="选择字段..." />
           </SelectTrigger>
@@ -86,7 +115,7 @@ export function ConditionProperties({ node, onUpdate }: ConditionPropertiesProps
             <SelectValue placeholder="选择操作符..." />
           </SelectTrigger>
           <SelectContent>
-            {OPERATORS.map(op => (
+            {operators.map(op => (
               <SelectItem key={op.value} value={op.value}>{op.label}</SelectItem>
             ))}
           </SelectContent>

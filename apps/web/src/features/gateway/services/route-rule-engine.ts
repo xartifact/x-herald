@@ -10,6 +10,15 @@ import logger from '@/core/lib/logger';
 import { modelRoutes } from '@/features/model-groups/db';
 import type { RouteCondition, ModelRoute } from '@/features/model-groups/db';
 
+// 性能上下文：聚合目标路由规则所有实例的最差健康状态
+export interface PerfContext {
+  worstAnomalyLevel: 'normal' | 'warning' | 'critical' | 'unknown';
+  maxAnomalyScore: number | null;
+  minSuccessRate: number | null;
+  maxTtfbP95: number | null;
+  healthyRatio: number;
+}
+
 // 规则匹配上下文
 export interface RouteContext {
   model: string;
@@ -17,6 +26,7 @@ export interface RouteContext {
   streaming: boolean;
   hour?: number;
   clientType?: string;
+  perf?: PerfContext;
 }
 
 /**
@@ -83,6 +93,16 @@ export class RouteRuleEngine {
         return ctx.hour ?? new Date().getHours();
       case 'context.clientType':
         return ctx.clientType;
+      case 'perf.anomalyLevel':
+        return ctx.perf?.worstAnomalyLevel ?? 'unknown';
+      case 'perf.anomalyScore':
+        return ctx.perf?.maxAnomalyScore ?? null;
+      case 'perf.successRate':
+        return ctx.perf?.minSuccessRate ?? null;
+      case 'perf.ttfbP95':
+        return ctx.perf?.maxTtfbP95 ?? null;
+      case 'perf.healthyRatio':
+        return ctx.perf?.healthyRatio ?? 1;
       default:
         return undefined;
     }
@@ -126,6 +146,14 @@ export class RouteRuleEngine {
         return typeof fieldValue === 'string' && typeof condValue === 'string' && fieldValue.startsWith(condValue);
       case 'exists':
         return fieldValue !== undefined && fieldValue !== null;
+      case 'gt':
+        return typeof fieldValue === 'number' && fieldValue > Number(coerced);
+      case 'lt':
+        return typeof fieldValue === 'number' && fieldValue < Number(coerced);
+      case 'gte':
+        return typeof fieldValue === 'number' && fieldValue >= Number(coerced);
+      case 'lte':
+        return typeof fieldValue === 'number' && fieldValue <= Number(coerced);
       default:
         return false;
     }

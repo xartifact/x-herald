@@ -1,4 +1,4 @@
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, asc } from 'drizzle-orm';
 import { Hono } from 'hono';
 
 import { getDatabase } from '@/core/db/client';
@@ -41,7 +41,7 @@ modelGroupRoutes.get('/instances', async (c) => {
   const db = getDatabase();
 
   try {
-    const instances = await db.select().from(modelInstances).orderBy(desc(modelInstances.createdAt));
+    const instances = await db.select().from(modelInstances).orderBy(asc(modelInstances.priority), asc(modelInstances.createdAt));
 
     return c.json({
       success: true,

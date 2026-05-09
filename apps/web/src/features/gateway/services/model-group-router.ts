@@ -3,12 +3,16 @@
  * 支持 priority、round_robin、weighted 路由策略，集成熔断器
  */
 
-import { eq, and } from 'drizzle-orm';
+import { eq, and, asc } from 'drizzle-orm';
 
 import { getDatabase } from '@/core/db/client';
 import logger from '@/core/lib/logger';
 import { modelGroups, modelInstances } from '@/features/model-groups/db';
 import type { ModelGroup, ModelInstance } from '@/features/model-groups/types';
+import {
+  fetchGroupInstancesPerf,
+  type InstancePerfData,
+} from '@/features/metrics/services/instance-perf-cache';
 import { providers } from '@/features/providers/db';
 
 import { circuitBreakerRegistry } from './circuit-breaker';
@@ -57,6 +61,37 @@ export const FAILOVER_STATUS_CODES = new Set([429, 500, 502, 503, 504, 521, 524]
 // 轮询计数器（内存中，按 groupId）
 const roundRobinCounters = new Map<string, number>();
 
+// 平局兜底比较：priority 升序，相等时 createdAt 升序（越老越稳定）
+function byPriorityThenAge(a: Candidate, b: Candidate): number {
+  const pd = a.instance.priority - b.instance.priority;
+  if (pd !== 0) return pd;
+  return a.instance.createdAt.getTime() - b.instance.createdAt.getTime();
+}
+
+// smart 策略综合评分（满分 100）
+// - 成功率：50 分权重（最重要）
+// - TTFB：30 分权重（以 1500ms 为 100% 基准）
+// - 重试率：15 分权重（超过 5 次重试得 0 分）
+// - 成本：5 分权重（可选，成本越低越好）
+function computeSmartScore(
+  perf: InstancePerfData | undefined,
+  instance: ModelInstance
+): number {
+  const successRate = perf?.successRate ?? 0.85;
+  const ttfbAvg = perf?.ttfbAvg;
+  const avgRetryCount = perf?.avgRetryCount ?? 0;
+  const cost = instance.costPer1kTokens;
+
+  const successScore = successRate * 50;
+  const ttfbScore = ttfbAvg != null ? Math.min(1, 1500 / ttfbAvg) * 30 : 15;
+  const retryScore = Math.max(0, 1 - avgRetryCount / 5) * 15;
+  const costScore = cost != null
+    ? Math.min(1, 1 / ((cost.input + cost.output) / 2 + 0.001)) * 5
+    : 2.5;
+
+  return successScore + ttfbScore + retryScore + costScore;
+}
+
 /**
  * 模型组路由器
  */
@@ -91,7 +126,8 @@ export class ModelGroupRouter {
           eq(modelInstances.enabled, true),
           eq(providers.enabled, true)
         )
-      );
+      )
+      .orderBy(asc(modelInstances.priority), asc(modelInstances.createdAt));
 
     if (instances.length === 0) return [];
 
@@ -99,7 +135,7 @@ export class ModelGroupRouter {
     if (filtered.length === 0) return [];
 
     const strategy = group.routingConfig?.strategy ?? 'priority';
-    const sorted = this.selectByStrategy(filtered, strategy, group.id);
+    const sorted = await this.selectByStrategy(filtered, strategy, group.id);
 
     logger.debug(
       { groupId, strategy, totalCandidates: filtered.length },
@@ -141,12 +177,12 @@ export class ModelGroupRouter {
   /**
    * 按策略对候选实例排序，返回有序列表
    * 第一个元素为本轮首选，其余为故障转移顺序
+   * 平局处理：primary 相等时依次以 priority → createdAt 兜底，确保确定性顺序
    */
-  private selectByStrategy(candidates: Candidate[], strategy: string, groupId: string): Candidate[] {
+  private async selectByStrategy(candidates: Candidate[], strategy: string, groupId: string): Promise<Candidate[]> {
     switch (strategy) {
       case 'round_robin': {
-        // 先按 priority 稳定排序，再轮询起始位置
-        const sorted = [...candidates].sort((a, b) => a.instance.priority - b.instance.priority);
+        const sorted = [...candidates].sort(byPriorityThenAge);
         const count = roundRobinCounters.get(groupId) ?? 0;
         roundRobinCounters.set(groupId, count + 1);
         const idx = count % sorted.length;
@@ -154,7 +190,6 @@ export class ModelGroupRouter {
       }
 
       case 'weighted': {
-        // 按权重随机选起始实例，其余按 priority 排列
         const totalWeight = candidates.reduce((sum, c) => sum + (c.instance.weight ?? 1), 0);
         let rand = Math.random() * totalWeight;
         let selectedIdx = candidates.length - 1;
@@ -163,13 +198,69 @@ export class ModelGroupRouter {
           if (rand <= 0) { selectedIdx = i; break; }
         }
         const rest = [...candidates.slice(0, selectedIdx), ...candidates.slice(selectedIdx + 1)]
-          .sort((a, b) => a.instance.priority - b.instance.priority);
+          .sort(byPriorityThenAge);
         return [candidates[selectedIdx], ...rest];
+      }
+
+      case 'least_latency': {
+        const perfMap = await fetchGroupInstancesPerf(groupId);
+        const withPerf: Array<{ c: Candidate; ttfb: number }> = [];
+        const withoutPerf: Candidate[] = [];
+
+        for (const c of candidates) {
+          const ttfb = perfMap.get(c.instance.id)?.ttfbAvg;
+          if (ttfb != null) {
+            withPerf.push({ c, ttfb });
+          } else {
+            withoutPerf.push(c);
+          }
+        }
+
+        withPerf.sort((a, b) => {
+          if (a.ttfb !== b.ttfb) return a.ttfb - b.ttfb;
+          return byPriorityThenAge(a.c, b.c);
+        });
+        withoutPerf.sort(byPriorityThenAge);
+
+        return [...withPerf.map((x) => x.c), ...withoutPerf];
+      }
+
+      case 'cost_optimized': {
+        const withCost: Array<{ c: Candidate; totalCost: number }> = [];
+        const withoutCost: Candidate[] = [];
+
+        for (const c of candidates) {
+          const cost = c.instance.costPer1kTokens;
+          if (cost != null) {
+            withCost.push({ c, totalCost: cost.input + cost.output });
+          } else {
+            withoutCost.push(c);
+          }
+        }
+
+        withCost.sort((a, b) => {
+          if (a.totalCost !== b.totalCost) return a.totalCost - b.totalCost;
+          return byPriorityThenAge(a.c, b.c);
+        });
+        withoutCost.sort(byPriorityThenAge);
+
+        return [...withCost.map((x) => x.c), ...withoutCost];
+      }
+
+      case 'smart': {
+        const perfMap = await fetchGroupInstancesPerf(groupId);
+        return [...candidates]
+          .map((c) => ({ c, score: computeSmartScore(perfMap.get(c.instance.id), c.instance) }))
+          .sort((a, b) => {
+            if (a.score !== b.score) return b.score - a.score;
+            return byPriorityThenAge(a.c, b.c);
+          })
+          .map((x) => x.c);
       }
 
       case 'priority':
       default:
-        return [...candidates].sort((a, b) => a.instance.priority - b.instance.priority);
+        return [...candidates].sort(byPriorityThenAge);
     }
   }
 
@@ -242,7 +333,8 @@ export class ModelGroupRouter {
       .select({ instance: modelInstances, provider: providers })
       .from(modelInstances)
       .innerJoin(providers, eq(modelInstances.providerId, providers.id))
-      .where(eq(modelInstances.groupId, groupId));
+      .where(eq(modelInstances.groupId, groupId))
+      .orderBy(asc(modelInstances.priority), asc(modelInstances.createdAt));
 
     return { group: group[0], instances };
   }

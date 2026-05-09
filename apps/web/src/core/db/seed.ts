@@ -1,25 +1,27 @@
 /**
  * 系统内置数据初始化
- * 幂等操作，每次启动时执行，已存在则跳过
+ *
+ * 分两类操作：
+ * 1. 每次启动都保证存在（系统级不变量）：__catchall__ 虚拟模型
+ * 2. 仅首次启动创建（引导型，用户删除后不再重建）：全局路由规则
+ *    通过 gatewayConfigs.initial_routes_seeded 标志控制
  */
 
 import { eq } from 'drizzle-orm';
 
 import logger from '@/core/lib/logger';
+import { gatewayConfigs } from '@/features/gateway-config/db';
 import { virtualModels, modelRoutes } from '@/features/model-groups/db';
 
 import { getDatabase } from './client';
 
-// 系统保留的内置虚拟模型名称
 export const CATCHALL_VM_NAME = '__catchall__';
+const SEED_FLAG_KEY = 'initial_routes_seeded';
 
-/**
- * 初始化系统内置数据
- */
 export async function seedSystemData(): Promise<void> {
   const db = getDatabase();
 
-  // 1. 确保 __catchall__ 虚拟模型存在
+  // 1. __catchall__ 虚拟模型：系统必须存在，每次启动都确保
   const existing = await db
     .select({ id: virtualModels.id })
     .from(virtualModels)
@@ -31,7 +33,6 @@ export async function seedSystemData(): Promise<void> {
   if (existing.length > 0) {
     catchallId = existing[0].id;
   } else {
-    // 先清除其他可能的 isDefault，再插入
     await db.update(virtualModels).set({ isDefault: false }).where(eq(virtualModels.isDefault, true));
 
     const [created] = await db
@@ -49,27 +50,38 @@ export async function seedSystemData(): Promise<void> {
     logger.info({ id: catchallId }, 'System __catchall__ virtual model created');
   }
 
-  // 2. 确保 __catchall__ 有兜底路由规则
-  // 使用 name 匹配检查，避免数组操作符兼容性问题
-  const existingRule = await db
-    .select({ id: modelRoutes.id })
-    .from(modelRoutes)
-    .where(eq(modelRoutes.name, '全局路由规则'))
+  // 2. 默认路由规则：仅首次启动创建，用户删除后不再重建
+  const seedFlag = await db
+    .select({ value: gatewayConfigs.value })
+    .from(gatewayConfigs)
+    .where(eq(gatewayConfigs.key, SEED_FLAG_KEY))
     .limit(1);
 
-  if (existingRule.length === 0) {
-    await db.insert(modelRoutes).values({
-      name: '全局路由规则',
-      description: '系统内置兜底规则，未配置时拒绝未知模型请求',
-      virtualModelIds: [catchallId],
-      conditions: [],
-      action: {
-        type: 'reject',
-        reason: '未找到对应的模型路由配置，请在管理面板中配置路由规则',
-      },
-      priority: 9999,
-      enabled: true,
-    });
-    logger.info({ catchallId }, 'System __catchall__ default route rule created');
+  if (seedFlag.length > 0) {
+    // 已经 seeded 过，跳过路由规则创建（即使用户删了也不管）
+    return;
   }
+
+  // 首次启动：创建兜底拒绝规则
+  await db.insert(modelRoutes).values({
+    name: '全局路由规则',
+    description: '系统内置兜底规则，未配置时拒绝未知模型请求',
+    virtualModelIds: [catchallId],
+    conditions: [],
+    action: {
+      type: 'reject',
+      reason: '未找到对应的模型路由配置，请在管理面板中配置路由规则',
+    },
+    priority: 9999,
+    enabled: true,
+  });
+
+  // 记录标志，后续启动不再重建
+  await db.insert(gatewayConfigs).values({
+    key: SEED_FLAG_KEY,
+    value: { seededAt: new Date().toISOString() },
+    description: '系统初始路由规则已完成首次创建，重启不再自动添加',
+  });
+
+  logger.info({ catchallId }, 'System initial route rule created (one-time)');
 }

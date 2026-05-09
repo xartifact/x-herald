@@ -245,7 +245,7 @@ export type NewVirtualModel = typeof virtualModels.$inferInsert;
 // 路由条件
 export interface RouteCondition {
   field: string;
-  operator: 'eq' | 'ne' | 'in' | 'starts_with' | 'exists';
+  operator: 'eq' | 'ne' | 'in' | 'starts_with' | 'exists' | 'gt' | 'lt' | 'gte' | 'lte';
   value?: unknown;
 }
 

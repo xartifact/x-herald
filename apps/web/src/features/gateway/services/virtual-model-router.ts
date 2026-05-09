@@ -3,12 +3,14 @@
  * 通过规则引擎将虚拟模型请求路由到模型组或模型实例
  */
 
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 
 import { getDatabase } from '@/core/db/client';
 import logger from '@/core/lib/logger';
-import { virtualModels, modelInstances, modelGroups } from '@/features/model-groups/db';
+import { virtualModels, modelInstances, modelGroups, modelRoutes } from '@/features/model-groups/db';
 import { providers } from '@/features/providers/db';
+
+import { fetchPerfContext } from '@/features/metrics/services/perf-context-fetcher';
 
 import { modelGroupRouter, type RouteResult, type RoutingContext } from './model-group-router';
 import type { ModelMappingResult } from './model-mapping';
@@ -37,9 +39,11 @@ export class VirtualModelRouter {
 
     const vm = vmResult[0];
 
+    const perf = await this.fetchVmPerfContext(vm.id);
     const ruleMatch = await routeRuleEngine.match(vm.id, {
       model: context.requestedModel,
       streaming: context.streaming,
+      perf,
     });
 
     if (!ruleMatch) return [];
@@ -107,9 +111,11 @@ export class VirtualModelRouter {
 
     const defaultVm = defaultVmResult[0];
 
+    const perf = await this.fetchVmPerfContext(defaultVm.id);
     const ruleMatch = await routeRuleEngine.match(defaultVm.id, {
       model: context.requestedModel,
       streaming: context.streaming,
+      perf,
     });
 
     if (!ruleMatch) return [];
@@ -157,6 +163,29 @@ export class VirtualModelRouter {
     }
 
     return [];
+  }
+
+  /**
+   * 获取虚拟模型的性能上下文（用于路由条件判断）
+   * 收集该 VM 所有 route_to_group 规则的目标 groupId，查询最近性能快照
+   */
+  private async fetchVmPerfContext(vmId: string): ReturnType<typeof fetchPerfContext> {
+    const db = getDatabase();
+    const rules = await db
+      .select({ action: modelRoutes.action })
+      .from(modelRoutes)
+      .where(
+        and(
+          sql`${modelRoutes.virtualModelIds} @> ARRAY[${vmId}]::text[]`,
+          eq(modelRoutes.enabled, true)
+        )
+      );
+
+    const groupIds = rules
+      .filter((r) => r.action.type === 'route_to_group' && r.action.targetId)
+      .map((r) => r.action.targetId as string);
+
+    return fetchPerfContext(vmId, groupIds);
   }
 
   /**

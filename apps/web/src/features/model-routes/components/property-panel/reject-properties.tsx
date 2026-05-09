@@ -43,7 +43,7 @@ export function RejectProperties({ node, onUpdate }: RejectPropertiesProps) {
       </div>
 
       <p className="text-xs text-muted-foreground">
-        请求到达此节点时将返回 4xx 错误，并携带上述原因信息。
+        请求到达此节点时将返回 403 错误，并携带上述原因信息。
       </p>
     </div>
   )

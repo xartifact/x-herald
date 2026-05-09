@@ -12,7 +12,7 @@ import { providers } from '@/features/providers/db';
 
 import { fetchPerfContext } from '@/features/metrics/services/perf-context-fetcher';
 
-import { modelGroupRouter, type RouteResult, type RoutingContext } from './model-group-router';
+import { modelGroupRouter, RequestRejectedError, type RouteResult, type RoutingContext } from './model-group-router';
 import type { ModelMappingResult } from './model-mapping';
 import { routeRuleEngine } from './route-rule-engine';
 
@@ -57,7 +57,7 @@ export class VirtualModelRouter {
     };
 
     if (action.type === 'reject') {
-      throw new Error(action.reason || `Request rejected by route rule '${ruleMatch.name}'`);
+      throw new RequestRejectedError(action.reason || `Request rejected by route rule '${ruleMatch.name}'`);
     }
 
     if (action.type === 'fallback') return [];
@@ -130,7 +130,7 @@ export class VirtualModelRouter {
     const action = ruleMatch.action;
 
     if (action.type === 'reject') {
-      throw new Error(action.reason ?? `Rejected by default virtual model rule '${ruleMatch.name}'`);
+      throw new RequestRejectedError(action.reason ?? `Rejected by default virtual model rule '${ruleMatch.name}'`);
     }
 
     if (action.type === 'fallback') return [];

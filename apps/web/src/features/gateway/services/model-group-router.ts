@@ -370,5 +370,12 @@ export class NoSuitableInstanceError extends Error {
   }
 }
 
+export class RequestRejectedError extends Error {
+  constructor(reason: string) {
+    super(reason);
+    this.name = 'RequestRejectedError';
+  }
+}
+
 // 单例实例
 export const modelGroupRouter = new ModelGroupRouter();

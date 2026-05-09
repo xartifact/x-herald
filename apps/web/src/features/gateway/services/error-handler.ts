@@ -8,6 +8,7 @@ import {
   ModelDisabledError,
   NoAvailableInstanceError,
   NoSuitableInstanceError,
+  RequestRejectedError,
 } from './model-group-router';
 import { mergeResponseHeaders } from './response-handlers';
 
@@ -220,6 +221,38 @@ export async function handleGatewayError(
         },
       },
       400,
+    );
+  }
+
+  if (error instanceof RequestRejectedError) {
+    await logRequest({
+      virtualKey,
+      modelName: requestedModel,
+      status: 'failure',
+      statusCode: 403,
+      latencyMs,
+      requestHeaders,
+      requestBody: params.rawBody,
+      errorMessage: error.message,
+      errorType: 'request_rejected',
+      clientIp,
+      userAgent,
+      requestPath,
+      requestMethod,
+      streaming: isStreaming,
+      incomingProtocol: params.incomingProtocol,
+      targetProtocol: params.targetProtocol,
+      logId: params.logId,
+      retryCount: params.retryCount,
+    });
+    return c.json(
+      {
+        error: {
+          type: 'permission_error',
+          message: error.message,
+        },
+      },
+      403,
     );
   }
 

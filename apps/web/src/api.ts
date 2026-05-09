@@ -3,6 +3,8 @@ import { Hono } from 'hono';
 import { loadConfig, validateConfig } from '@/core/config';
 import { getDatabase } from '@/core/db/client';
 import { startAutoCleanup } from '@/features/logs/log-cleanup';
+import { metricsRoutes } from '@/features/metrics/routes';
+import { startSnapshotJob } from '@/features/metrics/snapshot-job';
 
 import logger from './core/lib/logger';
 import { createCorsMiddleware } from './core/middleware/cors';
@@ -22,7 +24,7 @@ import { virtualModelRoutes } from './features/virtual-models';
 import { circuitBreakerRoutes } from './features/circuit-breaker';
 
 // Create API app
-export const createApiApp = () => {
+export const createApiApp = async () => {
   const app = new Hono();
 
   // Load and validate configuration
@@ -44,6 +46,10 @@ export const createApiApp = () => {
     logger.info('Auto log cleanup scheduler started (retention: 30 days)');
   }
 
+  // 启动性能快照聚合（先确保表存在，再启动定时任务）
+  await startSnapshotJob();
+  logger.info('Perf snapshot job started (interval: 5 min)');
+
   // Global middlewares
   app.use('*', errorHandler);
   app.use('*', requestLogger);
@@ -61,6 +67,7 @@ export const createApiApp = () => {
   app.route('/api/model-routes', modelRoutesApi);
   app.route('/api/config', configIORoutes);
   app.route('/api/circuit-breaker', circuitBreakerRoutes);
+  app.route('/api/metrics', metricsRoutes);
 
   // Gateway Routes (Anthropic/OpenAI 兼容 API)
   app.route('/api/v1', gatewayRoutes);
@@ -89,11 +96,11 @@ export const createApiApp = () => {
   return app;
 };
 
-// 懒加载 API app
-let _apiApp: ReturnType<typeof createApiApp> | null = null;
+// 懒加载 API app（async 单例）
+let _apiAppPromise: ReturnType<typeof createApiApp> | null = null;
 export const apiApp = () => {
-  if (!_apiApp) {
-    _apiApp = createApiApp();
+  if (!_apiAppPromise) {
+    _apiAppPromise = createApiApp();
   }
-  return _apiApp;
+  return _apiAppPromise;
 };

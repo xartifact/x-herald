@@ -76,6 +76,8 @@ packages/llms
 .opencode
 .swarm
 SWARM_PLAN.*
+.claude/agent-memory/
+query_db.mjs
 
 # Playwright
 test-results/

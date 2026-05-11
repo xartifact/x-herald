@@ -99,7 +99,9 @@ function acquirePgliteLock(dataDir: string): boolean {
 async function createPgliteDatabase(dataDir: string): Promise<PostgresDb> {
   const { PGlite } = await import('@electric-sql/pglite');
   const { drizzle: drizzlePglite } = await import('drizzle-orm/pglite');
-  const { migrate: migratePglite } = await import('drizzle-orm/pglite/migrator');
+  const { createHash } = await import('crypto');
+  const fs = await import('fs');
+  const { extname } = await import('path');
 
   logger.trace({ dataDir }, '[DB] 使用 PGlite 数据库');
 
@@ -120,21 +122,73 @@ async function createPgliteDatabase(dataDir: string): Promise<PostgresDb> {
   const db = drizzlePglite(pgliteClient, { schema }) as unknown as PostgresDb;
   setDbClient(db);
 
+  // PGlite 的 exec() 支持多条 SQL 语句，而 Drizzle migrator 使用 prepared statement
+  // 不支持批量语句（如 CREATE TABLE + CREATE INDEX 在同一文件）。
+  // 因此直接读取 .sql 文件并逐个执行，同时维护 __drizzle_migrations 追踪表。
   const migrationsFolder = getMigrationsFolder();
   logger.trace({ migrationsFolder }, '[DB] 运行 PGlite 迁移');
 
-  try {
-    await migratePglite(db as unknown as Parameters<typeof migratePglite>[0], { migrationsFolder });
-    logger.trace('[DB] PGlite 迁移完成');
-  } catch (error) {
-    if (error instanceof Error && error.message?.includes('No migrations')) {
-      // 静默处理
-    } else {
-      logger.error({ err: error }, '[DB] PGlite 迁移失败');
-      throw error;
+  // Ensure migration tracking table exists
+  await pgliteClient.exec(`
+    CREATE TABLE IF NOT EXISTS "__drizzle_migrations" (
+      "id" SERIAL PRIMARY KEY,
+      "hash" text NOT NULL,
+      "created_at" bigint
+    )
+  `);
+
+  // Get already-applied migrations
+  const existingResult = await pgliteClient.query('SELECT hash FROM "__drizzle_migrations"');
+  const appliedHashes = new Set<string>((existingResult.rows as Array<{ hash: string }>).map(r => r.hash));
+
+  // Read and sort migration files
+  const migrationFiles = fs.readdirSync(migrationsFolder)
+    .filter(f => extname(f) === '.sql')
+    .sort();
+
+  let applied = 0;
+  let skipped = 0;
+
+  for (const file of migrationFiles) {
+    const content = fs.readFileSync(require('path').join(migrationsFolder, file), 'utf8');
+    const hash = createHash('md5').update(content).digest('hex');
+
+    if (appliedHashes.has(hash)) {
+      logger.trace({ file }, '[DB] 已跳过迁移');
+      skipped++;
+      continue;
+    }
+
+    try {
+      // exec() 支持多条 SQL 语句（Drizzle migrator 不支持）
+      await pgliteClient.exec(content);
+      await pgliteClient.query(
+        'INSERT INTO "__drizzle_migrations" (hash, created_at) VALUES ($1, $2)',
+        [hash, Date.now()]
+      );
+      logger.trace({ file }, '[DB] 已应用迁移');
+      applied++;
+      appliedHashes.add(hash);
+    } catch (err) {
+      const msg = (err as Error).message;
+      // 仅当表/索引/约束已存在时，视为已应用并继续
+      // （ALTER TABLE 等操作的 "does not exist" 是真正的错误，不应跳过）
+      if (msg.includes('already exists') || msg.includes('duplicate')) {
+        await pgliteClient.query(
+          'INSERT INTO "__drizzle_migrations" (hash, created_at) VALUES ($1, $2)',
+          [hash, Date.now()]
+        );
+        logger.trace({ file, error: msg.split('\n')[0] }, '[DB] 迁移已存在（schema 匹配）');
+        skipped++;
+        appliedHashes.add(hash);
+      } else {
+        logger.error({ file, err }, '[DB] PGlite 迁移失败');
+        throw err;
+      }
     }
   }
 
+  logger.trace({ applied, skipped }, '[DB] PGlite 迁移完成');
   logger.trace('[DB] PGlite 数据库已就绪');
   return getDbClient()!;
 }

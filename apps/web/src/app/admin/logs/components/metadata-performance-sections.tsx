@@ -26,18 +26,19 @@ export function MetadataPerformanceSections({
 }: MetadataPerformanceSectionsProps) {
   return (
     <>
-      {/* === 延迟分析 === */}
-      <Section title="延迟分析">
+{/* === 响应时间分析 === */}
+      <Section title="响应时间分析">
         <InfoRow
-          label="总延迟"
+          label="总响应时间"
           value={
             <span className={cn(
               "font-semibold",
-              log.latencyMs < 1000 ? "text-green-600" :
-              log.latencyMs < 3000 ? "text-amber-600" :
-              "text-red-600"
-            )}>
-              {formatDuration(log.latencyMs)}
+              log.responseTimeMs < 1000 ? "text-green-600" :
+              log.responseTimeMs < 3000 ? "text-amber-600" :
+              "text-red-600",
+            )}
+            >
+              {formatDuration(log.responseTimeMs)}
             </span>
           }
         />
@@ -47,7 +48,7 @@ export function MetadataPerformanceSections({
           log.metadata.performance.streamDurationMs != null
         ) && (
           <LatencyBreakdown
-            totalMs={log.latencyMs}
+            totalMs={log.responseTimeMs}
             gatewayOverheadMs={log.metadata.performance.gatewayOverheadMs}
             providerTtfbMs={log.metadata.performance.providerTtfbMs}
             streamDurationMs={log.metadata.performance.streamDurationMs}

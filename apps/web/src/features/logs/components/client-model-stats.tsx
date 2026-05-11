@@ -11,7 +11,7 @@ import { Button } from '@/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card'
 import { ScrollArea } from '@/ui/scroll-area'
 
-type SortField = 'requestCount' | 'lastRequestAt' | 'totalTokens' | 'avgLatency'
+type SortField = 'requestCount' | 'lastRequestAt' | 'totalTokens' | 'avgResponseTime'
 type SortOrder = 'desc' | 'asc'
 
 interface ClientModelStatsProps {
@@ -34,8 +34,8 @@ export function ClientModelStats({ stats, isLoading }: ClientModelStatsProps) {
         case 'totalTokens':
           comparison = a.totalTokens - b.totalTokens
           break
-        case 'avgLatency':
-          comparison = a.avgLatency - b.avgLatency
+        case 'avgResponseTime':
+          comparison = a.avgResponseTime - b.avgResponseTime
           break
         case 'lastRequestAt':
           comparison = new Date(a.lastRequestAt).getTime() - new Date(b.lastRequestAt).getTime()
@@ -146,9 +146,9 @@ export function ClientModelStats({ stats, isLoading }: ClientModelStatsProps) {
             <Activity className="mr-1 h-3 w-3" />
             Token消耗
           </SortButton>
-          <SortButton field="avgLatency">
+          <SortButton field="avgResponseTime">
             <Activity className="mr-1 h-3 w-3" />
-            平均延迟
+            平均响应时间
           </SortButton>
         </div>
       </CardHeader>
@@ -202,8 +202,8 @@ export function ClientModelStats({ stats, isLoading }: ClientModelStatsProps) {
                       <div className="font-semibold">{stat.totalTokens.toLocaleString()}</div>
                     </div>
                     <div className="bg-muted/50 rounded px-2 py-1">
-                      <div className="text-muted-foreground">延迟</div>
-                      <div className="font-semibold">{Math.round(stat.avgLatency)}ms</div>
+                       <div className="text-muted-foreground">响应时间</div>
+                      <div className="font-semibold">{Math.round(stat.avgResponseTime)}ms</div>
                     </div>
                   </div>
                   

@@ -28,7 +28,7 @@ interface ModelGroupCardProps {
 const ROUTING_STRATEGY_LABELS: Record<string, string> = {
   round_robin: '轮询',
   weighted: '加权',
-  least_latency: '最低延迟',
+  least_response_time: '最快响应',
   priority: '优先级',
   cost_optimized: '成本优化',
   smart: '智能路由',

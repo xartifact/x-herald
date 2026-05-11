@@ -13,7 +13,7 @@ import { Input } from '@/ui/input'
 import { ScrollArea } from '@/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select'
 
-type SortField = 'requestCount' | 'lastRequestAt' | 'totalTokens' | 'avgLatency' | 'successRate'
+type SortField = 'requestCount' | 'lastRequestAt' | 'totalTokens' | 'avgResponseTime' | 'successRate'
 type SortOrder = 'desc' | 'asc'
 
 export default function ClientModelsPage() {
@@ -75,8 +75,8 @@ export default function ClientModelsPage() {
         case 'totalTokens':
           comparison = a.totalTokens - b.totalTokens
           break
-        case 'avgLatency':
-          comparison = a.avgLatency - b.avgLatency
+        case 'avgResponseTime':
+          comparison = a.avgResponseTime - b.avgResponseTime
           break
         case 'successRate':
           const aRate = a.requestCount > 0 ? a.successCount / a.requestCount : 0
@@ -113,7 +113,7 @@ export default function ClientModelsPage() {
       totalSuccess: stats.reduce((sum, s) => sum + s.successCount, 0),
       totalFailure: stats.reduce((sum, s) => sum + s.failureCount, 0),
       totalTokens: stats.reduce((sum, s) => sum + s.totalTokens, 0),
-      avgLatency: stats.reduce((sum, s) => sum + s.avgLatency, 0) / stats.length,
+      avgResponseTime: stats.reduce((sum, s) => sum + s.avgResponseTime, 0) / stats.length,
     }
   }, [stats])
 
@@ -165,8 +165,8 @@ export default function ClientModelsPage() {
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="text-xs text-muted-foreground">平均延迟</div>
-              <div className="text-2xl font-bold">{Math.round(summary.avgLatency)}ms</div>
+              <div className="text-xs text-muted-foreground">平均响应时间</div>
+              <div className="text-2xl font-bold">{Math.round(summary.avgResponseTime)}ms</div>
             </CardContent>
           </Card>
           <Card>
@@ -255,14 +255,14 @@ export default function ClientModelsPage() {
           {sortField === 'totalTokens' && <ArrowUpDown className={cn("ml-1 h-3 w-3", sortOrder === 'asc' && "rotate-180")} />}
         </Button>
         <Button
-          variant={sortField === 'avgLatency' ? 'default' : 'outline'}
+          variant={sortField === 'avgResponseTime' ? 'default' : 'outline'}
           size="sm"
-          onClick={() => handleSort('avgLatency')}
+          onClick={() => handleSort('avgResponseTime')}
           className="h-8"
         >
           <BarChart3 className="mr-1 h-4 w-4" />
-          平均延迟
-          {sortField === 'avgLatency' && <ArrowUpDown className={cn("ml-1 h-3 w-3", sortOrder === 'asc' && "rotate-180")} />}
+          平均响应时间
+          {sortField === 'avgResponseTime' && <ArrowUpDown className={cn("ml-1 h-3 w-3", sortOrder === 'asc' && "rotate-180")} />}
         </Button>
         <Button
           variant={sortField === 'successRate' ? 'default' : 'outline'}
@@ -344,8 +344,8 @@ export default function ClientModelsPage() {
                           <div className="font-semibold text-lg">{stat.totalTokens.toLocaleString()}</div>
                         </div>
                         <div className="bg-muted/50 rounded-lg px-3 py-2">
-                          <div className="text-xs text-muted-foreground">平均延迟</div>
-                          <div className="font-semibold text-lg">{Math.round(stat.avgLatency)}ms</div>
+                          <div className="text-xs text-muted-foreground">平均响应时间</div>
+                          <div className="font-semibold text-lg">{Math.round(stat.avgResponseTime)}ms</div>
                         </div>
                         <div className="bg-muted/50 rounded-lg px-3 py-2">
                           <div className="text-xs text-muted-foreground">失败次数</div>

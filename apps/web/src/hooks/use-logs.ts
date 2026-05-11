@@ -59,7 +59,7 @@ export interface LogMetadata {
   };
 
   performance?: {
-    latencyTier?: 'fast' | 'normal' | 'slow';
+    responseTimeTier?: 'fast' | 'normal' | 'slow';
     gatewayOverheadMs?: number;
     providerTtfbMs?: number;
     streamDurationMs?: number;
@@ -107,7 +107,7 @@ export interface LogListItem {
   providerName: string | null
   status: 'success' | 'failure' | 'pending'
   statusCode: number | null
-  latencyMs: number
+  responseTimeMs: number
   inputTokens: number
   outputTokens: number
   totalTokens: number
@@ -158,7 +158,7 @@ export interface LogStats {
     totalRequests: number
     successRequests: number
     failureRequests: number
-    avgLatency: number
+    avgResponseTime: number
     totalInputTokens: number
     totalOutputTokens: number
     totalTokens: number
@@ -166,7 +166,7 @@ export interface LogStats {
   modelStats: Array<{
     modelName: string
     requestCount: number
-    avgLatency: number
+    avgResponseTime: number
     totalTokens: number
   }>
   keyStats: Array<{
@@ -317,7 +317,7 @@ export interface ClientModelStat {
   totalInputTokens: number
   totalOutputTokens: number
   totalTokens: number
-  avgLatency: number
+  avgResponseTime: number
   lastRequestAt: string
 }
 
@@ -344,10 +344,10 @@ export interface ProviderStat {
   totalRequests: number
   successCount: number
   failureCount: number
-  avgLatency: number
-  minLatency: number
-  maxLatency: number
-  p95Latency: number
+  avgResponseTime: number
+  minResponseTime: number
+  maxResponseTime: number
+  p95ResponseTime: number
   // Provider TTFB（首字节时间），仅有 performance 元数据的请求才有值
   avgTtfb: number | null
   p95Ttfb: number | null
@@ -381,7 +381,7 @@ export interface KeyStat {
   totalInputTokens: number
   totalOutputTokens: number
   totalTokens: number
-  avgLatencyMs: number
+  avgResponseTimeMs: number
   lastUsedAt: string | null
 }
 

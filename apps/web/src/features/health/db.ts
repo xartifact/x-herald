@@ -17,7 +17,7 @@ export const healthRuns = pgTable('health_runs', {
   targetId: uuid('target_id').notNull().references(() => healthTargets.id, { onDelete: 'cascade' }),
   checkedAt: timestamp('checked_at').defaultNow().notNull(),
   status: varchar('status', { length: 20 }).notNull().$type<'healthy' | 'degraded' | 'down'>(),
-  latencyMs: integer('latency_ms'),
+  responseTimeMs: integer('response_time_ms'),
   errorType: varchar('error_type', { length: 64 }),
   errorMessage: text('error_message'),
 });

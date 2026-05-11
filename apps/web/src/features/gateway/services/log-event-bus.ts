@@ -35,7 +35,7 @@ export type LiveStreamEvent =
       status: 'success' | 'failure';
       inputTokens: number;
       outputTokens: number;
-      latencyMs: number;
+      responseTimeMs: number;
       thinkingDurationMs?: number;
     }
   | { event: 'aborted'; logId: string };

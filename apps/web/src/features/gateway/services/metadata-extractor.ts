@@ -14,7 +14,7 @@ export interface MetadataExtractionParams {
   errorMessage?: string;
   errorType?: string;
   statusCode?: number;
-  latencyMs: number;
+  responseTimeMs: number;
   // 链路分段时间戳
   gatewayOverheadMs?: number;
   providerTtfbMs?: number;
@@ -371,19 +371,19 @@ function extractContentTypes(requestBody?: unknown, standardRequestBody?: unknow
  * 提取性能指标
  */
 function extractPerformanceMetrics(params: MetadataExtractionParams): LogMetadata['performance'] | null {
-  const { latencyMs } = params;
+  const { responseTimeMs } = params;
 
-  let latencyTier: 'fast' | 'normal' | 'slow';
-  if (latencyMs < 1000) {
-    latencyTier = 'fast';
-  } else if (latencyMs < 5000) {
-    latencyTier = 'normal';
+  let responseTimeTier: 'fast' | 'normal' | 'slow';
+  if (responseTimeMs < 1000) {
+    responseTimeTier = 'fast';
+  } else if (responseTimeMs < 5000) {
+    responseTimeTier = 'normal';
   } else {
-    latencyTier = 'slow';
+    responseTimeTier = 'slow';
   }
 
   return {
-    latencyTier,
+    responseTimeTier,
     gatewayOverheadMs: params.gatewayOverheadMs,
     providerTtfbMs: params.providerTtfbMs,
     streamDurationMs: params.streamDurationMs,

@@ -107,7 +107,7 @@ export async function handleNonStreamingResponse(
       'Provider returned streaming response for non-streaming request, forwarding as stream'
     );
 
-    const latencyMs = Date.now() - startTime;
+    const responseTimeMs = Date.now() - startTime;
     const providerResponseHeaders = extractProviderResponseHeaders(response);
     const clientResponseHeaders = getClientStreamingHeaders(providerResponseHeaders['content-type']);
 
@@ -128,7 +128,7 @@ export async function handleNonStreamingResponse(
       providerName: provider.name,
       status: 'success',
       statusCode: 200,
-      latencyMs,
+      responseTimeMs,
       requestHeaders,
       providerRequestHeaders: params.providerRequestHeaders,
       requestBody: rawBody,
@@ -158,7 +158,7 @@ export async function handleNonStreamingResponse(
 
   // 同协议透传模式：直接转发响应，不进行协议转换
   if (params.isPassthroughEnabled) {
-    const latencyMs = Date.now() - startTime;
+    const responseTimeMs = Date.now() - startTime;
     const providerResponseHeaders = extractProviderResponseHeaders(response);
     const clientResponseHeaders = getClientNonStreamingHeaders();
 
@@ -201,7 +201,7 @@ export async function handleNonStreamingResponse(
       providerName: provider.name,
       status: 'success',
       statusCode: 200,
-      latencyMs,
+      responseTimeMs,
       requestHeaders,
       providerRequestHeaders: params.providerRequestHeaders,
       requestBody: rawBody,
@@ -290,7 +290,7 @@ export async function handleNonStreamingResponse(
   const adaptedRes = await egressTransformer.adaptResponse(standardRes, ctx);
   const responseData = await adaptedRes.json();
 
-  const latencyMs = Date.now() - startTime;
+  const responseTimeMs = Date.now() - startTime;
   const providerResponseHeaders = extractProviderResponseHeaders(response);
   const clientResponseHeaders = getClientNonStreamingHeaders();
 
@@ -315,7 +315,7 @@ export async function handleNonStreamingResponse(
     providerName: provider.name,
     status: 'success',
     statusCode: 200,
-    latencyMs,
+    responseTimeMs,
     inputTokens: standardRes.usage?.prompt_tokens,
     outputTokens: standardRes.usage?.completion_tokens,
     requestHeaders,
@@ -529,7 +529,7 @@ export async function handleStreamingResponse(
       const usage = clientCollector.getUsage();
       const fullContent = clientCollector.getFullContent();
       const providerProgress = providerCollector.getProgress();
-      // 统一使用 provider 的 lastChunkAt，避免因处理延迟导致时间戳不一致
+      // 统一使用 provider 的 lastChunkAt，避免因处理响应时间导致时间戳不一致
       const progress = {
         ...clientCollector.getProgress(),
         lastChunkAt: providerProgress.lastChunkAt,
@@ -559,7 +559,7 @@ export async function handleStreamingResponse(
           ? standardCollector.getFullContent()
           : providerCollector.getFullContent(),
         responseBody: fullContent,
-        latencyMs: now - startTime,
+        responseTimeMs: now - startTime,
         gatewayOverheadMs: preprocessEndTime - startTime,
         providerTtfbMs: providerTtfbTime - preprocessEndTime,
         streamDurationMs: now - providerTtfbTime,
@@ -615,7 +615,7 @@ export async function handleStreamingResponse(
         status,
         inputTokens: usage.inputTokens,
         outputTokens: usage.outputTokens,
-        latencyMs: now - startTime,
+        responseTimeMs: now - startTime,
         thinkingDurationMs,
       });
     } catch (error) {

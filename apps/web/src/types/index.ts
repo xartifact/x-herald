@@ -26,7 +26,7 @@ export interface Provider {
 }
 
 // Model Types
-export type RoutingStrategy = 'round_robin' | 'weighted' | 'least_latency' | 'priority' | 'smart';
+export type RoutingStrategy = 'round_robin' | 'weighted' | 'least_response_time' | 'priority' | 'smart';
 
 export interface RoutingConfig {
   strategy: RoutingStrategy;
@@ -78,7 +78,7 @@ export interface RequestLog {
   modelName: string;
   providerId: string;
   status: RequestStatus;
-  latencyMs: number;
+  responseTimeMs: number;
   inputTokens: number;
   outputTokens: number;
   totalTokens: number;
@@ -120,7 +120,7 @@ export interface HealthRun {
   targetId: string;
   checkedAt: Date;
   status: HealthStatus;
-  latencyMs: number | null;
+  responseTimeMs: number | null;
   errorType: string | null;
   errorMessage: string | null;
 }

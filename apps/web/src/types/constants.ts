@@ -8,7 +8,7 @@ export const PROVIDER_TYPES = {
 export const ROUTING_STRATEGIES = {
   ROUND_ROBIN: 'round_robin',
   WEIGHTED: 'weighted',
-  LEAST_LATENCY: 'least_latency',
+  LEAST_RESPONSE_TIME: 'least_response_time',
   PRIORITY: 'priority',
   SMART: 'smart',
 } as const;

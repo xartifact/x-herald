@@ -155,7 +155,7 @@ export async function handleGatewayError(
     startTime,
   } = params;
 
-  const latencyMs = Date.now() - startTime;
+  const responseTimeMs = Date.now() - startTime;
   const rawBody = params.rawBody as { model?: string } | undefined;
   const requestedModel = rawBody?.model || 'unknown';
 
@@ -166,7 +166,7 @@ export async function handleGatewayError(
       modelName: requestedModel,
       status: 'failure',
       statusCode: 404,
-      latencyMs,
+      responseTimeMs,
       requestHeaders,
       requestBody: params.rawBody,
       errorMessage: error.message,
@@ -198,7 +198,7 @@ export async function handleGatewayError(
       modelName: requestedModel,
       status: 'failure',
       statusCode: 400,
-      latencyMs,
+      responseTimeMs,
       requestHeaders,
       requestBody: params.rawBody,
       errorMessage: error.message,
@@ -230,7 +230,7 @@ export async function handleGatewayError(
       modelName: requestedModel,
       status: 'failure',
       statusCode: 403,
-      latencyMs,
+      responseTimeMs,
       requestHeaders,
       requestBody: params.rawBody,
       errorMessage: error.message,
@@ -262,7 +262,7 @@ export async function handleGatewayError(
       modelName: requestedModel,
       status: 'failure',
       statusCode: 503,
-      latencyMs,
+      responseTimeMs,
       requestHeaders,
       requestBody: params.rawBody,
       errorMessage: error.message,
@@ -295,7 +295,7 @@ export async function handleGatewayError(
     modelName: requestedModel,
     status: 'failure',
     statusCode: 500,
-    latencyMs,
+    responseTimeMs,
     requestHeaders,
     providerRequestHeaders: params.providerRequestHeaders,
     requestBody: params.rawBody,
@@ -396,7 +396,7 @@ export async function handleProviderError(
   const errorData = await parseProviderError(response);
   const rawErrorMessage = errorData.error?.message || 'Provider request failed';
   const normalized = normalizeProviderErrorMessage(rawErrorMessage);
-  const latencyMs = Date.now() - startTime;
+  const responseTimeMs = Date.now() - startTime;
   const providerResponseHeaders = extractProviderResponseHeaders(response);
   const clientResponseHeaders = getClientErrorHeaders();
 
@@ -417,7 +417,7 @@ export async function handleProviderError(
     providerName: provider.name,
     status: 'failure',
     statusCode: response.status,
-    latencyMs,
+    responseTimeMs,
     requestHeaders,
     providerRequestHeaders,
     requestBody: rawBody,
@@ -470,7 +470,7 @@ export async function handleProviderErrorPassthrough(
   const responseClone = response.clone();
   const errorData = await parseProviderError(responseClone);
   const rawErrorMessage = errorData.error?.message || 'Provider request failed';
-  const latencyMs = Date.now() - startTime;
+  const responseTimeMs = Date.now() - startTime;
   const providerResponseHeaders = extractProviderResponseHeaders(response);
 
   // 记录日志（仍需记录用于监控和排查）
@@ -481,7 +481,7 @@ export async function handleProviderErrorPassthrough(
     providerName: provider.name,
     status: 'failure',
     statusCode: response.status,
-    latencyMs,
+    responseTimeMs,
     requestHeaders,
     providerRequestHeaders,
     requestBody: rawBody,

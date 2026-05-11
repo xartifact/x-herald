@@ -264,7 +264,7 @@ export class VirtualModelRouter {
         strategy: 'direct',
         reason: `Virtual model '${vm.name}' → instance '${instance.name}'`,
         candidates: 1,
-        latency: 0,
+        responseTime: 0,
       },
       mapping: mappingResult,
       matchedRule: ruleMatch,

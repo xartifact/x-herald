@@ -67,11 +67,11 @@ export function LogStatsCards({ stats, storage, clientStats }: LogStatsCardsProp
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">平均延迟</CardTitle>
+          <CardTitle className="text-sm font-medium">平均响应时间</CardTitle>
           <Clock className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{formatDuration(stats.avgLatency)}</div>
+          <div className="text-2xl font-bold">{formatDuration(stats.avgResponseTime)}</div>
           <div className="text-xs text-muted-foreground mt-1">响应时间平均值</div>
         </CardContent>
       </Card>

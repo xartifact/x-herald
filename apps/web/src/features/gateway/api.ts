@@ -55,7 +55,7 @@ gatewayRoutes.get('/models', async (c) => {
       modelName: 'list',
       status: 'success',
       statusCode: 200,
-      latencyMs: Date.now() - startTime,
+      responseTimeMs: Date.now() - startTime,
       clientIp,
       userAgent,
       requestPath: c.req.path,

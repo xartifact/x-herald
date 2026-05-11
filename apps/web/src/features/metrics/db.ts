@@ -26,7 +26,7 @@ export const instancePerfSnapshots = pgTable(
     ttfbMin: real('ttfb_min'),
     ttfbMax: real('ttfb_max'),
 
-    // 总延迟 (ms) - latency_ms
+    // 总响应时间 (ms) - response_time_ms
     latencyAvg: real('latency_avg'),
     latencyP50: real('latency_p50'),
     latencyP95: real('latency_p95'),

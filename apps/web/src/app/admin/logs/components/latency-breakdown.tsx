@@ -3,7 +3,7 @@
 import { cn } from '@/core/lib/utils'
 
 /**
- * 延迟链路分段可视化
+ * 响应时间链路分段可视化
  */
 export interface LatencyBreakdownProps {
   totalMs: number

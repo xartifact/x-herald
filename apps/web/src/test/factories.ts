@@ -26,7 +26,7 @@ export function createMockLog(overrides: Partial<Log> = {}): Log {
     providerId: 'provider-openai',
     virtualKeyName: 'test-key',
     virtualKeyId: 'vk-test-001',
-    latencyMs: 1500,
+    responseTimeMs: 1500,
     totalTokens: 500,
     inputTokens: 300,
     outputTokens: 200,

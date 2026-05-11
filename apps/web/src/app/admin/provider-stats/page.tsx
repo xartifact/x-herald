@@ -21,16 +21,16 @@ import { Button } from '@/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select'
 
-type SortField = 'avgLatency' | 'requestCount' | 'successRate' | 'p95Latency'
+type SortField = 'avgResponseTime' | 'requestCount' | 'successRate' | 'p95ResponseTime'
 type SortOrder = 'asc' | 'desc'
 
-function latencyQuality(ms: number): { label: string; className: string } {
+function responseTimeQuality(ms: number): { label: string; className: string } {
   if (ms < 1000) return { label: '优秀', className: 'bg-green-50 text-green-700 border-green-200' }
   if (ms < 3000) return { label: '良好', className: 'bg-yellow-50 text-yellow-700 border-yellow-200' }
   return { label: '较差', className: 'bg-red-50 text-red-700 border-red-200' }
 }
 
-function latencyColor(ms: number) {
+function responseTimeColor(ms: number) {
   if (ms < 1000) return 'text-green-600'
   if (ms < 3000) return 'text-yellow-600'
   return 'text-red-600'
@@ -50,7 +50,7 @@ function formatMs(ms: number) {
 
 export default function ProviderStatsPage() {
   const [timeRange, setTimeRange] = useState('7d')
-  const [sortField, setSortField] = useState<SortField>('avgLatency')
+  const [sortField, setSortField] = useState<SortField>('avgResponseTime')
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc')
 
   const queryParams = useMemo((): Record<string, string> => {
@@ -71,11 +71,11 @@ export default function ProviderStatsPage() {
     return [...stats].sort((a, b) => {
       let diff = 0
       switch (sortField) {
-        case 'avgLatency':
-          diff = a.avgLatency - b.avgLatency
+        case 'avgResponseTime':
+          diff = a.avgResponseTime - b.avgResponseTime
           break
-        case 'p95Latency':
-          diff = a.p95Latency - b.p95Latency
+        case 'p95ResponseTime':
+          diff = a.p95ResponseTime - b.p95ResponseTime
           break
         case 'requestCount':
           diff = a.totalRequests - b.totalRequests
@@ -104,9 +104,9 @@ export default function ProviderStatsPage() {
     if (stats.length === 0) return null
     const totalReq = stats.reduce((s, p) => s + p.totalRequests, 0)
     const totalSuccess = stats.reduce((s, p) => s + p.successCount, 0)
-    const avgLat = stats.reduce((s, p) => s + p.avgLatency, 0) / stats.length
-    const best = [...stats].sort((a, b) => a.avgLatency - b.avgLatency)[0]
-    return { totalProviders: stats.length, totalReq, totalSuccess, avgLat, best }
+    const avgResponseTime = stats.reduce((s, p) => s + p.avgResponseTime, 0) / stats.length
+    const best = [...stats].sort((a, b) => a.avgResponseTime - b.avgResponseTime)[0]
+    return { totalProviders: stats.length, totalReq, totalSuccess, avgResponseTime, best }
   }, [stats])
 
   return (
@@ -117,7 +117,7 @@ export default function ProviderStatsPage() {
           供应商统计
         </h2>
         <p className="text-sm text-muted-foreground mt-1">
-          按网络质量（平均延迟 + 成功率）对供应商进行排名分析
+          按网络质量（平均响应时间 + 成功率）对供应商进行排名分析
         </p>
       </div>
 
@@ -151,9 +151,9 @@ export default function ProviderStatsPage() {
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="text-xs text-muted-foreground">整体平均延迟</div>
-              <div className={cn('text-2xl font-bold', latencyColor(summary.avgLat))}>
-                {formatMs(summary.avgLat)}
+              <div className="text-xs text-muted-foreground">整体平均响应时间</div>
+              <div className={cn('text-2xl font-bold', responseTimeColor(summary.avgResponseTime))}>
+                {formatMs(summary.avgResponseTime)}
               </div>
             </CardContent>
           </Card>
@@ -166,8 +166,8 @@ export default function ProviderStatsPage() {
           <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
             <div className="flex flex-wrap gap-2">
               {([
-                ['avgLatency', <Clock key="c" className="mr-1 h-4 w-4" />, '平均延迟'],
-                ['p95Latency', <BarChart3 key="b" className="mr-1 h-4 w-4" />, 'P95 延迟'],
+                ['avgResponseTime', <Clock key="c" className="mr-1 h-4 w-4" />, '平均响应时间'],
+                ['p95ResponseTime', <BarChart3 key="b" className="mr-1 h-4 w-4" />, 'P95 响应时间'],
                 ['successRate', <Activity key="a" className="mr-1 h-4 w-4" />, '成功率'],
                 ['requestCount', <Hash key="h" className="mr-1 h-4 w-4" />, '请求数'],
               ] as [SortField, React.ReactNode, string][]).map(([field, icon, label]) => (
@@ -232,7 +232,7 @@ export default function ProviderStatsPage() {
                 const successRate = stat.totalRequests > 0
                   ? stat.successCount / stat.totalRequests
                   : 0
-                const quality = latencyQuality(stat.avgLatency)
+                const quality = responseTimeQuality(stat.avgResponseTime)
 
                 return (
                   <ProviderCard
@@ -290,15 +290,15 @@ function ProviderCard({ stat, rank, successRate, quality }: ProviderCardProps) {
           </div>
         </div>
         <div className="bg-muted/50 rounded-lg px-3 py-2">
-          <div className="text-xs text-muted-foreground">平均延迟</div>
-          <div className={cn('font-semibold text-base', latencyColor(stat.avgLatency))}>
-            {formatMs(stat.avgLatency)}
+          <div className="text-xs text-muted-foreground">平均响应时间</div>
+          <div className={cn('font-semibold text-base', responseTimeColor(stat.avgResponseTime))}>
+            {formatMs(stat.avgResponseTime)}
           </div>
         </div>
         <div className="bg-muted/50 rounded-lg px-3 py-2">
-          <div className="text-xs text-muted-foreground">P95 延迟</div>
-          <div className={cn('font-semibold text-base', latencyColor(stat.p95Latency))}>
-            {formatMs(stat.p95Latency)}
+          <div className="text-xs text-muted-foreground">P95 响应时间</div>
+          <div className={cn('font-semibold text-base', responseTimeColor(stat.p95ResponseTime))}>
+            {formatMs(stat.p95ResponseTime)}
           </div>
         </div>
       </div>
@@ -312,23 +312,23 @@ function ProviderCard({ stat, rank, successRate, quality }: ProviderCardProps) {
               <span className="ml-1 text-blue-500">({stat.ttfbCount}/{stat.totalRequests})</span>
             )}
           </div>
-          <div className={cn('font-semibold text-base', stat.avgTtfb != null ? latencyColor(stat.avgTtfb) : 'text-muted-foreground')}>
+          <div className={cn('font-semibold text-base', stat.avgTtfb != null ? responseTimeColor(stat.avgTtfb) : 'text-muted-foreground')}>
             {stat.avgTtfb != null ? formatMs(stat.avgTtfb) : '—'}
           </div>
         </div>
         <div className="bg-blue-50/50 dark:bg-blue-950/20 rounded-lg px-3 py-2 border border-blue-100 dark:border-blue-900">
           <div className="text-xs text-muted-foreground">TTFB P95</div>
-          <div className={cn('font-semibold text-base', stat.p95Ttfb != null ? latencyColor(stat.p95Ttfb) : 'text-muted-foreground')}>
+          <div className={cn('font-semibold text-base', stat.p95Ttfb != null ? responseTimeColor(stat.p95Ttfb) : 'text-muted-foreground')}>
             {stat.p95Ttfb != null ? formatMs(stat.p95Ttfb) : '—'}
           </div>
         </div>
         <div className="bg-muted/50 rounded-lg px-3 py-2">
           <div className="text-xs text-muted-foreground">最快</div>
-          <div className="font-semibold text-base text-green-600">{formatMs(stat.minLatency)}</div>
+          <div className="font-semibold text-base text-green-600">{formatMs(stat.minResponseTime)}</div>
         </div>
         <div className="bg-muted/50 rounded-lg px-3 py-2">
           <div className="text-xs text-muted-foreground">最慢</div>
-          <div className="font-semibold text-base text-red-600">{formatMs(stat.maxLatency)}</div>
+          <div className="font-semibold text-base text-red-600">{formatMs(stat.maxResponseTime)}</div>
         </div>
       </div>
 

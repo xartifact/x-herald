@@ -162,7 +162,7 @@ logsRoutes.get('/', async (c) => {
               providerName: requestLogs.providerName,
               virtualKeyId: requestLogs.virtualKeyId,
               virtualKeyName: requestLogs.virtualKeyName,
-              latencyMs: requestLogs.latencyMs,
+              responseTimeMs: requestLogs.responseTimeMs,
               inputTokens: requestLogs.inputTokens,
               outputTokens: requestLogs.outputTokens,
               totalTokens: requestLogs.totalTokens,
@@ -192,7 +192,7 @@ logsRoutes.get('/', async (c) => {
               providerName: requestLogs.providerName,
               virtualKeyId: requestLogs.virtualKeyId,
               virtualKeyName: requestLogs.virtualKeyName,
-              latencyMs: requestLogs.latencyMs,
+              responseTimeMs: requestLogs.responseTimeMs,
               inputTokens: requestLogs.inputTokens,
               outputTokens: requestLogs.outputTokens,
               totalTokens: requestLogs.totalTokens,
@@ -263,7 +263,7 @@ logsRoutes.get('/client-models', async (c) => {
           totalInputTokens: sql<number>`sum(${requestLogs.inputTokens})`,
           totalOutputTokens: sql<number>`sum(${requestLogs.outputTokens})`,
           totalTokens: sql<number>`sum(${requestLogs.totalTokens})`,
-          avgLatency: sql<number>`avg(${requestLogs.latencyMs})`,
+          avgResponseTime: sql<number>`avg(${requestLogs.responseTimeMs})`,
           lastRequestAt: sql<string>`max(${requestLogs.createdAt})`,
         }).from(requestLogs).where(and(...conditions))
       : db.select({
@@ -274,7 +274,7 @@ logsRoutes.get('/client-models', async (c) => {
           totalInputTokens: sql<number>`sum(${requestLogs.inputTokens})`,
           totalOutputTokens: sql<number>`sum(${requestLogs.outputTokens})`,
           totalTokens: sql<number>`sum(${requestLogs.totalTokens})`,
-          avgLatency: sql<number>`avg(${requestLogs.latencyMs})`,
+          avgResponseTime: sql<number>`avg(${requestLogs.responseTimeMs})`,
           lastRequestAt: sql<string>`max(${requestLogs.createdAt})`,
         }).from(requestLogs).where(isNotNull(requestLogs.originalModelName));
 
@@ -289,7 +289,7 @@ logsRoutes.get('/client-models', async (c) => {
       totalInputTokens: Number(stat.totalInputTokens || 0),
       totalOutputTokens: Number(stat.totalOutputTokens || 0),
       totalTokens: Number(stat.totalTokens || 0),
-      avgLatency: Number(stat.avgLatency || 0),
+      avgResponseTime: Number(stat.avgResponseTime || 0),
       lastRequestAt: stat.lastRequestAt,
     }));
 
@@ -404,7 +404,7 @@ logsRoutes.get('/stats/overview', async (c) => {
               totalRequests: sql<number>`count(*)`,
               successRequests: sql<number>`count(*) filter (where ${requestLogs.status} = 'success')`,
               failureRequests: sql<number>`count(*) filter (where ${requestLogs.status} = 'failure')`,
-              avgLatency: sql<number>`avg(${requestLogs.latencyMs})`,
+              avgResponseTime: sql<number>`avg(${requestLogs.responseTimeMs})`,
               totalInputTokens: sql<number>`sum(${requestLogs.inputTokens})`,
               totalOutputTokens: sql<number>`sum(${requestLogs.outputTokens})`,
               totalTokens: sql<number>`sum(${requestLogs.totalTokens})`,
@@ -416,7 +416,7 @@ logsRoutes.get('/stats/overview', async (c) => {
               totalRequests: sql<number>`count(*)`,
               successRequests: sql<number>`count(*) filter (where ${requestLogs.status} = 'success')`,
               failureRequests: sql<number>`count(*) filter (where ${requestLogs.status} = 'failure')`,
-              avgLatency: sql<number>`avg(${requestLogs.latencyMs})`,
+              avgResponseTime: sql<number>`avg(${requestLogs.responseTimeMs})`,
               totalInputTokens: sql<number>`sum(${requestLogs.inputTokens})`,
               totalOutputTokens: sql<number>`sum(${requestLogs.outputTokens})`,
               totalTokens: sql<number>`sum(${requestLogs.totalTokens})`,
@@ -432,7 +432,7 @@ logsRoutes.get('/stats/overview', async (c) => {
             .select({
               modelName: requestLogs.modelName,
               requestCount: sql<number>`count(*)`,
-              avgLatency: sql<number>`avg(${requestLogs.latencyMs})`,
+              avgResponseTime: sql<number>`avg(${requestLogs.responseTimeMs})`,
               totalTokens: sql<number>`sum(${requestLogs.totalTokens})`,
             })
             .from(requestLogs)
@@ -442,7 +442,7 @@ logsRoutes.get('/stats/overview', async (c) => {
             .select({
               modelName: requestLogs.modelName,
               requestCount: sql<number>`count(*)`,
-              avgLatency: sql<number>`avg(${requestLogs.latencyMs})`,
+              avgResponseTime: sql<number>`avg(${requestLogs.responseTimeMs})`,
               totalTokens: sql<number>`sum(${requestLogs.totalTokens})`,
             })
             .from(requestLogs)
@@ -508,7 +508,7 @@ logsRoutes.get('/stats/overview', async (c) => {
           totalRequests: Number(overview[0]?.totalRequests || 0),
           successRequests: Number(overview[0]?.successRequests || 0),
           failureRequests: Number(overview[0]?.failureRequests || 0),
-          avgLatency: Number(overview[0]?.avgLatency || 0),
+          avgResponseTime: Number(overview[0]?.avgResponseTime || 0),
           totalInputTokens: Number(overview[0]?.totalInputTokens || 0),
           totalOutputTokens: Number(overview[0]?.totalOutputTokens || 0),
           totalTokens: Number(overview[0]?.totalTokens || 0),
@@ -516,7 +516,7 @@ logsRoutes.get('/stats/overview', async (c) => {
         modelStats: modelStats.map((stat) => ({
           modelName: stat.modelName,
           requestCount: Number(stat.requestCount),
-          avgLatency: Number(stat.avgLatency),
+          avgResponseTime: Number(stat.avgResponseTime),
           totalTokens: Number(stat.totalTokens),
         })),
         keyStats: keyStats.map((stat) => ({
@@ -670,7 +670,7 @@ logsRoutes.get('/stats/keys', async (c) => {
         totalInputTokens: sql<number>`coalesce(sum(${requestLogs.inputTokens}), 0)`,
         totalOutputTokens: sql<number>`coalesce(sum(${requestLogs.outputTokens}), 0)`,
         totalTokens: sql<number>`coalesce(sum(${requestLogs.totalTokens}), 0)`,
-        avgLatencyMs: sql<number>`round(avg(${requestLogs.latencyMs}))`,
+        avgResponseTimeMs: sql<number>`round(avg(${requestLogs.responseTimeMs}))`,
         lastUsedAt: sql<string>`max(${requestLogs.createdAt})`,
       })
       .from(requestLogs)
@@ -688,7 +688,7 @@ logsRoutes.get('/stats/keys', async (c) => {
         totalInputTokens: Number(r.totalInputTokens),
         totalOutputTokens: Number(r.totalOutputTokens),
         totalTokens: Number(r.totalTokens),
-        avgLatencyMs: Number(r.avgLatencyMs),
+        avgResponseTimeMs: Number(r.avgResponseTimeMs),
         lastUsedAt: r.lastUsedAt ?? null,
       })),
     });
@@ -722,10 +722,10 @@ logsRoutes.get('/stats/providers', async (c) => {
         totalRequests: sql<number>`count(*)`.mapWith(Number),
         successCount: sql<number>`count(*) filter (where ${requestLogs.status} = 'success')`.mapWith(Number),
         failureCount: sql<number>`count(*) filter (where ${requestLogs.status} = 'failure')`.mapWith(Number),
-        avgLatency: sql<number>`round(avg(${requestLogs.latencyMs}))`.mapWith(Number),
-        minLatency: sql<number>`min(${requestLogs.latencyMs})`.mapWith(Number),
-        maxLatency: sql<number>`max(${requestLogs.latencyMs})`.mapWith(Number),
-        p95Latency: sql<number>`round(percentile_cont(0.95) within group (order by ${requestLogs.latencyMs}))`.mapWith(Number),
+        avgResponseTime: sql<number>`round(avg(${requestLogs.responseTimeMs}))`.mapWith(Number),
+        minResponseTime: sql<number>`min(${requestLogs.responseTimeMs})`.mapWith(Number),
+        maxResponseTime: sql<number>`max(${requestLogs.responseTimeMs})`.mapWith(Number),
+        p95ResponseTime: sql<number>`round(percentile_cont(0.95) within group (order by ${requestLogs.responseTimeMs}))`.mapWith(Number),
         avgTtfb: sql<number | null>`round(avg(${ttfbExpr}))`.mapWith(Number),
         p95Ttfb: sql<number | null>`round(percentile_cont(0.95) within group (order by ${ttfbExpr}))`.mapWith(Number),
         ttfbCount: sql<number>`count(*) filter (where ${ttfbExpr} is not null)`.mapWith(Number),
@@ -734,7 +734,7 @@ logsRoutes.get('/stats/providers', async (c) => {
       .from(requestLogs)
       .where(and(...conditions))
       .groupBy(requestLogs.providerId, requestLogs.providerName)
-      .orderBy(sql`avg(${requestLogs.latencyMs}) asc nulls last`);
+      .orderBy(sql`avg(${requestLogs.responseTimeMs}) asc nulls last`);
 
     return c.json({ success: true, data: results });
   } catch (error) {

@@ -128,7 +128,7 @@ anthropicRoutes.post('/messages/count_tokens', async (c) => {
     } as RequestInit);
 
     // 7. 处理响应
-    const latencyMs = Date.now() - startTime;
+    const responseTimeMs = Date.now() - startTime;
 
     if (!response.ok) {
       const errorBody = await response.text();
@@ -146,7 +146,7 @@ anthropicRoutes.post('/messages/count_tokens', async (c) => {
         providerName: provider.name,
         status: 'failure',
         statusCode: response.status,
-        latencyMs,
+        responseTimeMs,
         clientIp,
         userAgent,
         clientType,
@@ -178,7 +178,7 @@ anthropicRoutes.post('/messages/count_tokens', async (c) => {
       providerName: provider.name,
       status: 'success',
       statusCode: response.status,
-      latencyMs,
+      responseTimeMs,
       clientIp,
       userAgent,
       clientType,
@@ -198,7 +198,7 @@ anthropicRoutes.post('/messages/count_tokens', async (c) => {
     return c.json(result);
 
   } catch (error) {
-    const latencyMs = Date.now() - startTime;
+    const responseTimeMs = Date.now() - startTime;
 
     logger.error({ error }, 'Count tokens error');
 
@@ -207,7 +207,7 @@ anthropicRoutes.post('/messages/count_tokens', async (c) => {
       modelName: 'unknown',
       status: 'failure',
       statusCode: 500,
-      latencyMs,
+      responseTimeMs,
       clientIp,
       userAgent,
       clientType,

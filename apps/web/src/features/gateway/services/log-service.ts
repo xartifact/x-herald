@@ -19,7 +19,7 @@ export interface LogRequestParams {
   providerName?: string;
   status: 'success' | 'failure' | 'pending';
   statusCode?: number;
-  latencyMs: number;
+  responseTimeMs: number;
   inputTokens?: number;
   outputTokens?: number;
   requestHeaders?: Record<string, string>;
@@ -91,7 +91,7 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
       errorMessage: params.errorMessage,
       errorType: params.errorType,
       statusCode: params.statusCode,
-      latencyMs: params.latencyMs,
+      responseTimeMs: params.responseTimeMs,
       gatewayOverheadMs: params.gatewayOverheadMs,
       providerTtfbMs: params.providerTtfbMs,
       streamDurationMs: params.streamDurationMs,
@@ -154,7 +154,7 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
         .set({
           status: params.status,
           statusCode: params.statusCode,
-          latencyMs: params.latencyMs,
+          responseTimeMs: params.responseTimeMs,
           inputTokens,
           outputTokens,
           totalTokens: inputTokens + outputTokens,
@@ -188,7 +188,7 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
       providerName: params.providerName,
       status: params.status,
       statusCode: params.statusCode,
-      latencyMs: params.latencyMs,
+      responseTimeMs: params.responseTimeMs,
       inputTokens,
       outputTokens,
       totalTokens: inputTokens + outputTokens,
@@ -224,7 +224,7 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
       isComplete: true,
       // 显式设置 UTC 时间戳，避免 PGlite defaultNow() 时区偏差
       createdAt: new Date(),
-      streamStartedAt: params.streaming ? new Date(Date.now() - params.latencyMs) : new Date(),
+      streamStartedAt: params.streaming ? new Date(Date.now() - params.responseTimeMs) : new Date(),
       streamCompletedAt: new Date(),
       lastUpdatedAt: new Date(),
 
@@ -335,7 +335,7 @@ async function createStreamLog(params: StreamLogParams & { isStream: boolean }):
         streamStatus,
         isComplete: false,
         statusCode: 200,
-        latencyMs: 0,
+        responseTimeMs: 0,
         inputTokens: 0,
         outputTokens: 0,
         totalTokens: 0,
@@ -482,7 +482,7 @@ export async function finalizeStreamLog(
     return;
   }
   try {
-    const latencyMs = Date.now() - params.startTime;
+    const responseTimeMs = Date.now() - params.startTime;
     const db = getDatabase();
 
     await db
@@ -492,7 +492,7 @@ export async function finalizeStreamLog(
         streamStatus: 'completed',
         isComplete: true,
         statusCode: params.statusCode,
-        latencyMs,
+        responseTimeMs,
         inputTokens: params.inputTokens,
         outputTokens: params.outputTokens,
         totalTokens: params.inputTokens + params.outputTokens,
@@ -529,7 +529,7 @@ export async function finalizeStreamLog(
       .where(eq(requestLogs.id, logId));
 
     logger.debug(
-      { logId, latencyMs, tokens: params.inputTokens + params.outputTokens },
+      { logId, responseTimeMs, tokens: params.inputTokens + params.outputTokens },
       'Stream log finalized'
     );
   } catch (error) {
@@ -585,7 +585,7 @@ export async function markLogAsFailed(
   statusCode: number,
   errorMessage: string,
   retryCount?: number,
-  latencyMs?: number,
+  responseTimeMs?: number,
   providerResponseBody?: unknown,
 ): Promise<void> {
   if (logId.startsWith('temp-')) return;
@@ -601,7 +601,7 @@ export async function markLogAsFailed(
         streamStatus: 'failed',
         lastUpdatedAt: new Date(),
         ...(retryCount !== undefined && { retryCount }),
-        ...(latencyMs !== undefined && { latencyMs }),
+        ...(responseTimeMs !== undefined && { responseTimeMs }),
         ...(providerResponseBody !== undefined && { providerResponseBody }),
       })
       .where(eq(requestLogs.id, logId));

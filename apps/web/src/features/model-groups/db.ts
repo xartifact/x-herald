@@ -33,7 +33,7 @@ export interface ModelCapabilities {
 
 
 export interface RoutingConfig {
-  strategy: 'round_robin' | 'weighted' | 'least_latency' | 'priority' | 'cost_optimized' | 'smart';
+  strategy: 'round_robin' | 'weighted' | 'least_response_time' | 'priority' | 'cost_optimized' | 'smart';
   fallbackEnabled: boolean;
 }
 

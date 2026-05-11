@@ -74,16 +74,16 @@ export async function aggregateBucket(bucketStart: Date, bucketMinutes = 5): Pro
         NULLIF((metadata -> 'performance' ->> 'providerTtfbMs')::real, 0)
       )::real AS ttfb_max,
 
-      -- 总延迟
-      avg(NULLIF(latency_ms, 0))::real AS latency_avg,
+      -- 总响应时间
+      avg(NULLIF(response_time_ms, 0))::real AS latency_avg,
       percentile_cont(0.5) WITHIN GROUP (
-        ORDER BY NULLIF(latency_ms, 0)
+        ORDER BY NULLIF(response_time_ms, 0)
       )::real AS latency_p50,
       percentile_cont(0.95) WITHIN GROUP (
-        ORDER BY NULLIF(latency_ms, 0)
+        ORDER BY NULLIF(response_time_ms, 0)
       )::real AS latency_p95,
       percentile_cont(0.99) WITHIN GROUP (
-        ORDER BY NULLIF(latency_ms, 0)
+        ORDER BY NULLIF(response_time_ms, 0)
       )::real AS latency_p99,
 
       -- TTFT (ttfbToFirstTextMs，仅流式)

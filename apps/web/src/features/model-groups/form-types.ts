@@ -12,7 +12,7 @@ export interface GroupFormData {
     maxTokens: number
     contextWindow: number
   }
-  routingStrategy: 'round_robin' | 'weighted' | 'least_latency' | 'priority' | 'cost_optimized' | 'smart'
+  routingStrategy: 'round_robin' | 'weighted' | 'least_response_time' | 'priority' | 'cost_optimized' | 'smart'
   fallbackEnabled: boolean
 }
 

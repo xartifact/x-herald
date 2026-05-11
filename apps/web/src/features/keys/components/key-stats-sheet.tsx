@@ -54,7 +54,7 @@ export function KeyStatsSheet({
   const successCount = stat?.successCount ?? 0
   const successRate = requestCount > 0 ? Math.round((successCount / requestCount) * 100) : 0
   const totalTokens = stat?.totalTokens ?? 0
-  const avgLatency = stat?.avgLatencyMs ?? 0
+  const avgResponseTime = stat?.avgResponseTimeMs ?? 0
 
   const lastUsedText = stat?.lastUsedAt
     ? new Date(stat.lastUsedAt).toLocaleString('zh-CN')
@@ -94,8 +94,8 @@ export function KeyStatsSheet({
             sub={`输入 ${formatTokens(stat?.totalInputTokens ?? 0)} / 输出 ${formatTokens(stat?.totalOutputTokens ?? 0)}`}
           />
           <StatCard
-            label="平均延迟"
-            value={avgLatency > 0 ? `${avgLatency.toLocaleString()} ms` : '-'}
+            label="平均响应时间"
+            value={avgResponseTime > 0 ? `${avgResponseTime.toLocaleString()} ms` : '-'}
           />
         </div>
 

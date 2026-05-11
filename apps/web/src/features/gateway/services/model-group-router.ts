@@ -27,7 +27,7 @@ export interface RouteResult {
     strategy: string;
     reason: string;
     candidates: number;
-    latency?: number;
+    responseTime?: number;
   };
   mapping: ModelMappingResult;
   matchedRule?: {
@@ -45,7 +45,7 @@ export interface RoutingContext {
   hasVision: boolean;
   virtualKeyId: string;
   preferredProvider?: string;
-  maxLatency?: number;
+  maxResponseTime?: number;
   maxCost?: number;
 }
 
@@ -202,7 +202,7 @@ export class ModelGroupRouter {
         return [candidates[selectedIdx], ...rest];
       }
 
-      case 'least_latency': {
+      case 'least_response_time': {
         const perfMap = await fetchGroupInstancesPerf(groupId);
         const withPerf: Array<{ c: Candidate; ttfb: number }> = [];
         const withoutPerf: Candidate[] = [];

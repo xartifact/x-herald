@@ -107,12 +107,12 @@ export function extractContentFeatures(log: Log): ContentFeatures | null {
       const inputRatio = totalTokens > 0 ? (log.inputTokens / totalTokens) * 100 : 0
       const outputRatio = totalTokens > 0 ? (log.outputTokens / totalTokens) * 100 : 0
 
-      // 排除 TTFB，优先用 streamDurationMs，回退用总延迟减去网关和 TTFB
+      // 排除 TTFB，优先用 streamDurationMs，回退用总响应时间减去网关和 TTFB
       const perf = log.metadata?.performance
       const streamMs = perf?.streamDurationMs
       const genMs = streamMs && streamMs > 0
         ? streamMs
-        : log.latencyMs - (perf?.gatewayOverheadMs ?? 0) - (perf?.providerTtfbMs ?? 0)
+        : log.responseTimeMs - (perf?.gatewayOverheadMs ?? 0) - (perf?.providerTtfbMs ?? 0)
       const tokensPerSecond = genMs > 0 ? (log.outputTokens / (genMs / 1000)) : 0
       const tokensPerMessage = features.request?.messageCount
         ? log.inputTokens / features.request.messageCount

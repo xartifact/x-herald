@@ -38,7 +38,7 @@ export function LogTable({
           <TableRow className="hover:bg-transparent">
             <TableHead className="w-[50px]">状态</TableHead>
             <TableHead className="min-w-[200px]">模型</TableHead>
-            <TableHead className="w-[100px]">延迟</TableHead>
+            <TableHead className="w-[100px]">响应时间</TableHead>
             <TableHead className="w-[140px]">Token</TableHead>
             <TableHead className="min-w-[150px]">虚拟密钥</TableHead>
             <TableHead className="w-[120px]">客户端</TableHead>
@@ -115,15 +115,15 @@ export function LogTable({
                   </div>
                 </TableCell>
 
-                {/* 延迟 */}
+                {/* 响应时间 */}
                 <TableCell>
                   <span className={cn(
                     "font-mono text-sm font-semibold",
-                    log.latencyMs < 1000 ? "text-green-600" :
-                    log.latencyMs < 3000 ? "text-amber-600" :
+                    log.responseTimeMs < 1000 ? "text-green-600" :
+                    log.responseTimeMs < 3000 ? "text-amber-600" :
                     "text-red-600"
                   )}>
-                    {formatDuration(log.latencyMs)}
+                    {formatDuration(log.responseTimeMs)}
                   </span>
                 </TableCell>
 

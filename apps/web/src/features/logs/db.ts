@@ -63,12 +63,12 @@ export interface LogMetadata {
   performance?: {
     cacheHit?: boolean;
     estimatedCostUsd?: number;
-    latencyTier?: 'fast' | 'normal' | 'slow';
+    responseTimeTier?: 'fast' | 'normal' | 'slow';
     ttfbMs?: number;                                  // Time to first byte
     usageEstimated?: boolean;                         // 标记 token 是否为估算
-    // 链路分段延迟（毫秒）
+    // 链路分段响应时间（毫秒）
     gatewayOverheadMs?: number;                       // 网关预处理耗时（协议检测、路由、转换）
-    providerTtfbMs?: number;                          // Provider 首字节延迟（网络 + Provider 思考）
+    providerTtfbMs?: number;                          // Provider 首字节响应时间（网络 + Provider 思考）
     streamDurationMs?: number;                        // 流式传输持续时间
     ttfbToFirstThinkingMs?: number;                   // HTTP TTFB → 第一个 thinking token
     ttfbToFirstTextMs?: number;                       // HTTP TTFB → 第一个 text token（TTFT）
@@ -146,7 +146,7 @@ export const requestLogs = pgTable('request_logs', {
   providerName: varchar('provider_name', { length: 255 }),
   status: varchar('status', { length: 20 }).notNull().$type<'success' | 'failure' | 'pending'>(),
   statusCode: integer('status_code'),
-  latencyMs: integer('latency_ms').notNull(),
+  responseTimeMs: integer('response_time_ms').notNull(),
   inputTokens: integer('input_tokens').default(0).notNull(),
   outputTokens: integer('output_tokens').default(0).notNull(),
   totalTokens: integer('total_tokens').default(0).notNull(),

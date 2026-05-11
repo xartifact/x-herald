@@ -167,7 +167,7 @@ export function LogDetailSheet({
         {/* 底部状态栏 */}
         <div className="flex items-center justify-between px-3 md:px-6 py-2 border-t bg-muted/20 text-xs text-muted-foreground font-mono">
           <div className="flex items-center gap-2 md:gap-4">
-            <span>延迟: {formatDuration(log.latencyMs)}</span>
+            <span>响应时间: {formatDuration(log.responseTimeMs)}</span>
             <Separator orientation="vertical" className="h-4" />
             <span>Token: {formatTokens(log.totalTokens)}</span>
             <Separator orientation="vertical" className="h-4 hidden md:block" />

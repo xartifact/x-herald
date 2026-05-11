@@ -1,5 +1,5 @@
-import { type Node, type Edge, Position } from '@xyflow/react';
 import dagre from '@dagrejs/dagre';
+import { type Node, type Edge, Position } from '@xyflow/react';
 
 interface NodeDimensions {
   width: number;

@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+
 import { Activity, Brain, Clock, Zap } from 'lucide-react';
 
-import { Badge } from '@/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card';
 import { useLiveLogs } from '@/hooks/use-live-logs';
 import type { LiveStreamItem } from '@/hooks/use-live-logs';
+import { Badge } from '@/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card';
 
 function formatElapsed(ms: number): string {
   if (ms < 1000) return `${ms}ms`;

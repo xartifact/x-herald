@@ -2,9 +2,9 @@ import { eq, and } from 'drizzle-orm';
 
 import { getDatabase } from '@/core/db/client';
 import rootLogger from '@/core/lib/logger';
+import { getConfig } from '@/features/gateway-config/service';
 import { modelInstances } from '@/features/model-groups/db';
 import { providers } from '@/features/providers/db';
-import { getConfig } from '@/features/gateway-config/service';
 
 const logger = rootLogger.child({ module: 'ai-caller' });
 

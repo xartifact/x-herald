@@ -1,5 +1,6 @@
-import { describe, test, expect } from 'bun:test'
 import React from 'react'
+
+import { describe, test, expect } from 'bun:test'
 import { renderToStaticMarkup } from 'react-dom/server'
 
 describe('React SSR test', () => {

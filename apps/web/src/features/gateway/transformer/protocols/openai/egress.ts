@@ -1,6 +1,7 @@
 import type { TransformerContext, StandardRequest } from '@/types';
-import type { OpenAIRequest } from './types';
+
 import { convertToOpenAIMessages } from './converters/message-converter';
+import type { OpenAIRequest } from './types';
 import { applyParameterTransforms } from '../../shared/parameter-transformer';
 import { cleanSchemaForOpenAI } from '../../shared/schema-cleaner';
 

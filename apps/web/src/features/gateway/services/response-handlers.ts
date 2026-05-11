@@ -5,6 +5,7 @@ import type { VirtualKey } from '@/features/keys/db';
 import type { TransformerContext } from '@/types';
 
 import { getTransformer } from '../transformer';
+import { logEventBus } from './log-event-bus';
 import {
   logRequest,
   upgradeToStreamLog,
@@ -12,7 +13,6 @@ import {
   markStreamFailed,
   markStreamAborted,
 } from './log-service';
-import { logEventBus } from './log-event-bus';
 import { extractMetadata } from './metadata-extractor';
 import {
   StreamResponseCollector,

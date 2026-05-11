@@ -1,5 +1,6 @@
-import { mock, describe, test, expect } from 'bun:test'
 import React from 'react'
+
+import { mock, describe, test, expect } from 'bun:test'
 import { renderToStaticMarkup } from 'react-dom/server'
 
 mock.module('@xyflow/react', () => ({

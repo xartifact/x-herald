@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+
 import { useQueryClient } from '@tanstack/react-query';
 
 import type { LiveStreamEvent } from '@/features/gateway/services/log-event-bus';

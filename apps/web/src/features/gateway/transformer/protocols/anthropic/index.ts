@@ -1,8 +1,9 @@
 import type { Transformer, TransformerContext, StandardRequest, StandardResponse } from '@/types';
-import { normalizeAnthropicRequest } from './ingress';
+
 import { adaptAnthropicRequest } from './egress';
-import { normalizeAnthropicResponse } from './response-ingress';
+import { normalizeAnthropicRequest } from './ingress';
 import { adaptAnthropicResponse } from './response-egress';
+import { normalizeAnthropicResponse } from './response-ingress';
 import { transformAnthropicStream } from './stream';
 
 export class AnthropicTransformer implements Transformer {

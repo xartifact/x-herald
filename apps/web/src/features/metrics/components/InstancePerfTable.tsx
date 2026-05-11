@@ -8,10 +8,10 @@ import { Button } from '@/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/ui/table';
 
-import type { InstanceSummary } from '../hooks/use-metrics';
-import { useInstancesSummary } from '../hooks/use-metrics';
 import { AnomalyBadge } from './AnomalyBadge';
 import { InstancePerfChart } from './InstancePerfChart';
+import type { InstanceSummary } from '../hooks/use-metrics';
+import { useInstancesSummary } from '../hooks/use-metrics';
 
 function fmtMs(ms: number | null | undefined): string {
   if (ms == null) return '—';

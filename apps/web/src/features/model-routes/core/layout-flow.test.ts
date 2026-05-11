@@ -1,5 +1,6 @@
-import { test, expect, describe } from 'bun:test';
 import { type Node, type Edge } from '@xyflow/react';
+import { test, expect, describe } from 'bun:test';
+
 import { getLayoutedElements } from './layout-flow';
 
 function createNode(id: string, type: string = 'modelTrigger'): Node {

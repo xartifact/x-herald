@@ -1,8 +1,9 @@
 import type { Transformer, TransformerContext, StandardRequest, StandardResponse } from '@/types';
-import { normalizeGeminiRequest } from './ingress';
+
 import { adaptGeminiRequest } from './egress';
-import { normalizeGeminiResponse } from './response-ingress';
+import { normalizeGeminiRequest } from './ingress';
 import { adaptGeminiResponse } from './response-egress';
+import { normalizeGeminiResponse } from './response-ingress';
 import { transformGeminiStream } from './stream';
 
 export class GeminiTransformer implements Transformer {

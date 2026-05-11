@@ -7,10 +7,10 @@ import { callAI, AiNotConfiguredError } from '@/core/lib/ai-caller';
 import rootLogger from '@/core/lib/logger';
 import { authMiddleware } from '@/features/auth/middleware';
 import { modelInstances } from '@/features/model-groups/db';
+import type { InstanceConfig } from '@/features/model-groups/db';
 import { providers } from '@/features/providers/db';
 
 import { buildSystemPrompt } from './prompt';
-import type { InstanceConfig } from '@/features/model-groups/db';
 
 const logger = rootLogger.child({ module: 'ai-assist' });
 

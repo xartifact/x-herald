@@ -1,7 +1,8 @@
 import type { TransformerContext, StandardRequest } from '@/types';
-import type { AnthropicRequest } from './types';
+
 import { convertMessage } from './converters/message-converter';
 import { convertAnthropicTool, convertToolChoice } from './converters/tool-converter';
+import type { AnthropicRequest } from './types';
 
 /**
  * Normalize Anthropic request to standard format (ingress pipeline)

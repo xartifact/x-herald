@@ -1,5 +1,6 @@
-import type { ToolCall } from '@/types';
 import logger from '@/core/lib/logger';
+import type { ToolCall } from '@/types';
+
 import { parseToolArguments } from '../../../shared/tool-arguments-parser';
 
 export function normalizeToolCalls(

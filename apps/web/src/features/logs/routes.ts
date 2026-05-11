@@ -8,11 +8,12 @@ import rootLogger from '@/core/lib/logger';
 
 const logger = rootLogger.child({ module: 'logs' });
 
+import { logEventBus } from '@/features/gateway/services/log-event-bus';
+import type { LiveStreamEvent } from '@/features/gateway/services/log-event-bus';
+
 import { requestLogs } from './db';
 import { recalculateAll } from './services/rank-calculator';
 import { authMiddleware } from '../auth/middleware';
-import { logEventBus } from '@/features/gateway/services/log-event-bus';
-import type { LiveStreamEvent } from '@/features/gateway/services/log-event-bus';
 
 const logsRoutes = new Hono();
 

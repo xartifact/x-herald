@@ -2,6 +2,7 @@
 
 import { Pencil, Trash2, RefreshCw, BarChart2 } from 'lucide-react'
 
+import type { KeyStat } from '@/hooks/use-logs'
 import { Badge } from '@/ui/badge'
 import { Button } from '@/ui/button'
 import { Card, CardContent } from '@/ui/card'
@@ -13,7 +14,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/ui/table'
-import type { KeyStat } from '@/hooks/use-logs'
 
 import { KeyDisplay } from './key-display'
 import type { VirtualKey } from '../types'

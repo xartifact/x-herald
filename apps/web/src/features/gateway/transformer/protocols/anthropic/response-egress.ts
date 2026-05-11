@@ -1,4 +1,5 @@
 import type { TransformerContext, StandardResponse } from '@/types';
+
 import type { AnthropicContentBlock, AnthropicResponse } from './types';
 
 export function mapToAnthropicStopReason(reason: string | null): AnthropicResponse['stop_reason'] {

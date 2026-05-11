@@ -1,4 +1,5 @@
 import type { StandardMessage } from '@/types';
+
 import type { OpenAIMessage } from '../types';
 import { convertContent } from './content-converter';
 import { normalizeToolCalls } from './tool-converter';

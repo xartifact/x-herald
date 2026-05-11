@@ -7,12 +7,12 @@ import { eq, and, asc } from 'drizzle-orm';
 
 import { getDatabase } from '@/core/db/client';
 import logger from '@/core/lib/logger';
-import { modelGroups, modelInstances } from '@/features/model-groups/db';
-import type { ModelGroup, ModelInstance } from '@/features/model-groups/types';
 import {
   fetchGroupInstancesPerf,
   type InstancePerfData,
 } from '@/features/metrics/services/instance-perf-cache';
+import { modelGroups, modelInstances } from '@/features/model-groups/db';
+import type { ModelGroup, ModelInstance } from '@/features/model-groups/types';
 import { providers } from '@/features/providers/db';
 
 import { circuitBreakerRegistry } from './circuit-breaker';

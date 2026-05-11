@@ -4,8 +4,8 @@ import { useState } from 'react'
 
 import { FolderOpen, MoveRight } from 'lucide-react'
 
-import { Badge } from '@/ui/badge'
 import { StatusToggle } from '@/components/status-toggle'
+import { Badge } from '@/ui/badge'
 import { Button } from '@/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card'
 import {

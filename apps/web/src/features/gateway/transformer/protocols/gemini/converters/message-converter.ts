@@ -1,4 +1,5 @@
 import type { StandardMessage } from '@/types';
+
 import type { GeminiContent } from '../types';
 
 export function convertMessage(msg: GeminiContent): StandardMessage {

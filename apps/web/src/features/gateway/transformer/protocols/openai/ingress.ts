@@ -1,6 +1,7 @@
 import type { TransformerContext, StandardRequest } from '@/types';
-import type { OpenAIRequest } from './types';
+
 import { convertMessages } from './converters/message-converter';
+import type { OpenAIRequest } from './types';
 
 /**
  * Normalize OpenAI request to standard format

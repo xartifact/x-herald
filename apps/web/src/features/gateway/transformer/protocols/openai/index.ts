@@ -4,10 +4,11 @@
  */
 
 import type { Transformer, TransformerContext, StandardRequest, StandardResponse } from '@/types';
-import { normalizeOpenAIRequest } from './ingress';
+
 import { adaptOpenAIRequest } from './egress';
-import { normalizeOpenAIResponse } from './response-ingress';
+import { normalizeOpenAIRequest } from './ingress';
 import { adaptOpenAIResponse } from './response-egress';
+import { normalizeOpenAIResponse } from './response-ingress';
 import { transformOpenAIStream } from './stream';
 
 export class OpenAITransformer implements Transformer {

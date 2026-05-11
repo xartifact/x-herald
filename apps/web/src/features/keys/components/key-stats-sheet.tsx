@@ -1,10 +1,11 @@
 'use client'
 
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/ui/sheet'
-import { Tabs, TabsList, TabsTrigger } from '@/ui/tabs'
+import type { KeyStat } from '@/hooks/use-logs'
 import { Card, CardContent } from '@/ui/card'
 import { Separator } from '@/ui/separator'
-import type { KeyStat } from '@/hooks/use-logs'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/ui/sheet'
+import { Tabs, TabsList, TabsTrigger } from '@/ui/tabs'
+
 import type { VirtualKey } from '../types'
 
 interface KeyStatsSheetProps {

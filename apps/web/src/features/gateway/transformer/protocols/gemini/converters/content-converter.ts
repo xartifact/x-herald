@@ -1,4 +1,5 @@
 import type { MessageContent } from '@/types';
+
 import type { GeminiPart } from '../types';
 
 export function convertGeminiPart(parts: GeminiPart[]): string | MessageContent[] {

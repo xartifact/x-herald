@@ -4,8 +4,8 @@ import { Hono } from 'hono';
 import { getDatabase } from '@/core/db/client';
 import rootLogger from '@/core/lib/logger';
 import { authMiddleware } from '@/features/auth/middleware';
-import { getConfig, setConfig } from '@/features/gateway-config/service';
 import { CB_CONFIG_KEY, configureCircuitBreaker } from '@/features/gateway/services/circuit-breaker';
+import { getConfig, setConfig } from '@/features/gateway-config/service';
 import { modelGroups, modelInstances } from '@/features/model-groups/db';
 
 const logger = rootLogger.child({ module: 'settings' });

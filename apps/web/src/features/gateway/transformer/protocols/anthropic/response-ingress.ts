@@ -1,7 +1,8 @@
 import logger from '@/core/lib/logger';
 import type { TransformerContext, StandardResponse } from '@/types';
-import type { AnthropicResponse } from './types';
+
 import { sanitizeContent } from './sanitize';
+import type { AnthropicResponse } from './types';
 import { parseToolArguments } from '../../shared/tool-arguments-parser';
 
 export function mapAnthropicFinishReason(reason: string | null): 'stop' | 'length' | 'tool_calls' | 'content_filter' | null {

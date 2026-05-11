@@ -1,4 +1,5 @@
 import type { ToolDefinition } from '@/types';
+
 import type { GeminiTool } from '../types';
 
 export function convertGeminiTool(tool: GeminiTool): ToolDefinition {

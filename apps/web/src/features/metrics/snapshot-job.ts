@@ -1,7 +1,7 @@
 import logger from '@/core/lib/logger';
 
-import { aggregateBucket, aggregateRecentBuckets, alignToBucket } from './services/snapshot-aggregator';
 import { ensureMetricsTable } from './ensure-table';
+import { aggregateBucket, aggregateRecentBuckets, alignToBucket } from './services/snapshot-aggregator';
 
 const BUCKET_MINUTES = 5;
 

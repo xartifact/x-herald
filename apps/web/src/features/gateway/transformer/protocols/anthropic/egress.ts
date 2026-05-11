@@ -1,8 +1,9 @@
+import logger from '@/core/lib/logger';
 import type { TransformerContext, StandardRequest } from '@/types';
-import type { AnthropicMessage, AnthropicRequest } from './types';
+
 import { convertToAnthropicMessages } from './converters/message-converter';
 import { convertToAnthropicTool, convertToAnthropicToolChoice } from './converters/tool-converter';
-import logger from '@/core/lib/logger';
+import type { AnthropicMessage, AnthropicRequest } from './types';
 
 /**
  * Apply thinking type mapping if configured on provider

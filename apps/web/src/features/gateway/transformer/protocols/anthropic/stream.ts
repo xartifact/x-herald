@@ -1,8 +1,9 @@
 import type { TransformerContext, StreamChunk, StandardMessage } from '@/types';
-import type { AnthropicStreamEvent, AnthropicResponse, AnthropicContentBlock } from './types';
-import { sanitizeContent } from './sanitize';
-import { mapAnthropicFinishReason } from './response-ingress';
+
 import { mapToAnthropicStopReason } from './response-egress';
+import { mapAnthropicFinishReason } from './response-ingress';
+import { sanitizeContent } from './sanitize';
+import type { AnthropicStreamEvent, AnthropicResponse, AnthropicContentBlock } from './types';
 
 export function convertStreamEventToChunk(event: AnthropicStreamEvent): StreamChunk | null {
   switch (event.type) {

@@ -7,10 +7,10 @@ import { eq, and, sql } from 'drizzle-orm';
 
 import { getDatabase } from '@/core/db/client';
 import logger from '@/core/lib/logger';
+import { fetchPerfContext } from '@/features/metrics/services/perf-context-fetcher';
 import { virtualModels, modelInstances, modelGroups, modelRoutes } from '@/features/model-groups/db';
 import { providers } from '@/features/providers/db';
 
-import { fetchPerfContext } from '@/features/metrics/services/perf-context-fetcher';
 
 import { modelGroupRouter, RequestRejectedError, type RouteResult, type RoutingContext } from './model-group-router';
 import type { ModelMappingResult } from './model-mapping';

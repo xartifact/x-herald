@@ -1,4 +1,5 @@
 import { test, expect, describe, afterEach } from 'bun:test'
+
 import { buildFlowFromData } from './build-flow'
 import { compileFlowToRoutes } from './compile-flow'
 import type { ModelRoute } from '../types'

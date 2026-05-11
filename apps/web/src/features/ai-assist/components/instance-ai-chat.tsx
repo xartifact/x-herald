@@ -6,6 +6,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Sparkles, Send, Undo2, Bot, Loader2, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
 
+import type { InstanceConfig } from '@/features/model-groups/types'
 import { Badge } from '@/ui/badge'
 import { Button } from '@/ui/button'
 import { ScrollArea } from '@/ui/scroll-area'
@@ -19,7 +20,6 @@ import {
 } from '@/ui/sheet'
 import { Textarea } from '@/ui/textarea'
 
-import type { InstanceConfig } from '@/features/model-groups/types'
 
 interface ChatMessage {
   role: 'user' | 'assistant'

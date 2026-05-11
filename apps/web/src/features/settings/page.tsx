@@ -17,9 +17,9 @@ import {
   SelectValue,
 } from '@/ui/select'
 
+import { useSettings, useUpdateSettings } from './useSettings'
 import type { ImportResult } from '../config-io/types'
 import { useExportConfig, useImportConfig } from '../config-io/useConfigIO'
-import { useSettings, useUpdateSettings } from './useSettings'
 
 const NONE_VALUE = '__none__'
 

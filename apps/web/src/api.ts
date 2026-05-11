@@ -11,6 +11,7 @@ import { createCorsMiddleware } from './core/middleware/cors';
 import { errorHandler } from './core/middleware/error';
 import { requestLogger } from './core/middleware/logger';
 import { authRoutes } from './features/auth';
+import { circuitBreakerRoutes } from './features/circuit-breaker';
 import { configIORoutes } from './features/config-io';
 import { gatewayRoutes } from './features/gateway';
 import { healthRoutes } from './features/health';
@@ -21,7 +22,6 @@ import { modelRoutesApi } from './features/model-routes';
 import { providersRoutes } from './features/providers';
 import { settingsRoutes } from './features/settings';
 import { virtualModelRoutes } from './features/virtual-models';
-import { circuitBreakerRoutes } from './features/circuit-breaker';
 
 // Create API app
 export const createApiApp = async () => {

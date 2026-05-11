@@ -3,9 +3,32 @@ import type { Context, Next } from 'hono';
 
 import { getDatabase } from '@/core/db/client';
 import rootLogger from '@/core/lib/logger';
+import { virtualKeys, type VirtualKey } from '@/features/keys/db';
 
 const logger = rootLogger.child({ module: 'gateway.auth' });
-import { virtualKeys } from '@/features/keys/db';
+
+// globalThis singleton cache (30s TTL)
+type VKCacheEntry = { value: VirtualKey; expiresAt: number };
+const cache: Map<string, VKCacheEntry> =
+  (globalThis as Record<string, unknown>)._vkCache as Map<string, VKCacheEntry> ?? ((globalThis as Record<string, unknown>)._vkCache = new Map()) as Map<string, VKCacheEntry>;
+const CACHE_TTL_MS = 30_000;
+
+function getCachedVirtualKey(key: string): VirtualKey | undefined {
+  const entry = cache.get(key);
+  if (!entry || Date.now() > entry.expiresAt) {
+    cache.delete(key);
+    return undefined;
+  }
+  return entry.value;
+}
+
+function setCachedVirtualKey(key: string, value: VirtualKey): void {
+  cache.set(key, { value, expiresAt: Date.now() + CACHE_TTL_MS });
+}
+
+export function invalidateVirtualKeyCache(key: string): void {
+  cache.delete(key);
+}
 
 /**
  * 虚拟密钥认证中间件 - 验证 API 请求中的 x-api-key 或 Authorization
@@ -34,6 +57,21 @@ export async function virtualKeyMiddleware(c: Context, next: Next) {
       );
     }
 
+    // Check cache first
+    const cachedKey = getCachedVirtualKey(keyValue);
+    if (cachedKey) {
+      // Re-check enabled/expired for cached entry (quick validation)
+      if (!cachedKey.enabled) {
+        return c.json({ error: 'API key is disabled', code: 'KEY_DISABLED' }, 403);
+      }
+      if (cachedKey.expiresAt && new Date(cachedKey.expiresAt) < new Date()) {
+        return c.json({ error: 'API key has expired', code: 'KEY_EXPIRED' }, 403);
+      }
+      c.set('virtualKey', cachedKey);
+      await next();
+      return;
+    }
+
     const db = getDatabase();
 
     // 查询密钥
@@ -54,6 +92,9 @@ export async function virtualKeyMiddleware(c: Context, next: Next) {
     }
 
     const key = keys[0];
+
+    // Cache the validated key
+    setCachedVirtualKey(keyValue, key);
 
     // 检查密钥是否启用
     if (!key.enabled) {

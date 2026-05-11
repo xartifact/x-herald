@@ -1,14 +1,14 @@
 import { eq, and, ne } from 'drizzle-orm';
-
-import { CATCHALL_VM_NAME } from '@/core/db/seed';
 import { Hono } from 'hono';
 
 import { getDatabase } from '@/core/db/client';
 import rootLogger from '@/core/lib/logger';
-
-const logger = rootLogger.child({ module: 'virtual-models' });
 import { authMiddleware } from '@/features/auth/middleware';
 import { virtualModels } from '@/features/model-groups/db';
+
+import { CATCHALL_VM_NAME } from './constants';
+
+const logger = rootLogger.child({ module: 'virtual-models' });
 
 const virtualModelRoutes = new Hono();
 

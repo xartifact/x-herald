@@ -1,4 +1,8 @@
+import { and, eq, gt, desc } from 'drizzle-orm';
+
+import { getDatabase } from '@/core/db/client';
 import logger from '@/core/lib/logger';
+import { circuitBreakerEvents } from '@/features/circuit-breaker/db';
 
 export const CB_CONFIG_KEY = 'CIRCUIT_BREAKER_CONFIG';
 
@@ -123,9 +127,59 @@ class CircuitBreakerRegistry {
     }
   }
 
+  restoreOpenState(instanceId: string, openUntil: Date, failureCount: number): void {
+    const openUntilMs = openUntil.getTime();
+    this.states.set(instanceId, {
+      failures: failureCount,
+      openUntil: openUntilMs,
+      state: 'open',
+      meta: EMPTY_META,
+    });
+    logger.info(
+      { instanceId, openUntil: openUntil.toISOString(), failureCount },
+      '[CircuitBreaker] Restored open state from DB',
+    );
+  }
+
   getState(instanceId: string): 'closed' | 'open' | 'half_open' {
     return this.states.get(instanceId)?.state ?? 'closed';
   }
 }
 
 export const circuitBreakerRegistry = new CircuitBreakerRegistry();
+
+export async function recoverCircuitBreakerState(): Promise<void> {
+  try {
+    const db = getDatabase();
+    const openedEvents = await db
+      .select()
+      .from(circuitBreakerEvents)
+      .where(
+        and(
+          eq(circuitBreakerEvents.event, 'opened'),
+          gt(circuitBreakerEvents.openUntil, new Date()),
+        ),
+      )
+      .orderBy(desc(circuitBreakerEvents.createdAt));
+
+    const latestByInstance = new Map<string, typeof openedEvents[0]>();
+    for (const event of openedEvents) {
+      if (!latestByInstance.has(event.instanceId)) {
+        latestByInstance.set(event.instanceId, event);
+      }
+    }
+
+    for (const [instanceId, event] of latestByInstance) {
+      if (event.openUntil) {
+        circuitBreakerRegistry.restoreOpenState(instanceId, event.openUntil, event.failureCount);
+      }
+    }
+
+    logger.info(
+      { count: latestByInstance.size },
+      '[CircuitBreaker] Recovered open circuit breakers from DB',
+    );
+  } catch (err) {
+    logger.warn({ err }, '[CircuitBreaker] Failed to recover circuit breaker state from DB, skipping');
+  }
+}

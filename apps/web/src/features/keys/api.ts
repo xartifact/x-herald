@@ -5,11 +5,12 @@ import { Hono } from 'hono';
 
 import { getDatabase } from '@/core/db/client';
 import rootLogger from '@/core/lib/logger';
-
-const logger = rootLogger.child({ module: 'keys' });
 import { authMiddleware } from '@/features/auth/middleware';
+import { invalidateVirtualKeyCache } from '@/features/gateway/middleware/virtual-key';
 
 import { virtualKeys, type NewVirtualKey } from './db';
+
+const logger = rootLogger.child({ module: 'keys' });
 
 
 
@@ -188,6 +189,8 @@ keysRoutes.put('/:id', async (c) => {
       .where(eq(virtualKeys.id, id))
       .returning();
 
+    invalidateVirtualKeyCache(existing[0].key);
+
     logger.info({ keyId: id }, 'Virtual key updated');
 
     return c.json({
@@ -228,6 +231,9 @@ keysRoutes.delete('/:id', async (c) => {
         404
       );
     }
+
+    const keyValue = existing[0].key;
+    invalidateVirtualKeyCache(keyValue);
 
     await db.delete(virtualKeys).where(eq(virtualKeys.id, id));
 
@@ -272,6 +278,8 @@ keysRoutes.post('/:id/reset', async (c) => {
       );
     }
 
+    const oldKey = existing[0].key;
+
     // 生成新的 API 密钥
     const newApiKey = generateApiKey();
 
@@ -283,6 +291,8 @@ keysRoutes.post('/:id/reset', async (c) => {
       })
       .where(eq(virtualKeys.id, id))
       .returning();
+
+    invalidateVirtualKeyCache(oldKey);
 
     logger.info({ keyId: id }, 'Virtual key reset');
 

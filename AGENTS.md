@@ -59,3 +59,30 @@ This project is indexed by GitNexus as **x-llm-gateway** (3222 symbols, 5689 rel
 | Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
 
 <!-- gitnexus:end -->
+
+## 测试工程师 Agent
+
+当需要编写测试时，参考 `.claude/agents/test-engineer.md` 中的完整定义。
+
+### 核心规则
+- 后端测试用 `bun:test`，React 组件测试用 `vitest`（仅 `*.ui.test.tsx`）
+- 测试文件与源文件同目录：`foo.ts` → `foo.test.ts`
+- Mock 优先级：真实代码 > Hono test client > `mock.module()` > `vi.mock()` > MSW
+- 使用工厂函数（`src/test/factories.ts`），不用 JSON fixture
+- 不要运行全量测试，只运行目标文件
+
+### 测试命令
+- 后端测试: `bun test src/features/gateway/failover/failover-executor.test.ts`
+- React 组件测试: `bun run test:ui`
+- 类型检查: `cd apps/web && bun run typecheck`
+
+### 测试基础设施
+| 文件 | 用途 |
+|------|------|
+| `apps/web/src/test/factories.ts` | Mock 数据工厂函数 |
+| `apps/web/src/test/hono-helper.ts` | Hono 测试请求辅助 |
+| `apps/web/src/test/setup.ts` | bun:test 全局 setup |
+| `apps/web/src/test/ui-setup.ts` | vitest React 组件 setup |
+| `apps/web/vitest.ui.ts` | vitest UI 测试配置 |
+| `.claude/skills/writing-tests/SKILL.md` | 测试编写规范 |
+| `.claude/skills/engineering-conventions/SKILL.md` | 工程编码规范 |

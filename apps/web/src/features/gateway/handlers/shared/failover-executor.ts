@@ -73,12 +73,29 @@ export async function executeFailoverIteration(params: FailoverExecutorParams): 
     onRetry: params.onRetry,
   });
 
-  if (retryResult.aborted || !retryResult.response) {
+  if (retryResult.aborted || (!retryResult.response && !retryResult.networkError)) {
     if (params.isStreaming && params.logId) params.onLogEventBusEmitAborted(params.logId);
     return { type: 'abort', retryCount: retryResult.retryCount };
   }
 
-  const response = retryResult.response;
+  // Network error (TLS, DNS, connection refused) — trigger failover if possible
+  if (retryResult.networkError && !retryResult.response) {
+    const shouldFailover = !params.isLastCandidate;
+    if (shouldFailover) {
+      params.onRecordFailure();
+      const ttfbDuration = Date.now() - params.preprocessEndTime;
+      await params.onMarkLogAsFailed(
+        params.logId || '', 0, 'Network error: connection failed', retryResult.retryCount, ttfbDuration, null,
+      );
+      if (params.isStreaming && params.logId) params.onLogEventBusEmitAborted(params.logId);
+      return { type: 'failover', retryCount: retryResult.retryCount };
+    }
+    // Last candidate — return gateway error
+    if (params.isStreaming && params.logId) params.onLogEventBusEmitAborted(params.logId);
+    return { type: 'error', response: await params.handleGatewayError('network_error', 'Connection to provider failed: TLS handshake or network error'), retryCount: retryResult.retryCount };
+  }
+
+  const response = retryResult.response!;
 
   if (response.ok) {
     params.onRecordSuccess();

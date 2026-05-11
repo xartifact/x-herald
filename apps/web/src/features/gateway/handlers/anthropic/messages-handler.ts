@@ -4,22 +4,22 @@ import { loadConfig } from '@/core/config';
 import logger from '@/core/lib/logger';
 import type { VirtualKey } from '@/features/keys/db';
 
-import { getTransformer, createTransformerContext } from '../../transformer';
-import { buildHeaders } from '../../transformer/shared/parameter-transformer';
-import { identifyClient } from '../../services/client-identifier';
+import { normalizeAnthropicPassthroughMessages, hasAssistantMessagesWithoutThinking, injectSyntheticThinkingBlocks } from './thinking-validator';
 import { circuitBreakerRegistry } from '../../services/circuit-breaker';
+import { identifyClient } from '../../services/client-identifier';
 import { handleGatewayError, handleProviderError, handleProviderErrorPassthrough } from '../../services/error-handler';
 import { PROVIDER_FILTERED_HEADERS } from '../../services/headers';
+import { logEventBus } from '../../services/log-event-bus';
 import { logRequestStart, markLogAsFailed } from '../../services/log-service';
-import { ModelNotFoundError, FAILOVER_STATUS_CODES } from '../../services/model-group-router';
+import { ModelNotFoundError } from '../../services/model-group-router';
 import { getProviderProtocol, getProviderUrl, getEndpoint } from '../../services/protocol-detector';
 import { handleNonStreamingResponse, handleStreamingResponse } from '../../services/response-handlers';
-import { logEventBus } from '../../services/log-event-bus';
 import { virtualModelRouter } from '../../services/virtual-model-router';
+import { getTransformer, createTransformerContext } from '../../transformer';
+import { buildHeaders } from '../../transformer/shared/parameter-transformer';
 import { AbortManager } from '../shared/abort-manager';
+import { executeFailoverIteration, type PreparedRequest } from '../shared/failover-executor';
 import { joinUrl } from '../shared/join-url';
-import { executeWithRetry, type RetryConfig } from '../shared/retry-executor';
-import { normalizeAnthropicPassthroughMessages, hasAssistantMessagesWithoutThinking, injectSyntheticThinkingBlocks } from './thinking-validator';
 
 /**
  * Anthropic messages handler with failover support.
@@ -155,251 +155,341 @@ export async function handleAnthropicMessages(
           );
         }
 
-        standardReq.model = instance.actualModelName;
-
-        ctx.provider = {
-          name: provider.name,
-          baseUrl: providerUrl,
-          apiKey: provider.apiKey || '',
-          protocol: targetProtocol,
-          models: [],
-          protocols: provider.protocols,
-        };
-        ctx.instanceConfig = instance.config ?? undefined;
-
-        let targetUrl: string;
-        let requestBody: string;
-
-        if (isPassthroughEnabled) {
-          const passthroughBody: { model?: string; messages?: unknown[]; [key: string]: unknown } = {
-            ...rawBody,
-            model: instance.actualModelName,
-          };
-
-          if (Array.isArray(passthroughBody.messages)) {
-            passthroughBody.messages = normalizeAnthropicPassthroughMessages(
-              passthroughBody.messages as Array<{ role: string; content: unknown }>,
-            );
-          }
-
-          const providerSupportsThinking =
-            provider.protocols?.anthropic?.enabled &&
-            (instance.config?.supportsThinking === true ||
-              instance.actualModelName.includes('claude-3-7-') ||
-              instance.actualModelName.includes('claude-4'));
-
-          if (
-            Array.isArray(passthroughBody.messages) &&
-            providerSupportsThinking &&
-            hasAssistantMessagesWithoutThinking(
-              passthroughBody.messages as Array<{ role: string; content: unknown }>,
-            )
-          ) {
-            passthroughBody.messages = injectSyntheticThinkingBlocks(
-              passthroughBody.messages as Array<{ role: string; content: unknown }>,
-            );
-          }
-
-          transformedBody = passthroughBody;
-          targetUrl = joinUrl(providerUrl, getEndpoint(targetProtocol, isStreaming));
-          requestBody = JSON.stringify(transformedBody);
-          providerRequestHeaders = {
-            ...Object.fromEntries(
-              Object.entries(clientRequestHeaders).filter(([key]) => !PROVIDER_FILTERED_HEADERS.has(key))
-            ),
-            'x-api-key': provider.apiKey || '',
-          };
-        } else {
-          const egressTransformer = getTransformer(targetProtocol);
-          if (!egressTransformer?.adaptRequest) {
-            throw new Error(`No adapter found for protocol: ${targetProtocol}`);
-          }
-          const adapted = await egressTransformer.adaptRequest(standardReq, ctx);
-          transformedBody = adapted.body;
-          targetUrl = adapted.url || joinUrl(providerUrl, getEndpoint(targetProtocol, isStreaming));
-          requestBody = JSON.stringify(adapted.body);
-
-          if (targetProtocol === 'anthropic') {
-            providerRequestHeaders = {
-              ...Object.fromEntries(
-                Object.entries(clientRequestHeaders).filter(([key]) => !PROVIDER_FILTERED_HEADERS.has(key))
-              ),
-              ...Object.fromEntries(
-                Object.entries(adapted.headers || {}).map(([k, v]) => [k.toLowerCase(), v])
-              ),
-              'x-api-key': provider.apiKey || '',
-            };
-          } else {
-            providerRequestHeaders = {
-              ...Object.fromEntries(
-                Object.entries(clientRequestHeaders).filter(([key]) => !PROVIDER_FILTERED_HEADERS.has(key))
-              ),
-              ...Object.fromEntries(
-                Object.entries(adapted.headers || {}).map(([k, v]) => [k.toLowerCase(), v])
-              ),
-              'authorization': `Bearer ${provider.apiKey}`,
-            };
-          }
-        }
-
-        if (ctx.instanceConfig?.customHeaders) {
-          providerRequestHeaders = buildHeaders(providerRequestHeaders, ctx.instanceConfig.customHeaders, ctx);
-        }
-
-        logger.debug(
-          { requestId, targetUrl, targetProtocol, model: standardReq.model, isPassthrough: isPassthroughEnabled },
-          'Forwarding to provider',
-        );
-
-        logId = await logRequestStart({
-          virtualKey,
-          modelName: mapping.modelName,
-          originalModelName: mapping.originalModel,
-          mappingType: mapping.mappingType,
-          isMapped: mapping.isMapped,
-          providerId: provider.id,
-          providerName: provider.name,
-          requestHeaders: clientRequestHeaders,
-          providerRequestHeaders,
-          requestBody: rawBody,
-          standardRequestBody,
-          transformedRequestBody: transformedBody,
-          clientIp,
-          userAgent,
-          clientType,
-          requestPath,
-          requestMethod,
-          incomingProtocol,
-          targetProtocol,
-          conversationId,
-          routingTrace: {
-            matchedRuleId: matchedRule?.id,
-            matchedRuleName: matchedRule?.name,
-            matchedRulePriority: matchedRule?.priority,
-            modelGroupId: group.id,
-            modelGroupName: group.name,
-            instanceId: instance.id,
-            actualModelName: instance.actualModelName,
-            strategy: decision.strategy,
-          },
-        });
-
-        // 流式请求：提前发出 waiting 事件，让 Live 面板在 TTFB 前即可显示
-        if (isStreaming && logId) {
-          logEventBus.emitLog({
-            event: 'waiting',
-            logId,
-            modelName: mapping.modelName || mapping.originalModel || rawBody.model || 'unknown',
-            originalModelName: mapping.originalModel ?? undefined,
-            providerName: provider.name,
-            virtualKeyName: virtualKey.name ?? undefined,
-            startTime,
-            incomingProtocol,
-          });
-        }
-
-        const preprocessEndTime = Date.now();
-
-        const CONNECT_TIMEOUT_MS = 30000;
-        const TTFB_TIMEOUT_MS = isStreaming ? 600000 : 300000;
-
-        const retryConfig: RetryConfig = {
+        const retryConfig = {
           maxRetries: instance.config?.retryConfig?.maxRetries ?? 2,
           baseDelay: instance.config?.retryConfig?.retryDelay ?? 500,
           maxDelay: 30000,
           retryableStatusCodes: instance.config?.retryConfig?.retryableStatusCodes ?? [429, 500, 502, 503, 524],
         };
 
-        let response: Response | undefined;
-        let providerTtfbTime = 0;
+        const circuitBreakerMeta = { instanceName: instance.name, groupName: group.name, providerName: provider.name };
 
-        const retryResult = await executeWithRetry({
+        let providerTtfbTime = 0;
+        let _preprocessEndTime = Date.now();
+
+        const result = await executeFailoverIteration({
+          c,
           abortManager,
-          operation: async (signal) => {
-            return await fetch(targetUrl, {
-              method: 'POST',
+          onPrepareRequest: async (): Promise<PreparedRequest> => {
+            standardReq.model = instance.actualModelName;
+            // targetProtocol is guaranteed here because we checked providerUrl before calling executeFailoverIteration
+            const protocol = targetProtocol!;
+
+            ctx.provider = {
+              name: provider.name,
+              baseUrl: providerUrl,
+              apiKey: provider.apiKey || '',
+              protocol: protocol,
+              models: [],
+              protocols: provider.protocols,
+            };
+            ctx.instanceConfig = instance.config ?? undefined;
+
+            let targetUrl: string;
+
+            if (isPassthroughEnabled) {
+              const passthroughBody: { model?: string; messages?: unknown[]; [key: string]: unknown } = {
+                ...rawBody,
+                model: instance.actualModelName,
+              };
+
+              if (Array.isArray(passthroughBody.messages)) {
+                passthroughBody.messages = normalizeAnthropicPassthroughMessages(
+                  passthroughBody.messages as Array<{ role: string; content: unknown }>,
+                );
+              }
+
+              const providerSupportsThinking =
+                provider.protocols?.anthropic?.enabled &&
+                (instance.config?.supportsThinking === true ||
+                  instance.actualModelName.includes('claude-3-7-') ||
+                  instance.actualModelName.includes('claude-4'));
+
+              if (
+                Array.isArray(passthroughBody.messages) &&
+                providerSupportsThinking &&
+                hasAssistantMessagesWithoutThinking(
+                  passthroughBody.messages as Array<{ role: string; content: unknown }>,
+                )
+              ) {
+                passthroughBody.messages = injectSyntheticThinkingBlocks(
+                  passthroughBody.messages as Array<{ role: string; content: unknown }>,
+                );
+              }
+
+              transformedBody = passthroughBody;
+              targetUrl = joinUrl(providerUrl, getEndpoint(protocol, isStreaming));
+              providerRequestHeaders = {
+                ...Object.fromEntries(
+                  Object.entries(clientRequestHeaders).filter(([key]) => !PROVIDER_FILTERED_HEADERS.has(key))
+                ),
+                'x-api-key': provider.apiKey || '',
+              };
+            } else {
+              const egressTransformer = getTransformer(protocol);
+              if (!egressTransformer?.adaptRequest) {
+                throw new Error(`No adapter found for protocol: ${protocol}`);
+              }
+              const adapted = await egressTransformer.adaptRequest(standardReq, ctx);
+              transformedBody = adapted.body;
+              targetUrl = adapted.url || joinUrl(providerUrl, getEndpoint(protocol, isStreaming));
+
+              if (protocol === 'anthropic') {
+                providerRequestHeaders = {
+                  ...Object.fromEntries(
+                    Object.entries(clientRequestHeaders).filter(([key]) => !PROVIDER_FILTERED_HEADERS.has(key))
+                  ),
+                  ...Object.fromEntries(
+                    Object.entries(adapted.headers || {}).map(([k, v]) => [k.toLowerCase(), v])
+                  ),
+                  'x-api-key': provider.apiKey || '',
+                };
+              } else {
+                providerRequestHeaders = {
+                  ...Object.fromEntries(
+                    Object.entries(clientRequestHeaders).filter(([key]) => !PROVIDER_FILTERED_HEADERS.has(key))
+                  ),
+                  ...Object.fromEntries(
+                    Object.entries(adapted.headers || {}).map(([k, v]) => [k.toLowerCase(), v])
+                  ),
+                  'authorization': `Bearer ${provider.apiKey}`,
+                };
+              }
+            }
+
+            if (ctx.instanceConfig?.customHeaders) {
+              providerRequestHeaders = buildHeaders(providerRequestHeaders, ctx.instanceConfig.customHeaders, ctx);
+            }
+
+            logger.debug(
+              { requestId, targetUrl, targetProtocol: protocol, model: standardReq.model, isPassthrough: isPassthroughEnabled },
+              'Forwarding to provider',
+            );
+
+            logId = await logRequestStart({
+              virtualKey,
+              modelName: mapping.modelName,
+              originalModelName: mapping.originalModel,
+              mappingType: mapping.mappingType,
+              isMapped: mapping.isMapped,
+              providerId: provider.id,
+              providerName: provider.name,
+              requestHeaders: clientRequestHeaders,
+              providerRequestHeaders,
+              requestBody: rawBody,
+              standardRequestBody,
+              transformedRequestBody: transformedBody,
+              clientIp,
+              userAgent,
+              clientType,
+              requestPath,
+              requestMethod,
+              incomingProtocol,
+              targetProtocol: protocol,
+              conversationId,
+              routingTrace: {
+                matchedRuleId: matchedRule?.id,
+                matchedRuleName: matchedRule?.name,
+                matchedRulePriority: matchedRule?.priority,
+                modelGroupId: group.id,
+                modelGroupName: group.name,
+                instanceId: instance.id,
+                actualModelName: instance.actualModelName,
+                strategy: decision.strategy,
+              },
+            });
+
+            _preprocessEndTime = Date.now();
+
+            return {
+              url: targetUrl,
               headers: providerRequestHeaders,
-              body: requestBody,
-              signal,
-              connectTimeout: CONNECT_TIMEOUT_MS,
-            } as RequestInit);
+              body: JSON.stringify(transformedBody),
+              isPassthroughEnabled,
+              targetProtocol: protocol,
+            } as PreparedRequest;
           },
-          timeout: TTFB_TIMEOUT_MS,
-          requestId,
           isStreaming,
-          config: retryConfig,
+          isLastCandidate,
+          requestId,
+          startTime,
+          logId,
+          preprocessEndTime: _preprocessEndTime,
+          clientIp,
+          userAgent,
+          requestPath,
+          requestMethod,
+          rawBody: rawBody as { model?: string; [key: string]: unknown },
+          retryConfig,
+          onBeforeFetch: () => {
+            if (isStreaming && logId) {
+              logEventBus.emitLog({
+                event: 'waiting',
+                logId,
+                modelName: mapping.modelName || mapping.originalModel || (rawBody?.model) || 'unknown',
+                originalModelName: mapping.originalModel ?? undefined,
+                providerName: provider.name,
+                virtualKeyName: virtualKey.name ?? undefined,
+                startTime,
+                incomingProtocol,
+              });
+            }
+          },
           onRetry: (attempt, delay, lastResponse) => {
             logger.info(
               { requestId, attempt, statusCode: lastResponse?.status, retryDelay: delay },
               '[Retry] Retrying upstream request',
             );
-            circuitBreakerRegistry.recordFailure(instance.id, { instanceName: instance.name, groupName: group.name, providerName: provider.name });
+            circuitBreakerRegistry.recordFailure(instance.id, circuitBreakerMeta);
+          },
+          onRecordFailure: () => circuitBreakerRegistry.recordFailure(instance.id, circuitBreakerMeta),
+          onRecordSuccess: () => circuitBreakerRegistry.recordSuccess(instance.id, circuitBreakerMeta),
+          onMarkLogAsFailed: async (id, statusCode, errorMessage, retryCountParam, duration, body) => {
+            await markLogAsFailed(id, statusCode, errorMessage, retryCountParam, duration, body);
+          },
+          onLogEventBusEmitAborted: (id) => logEventBus.emitLog({ event: 'aborted', logId: id }),
+          handleGatewayError: async (errorCode, message) => {
+            return handleGatewayError({
+              error: new Error(message),
+              c,
+              virtualKey,
+              requestHeaders: clientRequestHeaders,
+              providerRequestHeaders: providerRequestHeaders || {},
+              rawBody: rawBody || {},
+              clientIp,
+              userAgent,
+              requestPath,
+              requestMethod,
+              isStreaming,
+              startTime,
+              transformedBody,
+              incomingProtocol,
+              targetProtocol,
+              logId,
+              retryCount,
+            });
+          },
+          handleProviderError: async (response, _rb) => {
+            const errorHandler = isPassthroughEnabled ? handleProviderErrorPassthrough : handleProviderError;
+            return errorHandler({
+              c,
+              response,
+              provider,
+              virtualKey,
+              originalModelName: (rawBody?.model as string) || 'unknown',
+              requestHeaders: clientRequestHeaders,
+              providerRequestHeaders: providerRequestHeaders || {},
+              rawBody: rawBody || {},
+              clientIp,
+              userAgent,
+              requestPath,
+              requestMethod,
+              isStreaming,
+              startTime,
+              transformedBody,
+              incomingProtocol,
+              targetProtocol,
+              logId,
+              retryCount,
+            });
+          },
+          handleProviderErrorPassthrough: async (response, _rb) => {
+            return handleProviderErrorPassthrough({
+              c,
+              response,
+              provider,
+              virtualKey,
+              originalModelName: (rawBody?.model as string) || 'unknown',
+              requestHeaders: clientRequestHeaders,
+              providerRequestHeaders: providerRequestHeaders || {},
+              rawBody: rawBody || {},
+              clientIp,
+              userAgent,
+              requestPath,
+              requestMethod,
+              isStreaming,
+              startTime,
+              transformedBody,
+              incomingProtocol,
+              targetProtocol,
+              logId,
+              retryCount,
+            });
           },
         });
 
         providerTtfbTime = Date.now();
-        retryCount = retryResult.retryCount;
+        retryCount = result.retryCount ?? 0;
 
-        // 客户端断开或超时：立即返回，不进行故障转移
-        if (retryResult.aborted || !retryResult.response) {
-          if (isStreaming && logId) logEventBus.emitLog({ event: 'aborted', logId });
-          const abortMessage = retryResult.aborted === 'client_disconnect'
-            ? 'Client disconnected'
-            : `Request TTFB timeout after ${TTFB_TIMEOUT_MS / 1000}s`;
+        // Handle result types
+        if (result.type === 'abort') {
           return handleGatewayError({
-            error: new Error(abortMessage),
-            c, virtualKey, requestHeaders: clientRequestHeaders, providerRequestHeaders,
-            rawBody, clientIp, userAgent, requestPath, requestMethod,
-            isStreaming, startTime, transformedBody, incomingProtocol, targetProtocol, logId, retryCount,
+            error: new Error(`Request aborted`),
+            c,
+            virtualKey,
+            requestHeaders: clientRequestHeaders,
+            providerRequestHeaders,
+            rawBody,
+            clientIp,
+            userAgent,
+            requestPath,
+            requestMethod,
+            isStreaming,
+            startTime,
+            transformedBody,
+            incomingProtocol,
+            targetProtocol,
+            logId,
+            retryCount,
           });
         }
 
-        response = retryResult.response;
-
-        if (!response.ok) {
-          if (retryCount > 0) {
-            logger.info({ requestId, retryCount, statusCode: response.status }, '[Retry] All retries exhausted');
-          }
-
-          // 判断是否触发故障转移
-          const shouldFailover = !isLastCandidate && FAILOVER_STATUS_CODES.has(response.status);
-          if (shouldFailover) {
-            circuitBreakerRegistry.recordFailure(instance.id, { instanceName: instance.name, groupName: group.name, providerName: provider.name });
-            const failoverRespBody = await response.json().catch(() => null);
-            await markLogAsFailed(logId, response.status, `Failover: HTTP ${response.status}`, retryCount, providerTtfbTime - preprocessEndTime, failoverRespBody);
-            if (isStreaming && logId) logEventBus.emitLog({ event: 'aborted', logId });
-            logger.warn(
-              { requestId, instanceId: instance.id, statusCode: response.status },
-              '[Failover] Instance failed, switching to next candidate',
-            );
-            continue;
-          }
-
-          // 最后一个候选或不可转移的错误码（4xx）：返回错误
-          if (isStreaming && logId) logEventBus.emitLog({ event: 'aborted', logId });
-          const errorHandler = isPassthroughEnabled ? handleProviderErrorPassthrough : handleProviderError;
-          return errorHandler(
-            c, response, provider, virtualKey, rawBody.model || 'unknown',
-            clientRequestHeaders, providerRequestHeaders, rawBody,
-            clientIp, userAgent, requestPath, requestMethod,
-            isStreaming, startTime, transformedBody, incomingProtocol, targetProtocol, logId, retryCount,
+        if (result.type === 'failover') {
+          logger.warn(
+            { requestId, instanceId: instance.id, statusCode: result.response?.status },
+            '[Failover] Instance failed, switching to next candidate',
           );
+          continue;
         }
 
-        // 成功：重置熔断器
-        circuitBreakerRegistry.recordSuccess(instance.id, { instanceName: instance.name, groupName: group.name, providerName: provider.name });
+        if (result.type === 'error') {
+          return result.response!;
+        }
+
+        // result.type === 'success' (onRecordSuccess already called by executor)
+        const response = result.response!;
 
         const actualStreaming = standardReq.stream === true;
         const modelName = rawBody.model || 'unknown';
         const handlerParams = {
-          c, response, ctx, incomingProtocol, targetProtocol, virtualKey, provider,
-          originalModelName: modelName, resolvedModelName: mapping.modelName,
-          mappingType: mapping.mappingType, isMapped: mapping.isMapped,
-          startTime, preprocessEndTime, providerTtfbTime,
-          requestHeaders: clientRequestHeaders, providerRequestHeaders,
-          rawBody, standardRequestBody, transformedBody,
-          clientIp, userAgent, requestPath, requestMethod, conversationId,
-          isPassthroughEnabled, clientType, logId, retryCount,
+          c,
+          response,
+          ctx,
+          incomingProtocol,
+          targetProtocol,
+          virtualKey,
+          provider,
+          originalModelName: modelName,
+          resolvedModelName: mapping.modelName,
+          mappingType: mapping.mappingType,
+          isMapped: mapping.isMapped,
+          startTime,
+          preprocessEndTime: _preprocessEndTime,
+          providerTtfbTime,
+          requestHeaders: clientRequestHeaders,
+          providerRequestHeaders,
+          rawBody,
+          standardRequestBody,
+          transformedBody,
+          clientIp,
+          userAgent,
+          requestPath,
+          requestMethod,
+          conversationId,
+          isPassthroughEnabled,
+          clientType,
+          logId,
+          retryCount,
           request: c.req.raw,
           routingTrace: {
             matchedRuleId: matchedRule?.id,

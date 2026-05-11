@@ -2,6 +2,7 @@ import { eq, and, sql } from 'drizzle-orm';
 
 import { getDatabase } from '@/core/db/client';
 import rootLogger from '@/core/lib/logger';
+import { invalidateVirtualKeyCache } from '@/features/gateway/middleware/virtual-key';
 import { gatewayConfigs } from '@/features/gateway-config/db';
 import { virtualKeys } from '@/features/keys/db';
 import {
@@ -314,6 +315,7 @@ export async function importConfig(data: ExportFormat["data"]): Promise<ImportRe
             updatedAt: new Date(),
           })
           .where(eq(virtualKeys.id, existing[0].id));
+        invalidateVirtualKeyCache(k.key);
         summary.virtualKeys.updated++;
       } else {
         await db.insert(virtualKeys).values({
@@ -326,6 +328,7 @@ export async function importConfig(data: ExportFormat["data"]): Promise<ImportRe
           enabled: k.enabled,
           expiresAt: k.expiresAt ? new Date(k.expiresAt) : null,
         });
+        invalidateVirtualKeyCache(k.key);
         summary.virtualKeys.created++;
       }
     } catch (err) {

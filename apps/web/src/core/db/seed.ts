@@ -13,10 +13,10 @@ import { and, eq, ne } from 'drizzle-orm';
 import logger from '@/core/lib/logger';
 import { gatewayConfigs } from '@/features/gateway-config/db';
 import { virtualModels, modelRoutes } from '@/features/model-groups/db';
+import { CATCHALL_VM_NAME } from '@/features/virtual-models/constants';
 
 import { getDatabase } from './client';
 
-export const CATCHALL_VM_NAME = '__catchall__';
 const SEED_FLAG_KEY = 'initial_routes_seeded';
 
 export async function seedSystemData(): Promise<void> {

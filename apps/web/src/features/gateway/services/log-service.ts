@@ -266,11 +266,7 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
 // Phase 2: 实时流日志函数
 // ============================================================================
 
-/**
- * 创建流开始日志
- * 返回日志 ID 用于后续更新
- */
-export async function logStreamStart(params: {
+interface StreamLogParams {
   virtualKey: VirtualKey;
   modelName: string;
   originalModelName?: string;
@@ -302,11 +298,15 @@ export async function logStreamStart(params: {
     strategy?: string;
     responseModelName?: string;
   };
-}): Promise<string> {
+}
+
+async function createStreamLog(params: StreamLogParams & { isStream: boolean }): Promise<string> {
   try {
     const db = getDatabase();
 
-    // 构建元数据，包含模型映射信息
+    const streamStatus = params.isStream ? 'streaming' : 'pending';
+    const streaming = params.isStream ? 'true' : 'false';
+
     const metadata: LogMetadata = {};
     if (params.originalModelName || params.mappingType) {
       metadata.modelMapping = {
@@ -331,11 +331,11 @@ export async function logStreamStart(params: {
         originalModelName: params.originalModelName,
         providerId: params.providerId,
         providerName: params.providerName,
-        status: 'pending', // 临时状态，将在完成时更新
-        streamStatus: 'streaming',
+        status: 'pending',
+        streamStatus,
         isComplete: false,
         statusCode: 200,
-        latencyMs: 0, // 将在完成时更新
+        latencyMs: 0,
         inputTokens: 0,
         outputTokens: 0,
         totalTokens: 0,
@@ -349,122 +349,42 @@ export async function logStreamStart(params: {
         clientType: params.clientType,
         requestPath: params.requestPath,
         requestMethod: params.requestMethod,
-        streaming: 'true',
+        streaming,
         incomingProtocol: params.incomingProtocol,
         targetProtocol: params.targetProtocol,
         conversationId: params.conversationId,
         metadata: metadata as any,
-        // 显式设置 UTC 时间戳，避免 PGlite defaultNow() 时区偏差
         createdAt: new Date(),
-        streamStartedAt: new Date(),
+        ...(params.isStream && { streamStartedAt: new Date() }),
       })
       .returning({ id: requestLogs.id });
-
-    // 记录客户端请求的模型名称
-    const { recordClientRequestedModel } = await import("@/features/logs/services/client-model-recorder");
-    await recordClientRequestedModel(params.originalModelName || params.modelName);
 
     logger.debug({ logId: result[0].id }, 'Stream log created');
     return result[0].id;
   } catch (error) {
     logger.error({ error }, 'Failed to create stream log');
-    // 返回一个临时 ID，避免阻塞流
     return 'temp-' + Date.now();
   }
 }
+
+/**
+ * 创建流开始日志
+ * 返回日志 ID 用于后续更新
+ */
+export async function logStreamStart(params: StreamLogParams): Promise<string> {
+  const logId = await createStreamLog({ ...params, isStream: true });
+  // recordClientRequestedModel only for streaming requests (original behavior)
+  const { recordClientRequestedModel } = await import("@/features/logs/services/client-model-recorder");
+  await recordClientRequestedModel(params.originalModelName || params.modelName);
+  return logId;
+}
+
 /**
  * 创建非流式请求的开始日志
  * 返回日志 ID 用于后续更新
  */
-export async function logRequestStart(params: {
-  virtualKey: VirtualKey;
-  modelName: string;
-  originalModelName?: string;
-  mappingType?: 'virtual' | 'exact' | 'alias' | 'fallback' | null;
-  isMapped?: boolean;
-  providerId: string;
-  providerName: string;
-  requestHeaders: Record<string, string>;
-  providerRequestHeaders?: Record<string, string>;
-  requestBody: unknown;
-  standardRequestBody?: unknown;
-  transformedRequestBody?: unknown;
-  clientIp?: string;
-  userAgent?: string;
-  clientType?: string;
-  requestPath: string;
-  requestMethod: string;
-  incomingProtocol?: string;
-  targetProtocol?: string;
-  conversationId?: string;
-  routingTrace?: {
-    matchedRuleId?: string;
-    matchedRuleName?: string;
-    matchedRulePriority?: number;
-    modelGroupId?: string;
-    modelGroupName?: string;
-    instanceId?: string;
-    actualModelName?: string;
-    strategy?: string;
-    responseModelName?: string;
-  };
-}): Promise<string> {
-  try {
-    const db = getDatabase();
-    const metadata: LogMetadata = {};
-    if (params.originalModelName || params.mappingType) {
-      metadata.modelMapping = {
-        originalModel: params.originalModelName,
-        mappingType: params.mappingType,
-        isMapped: params.isMapped,
-      };
-    }
-    if (params.routingTrace || params.originalModelName) {
-      metadata.routing = {
-        requestedModel: params.originalModelName || params.modelName,
-        ...params.routingTrace,
-      };
-    }
-    const result = await db.insert(requestLogs).values({
-      virtualKeyId: params.virtualKey.id,
-      virtualKeyName: params.virtualKey.name,
-      modelName: params.modelName,
-      originalModelName: params.originalModelName,
-      providerId: params.providerId,
-      providerName: params.providerName,
-      status: 'pending',
-      streamStatus: 'pending',
-      isComplete: false,
-      statusCode: 200,
-      latencyMs: 0,
-      inputTokens: 0,
-      outputTokens: 0,
-      totalTokens: 0,
-      requestHeaders: params.requestHeaders as any,
-      providerRequestHeaders: params.providerRequestHeaders as any,
-      requestBody: params.requestBody as any,
-      standardRequestBody: params.standardRequestBody as any,
-      transformedRequestBody: params.transformedRequestBody as any,
-      clientIp: params.clientIp,
-      userAgent: params.userAgent,
-      clientType: params.clientType,
-      requestPath: params.requestPath,
-      requestMethod: params.requestMethod,
-      streaming: 'false',
-      incomingProtocol: params.incomingProtocol,
-      targetProtocol: params.targetProtocol,
-      conversationId: params.conversationId,
-      metadata: metadata as any,
-      // 显式设置 UTC 时间戳，避免 PGlite defaultNow() 时区偏差
-      createdAt: new Date(),
-      streamStartedAt: new Date(),
-    }).returning({ id: requestLogs.id });
-    logger.debug({ logId: result[0].id }, 'Request log created');
-    return result[0].id;
-  } catch (error) {
-    logger.error({ error }, 'Failed to create request log');
-    return 'temp-' + Date.now();
-  }
+export async function logRequestStart(params: StreamLogParams): Promise<string> {
+  return createStreamLog({ ...params, isStream: false });
 }
 
 

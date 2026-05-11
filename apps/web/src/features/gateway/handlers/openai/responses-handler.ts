@@ -4,8 +4,6 @@ import { loadConfig } from '@/core/config';
 import logger from '@/core/lib/logger';
 import type { VirtualKey } from '@/features/keys/db';
 
-import { getTransformer, createTransformerContext } from '../../transformer';
-import { buildHeaders } from '../../transformer/shared/parameter-transformer';
 import { identifyClient } from '../../services/client-identifier';
 import { handleGatewayError, handleProviderError, handleProviderErrorPassthrough } from '../../services/error-handler';
 import { PROVIDER_FILTERED_HEADERS } from '../../services/headers';
@@ -14,7 +12,14 @@ import { ModelNotFoundError } from '../../services/model-group-router';
 import { getProviderProtocol, getProviderUrl, getEndpoint } from '../../services/protocol-detector';
 import { handleNonStreamingResponse, handleStreamingResponse } from '../../services/response-handlers';
 import { virtualModelRouter } from '../../services/virtual-model-router';
+import { getTransformer, createTransformerContext } from '../../transformer';
+import { buildHeaders } from '../../transformer/shared/parameter-transformer';
 import { AbortManager } from '../shared/abort-manager';
+import {
+  CONNECT_TIMEOUT_MS,
+  TTFB_TIMEOUT_MS_NON_STREAMING,
+  TTFB_TIMEOUT_MS_STREAMING,
+} from '../shared/constants';
 import { joinUrl } from '../shared/join-url';
 import { executeWithRetry, type RetryConfig } from '../shared/retry-executor';
 
@@ -639,8 +644,6 @@ export async function handleResponsesAPI(
 
     const preprocessEndTime = Date.now();
 
-    const CONNECT_TIMEOUT_MS = 30000;
-    const TTFB_TIMEOUT_MS = isStreaming ? 600000 : 300000;
 
     const retryConfig: RetryConfig = {
       maxRetries: instance.config?.retryConfig?.maxRetries ?? 2,
@@ -667,7 +670,7 @@ export async function handleResponsesAPI(
             connectTimeout: CONNECT_TIMEOUT_MS,
           } as RequestInit);
         },
-        timeout: TTFB_TIMEOUT_MS,
+        timeout: isStreaming ? TTFB_TIMEOUT_MS_STREAMING : TTFB_TIMEOUT_MS_NON_STREAMING,
         requestId,
         isStreaming,
         config: retryConfig,
@@ -688,7 +691,7 @@ export async function handleResponsesAPI(
         const abortMessage = retryResult.aborted === 'client_disconnect'
           ? 'Client disconnected'
           : retryResult.aborted === 'timeout'
-            ? `Request TTFB timeout after ${TTFB_TIMEOUT_MS / 1000}s`
+            ? `Request TTFB timeout after ${(isStreaming ? TTFB_TIMEOUT_MS_STREAMING : TTFB_TIMEOUT_MS_NON_STREAMING) / 1000}s`
             : 'Client disconnected';
         return handleGatewayError({
           error: new Error(abortMessage),
@@ -727,13 +730,13 @@ export async function handleResponsesAPI(
         ? handleProviderErrorPassthrough
         : handleProviderError;
 
-      return errorHandler(
+      return errorHandler({
         c,
-        upstreamResponse,
+        response: upstreamResponse,
         provider,
         virtualKey,
-        rawBody.model || 'unknown',
-        clientRequestHeaders,
+        originalModelName: rawBody.model || 'unknown',
+        requestHeaders: clientRequestHeaders,
         providerRequestHeaders,
         rawBody,
         clientIp,
@@ -747,7 +750,7 @@ export async function handleResponsesAPI(
         targetProtocol,
         logId,
         retryCount,
-      );
+      });
     }
 
     // 8. Handle response — convert Chat Completions → Responses API format

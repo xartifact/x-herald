@@ -63,6 +63,11 @@ try {
   logger.info('System seed data initialized');
 
   logger.info('[Instrumentation] 应用初始化完成');
+
+  // Recover circuit breaker states from DB (non-blocking)
+  import('@/features/gateway/services/circuit-breaker')
+    .then(({ recoverCircuitBreakerState }) => recoverCircuitBreakerState())
+    .catch(() => {});
 } catch (error) {
   logger.error({ err: error }, '[Instrumentation] 应用初始化失败');
   process.exit(1);

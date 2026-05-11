@@ -357,30 +357,42 @@ async function parseProviderError(response: Response): Promise<{ error?: { messa
   }
 }
 
+interface ProviderErrorHandlerParams {
+  c: Context;
+  response: Response;
+  provider: { id: string; name: string };
+  virtualKey: VirtualKey;
+  originalModelName: string;
+  requestHeaders: Record<string, string>;
+  providerRequestHeaders: Record<string, string>;
+  rawBody: unknown;
+  clientIp: string;
+  userAgent: string;
+  requestPath: string;
+  requestMethod: string;
+  isStreaming: boolean;
+  startTime: number;
+  transformedBody?: unknown;
+  incomingProtocol?: string;
+  targetProtocol?: string;
+  logId?: string;
+  retryCount?: number;
+}
+
 /**
  * 处理 Provider 错误
  */
 export async function handleProviderError(
-  c: Context,
-  response: Response,
-  provider: { id: string; name: string },
-  virtualKey: VirtualKey,
-  originalModelName: string,
-  requestHeaders: Record<string, string>,
-  providerRequestHeaders: Record<string, string>,
-  rawBody: unknown,
-  clientIp: string,
-  userAgent: string,
-  requestPath: string,
-  requestMethod: string,
-  isStreaming: boolean,
-  startTime: number,
-  transformedBody?: unknown,
-  incomingProtocol?: string,
-  targetProtocol?: string,
-  logId?: string,
-  retryCount?: number,
+  params: ProviderErrorHandlerParams,
 ): Promise<Response> {
+  const {
+    c, response, provider, virtualKey, originalModelName,
+    requestHeaders, providerRequestHeaders, rawBody,
+    clientIp, userAgent, requestPath, requestMethod,
+    isStreaming, startTime, transformedBody,
+    incomingProtocol, targetProtocol, logId, retryCount,
+  } = params;
+
   const errorData = await parseProviderError(response);
   const rawErrorMessage = errorData.error?.message || 'Provider request failed';
   const normalized = normalizeProviderErrorMessage(rawErrorMessage);
@@ -445,26 +457,16 @@ export async function handleProviderError(
  * 直接将 Provider 的原始错误响应转发给客户端，不做任何重写
  */
 export async function handleProviderErrorPassthrough(
-  c: Context,
-  response: Response,
-  provider: { id: string; name: string },
-  virtualKey: VirtualKey,
-  originalModelName: string,
-  requestHeaders: Record<string, string>,
-  providerRequestHeaders: Record<string, string>,
-  rawBody: unknown,
-  clientIp: string,
-  userAgent: string,
-  requestPath: string,
-  requestMethod: string,
-  isStreaming: boolean,
-  startTime: number,
-  transformedBody?: unknown,
-  incomingProtocol?: string,
-  targetProtocol?: string,
-  logId?: string,
-  retryCount?: number,
+  params: ProviderErrorHandlerParams,
 ): Promise<Response> {
+  const {
+    c, response, provider, virtualKey, originalModelName,
+    requestHeaders, providerRequestHeaders, rawBody,
+    clientIp, userAgent, requestPath, requestMethod,
+    isStreaming, startTime, transformedBody,
+    incomingProtocol, targetProtocol, logId, retryCount,
+  } = params;
+
   const responseClone = response.clone();
   const errorData = await parseProviderError(responseClone);
   const rawErrorMessage = errorData.error?.message || 'Provider request failed';

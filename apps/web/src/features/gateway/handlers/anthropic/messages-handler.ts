@@ -8,7 +8,7 @@ import { normalizeAnthropicPassthroughMessages, hasAssistantMessagesWithoutThink
 import { circuitBreakerRegistry } from '../../services/circuit-breaker';
 import { identifyClient } from '../../services/client-identifier';
 import { handleGatewayError, handleProviderError, handleProviderErrorPassthrough } from '../../services/error-handler';
-import { PROVIDER_FILTERED_HEADERS } from '../../services/headers';
+import { shouldFilterHeader } from '../../services/headers';
 import { logEventBus } from '../../services/log-event-bus';
 import { logRequestStart, markLogAsFailed } from '../../services/log-service';
 import { ModelNotFoundError } from '../../services/model-group-router';
@@ -221,7 +221,7 @@ export async function handleAnthropicMessages(
               targetUrl = joinUrl(providerUrl, getEndpoint(protocol, isStreaming));
               providerRequestHeaders = {
                 ...Object.fromEntries(
-                  Object.entries(clientRequestHeaders).filter(([key]) => !PROVIDER_FILTERED_HEADERS.has(key))
+                  Object.entries(clientRequestHeaders).filter(([key]) => !shouldFilterHeader(key))
                 ),
                 'x-api-key': provider.apiKey || '',
               };
@@ -237,7 +237,7 @@ export async function handleAnthropicMessages(
               if (protocol === 'anthropic') {
                 providerRequestHeaders = {
                   ...Object.fromEntries(
-                    Object.entries(clientRequestHeaders).filter(([key]) => !PROVIDER_FILTERED_HEADERS.has(key))
+                    Object.entries(clientRequestHeaders).filter(([key]) => !shouldFilterHeader(key))
                   ),
                   ...Object.fromEntries(
                     Object.entries(adapted.headers || {}).map(([k, v]) => [k.toLowerCase(), v])
@@ -247,7 +247,7 @@ export async function handleAnthropicMessages(
               } else {
                 providerRequestHeaders = {
                   ...Object.fromEntries(
-                    Object.entries(clientRequestHeaders).filter(([key]) => !PROVIDER_FILTERED_HEADERS.has(key))
+                    Object.entries(clientRequestHeaders).filter(([key]) => !shouldFilterHeader(key))
                   ),
                   ...Object.fromEntries(
                     Object.entries(adapted.headers || {}).map(([k, v]) => [k.toLowerCase(), v])

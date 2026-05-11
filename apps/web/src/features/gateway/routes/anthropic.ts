@@ -5,7 +5,7 @@ import type { VirtualKey } from '@/features/keys/db';
 
 import { handleAnthropicMessages } from '../handlers/anthropic/messages-handler';
 import { identifyClient } from '../services/client-identifier';
-import { PROVIDER_FILTERED_HEADERS } from '../services/headers';
+import { shouldFilterHeader } from '../services/headers';
 import { logRequest } from '../services/log-service';
 import { ModelNotFoundError } from '../services/model-group-router';
 import { virtualModelRouter } from '../services/virtual-model-router';
@@ -101,7 +101,7 @@ anthropicRoutes.post('/messages/count_tokens', async (c) => {
     const providerRequestHeaders: Record<string, string> = {
       ...Object.fromEntries(
         Object.entries(clientRequestHeaders).filter(
-          ([key]) => !PROVIDER_FILTERED_HEADERS.has(key)
+          ([key]) => !shouldFilterHeader(key)
         )
       ),
       'content-type': 'application/json',

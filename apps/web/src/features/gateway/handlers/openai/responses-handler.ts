@@ -6,7 +6,7 @@ import type { VirtualKey } from '@/features/keys/db';
 
 import { identifyClient } from '../../services/client-identifier';
 import { handleGatewayError, handleProviderError, handleProviderErrorPassthrough } from '../../services/error-handler';
-import { PROVIDER_FILTERED_HEADERS } from '../../services/headers';
+import { shouldFilterHeader } from '../../services/headers';
 import { logRequestStart } from '../../services/log-service';
 import { ModelNotFoundError } from '../../services/model-group-router';
 import { getProviderProtocol, getProviderUrl, getEndpoint } from '../../services/protocol-detector';
@@ -558,7 +558,7 @@ export async function handleResponsesAPI(
       providerRequestHeaders = {
         ...Object.fromEntries(
           Object.entries(clientRequestHeaders).filter(
-            ([key]) => !PROVIDER_FILTERED_HEADERS.has(key),
+            ([key]) => !shouldFilterHeader(key),
           ),
         ),
         'authorization': `Bearer ${provider.apiKey}`,
@@ -578,7 +578,7 @@ export async function handleResponsesAPI(
       providerRequestHeaders = {
         ...Object.fromEntries(
           Object.entries(clientRequestHeaders).filter(
-            ([key]) => !PROVIDER_FILTERED_HEADERS.has(key),
+            ([key]) => !shouldFilterHeader(key),
           ),
         ),
         ...Object.fromEntries(

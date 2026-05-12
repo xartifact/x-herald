@@ -1,6 +1,6 @@
 'use client'
 
-import { FileText, Trash2, AlertCircle, CheckCircle2, ArrowUpRight, ArrowDownRight, Loader2 } from 'lucide-react'
+import { FileText, Trash2, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -76,39 +76,40 @@ export function LogTable({
 
                 {/* 模型 */}
                 <TableCell>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-sm truncate">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-medium text-sm truncate" title={log.originalModelName ?? log.modelName}>
                         {log.originalModelName ?? log.modelName}
                       </span>
                       <Badge
                         variant={isPending ? 'outline' : isSuccess ? 'default' : 'destructive'}
                         className={cn(
-                          "text-xs font-mono h-5 px-1.5",
+                          "text-xs font-mono h-5 px-1.5 shrink-0",
                           isPending && "border-amber-500 text-amber-600"
                         )}
                       >
                         {isPending ? "请求中" : log.statusCode || log.status}
                       </Badge>
                       {log.retryCount > 0 && (
-                        <Badge variant="outline" className="text-xs h-5 px-1.5 text-orange-600 border-orange-300">
+                        <Badge variant="outline" className="text-xs h-5 px-1.5 text-orange-600 border-orange-300 shrink-0">
                           重试×{log.retryCount}
                         </Badge>
                       )}
                     </div>
-                    {/* 实际模型：provider 响应中的模型名，与请求不同时显示 */}
-                    {log.responseModelName && log.responseModelName !== (log.originalModelName ?? log.modelName) && (
-                      <div className="text-xs text-muted-foreground truncate">
-                        <span className="text-muted-foreground/60">实际</span>{' '}{log.responseModelName}
-                      </div>
-                    )}
-                    {log.providerName && (
-                      <div className="text-xs text-muted-foreground truncate">
-                        {log.providerName}
+                    {/* 实际模型 + Provider — 单行紧凑显示 */}
+                    {(log.responseModelName || log.providerName) && (
+                      <div className="text-xs text-muted-foreground truncate max-w-[240px]">
+                        {log.providerName && <span>{log.providerName}</span>}
+                        {log.responseModelName && log.responseModelName !== (log.originalModelName ?? log.modelName) && (
+                          <span>
+                            {log.providerName ? ' · ' : ''}
+                            <span className="text-muted-foreground/60">实际</span> {log.responseModelName}
+                          </span>
+                        )}
                       </div>
                     )}
                     {log.errorMessage && (
-                      <div className="text-xs text-red-600 truncate max-w-[300px]" title={log.errorMessage}>
+                      <div className="text-xs text-red-600 truncate max-w-[280px]" title={log.errorMessage}>
                         {log.errorMessage}
                       </div>
                     )}
@@ -127,20 +128,12 @@ export function LogTable({
                   </span>
                 </TableCell>
 
-                {/* Token */}
+                {/* Token — 单行紧凑 */}
                 <TableCell>
-                  <div className="space-y-0.5 font-mono text-xs">
-                    <div className="flex items-center gap-1 text-muted-foreground">
-                      <ArrowUpRight className="h-3 w-3" />
-                      <span>{formatTokens(log.inputTokens)}</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-muted-foreground">
-                      <ArrowDownRight className="h-3 w-3" />
-                      <span>{formatTokens(log.outputTokens)}</span>
-                    </div>
-                    <div className="font-semibold text-foreground">
-                      Σ {formatTokens(log.totalTokens)}
-                    </div>
+                  <div className="font-mono text-xs whitespace-nowrap">
+                    <span className="text-muted-foreground">↑</span>{formatTokens(log.inputTokens)}
+                    {' '}<span className="text-muted-foreground">↓</span>{formatTokens(log.outputTokens)}
+                    {' '}<span className="font-semibold text-foreground">Σ{formatTokens(log.totalTokens)}</span>
                   </div>
                 </TableCell>
 

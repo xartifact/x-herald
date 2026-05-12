@@ -83,7 +83,7 @@ export function LiveLogsPanel() {
 
   return (
     <Card className="border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-950/20">
-      <CardHeader className="pb-2 pt-4">
+      <CardHeader className="pb-2 pt-3">
         <CardTitle className="flex items-center gap-2 text-sm font-medium text-green-700 dark:text-green-400">
           <Activity className="h-4 w-4" />
           实时请求
@@ -92,7 +92,7 @@ export function LiveLogsPanel() {
           </Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col gap-2 pb-4">
+      <CardContent className="flex flex-col gap-2 pb-3 max-h-[200px] overflow-y-auto">
         {Array.from(streams.values()).map((item) => (
           <StreamCard key={item.logId} item={item} />
         ))}

@@ -73,26 +73,59 @@ export async function executeFailoverIteration(params: FailoverExecutorParams): 
     onRetry: params.onRetry,
   });
 
-  if (retryResult.aborted || (!retryResult.response && !retryResult.networkError)) {
+  // Client disconnect → no point in failover or retry
+  if (retryResult.aborted === 'client_disconnect' || (!retryResult.response && !retryResult.networkError && !retryResult.aborted)) {
     if (params.isStreaming && params.logId) params.onLogEventBusEmitAborted(params.logId);
     return { type: 'abort', retryCount: retryResult.retryCount };
   }
 
-  // Network error (TLS, DNS, connection refused) — trigger failover if possible
-  if (retryResult.networkError && !retryResult.response) {
+  // Network error OR TTFB timeout — trigger failover if possible
+  if ((retryResult.networkError || retryResult.aborted === 'timeout') && !retryResult.response) {
+    const totalWait = Date.now() - params.startTime;
+    const totalLimit = params.isStreaming
+      ? 90_000 // TOTAL_TTFB_TIMEOUT_MS_STREAMING
+      : 60_000; // TOTAL_TTFB_TIMEOUT_MS_NON_STREAMING
+    const overTotal = totalWait > totalLimit;
+
+    // If over total limit, don't failover — return error
+    if (overTotal) {
+      if (params.isStreaming && params.logId) params.onLogEventBusEmitAborted(params.logId);
+      params.onRecordFailure();
+      const ttfbDuration = Date.now() - params.preprocessEndTime;
+      await params.onMarkLogAsFailed(
+        params.logId || '', 0, `TTFB timeout all candidates exceeded ${totalLimit / 1000}s total`, retryResult.retryCount, ttfbDuration, null,
+      );
+      return { type: 'error', response: await params.handleGatewayError('ttfb_timeout',
+        `Provider response timeout: TTFB not received within configured time limit (${totalLimit / 1000}s total)`), retryCount: retryResult.retryCount };
+    }
+
     const shouldFailover = !params.isLastCandidate;
     if (shouldFailover) {
       params.onRecordFailure();
       const ttfbDuration = Date.now() - params.preprocessEndTime;
+      const reason = retryResult.aborted === 'timeout'
+        ? `TTFB timeout after ${ttfbDuration}ms`
+        : 'Network error: connection failed';
       await params.onMarkLogAsFailed(
-        params.logId || '', 0, 'Network error: connection failed', retryResult.retryCount, ttfbDuration, null,
+        params.logId || '', 0, reason, retryResult.retryCount, ttfbDuration, null,
       );
       if (params.isStreaming && params.logId) params.onLogEventBusEmitAborted(params.logId);
       return { type: 'failover', retryCount: retryResult.retryCount };
     }
     // Last candidate — return gateway error
     if (params.isStreaming && params.logId) params.onLogEventBusEmitAborted(params.logId);
-    return { type: 'error', response: await params.handleGatewayError('network_error', 'Connection to provider failed: TLS handshake or network error'), retryCount: retryResult.retryCount };
+    params.onRecordFailure();
+    const ttfbDuration = Date.now() - params.preprocessEndTime;
+    await params.onMarkLogAsFailed(
+      params.logId || '', 0, retryResult.aborted === 'timeout' ? `TTFB timeout after ${ttfbDuration}ms` : 'Network error: connection failed',
+      retryResult.retryCount, ttfbDuration, null,
+    );
+    return { type: 'error', response: await params.handleGatewayError(
+      retryResult.aborted === 'timeout' ? 'ttfb_timeout' : 'network_error',
+      retryResult.aborted === 'timeout'
+        ? `Provider response timeout: TTFB not received within configured time limit`
+        : 'Connection to provider failed: TLS handshake or network error',
+    ), retryCount: retryResult.retryCount };
   }
 
   const response = retryResult.response!;

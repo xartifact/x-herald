@@ -11,8 +11,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card';
 
 function formatElapsed(ms: number): string {
   if (ms < 1000) return `${ms}ms`;
-  return `${(ms / 1000).toFixed(1)}s`;
+  if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`;
+  return `${Math.floor(ms / 60_000)}分${Math.floor((ms % 60_000) / 1000)}秒`;
 }
+
+const STUCK_THRESHOLD_MS = 30_000; // 30秒视为"卡住"
 
 function StreamCard({ item }: { item: LiveStreamItem }) {
   const [elapsedMs, setElapsedMs] = useState(item.elapsedMs);
@@ -26,11 +29,17 @@ function StreamCard({ item }: { item: LiveStreamItem }) {
 
   const displayName = item.originalModelName ?? item.modelName;
   const isWaiting = item.status === 'waiting';
+  const isStuck = isWaiting && elapsedMs > STUCK_THRESHOLD_MS;
 
   return (
-    <div className="flex items-center gap-3 rounded-lg border bg-card px-4 py-3 text-sm">
+    <div className={`flex items-center gap-3 rounded-lg border px-4 py-3 text-sm ${isStuck ? 'border-red-300 bg-red-50/50 dark:border-red-800 dark:bg-red-950/20' : 'bg-card'}`}>
       <span className="relative flex h-2 w-2 shrink-0">
-        {isWaiting ? (
+        {isStuck ? (
+          <>
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+          </>
+        ) : isWaiting ? (
           <>
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500" />

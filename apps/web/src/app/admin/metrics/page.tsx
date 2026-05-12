@@ -13,7 +13,7 @@ export default function MetricsPage() {
       <div>
         <h1 className="text-2xl font-bold">性能指标</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          实例级 TTFB / 延迟 / TPS 时序追踪，每5分钟聚合，自动基线对比
+          实例级 TTFB / 总耗时 / TPS 时序追踪，每5分钟聚合，自动基线对比
         </p>
       </div>
 

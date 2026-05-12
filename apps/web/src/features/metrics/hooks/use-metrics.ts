@@ -25,7 +25,9 @@ export interface InstanceSummary {
   ttfbP50: number | null;
   ttfbP95: number | null;
   ttfbP99: number | null;
+  /** 总响应时间均值（首字节到完整响应结束） */
   latencyAvg: number | null;
+  /** 总响应时间 P95 */
   latencyP95: number | null;
   ttftAvg: number | null;
   ttftP95: number | null;
@@ -70,6 +72,7 @@ export interface ProviderQuality {
   avgTtfb: number;
   ttfbP95: number | null;
   avgTps: number | null;
+  /** 总响应时间均值 */
   avgLatency: number | null;
   avgRetryRate: number | null;
   qualityScore: number;

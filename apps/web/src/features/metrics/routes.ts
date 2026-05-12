@@ -285,15 +285,21 @@ metricsRoutes.get('/summary', async (c) => {
         instance_id,
         avg(ttfb_p95) AS baseline_ttfb_p95
       FROM instance_perf_snapshots
-      WHERE bucket_start >= ${new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()}
-        AND bucket_start < ${since6h}
+      WHERE bucket_start >= ${since24h}
+        AND bucket_start < ${since1h}
       GROUP BY instance_id
     )
     SELECT count(*) AS anomaly_count
     FROM latest l
-    JOIN baseline b USING (instance_id)
-    WHERE b.baseline_ttfb_p95 > 0
-      AND l.ttfb_p95 > b.baseline_ttfb_p95 * 2
+    LEFT JOIN baseline b USING (instance_id)
+    WHERE l.ttfb_p95 IS NOT NULL
+      AND (
+        -- 有基线：当前 TTFB P95 > 基线 2 倍
+        (b.baseline_ttfb_p95 IS NOT NULL AND b.baseline_ttfb_p95 > 0 AND l.ttfb_p95 > b.baseline_ttfb_p95 * 2)
+        OR
+        -- 无基线：TTFB P95 > 30s 视为异常（冷启动场景）
+        (b.baseline_ttfb_p95 IS NULL AND l.ttfb_p95 > 30000)
+      )
   `);
 
   const anomaly = toRows(anomalyRows)[0] as Record<string, unknown> | undefined;

@@ -10,6 +10,7 @@ import logger from '@/core/lib/logger';
 import { fetchPerfContext } from '@/features/metrics/services/perf-context-fetcher';
 import { virtualModels, modelInstances, modelGroups, modelRoutes } from '@/features/model-groups/db';
 import { providers } from '@/features/providers/db';
+import { CATCHALL_VM_NAME } from '@/features/virtual-models/constants';
 
 
 import { modelGroupRouter, RequestRejectedError, type RouteResult, type RoutingContext } from './model-group-router';
@@ -96,7 +97,7 @@ export class VirtualModelRouter {
   }
 
   /**
-   * 兜底路由：当找不到虚拟模型时，使用标记为 isDefault 的虚拟模型处理请求
+   * 兜底路由：当找不到虚拟模型时，使用 __catchall__ 虚拟模型处理请求
    */
   private async routeCandidatesViaDefault(context: RoutingContext): Promise<RouteResult[]> {
     const db = getDatabase();
@@ -104,7 +105,7 @@ export class VirtualModelRouter {
     const defaultVmResult = await db
       .select()
       .from(virtualModels)
-      .where(and(eq(virtualModels.isDefault, true), eq(virtualModels.enabled, true)))
+      .where(and(eq(virtualModels.name, CATCHALL_VM_NAME), eq(virtualModels.enabled, true)))
       .limit(1);
 
     if (defaultVmResult.length === 0) return [];

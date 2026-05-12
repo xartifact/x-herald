@@ -233,9 +233,22 @@ async function createDatabaseIfNotExists(options: DatabaseOptions): Promise<void
   }
 }
 
-async function runPostgresMigrations(db: ReturnType<typeof drizzlePostgres>): Promise<void> {
+async function runPostgresMigrations(
+  db: ReturnType<typeof drizzlePostgres>,
+  client: postgres.Sql
+): Promise<void> {
   logger.trace('[DB] 开始运行数据库迁移');
   try {
+    // Ensure migration tracking table exists (same as PGlite path)
+    await client.unsafe(`
+      CREATE TABLE IF NOT EXISTS "__drizzle_migrations" (
+        "id" SERIAL PRIMARY KEY,
+        "hash" text NOT NULL,
+        "created_at" bigint
+      )
+    `);
+    logger.trace('[DB] __drizzle_migrations table ensured');
+
     const migrationsFolder = getMigrationsFolder();
     logger.trace({ migrationsFolder }, '[DB] 迁移文件夹');
     await migratePostgres(db, { migrationsFolder });
@@ -263,7 +276,7 @@ async function initializePostgresDatabase(options: DatabaseOptions): Promise<voi
     const client = postgres(connString, { max: 1, onnotice: () => {} });
     const db = drizzlePostgres(client, { schema });
     try {
-      await runPostgresMigrations(db);
+      await runPostgresMigrations(db, client);
     } finally {
       await client.end();
     }

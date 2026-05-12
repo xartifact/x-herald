@@ -2,6 +2,8 @@
 
 import { Plus, Search, Pencil, Trash2, Lock } from 'lucide-react'
 
+import { CATCHALL_VM_NAME } from './constants'
+
 import { Badge } from '@/ui/badge'
 import { Button } from '@/ui/button'
 import { Card, CardContent } from '@/ui/card'
@@ -110,7 +112,7 @@ export default function VirtualModelsPage() {
                             <div className="text-xs text-muted-foreground">{vm.displayName}</div>
                           )}
                         </div>
-                        {vm.isDefault && (
+                        {vm.name === CATCHALL_VM_NAME && (
                           <Badge variant="secondary" className="text-xs gap-1">
                             <Lock className="h-2.5 w-2.5" />
                             系统
@@ -139,7 +141,7 @@ export default function VirtualModelsPage() {
                         <Button variant="ghost" size="sm" onClick={() => handleEdit(vm)}>
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        {!vm.isDefault && (
+                        {vm.name !== CATCHALL_VM_NAME && (
                           <Button variant="ghost" size="sm" onClick={() => handleDelete(vm)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>

@@ -8,7 +8,7 @@
  *    flag 与路由在同一事务内原子写入，避免崩溃导致状态不一致
  */
 
-import { and, eq, ne } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 
 import logger from '@/core/lib/logger';
 import { gatewayConfigs } from '@/features/gateway-config/db';
@@ -30,7 +30,6 @@ export async function seedSystemData(): Promise<void> {
       name: CATCHALL_VM_NAME,
       displayName: '全局路由',
       description: '系统内置虚拟模型，处理所有未匹配的请求',
-      isDefault: true,
       enabled: true,
     })
     .onConflictDoNothing()
@@ -40,11 +39,6 @@ export async function seedSystemData(): Promise<void> {
 
   if (created) {
     catchallId = created.id;
-    // 新建时清除其他 VM 的 isDefault，确保全局唯一
-    await db
-      .update(virtualModels)
-      .set({ isDefault: false })
-      .where(and(eq(virtualModels.isDefault, true), ne(virtualModels.id, catchallId)));
     logger.info({ id: catchallId }, 'System __catchall__ virtual model created');
   } else {
     const [existing] = await db

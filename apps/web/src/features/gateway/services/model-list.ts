@@ -1,8 +1,9 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, ne } from 'drizzle-orm';
 
 import { getDatabase } from '@/core/db/client';
 import type { VirtualKey } from '@/features/keys/db';
 import { modelGroups, virtualModels } from '@/features/model-groups/db';
+import { CATCHALL_VM_NAME } from '@/features/virtual-models/constants';
 
 export interface AccessibleModel {
   name: string;
@@ -24,7 +25,7 @@ export async function fetchAccessibleModels(virtualKey: VirtualKey): Promise<Acc
       createdAt: virtualModels.createdAt,
     })
     .from(virtualModels)
-    .where(and(eq(virtualModels.enabled, true), eq(virtualModels.isDefault, false)));
+    .where(and(eq(virtualModels.enabled, true), ne(virtualModels.name, CATCHALL_VM_NAME)));
 
   if (enabledVMs.length > 0) {
     const accessible = enabledVMs.filter((vm) => {

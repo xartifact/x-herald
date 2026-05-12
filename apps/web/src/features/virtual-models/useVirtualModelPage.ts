@@ -17,7 +17,6 @@ export interface VirtualModelFormData {
   name: string
   displayName: string
   description: string
-  isDefault: boolean
   enabled: boolean
 }
 
@@ -37,7 +36,6 @@ export function useVirtualModelPage() {
       name: '',
       displayName: '',
       description: '',
-      isDefault: false,
       enabled: true,
     },
   })
@@ -48,7 +46,6 @@ export function useVirtualModelPage() {
       name: '',
       displayName: '',
       description: '',
-      isDefault: false,
       enabled: true,
     })
     setDialogOpen(true)
@@ -60,7 +57,6 @@ export function useVirtualModelPage() {
       name: vm.name,
       displayName: vm.displayName || '',
       description: vm.description || '',
-      isDefault: vm.isDefault,
       enabled: vm.enabled,
     })
     setDialogOpen(true)
@@ -80,7 +76,6 @@ export function useVirtualModelPage() {
       name: data.name,
       displayName: data.displayName || undefined,
       description: data.description || undefined,
-      isDefault: data.isDefault,
       enabled: data.enabled,
     }
 

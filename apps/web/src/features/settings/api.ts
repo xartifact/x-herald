@@ -14,7 +14,13 @@ const logger = rootLogger.child({ module: 'settings' });
 export const CONFIG_KEY_DEFAULT_ANALYSIS_MODEL = 'AI_MODEL_GROUP_ID';
 export { CONFIG_KEY_AI_MODEL } from '@/core/lib/ai-caller';
 
-const DEFAULT_CB_CONFIG = { failureThreshold: 3, openDurationMs: 60_000 };
+const DEFAULT_CB_CONFIG = {
+  failureThreshold: 3,
+  openDurationMs: 60_000,
+  maxBackoffMs: 300_000,
+  maxTripsBeforeCooldown: 5,
+  cooldownDurationMs: 1_800_000,
+};
 
 const settingsRoutes = new Hono();
 
@@ -61,7 +67,13 @@ settingsRoutes.put('/', async (c) => {
   try {
     const body = await c.req.json() as {
       aiModelGroupId?: string | null;
-      circuitBreaker?: { failureThreshold: number; openDurationMs: number };
+      circuitBreaker?: {
+        failureThreshold: number;
+        openDurationMs: number;
+        maxBackoffMs?: number;
+        maxTripsBeforeCooldown?: number;
+        cooldownDurationMs?: number;
+      };
     };
 
     if ('aiModelGroupId' in body) {
@@ -84,7 +96,8 @@ settingsRoutes.put('/', async (c) => {
     }
 
     if ('circuitBreaker' in body && body.circuitBreaker) {
-      const { failureThreshold, openDurationMs } = body.circuitBreaker;
+      const cb = body.circuitBreaker;
+      const { failureThreshold, openDurationMs, maxBackoffMs, maxTripsBeforeCooldown, cooldownDurationMs } = cb;
 
       if (!Number.isInteger(failureThreshold) || failureThreshold < 1 || failureThreshold > 100) {
         return c.json({ success: false, error: 'failureThreshold 必须是 1-100 之间的整数' }, 400);
@@ -92,8 +105,29 @@ settingsRoutes.put('/', async (c) => {
       if (!Number.isInteger(openDurationMs) || openDurationMs < 1000 || openDurationMs > 3_600_000) {
         return c.json({ success: false, error: 'openDurationMs 必须是 1000-3600000 之间的整数' }, 400);
       }
+      if (maxBackoffMs !== undefined) {
+        if (!Number.isInteger(maxBackoffMs) || maxBackoffMs < 1000 || maxBackoffMs > 3_600_000) {
+          return c.json({ success: false, error: 'maxBackoffMs 必须是 1000-3600000 之间的整数' }, 400);
+        }
+      }
+      if (maxTripsBeforeCooldown !== undefined) {
+        if (!Number.isInteger(maxTripsBeforeCooldown) || maxTripsBeforeCooldown < 2 || maxTripsBeforeCooldown > 20) {
+          return c.json({ success: false, error: 'maxTripsBeforeCooldown 必须是 2-20 之间的整数' }, 400);
+        }
+      }
+      if (cooldownDurationMs !== undefined) {
+        if (!Number.isInteger(cooldownDurationMs) || cooldownDurationMs < 60_000 || cooldownDurationMs > 7_200_000) {
+          return c.json({ success: false, error: 'cooldownDurationMs 必须是 60000-7200000 之间的整数' }, 400);
+        }
+      }
 
-      const cbConfig = { failureThreshold, openDurationMs };
+      const cbConfig = {
+        failureThreshold,
+        openDurationMs,
+        ...(maxBackoffMs !== undefined && { maxBackoffMs }),
+        ...(maxTripsBeforeCooldown !== undefined && { maxTripsBeforeCooldown }),
+        ...(cooldownDurationMs !== undefined && { cooldownDurationMs }),
+      };
       await setConfig(CB_CONFIG_KEY, cbConfig, '熔断器配置：失败阈值和熔断持续时间');
       // 立即应用到运行时（无需重启）
       configureCircuitBreaker(cbConfig);

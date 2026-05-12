@@ -282,6 +282,7 @@ export async function handleOpenAIChatCompletion(
           baselineTtfbP95,
           retryConfig,
           onBeforeFetch: () => {
+            if (logId) abortManager.setLogId(logId);
             if (isStreaming && logId) {
               logEventBus.emitLog({
                 event: 'waiting',

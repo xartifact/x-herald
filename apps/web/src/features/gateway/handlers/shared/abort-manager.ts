@@ -1,4 +1,5 @@
 import logger from '@/core/lib/logger';
+import { logEventBus } from '@/features/gateway/services/log-event-bus';
 
 export interface AbortManagerResult {
   isTimeout: boolean;
@@ -18,11 +19,18 @@ export class AbortManager {
   private clientSignal: AbortSignal | undefined;
   private cleanupAttemptFn: (() => void) | null = null;
   private timeoutId: ReturnType<typeof setTimeout> | null = null;
+  /** logId → 用于手动取消和 stale cleanup */
+  private logId: string | undefined;
 
   public isClientDisconnected = false;
 
   constructor(clientSignal: AbortSignal | undefined) {
     this.clientSignal = clientSignal;
+  }
+
+  /** 设置 logId（在 logRequestStart 之后调用），用于手动取消和 stale cleanup */
+  setLogId(logId: string): void {
+    this.logId = logId;
   }
 
   /**
@@ -49,6 +57,11 @@ export class AbortManager {
   } {
     const controller = new AbortController();
 
+    // 注册到 logEventBus 供手动取消使用
+    if (this.logId) {
+      logEventBus.registerAbortController(this.logId, controller);
+    }
+
     // 客户端断开 → 中止当前尝试
     const propagateDisconnect = () => controller.abort();
     this.clientSignal?.addEventListener('abort', propagateDisconnect);
@@ -65,6 +78,10 @@ export class AbortManager {
       }
       this.timeoutId = null;
       this.clientSignal?.removeEventListener('abort', propagateDisconnect);
+      if (this.logId) {
+        // 注意：只在 fetch 成功后才取消注册（completed/aborted 由 emitLog 处理）
+        // 这里不清除 logEventBus 中的映射，保留给手动取消用
+      }
     };
     this.cleanupAttemptFn = cleanup;
 

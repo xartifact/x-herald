@@ -324,6 +324,7 @@ export async function handleAnthropicMessages(
           baselineTtfbP95,
           retryConfig,
           onBeforeFetch: () => {
+            if (logId) abortManager.setLogId(logId);
             if (isStreaming && logId) {
               logEventBus.emitLog({
                 event: 'waiting',

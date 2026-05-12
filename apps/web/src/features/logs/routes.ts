@@ -98,6 +98,16 @@ logsRoutes.get('/live', (c) => {
   });
 });
 
+// POST /api/logs/live/:logId/cancel - 手动取消正在进行的请求
+logsRoutes.post('/live/:logId/cancel', async (c) => {
+  const logId = c.req.param('logId');
+  const existed = logEventBus.abortRequest(logId);
+  if (existed) {
+    return c.json({ success: true, message: `已取消请求 ${logId}` });
+  }
+  return c.json({ success: false, error: '该请求不在活跃状态中' }, 404);
+});
+
 // GET /api/logs - 列出日志（带分页和筛选）
 logsRoutes.get('/', async (c) => {
   try {

@@ -2,12 +2,20 @@
 
 import { useEffect, useState } from 'react';
 
-import { Activity, Brain, Clock, Zap } from 'lucide-react';
+import { Activity, Brain, Clock, X, Zap } from 'lucide-react';
 
+import { Button } from '@/ui/button';
 import { useLiveLogs } from '@/hooks/use-live-logs';
 import type { LiveStreamItem } from '@/hooks/use-live-logs';
 import { Badge } from '@/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card';
+import { toast } from 'sonner';
+
+const API_BASE = '/api';
+
+function authHeaders() {
+  return { Authorization: `Bearer ${localStorage.getItem('admin_token') || ''}` };
+}
 
 function formatElapsed(ms: number): string {
   if (ms < 1000) return `${ms}ms`;
@@ -19,6 +27,7 @@ const STUCK_THRESHOLD_MS = 30_000; // 30秒视为"卡住"
 
 function StreamCard({ item }: { item: LiveStreamItem }) {
   const [elapsedMs, setElapsedMs] = useState(item.elapsedMs);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -30,6 +39,26 @@ function StreamCard({ item }: { item: LiveStreamItem }) {
   const displayName = item.originalModelName ?? item.modelName;
   const isWaiting = item.status === 'waiting';
   const isStuck = isWaiting && elapsedMs > STUCK_THRESHOLD_MS;
+
+  const handleCancel = async () => {
+    setIsCancelling(true);
+    try {
+      const res = await fetch(`${API_BASE}/logs/live/${item.logId}/cancel`, {
+        method: 'POST',
+        headers: authHeaders(),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success('已取消请求');
+      } else {
+        toast.error(data.error || '取消失败');
+      }
+    } catch {
+      toast.error('取消失败');
+    } finally {
+      setIsCancelling(false);
+    }
+  };
 
   return (
     <div className={`flex items-center gap-3 rounded-lg border px-4 py-3 text-sm ${isStuck ? 'border-red-300 bg-red-50/50 dark:border-red-800 dark:bg-red-950/20' : 'bg-card'}`}>
@@ -81,6 +110,17 @@ function StreamCard({ item }: { item: LiveStreamItem }) {
         <Clock className="h-3 w-3" />
         <span>{formatElapsed(elapsedMs)}</span>
       </div>
+
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
+        disabled={isCancelling}
+        onClick={handleCancel}
+        title="取消请求"
+      >
+        <X className="h-3.5 w-3.5" />
+      </Button>
     </div>
   );
 }

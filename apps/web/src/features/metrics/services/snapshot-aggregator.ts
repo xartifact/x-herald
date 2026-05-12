@@ -20,6 +20,11 @@ export async function aggregateBucket(bucketStart: Date, bucketMinutes = 5): Pro
   const db = getDatabase();
   const bucketEnd = new Date(bucketStart.getTime() + bucketMinutes * 60 * 1000);
 
+  // 手动序列化 Date 为 ISO 字符串，避免 postgres.js driver 类型错误
+  // ("The string argument must be of type string... Received an instance of Date")
+  const bucketStartStr = bucketStart.toISOString();
+  const bucketEndStr = bucketEnd.toISOString();
+
   // 使用 percentile_cont 聚合，从 request_logs JSONB 字段中提取指标
   // 仅处理已完成（is_complete=true）且有 instanceId 路由信息的请求
   const result = await db.execute(sql`
@@ -43,8 +48,8 @@ export async function aggregateBucket(bucketStart: Date, bucketMinutes = 5): Pro
       (metadata -> 'routing' ->> 'modelGroupName') AS group_name,
       provider_id::text AS provider_id,
       provider_name,
-      ${bucketStart}::timestamp AS bucket_start,
-      ${bucketEnd}::timestamp AS bucket_end,
+      ${bucketStartStr}::timestamp AS bucket_start,
+      ${bucketEndStr}::timestamp AS bucket_end,
 
       count(*)::integer AS sample_count,
       count(*) FILTER (WHERE status = 'success')::integer AS success_count,
@@ -125,8 +130,8 @@ export async function aggregateBucket(bucketStart: Date, bucketMinutes = 5): Pro
     FROM request_logs
     WHERE
       is_complete = true
-      AND created_at >= ${bucketStart}::timestamp
-      AND created_at < ${bucketEnd}::timestamp
+      AND created_at >= ${bucketStartStr}::timestamp
+      AND created_at < ${bucketEndStr}::timestamp
       AND (metadata -> 'routing' ->> 'instanceId') IS NOT NULL
     GROUP BY
       (metadata -> 'routing' ->> 'instanceId'),

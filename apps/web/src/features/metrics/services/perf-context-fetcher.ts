@@ -39,19 +39,23 @@ export async function fetchPerfContext(vmId: string, groupIds: string[]): Promis
 
   try {
     const db = getDatabase();
+    // 使用 string_to_array 将逗号分隔字符串转为 text 数组，
+    // 避免 Drizzle sql 模板对 JS 数组的错误序列化（将 [uuid] 转为 'uuid' 而非 '{uuid}'）。
+    // group_id 列是 varchar 类型，所以用 text[] 类型转换。
+    const groupIdsStr = groupIds.join(',');
     const rows = toRows(await db.execute(sql`
       WITH latest AS (
         SELECT DISTINCT ON (instance_id)
           instance_id, success_rate, ttfb_p95
         FROM instance_perf_snapshots
-        WHERE group_id = ANY(${groupIds})
+        WHERE group_id = ANY(string_to_array(${groupIdsStr}, ','))
           AND bucket_start >= NOW() - INTERVAL '10 minutes'
         ORDER BY instance_id, bucket_start DESC
       ),
       baseline AS (
         SELECT instance_id, avg(ttfb_p95) AS base_ttfb_p95
         FROM instance_perf_snapshots
-        WHERE group_id = ANY(${groupIds})
+        WHERE group_id = ANY(string_to_array(${groupIdsStr}, ','))
           AND bucket_start >= NOW() - INTERVAL '48 hours'
           AND bucket_start < NOW() - INTERVAL '24 hours'
         GROUP BY instance_id

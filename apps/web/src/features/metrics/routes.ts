@@ -40,8 +40,8 @@ function anomalyLevel(score: number | null): 'normal' | 'warning' | 'critical' {
 metricsRoutes.get('/instances', async (c) => {
   const db = getDatabase();
   const now = new Date();
-  const since24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-  const since48h = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+  const since24hISO = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+  const since48hISO = new Date(now.getTime() - 48 * 60 * 60 * 1000).toISOString();
 
   // 查询每个实例：最新桶 + 过去 24h 基线（前 24~48h 的均值作为基线）
   const rows = await db.execute(sql`
@@ -56,7 +56,7 @@ metricsRoutes.get('/instances', async (c) => {
         tps_avg, tps_p50,
         avg_input_tokens, avg_output_tokens
       FROM instance_perf_snapshots
-      WHERE bucket_start >= ${since24h}
+      WHERE bucket_start >= ${since24hISO}::timestamp
       ORDER BY instance_id, bucket_start DESC
     ),
     baseline AS (
@@ -68,7 +68,7 @@ metricsRoutes.get('/instances', async (c) => {
         avg(tps_avg) AS baseline_tps_avg,
         sum(sample_count) AS total_samples_24h
       FROM instance_perf_snapshots
-      WHERE bucket_start >= ${since48h} AND bucket_start < ${since24h}
+      WHERE bucket_start >= ${since48hISO}::timestamp AND bucket_start < ${since24hISO}::timestamp
       GROUP BY instance_id
     )
     SELECT

@@ -5,6 +5,7 @@ import logger from '@/core/lib/logger';
 
 export interface InstancePerfData {
   ttfbAvg: number | null;
+  ttfbP95: number | null;
   latencyAvg: number | null;
   successRate: number | null;
   avgRetryCount: number | null;
@@ -31,6 +32,7 @@ export async function fetchGroupInstancesPerf(groupId: string): Promise<Map<stri
       SELECT DISTINCT ON (instance_id)
         instance_id,
         ttfb_avg,
+        ttfb_p95,
         latency_avg,
         success_rate,
         avg_retry_count
@@ -45,6 +47,7 @@ export async function fetchGroupInstancesPerf(groupId: string): Promise<Map<stri
       const row = r as Record<string, unknown>;
       data.set(String(row.instance_id), {
         ttfbAvg: row.ttfb_avg != null ? Number(row.ttfb_avg) : null,
+        ttfbP95: row.ttfb_p95 != null ? Number(row.ttfb_p95) : null,
         latencyAvg: row.latency_avg != null ? Number(row.latency_avg) : null,
         successRate: row.success_rate != null ? Number(row.success_rate) : null,
         avgRetryCount: row.avg_retry_count != null ? Number(row.avg_retry_count) : null,

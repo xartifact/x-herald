@@ -114,8 +114,9 @@ export async function handleAnthropicMessages(
     try {
       for (let candidateIdx = 0; candidateIdx < candidates.length; candidateIdx++) {
         const routeResult = candidates[candidateIdx];
-        const { instance, provider, group, decision, mapping, matchedRule } = routeResult;
+        const { instance, provider, group, decision, mapping, matchedRule, perf } = routeResult;
         const isLastCandidate = candidateIdx === candidates.length - 1;
+        const baselineTtfbP95 = perf?.ttfbP95 ?? perf?.ttfbAvg ?? undefined;
 
         if (candidateIdx > 0) {
           logger.info(
@@ -320,6 +321,7 @@ export async function handleAnthropicMessages(
           requestPath,
           requestMethod,
           rawBody: rawBody as { model?: string; [key: string]: unknown },
+          baselineTtfbP95,
           retryConfig,
           onBeforeFetch: () => {
             if (isStreaming && logId) {

@@ -1,7 +1,7 @@
 import type { Context } from 'hono';
 
 import type { AbortManager } from './abort-manager';
-import { CONNECT_TIMEOUT_MS, TTFB_TIMEOUT_MS_STREAMING, TTFB_TIMEOUT_MS_NON_STREAMING } from './constants';
+import { CONNECT_TIMEOUT_MS, calculateTtfbTimeout } from './constants';
 import { executeWithRetry } from './retry-executor';
 import { FAILOVER_STATUS_CODES } from '../../services/model-group-router';
 
@@ -34,6 +34,8 @@ export interface FailoverExecutorParams {
     maxDelay: number;
     retryableStatusCodes: number[];
   };
+  /** Baseline TTFB P95 for this instance (ms). Used for dynamic timeout calculation. */
+  baselineTtfbP95?: number;
   onBeforeFetch?: () => void;
   onRetry?: (attempt: number, delay: number, lastResponse?: Response) => void;
   onRecordFailure: () => void;
@@ -55,6 +57,11 @@ export async function executeFailoverIteration(params: FailoverExecutorParams): 
   const prepared = await params.onPrepareRequest();
   params.onBeforeFetch?.();
 
+  const ttfbTimeout = calculateTtfbTimeout(
+    params.baselineTtfbP95,
+    params.isStreaming ? 60_000 : 30_000,
+  );
+
   const retryResult = await executeWithRetry({
     abortManager: params.abortManager,
     operation: async (signal) => {
@@ -66,7 +73,7 @@ export async function executeFailoverIteration(params: FailoverExecutorParams): 
         connectTimeout: CONNECT_TIMEOUT_MS,
       } as RequestInit);
     },
-    timeout: params.isStreaming ? TTFB_TIMEOUT_MS_STREAMING : TTFB_TIMEOUT_MS_NON_STREAMING,
+    timeout: ttfbTimeout,
     requestId: params.requestId,
     isStreaming: params.isStreaming,
     config: params.retryConfig,

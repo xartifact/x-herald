@@ -35,6 +35,7 @@ export interface RouteResult {
     name: string;
     priority: number;
   };
+  perf?: InstancePerfData;
 }
 
 // 路由上下文
@@ -137,6 +138,9 @@ export class ModelGroupRouter {
     const strategy = group.routingConfig?.strategy ?? 'priority';
     const sorted = await this.selectByStrategy(filtered, strategy, group.id);
 
+    // Fetch performance data for baseline TTFB timeout calculation
+    const perfMap = await fetchGroupInstancesPerf(group.id);
+
     logger.debug(
       { groupId, strategy, totalCandidates: filtered.length },
       'Routing candidates resolved'
@@ -159,6 +163,7 @@ export class ModelGroupRouter {
         originalModel: context.requestedModel,
         mappingType: 'virtual' as const,
       },
+      perf: perfMap.get(c.instance.id),
     }));
   }
 

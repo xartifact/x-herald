@@ -4,6 +4,28 @@
 
 ## 严禁操作
 
+### 禁止直接修改数据库结构
+
+**规则：数据库结构（表、列、索引、约束等）只允许通过 Drizzle 迁移文件修改，禁止直接在数据库中执行 DDL 操作。**
+
+所有数据库 schema 变更必须遵循以下流程：
+1. 在 `apps/web/src/core/db/migrations/` 目录下创建新的 SQL 迁移文件
+2. 使用 `IF EXISTS` / `IF NOT EXISTS` 等守卫语句确保迁移可重复执行
+3. 更新 `apps/web/src/core/db/migrations/meta/_journal.json` 中的迁移记录
+4. 同步更新 `apps/web/src/features/model-groups/db.ts` 中的 Drizzle schema 定义
+
+**禁止行为：**
+- ❌ 直接使用 `psql`、`pgAdmin` 等工具执行 `ALTER TABLE`、`CREATE TABLE`、`DROP COLUMN` 等 DDL 语句
+- ❌ 在生产/测试环境中手动修改数据库结构而不创建迁移文件
+- ❌ 在应用代码中执行原始 SQL 来修改 schema（如 `client.unsafe('ALTER TABLE ...')` 用于结构变更）
+
+**允许行为：**
+- ✅ 通过 Drizzle 迁移文件修改数据库结构
+- ✅ 使用 `client.unsafe()` 执行 DML 语句（INSERT/UPDATE/DELETE/SELECT）
+- ✅ 临时查询排查问题（SELECT 语句）
+
+**违规后果：** 直接修改数据库会导致代码与 schema 不一致，迁移系统失效，生产环境出现严重错误（如 `column does not exist`）。
+
 ### 禁止删除 .pglite 目录
 
 **规则：绝对不能删除 `apps/web/.pglite/` 目录或其中的任何文件。**

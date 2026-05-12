@@ -32,18 +32,26 @@ export default function SettingsPage() {
   const { data: settings, isLoading: settingsLoading } = useSettings()
   const updateSettings = useUpdateSettings()
 
-  // AI 模型配置状态
   const [selectedGroupId, setSelectedGroupId] = useState<string | null | undefined>(undefined)
   const currentGroupId =
     selectedGroupId === undefined
       ? (settings?.aiModelGroupId ?? null)
       : selectedGroupId
 
-  // 熔断器配置状态（null = 未修改，显示服务端值）
-  const [cbForm, setCbForm] = useState<{ failureThreshold: string; openDurationSec: string } | null>(null)
-  const serverCb = settings?.circuitBreaker ?? { failureThreshold: 3, openDurationMs: 60_000 }
+  const [cbForm, setCbForm] = useState<{
+    failureThreshold: string
+    openDurationSec: string
+    maxBackoffSec: string
+    cooldownTrips: string
+    cooldownDurationSec: string
+  } | null>(null)
+
+  const serverCb = settings?.circuitBreaker ?? { failureThreshold: 3, openDurationMs: 60_000, maxBackoffMs: 300_000, maxTripsBeforeCooldown: 5, cooldownDurationMs: 1_800_000 }
   const cbFailureThreshold = cbForm?.failureThreshold ?? String(serverCb.failureThreshold)
   const cbOpenDurationSec = cbForm?.openDurationSec ?? String(Math.round(serverCb.openDurationMs / 1000))
+  const cbMaxBackoffSec = cbForm?.maxBackoffSec ?? String(Math.round((serverCb.maxBackoffMs || 300_000) / 1000))
+  const cbCooldownTrips = cbForm?.cooldownTrips ?? String(serverCb.maxTripsBeforeCooldown || 5)
+  const cbCooldownDurationSec = cbForm?.cooldownDurationSec ?? String(Math.round((serverCb.cooldownDurationMs || 1_800_000) / 1000))
 
   const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -63,10 +71,21 @@ export default function SettingsPage() {
   const handleSaveCircuitBreaker = () => {
     const threshold = parseInt(cbFailureThreshold, 10)
     const durationSec = parseInt(cbOpenDurationSec, 10)
-    if (isNaN(threshold) || isNaN(durationSec)) return
+    const maxBackoffSec = parseInt(cbMaxBackoffSec, 10)
+    const cooldownTrips = parseInt(cbCooldownTrips, 10)
+    const cooldownDurationSec = parseInt(cbCooldownDurationSec, 10)
+    if (isNaN(threshold) || isNaN(durationSec) || isNaN(maxBackoffSec) || isNaN(cooldownTrips) || isNaN(cooldownDurationSec)) return
 
     updateSettings.mutate(
-      { circuitBreaker: { failureThreshold: threshold, openDurationMs: durationSec * 1000 } },
+      {
+        circuitBreaker: {
+          failureThreshold: threshold,
+          openDurationMs: durationSec * 1000,
+          maxBackoffMs: maxBackoffSec * 1000,
+          maxTripsBeforeCooldown: cooldownTrips,
+          cooldownDurationMs: cooldownDurationSec * 1000,
+        },
+      },
       { onSuccess: () => setCbForm(null) }
     )
   }
@@ -78,7 +97,7 @@ export default function SettingsPage() {
         <p className="text-muted-foreground">管理网关全局配置</p>
       </div>
 
-      {/* 应用默认模型 */}
+      {/* AI 模型配置 */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -145,7 +164,7 @@ export default function SettingsPage() {
             <CardTitle>熔断器配置</CardTitle>
           </div>
           <CardDescription>
-            模型实例连续失败达到阈值后自动熔断，保护下游请求。熔断期间该实例将被跳过，优先转移到其他实例。
+            模型实例连续失败达到阈值后自动熔断，保护下游请求。反复熔断将触发指数退避和冷却期机制。
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -153,45 +172,55 @@ export default function SettingsPage() {
             <div className="text-sm text-muted-foreground">加载中...</div>
           ) : (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4 max-w-md">
-                <div className="space-y-2">
-                  <Label htmlFor="cb-threshold">失败阈值（次）</Label>
-                  <Input
-                    id="cb-threshold"
-                    type="number"
-                    min={1}
-                    max={100}
-                    value={cbFailureThreshold}
-                    onChange={(e) =>
-                      setCbForm((prev) => ({
-                        failureThreshold: e.target.value,
-                        openDurationSec: prev?.openDurationSec ?? cbOpenDurationSec,
-                      }))
-                    }
-                    disabled={updateSettings.isPending}
-                    className="w-full"
-                  />
-                  <p className="text-xs text-muted-foreground">连续失败多少次后触发熔断</p>
-                </div>
+              {/* 基础配置 */}
+              <div>
+                <h3 className="text-sm font-medium mb-3">基础配置</h3>
+                <div className="grid grid-cols-2 gap-4 max-w-md">
+                  <div className="space-y-2">
+                    <Label htmlFor="cb-threshold">失败阈值（次）</Label>
+                    <Input id="cb-threshold" type="number" min={1} max={100} value={cbFailureThreshold}
+                      onChange={(e) => setCbForm((prev) => prev ? { ...prev, failureThreshold: e.target.value } : { failureThreshold: e.target.value, openDurationSec: '', maxBackoffSec: '', cooldownTrips: '', cooldownDurationSec: '' })}
+                      disabled={updateSettings.isPending} className="w-full" />
+                    <p className="text-xs text-muted-foreground">连续失败多少次后触发熔断</p>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="cb-duration">熔断持续时间（秒）</Label>
-                  <Input
-                    id="cb-duration"
-                    type="number"
-                    min={10}
-                    max={3600}
-                    value={cbOpenDurationSec}
-                    onChange={(e) =>
-                      setCbForm((prev) => ({
-                        failureThreshold: prev?.failureThreshold ?? cbFailureThreshold,
-                        openDurationSec: e.target.value,
-                      }))
-                    }
-                    disabled={updateSettings.isPending}
-                    className="w-full"
-                  />
-                  <p className="text-xs text-muted-foreground">熔断开路后等待多久进入半开状态</p>
+                  <div className="space-y-2">
+                    <Label htmlFor="cb-duration">基础熔断时长（秒）</Label>
+                    <Input id="cb-duration" type="number" min={10} max={3600} value={cbOpenDurationSec}
+                      onChange={(e) => setCbForm((prev) => prev ? { ...prev, openDurationSec: e.target.value } : { failureThreshold: '', openDurationSec: e.target.value, maxBackoffSec: '', cooldownTrips: '', cooldownDurationSec: '' })}
+                      disabled={updateSettings.isPending} className="w-full" />
+                    <p className="text-xs text-muted-foreground">首次熔断的等待时长</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 高级配置 */}
+              <div>
+                <h3 className="text-sm font-medium mb-3">退避与冷却（高级）</h3>
+                <div className="grid grid-cols-3 gap-4 max-w-lg">
+                  <div className="space-y-2">
+                    <Label htmlFor="cb-max-backoff">最大退避时长（秒）</Label>
+                    <Input id="cb-max-backoff" type="number" min={10} max={3600} value={cbMaxBackoffSec}
+                      onChange={(e) => setCbForm((prev) => prev ? { ...prev, maxBackoffSec: e.target.value } : { failureThreshold: '', openDurationSec: '', maxBackoffSec: e.target.value, cooldownTrips: '', cooldownDurationSec: '' })}
+                      disabled={updateSettings.isPending} className="w-full" />
+                    <p className="text-xs text-muted-foreground">指数退避上限</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="cb-cooldown-trips">冷却阈值（次）</Label>
+                    <Input id="cb-cooldown-trips" type="number" min={2} max={20} value={cbCooldownTrips}
+                      onChange={(e) => setCbForm((prev) => prev ? { ...prev, cooldownTrips: e.target.value } : { failureThreshold: '', openDurationSec: '', maxBackoffSec: '', cooldownTrips: e.target.value, cooldownDurationSec: '' })}
+                      disabled={updateSettings.isPending} className="w-full" />
+                    <p className="text-xs text-muted-foreground">熔断多少次后进入冷却</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="cb-cooldown-duration">冷却时长（秒）</Label>
+                    <Input id="cb-cooldown-duration" type="number" min={60} max={7200} value={cbCooldownDurationSec}
+                      onChange={(e) => setCbForm((prev) => prev ? { ...prev, cooldownDurationSec: e.target.value } : { failureThreshold: '', openDurationSec: '', maxBackoffSec: '', cooldownTrips: '', cooldownDurationSec: e.target.value })}
+                      disabled={updateSettings.isPending} className="w-full" />
+                    <p className="text-xs text-muted-foreground">冷却期等待时长</p>
+                  </div>
                 </div>
               </div>
 
@@ -223,39 +252,15 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-3">
-            <Button
-              variant="outline"
-              onClick={() => exportConfig.mutate()}
-              disabled={exportConfig.isPending}
-            >
-              {exportConfig.isPending ? (
-                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Download className="mr-2 h-4 w-4" />
-              )}
+            <Button variant="outline" onClick={() => exportConfig.mutate()} disabled={exportConfig.isPending}>
+              {exportConfig.isPending ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
               导出配置
             </Button>
-
-            <Button
-              variant="outline"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={importConfig.isPending}
-            >
-              {importConfig.isPending ? (
-                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Upload className="mr-2 h-4 w-4" />
-              )}
+            <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={importConfig.isPending}>
+              {importConfig.isPending ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
               导入配置
             </Button>
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".json"
-              className="hidden"
-              onChange={handleImportFile}
-            />
+            <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={handleImportFile} />
           </div>
 
           {importResult && (
@@ -264,12 +269,8 @@ export default function SettingsPage() {
               <div className="grid grid-cols-3 gap-x-4 gap-y-1 text-muted-foreground">
                 {(
                   [
-                    ['供应商', 'providers'],
-                    ['模型组', 'modelGroups'],
-                    ['模型实例', 'modelInstances'],
-                    ['虚拟模型', 'virtualModels'],
-                    ['路由规则', 'modelRoutes'],
-                    ['虚拟密钥', 'virtualKeys'],
+                    ['供应商', 'providers'], ['模型组', 'modelGroups'], ['模型实例', 'modelInstances'],
+                    ['虚拟模型', 'virtualModels'], ['路由规则', 'modelRoutes'], ['虚拟密钥', 'virtualKeys'],
                     ['网关配置', 'gatewayConfigs'],
                   ] as const
                 ).map(([label, key]) => {
@@ -289,9 +290,7 @@ export default function SettingsPage() {
                   <AlertTitle>部分错误</AlertTitle>
                   <AlertDescription>
                     <ul className="list-disc list-inside space-y-1">
-                      {importResult.errors.map((e, i) => (
-                        <li key={i}>{e}</li>
-                      ))}
+                      {importResult.errors.map((e, i) => <li key={i}>{e}</li>)}
                     </ul>
                   </AlertDescription>
                 </Alert>

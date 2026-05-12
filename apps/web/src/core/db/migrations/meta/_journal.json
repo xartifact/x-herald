@@ -148,6 +148,13 @@
       "when": 1776854895140,
       "tag": "0020_remove_is_default",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1778184143000,
+      "tag": "0021_add_circuit_breaker_fields",
+      "breakpoints": true
     }
   ]
 }

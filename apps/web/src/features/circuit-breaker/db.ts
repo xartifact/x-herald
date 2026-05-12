@@ -6,9 +6,11 @@ export const circuitBreakerEvents = pgTable('circuit_breaker_events', {
   instanceName: varchar('instance_name', { length: 255 }).notNull().default(''),
   groupName: varchar('group_name', { length: 255 }).notNull().default(''),
   providerName: varchar('provider_name', { length: 255 }).notNull().default(''),
-  event: varchar('event', { length: 20 }).notNull().$type<'opened' | 'half_open' | 'closed'>(),
+  event: varchar('event', { length: 20 }).notNull().$type<'opened' | 'half_open' | 'closed' | 'cooldown' | 'reset' | 'manual_trip'>(),
   failureCount: integer('failure_count').notNull().default(0),
+  tripCount: integer('trip_count').notNull().default(0),
   openUntil: timestamp('open_until'),
+  cooldownUntil: timestamp('cooldown_until'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => [
   index('idx_cb_events_instance_id').on(table.instanceId),

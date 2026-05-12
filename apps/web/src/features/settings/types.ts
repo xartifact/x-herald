@@ -6,8 +6,11 @@ export interface AvailableModelGroup {
 }
 
 export interface CircuitBreakerConfig {
-  failureThreshold: number;
-  openDurationMs: number;
+  failureThreshold: number
+  openDurationMs: number
+  maxBackoffMs?: number
+  maxTripsBeforeCooldown?: number
+  cooldownDurationMs?: number
 }
 
 export interface SettingsData {

@@ -71,7 +71,7 @@ export function InstancePerfTable() {
               <TableHead className="text-right">延迟 P95</TableHead>
               <TableHead className="text-right">成功率</TableHead>
               <TableHead className="text-right">TPS</TableHead>
-              <TableHead className="text-right">基线 TTFB</TableHead>
+                <TableHead className="text-right" title="前 6~24 小时的 TTFB P95 均值，服务运行满 6 小时后自动生成">基线 TTFB</TableHead>
               <TableHead className="text-right">样本</TableHead>
             </TableRow>
           </TableHeader>
@@ -122,8 +122,12 @@ export function InstancePerfTable() {
                     {fmtPct(inst.successRate)}
                   </TableCell>
                   <TableCell className="text-right font-mono">{fmtTps(inst.tpsAvg)}</TableCell>
-                  <TableCell className="text-right font-mono text-muted-foreground">
-                    {fmtMs(inst.baselineTtfbP95)}
+                  <TableCell className="text-right font-mono text-muted-foreground" title="服务运行满 6 小时且 6 小时前有请求时自动生成">
+                    {inst.baselineTtfbP95 == null ? (
+                      <span className="text-muted-foreground/50">—</span>
+                    ) : (
+                      fmtMs(inst.baselineTtfbP95)
+                    )}
                   </TableCell>
                   <TableCell className="text-right text-muted-foreground">
                     {inst.sampleCount.toLocaleString()}

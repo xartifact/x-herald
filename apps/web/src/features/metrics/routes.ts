@@ -40,10 +40,10 @@ function anomalyLevel(score: number | null): 'normal' | 'warning' | 'critical' {
 metricsRoutes.get('/instances', async (c) => {
   const db = getDatabase();
   const now = new Date();
+  const since6hISO = new Date(now.getTime() - 6 * 60 * 60 * 1000).toISOString();
   const since24hISO = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
-  const since48hISO = new Date(now.getTime() - 48 * 60 * 60 * 1000).toISOString();
 
-  // 查询每个实例：最新桶 + 过去 24h 基线（前 24~48h 的均值作为基线）
+  // 查询每个实例：最新桶 + 过去 6h 基线（前 6~24h 的均值作为基线）
   const rows = await db.execute(sql`
     WITH latest AS (
       SELECT DISTINCT ON (instance_id)
@@ -68,7 +68,7 @@ metricsRoutes.get('/instances', async (c) => {
         avg(tps_avg) AS baseline_tps_avg,
         sum(sample_count) AS total_samples_24h
       FROM instance_perf_snapshots
-      WHERE bucket_start >= ${since48hISO}::timestamp AND bucket_start < ${since24hISO}::timestamp
+      WHERE bucket_start >= ${since24hISO}::timestamp AND bucket_start < ${since6hISO}::timestamp
       GROUP BY instance_id
     )
     SELECT
@@ -156,9 +156,9 @@ metricsRoutes.get('/instances/:instanceId/timeseries', async (c) => {
     )
     .orderBy(instancePerfSnapshots.bucketStart);
 
-  // 计算基线：过去 24~48h 的均值
-  const baseline24hStart = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
-  const baseline24hEnd = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  // 计算基线：过去 6~24h 的均值
+  const baseline6hStart = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const baseline6hEnd = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
   const baselineRows = await db.execute(sql`
     SELECT
       avg(ttfb_p95)::real AS baseline_ttfb_p95,
@@ -167,8 +167,8 @@ metricsRoutes.get('/instances/:instanceId/timeseries', async (c) => {
       avg(success_rate)::real AS baseline_success_rate
     FROM instance_perf_snapshots
     WHERE instance_id = ${instanceId}
-      AND bucket_start >= ${baseline24hStart}
-      AND bucket_start < ${baseline24hEnd}
+      AND bucket_start >= ${baseline6hStart}
+      AND bucket_start < ${baseline6hEnd}
   `);
 
   const bl = toRows(baselineRows)[0] as Record<string, unknown> | undefined;
@@ -246,6 +246,7 @@ metricsRoutes.get('/providers/quality', async (c) => {
 metricsRoutes.get('/summary', async (c) => {
   const db = getDatabase();
   const since1h = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const since6h = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
   const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
   const [recent, daily] = await Promise.all([
@@ -284,8 +285,8 @@ metricsRoutes.get('/summary', async (c) => {
         instance_id,
         avg(ttfb_p95) AS baseline_ttfb_p95
       FROM instance_perf_snapshots
-      WHERE bucket_start >= ${new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()}
-        AND bucket_start < ${since24h}
+      WHERE bucket_start >= ${new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()}
+        AND bucket_start < ${since6h}
       GROUP BY instance_id
     )
     SELECT count(*) AS anomaly_count

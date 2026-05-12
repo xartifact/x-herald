@@ -56,8 +56,8 @@ export async function fetchPerfContext(vmId: string, groupIds: string[]): Promis
         SELECT instance_id, avg(ttfb_p95) AS base_ttfb_p95
         FROM instance_perf_snapshots
         WHERE group_id = ANY(string_to_array(${groupIdsStr}, ','))
-          AND bucket_start >= NOW() - INTERVAL '48 hours'
-          AND bucket_start < NOW() - INTERVAL '24 hours'
+          AND bucket_start >= NOW() - INTERVAL '24 hours'
+          AND bucket_start < NOW() - INTERVAL '6 hours'
         GROUP BY instance_id
       )
       SELECT

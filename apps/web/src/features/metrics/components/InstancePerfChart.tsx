@@ -174,6 +174,11 @@ export function InstancePerfChart({ instanceId, instanceName }: Props) {
           </LineChart>
         </ResponsiveContainer>
       )}
+      {baselineValue == null && chartData.length > 0 && (
+        <p className="text-xs text-muted-foreground/60 mt-1 text-center">
+          服务运行满 6 小时后自动生成基线
+        </p>
+      )}
     </div>
   );
 }

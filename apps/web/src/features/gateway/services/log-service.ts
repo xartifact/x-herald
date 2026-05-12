@@ -393,7 +393,7 @@ export async function logRequestStart(params: StreamLogParams): Promise<string> 
  * 用于预创建日志后进入流式处理时更新状态
  */
 export async function upgradeToStreamLog(logId: string): Promise<void> {
-  if (logId.startsWith('temp-')) return;
+  if (!logId || logId.startsWith('temp-')) return;
   try {
     const db = getDatabase();
     await db
@@ -421,7 +421,7 @@ export async function updateStreamProgress(
   partialContent?: Partial<StreamContent>
 ): Promise<void> {
   // 跳过临时 ID（初始日志创建失败时使用）
-  if (logId.startsWith('temp-')) {
+  if (!logId || logId.startsWith('temp-')) {
     logger.warn({ logId }, 'Skipping progress update for temporary log ID');
     return;
   }
@@ -477,7 +477,7 @@ export async function finalizeStreamLog(
   }
 ): Promise<void> {
   // 跳过临时 ID（初始日志创建失败时使用）
-  if (logId.startsWith('temp-')) {
+  if (!logId || logId.startsWith('temp-')) {
     logger.warn({ logId }, 'Skipping finalization for temporary log ID');
     return;
   }
@@ -548,7 +548,7 @@ export async function markStreamFailed(
   logId: string,
   error: { message: string; type?: string; statusCode?: number }
 ): Promise<void> {
-  if (logId.startsWith('temp-')) {
+  if (!logId || logId.startsWith('temp-')) {
     logger.warn({ logId }, 'Skipping failure mark for temporary log ID');
     return;
   }
@@ -588,7 +588,7 @@ export async function markLogAsFailed(
   responseTimeMs?: number,
   providerResponseBody?: unknown,
 ): Promise<void> {
-  if (logId.startsWith('temp-')) return;
+  if (!logId || logId.startsWith('temp-')) return;
   try {
     const db = getDatabase();
     await db
@@ -612,7 +612,7 @@ export async function markLogAsFailed(
 }
 
 export async function markStreamAborted(logId: string): Promise<void> {
-  if (logId.startsWith('temp-')) {
+  if (!logId || logId.startsWith('temp-')) {
     logger.warn({ logId }, 'Skipping abort mark for temporary log ID');
     return;
   }

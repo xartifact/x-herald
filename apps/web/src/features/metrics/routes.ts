@@ -157,8 +157,8 @@ metricsRoutes.get('/instances/:instanceId/timeseries', async (c) => {
     .orderBy(instancePerfSnapshots.bucketStart);
 
   // 计算基线：过去 24~48h 的均值
-  const baseline24hStart = new Date(Date.now() - 48 * 60 * 60 * 1000);
-  const baseline24hEnd = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const baseline24hStart = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+  const baseline24hEnd = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const baselineRows = await db.execute(sql`
     SELECT
       avg(ttfb_p95)::real AS baseline_ttfb_p95,
@@ -193,7 +193,7 @@ metricsRoutes.get('/instances/:instanceId/timeseries', async (c) => {
 
 metricsRoutes.get('/providers/quality', async (c) => {
   const db = getDatabase();
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
   const rows = await db.execute(sql`
     SELECT
@@ -245,8 +245,8 @@ metricsRoutes.get('/providers/quality', async (c) => {
 
 metricsRoutes.get('/summary', async (c) => {
   const db = getDatabase();
-  const since1h = new Date(Date.now() - 60 * 60 * 1000);
-  const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const since1h = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
   const [recent, daily] = await Promise.all([
     db.execute(sql`
@@ -284,7 +284,7 @@ metricsRoutes.get('/summary', async (c) => {
         instance_id,
         avg(ttfb_p95) AS baseline_ttfb_p95
       FROM instance_perf_snapshots
-      WHERE bucket_start >= ${new Date(Date.now() - 48 * 60 * 60 * 1000)}
+      WHERE bucket_start >= ${new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()}
         AND bucket_start < ${since24h}
       GROUP BY instance_id
     )

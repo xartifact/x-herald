@@ -253,8 +253,8 @@ metricsRoutes.get('/summary', async (c) => {
     db.execute(sql`
       SELECT
         sum(sample_count) AS total_requests,
-        round(avg(success_rate)::numeric, 4)::real AS avg_success_rate,
-        round(avg(ttfb_p95)::numeric, 1)::real AS avg_ttfb_p95,
+        round(sum(success_count)::numeric / NULLIF(sum(sample_count), 0), 4)::real AS avg_success_rate,
+        round(sum(ttfb_p95 * sample_count)::numeric / NULLIF(sum(sample_count), 0), 1)::real AS avg_ttfb_p95,
         count(DISTINCT instance_id) AS active_instances
       FROM instance_perf_snapshots
       WHERE bucket_start >= ${since1h}

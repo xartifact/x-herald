@@ -30,6 +30,7 @@ import { ModelTriggerNode } from './nodes/model-trigger-node'
 import { StrategyNode } from './nodes/strategy-node'
 import { TargetNode } from './nodes/target-node'
 import { getLayoutedElements } from '../core/layout-flow'
+import { generateId } from '@/lib/shared-utils'
 
 const nodeTypes = {
   modelTrigger: ModelTriggerNode,
@@ -187,7 +188,7 @@ const FlowCanvas = forwardRef<FlowEditorHandle, FlowCanvasProps>(function FlowCa
   const handleAddNode = useCallback(
     (template: (typeof NODE_TEMPLATES)[number]) => {
       const newNode: Node = {
-        id: `${template.type}-new-${crypto.randomUUID()}`,
+        id: `${template.type}-new-${generateId()}`,
         type: template.type,
         position: addPosition,
         data: { ...template.defaultData },

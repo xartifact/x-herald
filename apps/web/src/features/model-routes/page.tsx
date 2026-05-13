@@ -8,7 +8,6 @@ import { Card, CardContent } from '@/ui/card'
 
 import { DeployBanner } from './components/deploy-banner'
 import { FlowEditor } from './components/flow-editor'
-import { PropertyPanel } from './components/property-panel'
 import { buildFlowFromData } from './core/build-flow'
 import { useModelRoutePage } from './useModelRoutePage'
 import { useModelRoutes } from './useModelRoutes'
@@ -53,7 +52,7 @@ export default function ModelRoutesPage() {
         <DeployBanner isDirty={isDirty} isDeploying={isDeploying} onDeploy={handleDeploy} />
       </div>
 
-      {/* 主体区域：画布 + 属性面板 */}
+      {/* 主体区域：画布（属性面板已内置） */}
       {isLoading ? (
         <Card className="flex-1">
           <CardContent className="flex items-center justify-center h-full">
@@ -64,9 +63,8 @@ export default function ModelRoutesPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="flex-1 grid grid-cols-[1fr_300px] gap-4 min-h-0">
-          {/* Flow 画布 */}
-          <Card className="overflow-hidden">
+        <div className="flex-1 min-h-0">
+          <Card className="overflow-hidden h-full">
             <CardContent className="p-0 h-full">
               <FlowEditor
                 ref={flowEditorRef}
@@ -75,16 +73,10 @@ export default function ModelRoutesPage() {
                 refreshKey={refreshKey}
                 onNodesEdgesChange={handleNodesEdgesChange}
                 onNodeSelect={handleNodeSelect}
+                selectedNode={selectedNode}
+                onUpdateNodeData={handleUpdateNodeData}
               />
             </CardContent>
-          </Card>
-
-          {/* 属性面板 */}
-          <Card className="overflow-hidden">
-            <PropertyPanel
-              selectedNode={selectedNode}
-              onUpdate={handleUpdateNodeData}
-            />
           </Card>
         </div>
       )}

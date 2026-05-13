@@ -8,6 +8,7 @@ import {
   Controls,
   MiniMap,
   Background,
+  Panel,
   BackgroundVariant,
   useNodesState,
   useEdgesState,
@@ -31,6 +32,7 @@ import { StrategyNode } from './nodes/strategy-node'
 import { TargetNode } from './nodes/target-node'
 import { getLayoutedElements } from '../core/layout-flow'
 import { generateId } from '@/lib/shared-utils'
+import { PropertyPanel } from './property-panel'
 
 const nodeTypes = {
   modelTrigger: ModelTriggerNode,
@@ -86,12 +88,14 @@ export interface FlowEditorProps {
   refreshKey: string
   onNodesEdgesChange: (nodes: Node[], edges: Edge[]) => void
   onNodeSelect: (node: Node | null) => void
+  selectedNode: Node | null
+  onUpdateNodeData: (nodeId: string, data: Record<string, unknown>) => void
 }
 
 type FlowCanvasProps = FlowEditorProps
 
 const FlowCanvas = forwardRef<FlowEditorHandle, FlowCanvasProps>(function FlowCanvas(
-  { initialNodes, initialEdges, refreshKey, onNodesEdgesChange, onNodeSelect },
+  { initialNodes, initialEdges, refreshKey, onNodesEdgesChange, onNodeSelect, selectedNode, onUpdateNodeData },
   ref,
 ) {
   const { screenToFlowPosition, deleteElements, fitView } = useReactFlow()
@@ -246,6 +250,7 @@ const FlowCanvas = forwardRef<FlowEditorHandle, FlowCanvasProps>(function FlowCa
           onConnect={onConnect}
           onNodeClick={handleNodeClick}
           onPaneClick={handlePaneClick}
+          onNodeDoubleClick={(_: React.MouseEvent, node: Node) => onNodeSelect(node)}
           nodeTypes={nodeTypes}
           nodesDraggable
           nodesConnectable
@@ -267,6 +272,18 @@ const FlowCanvas = forwardRef<FlowEditorHandle, FlowCanvasProps>(function FlowCa
             }}
           />
           <Background variant={BackgroundVariant.Dots} gap={16} size={1} />
+
+          {/* 属性面板 — 内置画布右上角，选中节点时显示 */}
+          <Panel position="top-right" className="pointer-events-none">
+            <div
+              className="pointer-events-auto w-[300px] max-h-[calc(100vh-160px)] bg-background border rounded-lg shadow-lg overflow-hidden transition-all"
+            >
+              <PropertyPanel
+                selectedNode={selectedNode}
+                onUpdate={onUpdateNodeData}
+              />
+            </div>
+          </Panel>
         </ReactFlow>
       </div>
 

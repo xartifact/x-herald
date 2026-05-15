@@ -347,8 +347,8 @@ export async function handleAnthropicMessages(
           },
           onRecordFailure: () => circuitBreakerRegistry.recordFailure(instance.id, circuitBreakerMeta),
           onRecordSuccess: () => circuitBreakerRegistry.recordSuccess(instance.id, circuitBreakerMeta),
-          onMarkLogAsFailed: async (id, statusCode, errorMessage, retryCountParam, duration, body) => {
-            await markLogAsFailed(id, statusCode, errorMessage, retryCountParam, duration, body);
+          onMarkLogAsFailed: async (id, statusCode, errorMessage, retryCountParam, duration, body, providerTtfbMs) => {
+            await markLogAsFailed(id, statusCode, errorMessage, retryCountParam, duration, body, providerTtfbMs);
           },
           onLogEventBusEmitAborted: (id) => logEventBus.emitLog({ event: 'aborted', logId: id }),
           handleGatewayError: async (errorCode, message) => {

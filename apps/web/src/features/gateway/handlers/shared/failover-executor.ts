@@ -40,7 +40,7 @@ export interface FailoverExecutorParams {
   onRetry?: (attempt: number, delay: number, lastResponse?: Response) => void;
   onRecordFailure: () => void;
   onRecordSuccess: () => void;
-  onMarkLogAsFailed: (logId: string, statusCode: number, errorMessage: string, retryCount: number, duration: number, body: unknown) => Promise<void>;
+  onMarkLogAsFailed: (logId: string, statusCode: number, errorMessage: string, retryCount: number, duration: number, body: unknown, providerTtfbMs?: number) => Promise<void>;
   onLogEventBusEmitAborted: (logId: string) => void;
   handleGatewayError: (errorCode: string, message: string) => Promise<Response>;
   handleProviderError: (response: Response, rawBody: unknown) => Promise<Response>;
@@ -101,6 +101,7 @@ export async function executeFailoverIteration(params: FailoverExecutorParams): 
       const ttfbDuration = Date.now() - params.preprocessEndTime;
       await params.onMarkLogAsFailed(
         params.logId || '', 0, `TTFB timeout all candidates exceeded ${totalLimit / 1000}s total`, retryResult.retryCount, ttfbDuration, null,
+        retryResult.aborted === 'timeout' ? ttfbDuration : undefined,
       );
       return { type: 'error', response: await params.handleGatewayError('ttfb_timeout',
         `Provider response timeout: TTFB not received within configured time limit (${totalLimit / 1000}s total)`), retryCount: retryResult.retryCount };
@@ -115,6 +116,7 @@ export async function executeFailoverIteration(params: FailoverExecutorParams): 
         : 'Network error: connection failed';
       await params.onMarkLogAsFailed(
         params.logId || '', 0, reason, retryResult.retryCount, ttfbDuration, null,
+        retryResult.aborted === 'timeout' ? ttfbDuration : undefined,
       );
       if (params.isStreaming && params.logId) params.onLogEventBusEmitAborted(params.logId);
       return { type: 'failover', retryCount: retryResult.retryCount };
@@ -126,6 +128,7 @@ export async function executeFailoverIteration(params: FailoverExecutorParams): 
     await params.onMarkLogAsFailed(
       params.logId || '', 0, retryResult.aborted === 'timeout' ? `TTFB timeout after ${ttfbDuration}ms` : 'Network error: connection failed',
       retryResult.retryCount, ttfbDuration, null,
+      retryResult.aborted === 'timeout' ? ttfbDuration : undefined,
     );
     return { type: 'error', response: await params.handleGatewayError(
       retryResult.aborted === 'timeout' ? 'ttfb_timeout' : 'network_error',

@@ -100,6 +100,7 @@ class LogEventBus extends EventEmitter {
           ctrl.abort();
         }
         this.abortControllers.delete(logId);
+        super.emit('log', { event: 'aborted', logId, reason: 'stale_cleanup' });
         removed++;
       }
     }

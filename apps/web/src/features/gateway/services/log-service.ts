@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
 import { getDatabase } from '@/core/db/client';
 import logger from '@/core/lib/logger';
@@ -587,6 +587,7 @@ export async function markLogAsFailed(
   retryCount?: number,
   responseTimeMs?: number,
   providerResponseBody?: unknown,
+  providerTtfbMs?: number,
 ): Promise<void> {
   if (!logId || logId.startsWith('temp-')) return;
   try {
@@ -603,6 +604,9 @@ export async function markLogAsFailed(
         ...(retryCount !== undefined && { retryCount }),
         ...(responseTimeMs !== undefined && { responseTimeMs }),
         ...(providerResponseBody !== undefined && { providerResponseBody }),
+        ...(providerTtfbMs !== undefined && {
+          metadata: sql`jsonb_set(COALESCE(metadata, '{}'::jsonb), '{performance,providerTtfbMs}', to_jsonb(${providerTtfbMs}::real))`,
+        }),
       })
       .where(eq(requestLogs.id, logId));
     logger.debug({ logId, statusCode }, 'Log marked as failed (failover)');

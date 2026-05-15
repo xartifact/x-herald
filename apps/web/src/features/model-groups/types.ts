@@ -25,6 +25,9 @@ export interface ModelInstance extends DbModelInstance {
     id: string;
     name: string;
   };
+  // 多对多关系（API 注入，DB 查询中不存在）
+  groupIds?: string[];
+  groupId?: string | null; // compat: 第一个 groupId
 }
 
 // API Response Types
@@ -68,7 +71,8 @@ export interface UpdateModelGroupPayload {
 
 // Create Model Instance Payload
 export interface CreateModelInstancePayload {
-  groupId?: string | null;
+  groupIds?: string[];
+  groupId?: string | null; // compat
   providerId: string;
   name: string;
   actualModelName: string;

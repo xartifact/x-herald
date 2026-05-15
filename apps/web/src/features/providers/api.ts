@@ -635,17 +635,26 @@ providersRoutes.post('/:id/sync-models', async (c) => {
 
     // 批量插入
     if (toCreate.length > 0) {
-      await db.insert(modelInstances).values(
+      const inserted = await db.insert(modelInstances).values(
         toCreate.map((m) => ({
           providerId: id,
-          groupId: body.groupId || null,
           name: m.name,
           actualModelName: m.id,
           weight: 100,
           priority: 0,
           enabled: true,
         }))
-      );
+      ).returning({ id: modelInstances.id });
+
+      if (body.groupId && inserted.length > 0) {
+        const { modelGroupMemberships } = await import('@/features/model-groups/db');
+        await db.insert(modelGroupMemberships).values(
+          inserted.map((i) => ({
+            groupId: body.groupId as string,
+            instanceId: i.id,
+          }))
+        );
+      }
     }
 
     logger.info(

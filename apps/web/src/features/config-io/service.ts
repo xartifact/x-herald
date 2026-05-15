@@ -8,6 +8,7 @@ import { virtualKeys } from '@/features/keys/db';
 import {
   modelGroups,
   modelInstances,
+  modelGroupMemberships,
   modelRoutes,
   accessModels,
 } from '@/features/model-groups/db';
@@ -36,6 +37,7 @@ export async function exportConfig(): Promise<ExportFormat> {
     allModelRoutes,
     allVirtualKeys,
     allGatewayConfigs,
+    allMemberships,
   ] = await Promise.all([
     db.select().from(providers),
     db.select().from(modelGroups),
@@ -44,7 +46,15 @@ export async function exportConfig(): Promise<ExportFormat> {
     db.select().from(modelRoutes),
     db.select().from(virtualKeys),
     db.select().from(gatewayConfigs),
+    db.select().from(modelGroupMemberships),
   ]);
+
+  const instanceGroupIds = new Map<string, string[]>();
+  for (const m of allMemberships) {
+    const arr = instanceGroupIds.get(m.instanceId) ?? [];
+    arr.push(m.groupId);
+    instanceGroupIds.set(m.instanceId, arr);
+  }
 
   // 构建辅助查找表
   const providerIdToName = new Map(allProviders.map((p) => [p.id, p.name]));
@@ -80,20 +90,25 @@ export async function exportConfig(): Promise<ExportFormat> {
         metadata: g.metadata,
       })),
 
-      modelInstances: allModelInstances.map((i) => ({
-        name: i.name,
-        actualModelName: i.actualModelName,
-        description: i.description,
-        providerName: providerIdToName.get(i.providerId) ?? '',
-        groupName: i.groupId ? (groupIdToName.get(i.groupId) ?? null) : null,
-        config: i.config,
-        weight: i.weight,
-        priority: i.priority,
-        costPer1kTokens: i.costPer1kTokens,
-        healthCheckUrl: i.healthCheckUrl,
-        enabled: i.enabled,
-        metadata: i.metadata,
-      })),
+      modelInstances: allModelInstances.map((i) => {
+        const gids = instanceGroupIds.get(i.id) ?? [];
+        const groupNames = gids.map((gid) => groupIdToName.get(gid) ?? '').filter(Boolean);
+        return {
+          name: i.name,
+          actualModelName: i.actualModelName,
+          description: i.description,
+          providerName: providerIdToName.get(i.providerId) ?? '',
+          groupNames,
+          groupName: groupNames[0] ?? null,
+          config: i.config,
+          weight: i.weight,
+          priority: i.priority,
+          costPer1kTokens: i.costPer1kTokens,
+          healthCheckUrl: i.healthCheckUrl,
+          enabled: i.enabled,
+          metadata: i.metadata,
+        };
+      }),
 
       virtualModels: allAccessModels.map((v) => ({
         name: v.name,
@@ -386,7 +401,13 @@ export async function importConfig(data: ExportFormat["data"]): Promise<ImportRe
         continue;
       }
 
-      const groupId = i.groupName ? (groupNameToId.get(i.groupName) ?? null) : null;
+      // Resolve group IDs — prefer groupNames (many-to-many), fall back to groupName (compat)
+      const targetGroupNames = (i.groupNames && i.groupNames.length > 0)
+        ? i.groupNames
+        : (i.groupName ? [i.groupName] : []);
+      const resolvedGroupIds = targetGroupNames
+        .map((name) => groupNameToId.get(name))
+        .filter((id): id is string => id != null);
 
       const existing = await db
         .select({ id: modelInstances.id })
@@ -400,13 +421,13 @@ export async function importConfig(data: ExportFormat["data"]): Promise<ImportRe
         .limit(1);
 
       const instanceRef = `${i.providerName}/${i.actualModelName}`;
+      let instanceId: string;
 
       if (existing.length > 0) {
         await db
           .update(modelInstances)
           .set({
             name: i.name,
-            groupId,
             description: i.description,
             config: i.config as never,
             weight: i.weight,
@@ -418,14 +439,14 @@ export async function importConfig(data: ExportFormat["data"]): Promise<ImportRe
             updatedAt: new Date(),
           })
           .where(eq(modelInstances.id, existing[0].id));
-        instanceRefToId.set(instanceRef, existing[0].id);
+        instanceId = existing[0].id;
+        instanceRefToId.set(instanceRef, instanceId);
         summary.modelInstances.updated++;
       } else {
         const [created] = await db
           .insert(modelInstances)
           .values({
             providerId,
-            groupId,
             name: i.name,
             actualModelName: i.actualModelName,
             description: i.description,
@@ -438,8 +459,17 @@ export async function importConfig(data: ExportFormat["data"]): Promise<ImportRe
             metadata: i.metadata as never,
           })
           .returning({ id: modelInstances.id });
-        instanceRefToId.set(instanceRef, created.id);
+        instanceId = created.id;
+        instanceRefToId.set(instanceRef, instanceId);
         summary.modelInstances.created++;
+      }
+
+      // Sync group memberships
+      if (resolvedGroupIds.length > 0) {
+        await db.delete(modelGroupMemberships).where(eq(modelGroupMemberships.instanceId, instanceId));
+        await db.insert(modelGroupMemberships).values(
+          resolvedGroupIds.map((gid) => ({ groupId: gid, instanceId }))
+        );
       }
     } catch (err) {
       const msg = `ModelInstance "${i.name}": ${err instanceof Error ? err.message : String(err)}`;

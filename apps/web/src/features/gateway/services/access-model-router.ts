@@ -8,7 +8,7 @@ import { eq, and, sql } from 'drizzle-orm';
 import { getDatabase } from '@/core/db/client';
 import logger from '@/core/lib/logger';
 import { fetchPerfContext } from '@/features/metrics/services/perf-context-fetcher';
-import { accessModels, modelInstances, modelGroups, modelRoutes } from '@/features/model-groups/db';
+import { accessModels, modelInstances, modelGroups, modelGroupMemberships, modelRoutes } from '@/features/model-groups/db';
 import { providers } from '@/features/providers/db';
 import { CATCHALL_VM_NAME } from '@/features/access-models/constants';
 
@@ -222,11 +222,16 @@ export class AccessModelRouter {
     const { instance, provider } = instanceResult[0];
 
     let group = null;
-    if (instance.groupId) {
+    const membershipResult = await db
+      .select({ groupId: modelGroupMemberships.groupId })
+      .from(modelGroupMemberships)
+      .where(eq(modelGroupMemberships.instanceId, instance.id))
+      .limit(1);
+    if (membershipResult.length > 0) {
       const groupResult = await db
         .select()
         .from(modelGroups)
-        .where(eq(modelGroups.id, instance.groupId))
+        .where(eq(modelGroups.id, membershipResult[0].groupId))
         .limit(1);
       group = groupResult[0] || null;
     }

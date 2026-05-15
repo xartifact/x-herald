@@ -25,7 +25,7 @@ import {
 } from '@/ui/table'
 
 import type { ModelInstance, ModelGroup } from '../types'
-import { useAssignInstance, useToggleModelInstance } from '../useModelGroups'
+import { useSetInstanceGroups, useToggleModelInstance } from '../useModelGroups'
 
 interface UngroupedInstancesSectionProps {
   instances: ModelInstance[]
@@ -39,7 +39,7 @@ export function UngroupedInstancesSection({
   getProviderName,
 }: UngroupedInstancesSectionProps) {
   const [assignGroupId, setAssignGroupId] = useState<Record<string, string>>({})
-  const assignInstance = useAssignInstance()
+  const assignInstance = useSetInstanceGroups()
   const toggleInstance = useToggleModelInstance()
 
   if (instances.length === 0) return null
@@ -47,7 +47,7 @@ export function UngroupedInstancesSection({
   const handleAssign = async (instanceId: string) => {
     const groupId = assignGroupId[instanceId]
     if (!groupId) return
-    await assignInstance.mutateAsync({ id: instanceId, groupId })
+    await assignInstance.mutateAsync({ id: instanceId, groupIds: [groupId] })
     setAssignGroupId((prev) => {
       const next = { ...prev }
       delete next[instanceId]
@@ -86,7 +86,7 @@ export function UngroupedInstancesSection({
                 <TableCell>
                   <StatusToggle
                     enabled={instance.enabled}
-                    onToggle={() => toggleInstance.mutate({ id: instance.id, groupId: instance.groupId || '' })}
+                    onToggle={() => toggleInstance.mutate({ id: instance.id })}
                   />
                 </TableCell>
                 <TableCell>

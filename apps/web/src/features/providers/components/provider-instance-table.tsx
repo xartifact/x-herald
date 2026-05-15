@@ -65,10 +65,14 @@ export function ProviderInstanceTable({
               </code>
             </TableCell>
             <TableCell>
-              {instance.groupId ? (
-                <Badge variant="outline" className="text-xs">
-                  {getGroupName(instance.groupId)}
-                </Badge>
+              {(instance.groupIds?.length ?? 0) > 0 ? (
+                <div className="flex flex-wrap gap-1">
+                  {(instance.groupIds ?? []).map((gid) => (
+                    <Badge key={gid} variant="outline" className="text-xs">
+                      {getGroupName(gid)}
+                    </Badge>
+                  ))}
+                </div>
               ) : (
                 <span className="text-muted-foreground">-</span>
               )}

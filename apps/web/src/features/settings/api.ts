@@ -6,7 +6,7 @@ import rootLogger from '@/core/lib/logger';
 import { authMiddleware } from '@/features/auth/middleware';
 import { CB_CONFIG_KEY, configureCircuitBreaker } from '@/features/gateway/services/circuit-breaker';
 import { getConfig, setConfig } from '@/features/gateway-config/service';
-import { modelGroups, modelInstances } from '@/features/model-groups/db';
+import { modelGroups, modelGroupMemberships } from '@/features/model-groups/db';
 
 const logger = rootLogger.child({ module: 'settings' });
 
@@ -37,10 +37,10 @@ settingsRoutes.get('/', async (c) => {
           id: modelGroups.id,
           name: modelGroups.name,
           displayName: modelGroups.displayName,
-          instanceCount: sql<number>`count(${modelInstances.id})`.mapWith(Number),
+          instanceCount: sql<number>`count(DISTINCT ${modelGroupMemberships.instanceId})`.mapWith(Number),
         })
         .from(modelGroups)
-        .leftJoin(modelInstances, eq(modelInstances.groupId, modelGroups.id))
+        .leftJoin(modelGroupMemberships, eq(modelGroupMemberships.groupId, modelGroups.id))
         .groupBy(modelGroups.id, modelGroups.name, modelGroups.displayName)
         .orderBy(modelGroups.name),
       getConfig(CB_CONFIG_KEY, DEFAULT_CB_CONFIG),

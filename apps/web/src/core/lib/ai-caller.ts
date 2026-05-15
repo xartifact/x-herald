@@ -3,7 +3,7 @@ import { eq, and } from 'drizzle-orm';
 import { getDatabase } from '@/core/db/client';
 import rootLogger from '@/core/lib/logger';
 import { getConfig } from '@/features/gateway-config/service';
-import { modelInstances } from '@/features/model-groups/db';
+import { modelInstances, modelGroupMemberships } from '@/features/model-groups/db';
 import { providers } from '@/features/providers/db';
 
 const logger = rootLogger.child({ module: 'ai-caller' });
@@ -37,9 +37,10 @@ export async function getAiModel(): Promise<AiModel> {
   if (groupId) {
     instanceResult = await db
       .select({ actualModelName: modelInstances.actualModelName, providerId: modelInstances.providerId })
-      .from(modelInstances)
+      .from(modelGroupMemberships)
+      .innerJoin(modelInstances, eq(modelGroupMemberships.instanceId, modelInstances.id))
       .innerJoin(providers, eq(providers.id, modelInstances.providerId))
-      .where(and(eq(modelInstances.groupId, groupId), eq(modelInstances.enabled, true), eq(providers.enabled, true)))
+      .where(and(eq(modelGroupMemberships.groupId, groupId), eq(modelInstances.enabled, true), eq(providers.enabled, true)))
       .orderBy(modelInstances.priority)
       .limit(1);
   }

@@ -61,7 +61,7 @@ export function useModelGroupPage() {
 
   const instanceForm = useForm<InstanceFormData>({
     defaultValues: {
-      groupId: '',
+      groupIds: [],
       providerId: '',
       name: '',
       actualModelName: '',
@@ -72,16 +72,16 @@ export function useModelGroupPage() {
     },
   })
 
-  // 按 groupId 分组实例，并按 priority 排序
+  // 按 groupId 分组实例（一个实例可出现在多个组），并按 priority 排序
   const instancesByGroup = useMemo(() => {
     const map = new Map<string, ModelInstance[]>()
     for (const instance of instances) {
-      if (!instance.groupId) continue
-      const list = map.get(instance.groupId) || []
-      list.push(instance)
-      map.set(instance.groupId, list)
+      for (const gid of instance.groupIds ?? []) {
+        const list = map.get(gid) || []
+        list.push(instance)
+        map.set(gid, list)
+      }
     }
-    // 按 priority 升序排序
     for (const [key, list] of map) {
       map.set(key, list.sort((a, b) => a.priority - b.priority))
     }
@@ -90,7 +90,7 @@ export function useModelGroupPage() {
 
   // 未分组实例
   const ungroupedInstances = useMemo(() => {
-    return instances.filter((i) => !i.groupId).sort((a, b) => a.priority - b.priority)
+    return instances.filter((i) => !i.groupIds?.length).sort((a, b) => a.priority - b.priority)
   }, [instances])
 
   const handleAddGroup = () => {
@@ -122,7 +122,7 @@ export function useModelGroupPage() {
   const handleAddInstance = (groupId?: string) => {
     setEditingInstanceId(null)
     instanceForm.reset({
-      groupId: groupId || '',
+      groupIds: groupId ? [groupId] : [],
       providerId: '',
       name: '',
       actualModelName: '',
@@ -136,7 +136,7 @@ export function useModelGroupPage() {
   const handleEditInstance = (instance: ModelInstance) => {
     setEditingInstanceId(instance.id)
     instanceForm.reset({
-      groupId: instance.groupId || '',
+      groupIds: instance.groupIds ?? [],
       providerId: instance.providerId,
       name: instance.name,
       actualModelName: instance.actualModelName,
@@ -150,11 +150,11 @@ export function useModelGroupPage() {
 
   const handleDeleteInstance = async (instance: ModelInstance) => {
     if (!confirm(`确定要删除模型实例 "${instance.name}" 吗？`)) return
-    await deleteInstance.mutateAsync({ id: instance.id, groupId: instance.groupId || '' })
+    await deleteInstance.mutateAsync({ id: instance.id })
   }
 
   const handleToggleInstance = (instance: ModelInstance) => {
-    toggleInstance.mutate({ id: instance.id, groupId: instance.groupId || '' })
+    toggleInstance.mutate({ id: instance.id })
   }
 
   const handleMoveInstance = useCallback(
@@ -207,7 +207,7 @@ export function useModelGroupPage() {
 
   const onInstanceSubmit = async (data: InstanceFormData) => {
     const payload = {
-      groupId: data.groupId || null,
+      groupIds: data.groupIds,
       providerId: data.providerId,
       name: data.name,
       actualModelName: data.actualModelName,
@@ -219,7 +219,6 @@ export function useModelGroupPage() {
     if (editingInstanceId) {
       await updateInstance.mutateAsync({
         id: editingInstanceId,
-        groupId: data.groupId,
         data: payload,
       })
     } else {

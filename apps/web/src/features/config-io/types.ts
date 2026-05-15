@@ -25,7 +25,9 @@ export interface ExportedModelInstance {
   description: string | null;
   /** 用于导入时解析 providerId */
   providerName: string;
-  /** 用于导入时解析 groupId，null 表示未绑定模型组 */
+  /** 用于导入时解析 groupIds（多对多） */
+  groupNames: string[];
+  /** @deprecated use groupNames */
   groupName: string | null;
   config: unknown;
   weight: number;

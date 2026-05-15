@@ -1,4 +1,4 @@
-import { eq, desc, asc } from 'drizzle-orm';
+import { eq, desc, asc, inArray } from 'drizzle-orm';
 import { Hono } from 'hono';
 
 import { getDatabase } from '@/core/db/client';
@@ -9,13 +9,58 @@ import { authMiddleware } from '@/features/auth/middleware';
 import { modelGroupRouter } from '@/features/gateway/services/model-group-router';
 import { providers } from '@/features/providers/db';
 
-import { modelGroups, modelInstances } from './db';
-
+import { modelGroups, modelInstances, modelGroupMemberships } from './db';
 
 const modelGroupRoutes = new Hono();
 
 // 应用认证中间件
 modelGroupRoutes.use('*', authMiddleware);
+
+// ==================== 辅助函数 ====================
+
+/** 批量查询实例的所属组列表，返回 instanceId → groupId[] */
+async function fetchGroupIdsByInstanceIds(
+  db: ReturnType<typeof getDatabase>,
+  instanceIds: string[]
+): Promise<Map<string, string[]>> {
+  if (instanceIds.length === 0) return new Map();
+  const rows = await db
+    .select({ instanceId: modelGroupMemberships.instanceId, groupId: modelGroupMemberships.groupId })
+    .from(modelGroupMemberships)
+    .where(inArray(modelGroupMemberships.instanceId, instanceIds));
+  const map = new Map<string, string[]>();
+  for (const row of rows) {
+    const list = map.get(row.instanceId) ?? [];
+    list.push(row.groupId);
+    map.set(row.instanceId, list);
+  }
+  return map;
+}
+
+/** 将 groupIds 数组注入实例对象，兼容字段 groupId 取第一个值 */
+function attachGroupIds<T extends { id: string }>(
+  instances: T[],
+  groupIdsMap: Map<string, string[]>
+): Array<T & { groupIds: string[]; groupId: string | null }> {
+  return instances.map((inst) => {
+    const groupIds = groupIdsMap.get(inst.id) ?? [];
+    return { ...inst, groupIds, groupId: groupIds[0] ?? null };
+  });
+}
+
+/** 全量替换实例的组成员关系 */
+async function setInstanceGroups(
+  db: ReturnType<typeof getDatabase>,
+  instanceId: string,
+  groupIds: string[]
+): Promise<void> {
+  await db.delete(modelGroupMemberships).where(eq(modelGroupMemberships.instanceId, instanceId));
+  if (groupIds.length > 0) {
+    await db.insert(modelGroupMemberships).values(
+      groupIds.map((gid) => ({ groupId: gid, instanceId }))
+    );
+  }
+}
 
 // ==================== 模型组 CRUD ====================
 
@@ -41,11 +86,16 @@ modelGroupRoutes.get('/instances', async (c) => {
   const db = getDatabase();
 
   try {
-    const instances = await db.select().from(modelInstances).orderBy(asc(modelInstances.priority), asc(modelInstances.createdAt));
+    const instances = await db
+      .select()
+      .from(modelInstances)
+      .orderBy(asc(modelInstances.priority), asc(modelInstances.createdAt));
+
+    const groupIdsMap = await fetchGroupIdsByInstanceIds(db, instances.map((i) => i.id));
 
     return c.json({
       success: true,
-      data: instances,
+      data: attachGroupIds(instances, groupIdsMap),
     });
   } catch (error) {
     logger.warn({ err: error }, 'Failed to list model instances');
@@ -246,22 +296,28 @@ modelGroupRoutes.put('/instances/reorder', async (c) => {
 
 /**
  * 创建模型实例
+ * 接受 groupIds?: string[]（多组），兼容旧的 groupId?: string
  */
 modelGroupRoutes.post('/instances', async (c) => {
   const data = await c.req.json();
   const db = getDatabase();
 
-  try {
-    // 验证模型组是否存在（如果提供了 groupId）
-    if (data.groupId) {
-      const group = await db
-        .select()
-        .from(modelGroups)
-        .where(eq(modelGroups.id, data.groupId))
-        .limit(1);
+  // 向后兼容：如果只传了 groupId，转为 groupIds
+  const groupIds: string[] = Array.isArray(data.groupIds)
+    ? data.groupIds
+    : data.groupId
+      ? [data.groupId]
+      : [];
 
-      if (group.length === 0) {
-        return c.json({ success: false, error: 'Model group not found' }, 404);
+  try {
+    // 验证所有模型组存在
+    if (groupIds.length > 0) {
+      const groups = await db
+        .select({ id: modelGroups.id })
+        .from(modelGroups)
+        .where(inArray(modelGroups.id, groupIds));
+      if (groups.length !== groupIds.length) {
+        return c.json({ success: false, error: 'One or more model groups not found' }, 404);
       }
     }
 
@@ -279,7 +335,6 @@ modelGroupRoutes.post('/instances', async (c) => {
     const [instance] = await db
       .insert(modelInstances)
       .values({
-        groupId: data.groupId || null,
         providerId: data.providerId,
         name: data.name,
         actualModelName: data.actualModelName,
@@ -291,12 +346,22 @@ modelGroupRoutes.post('/instances', async (c) => {
       })
       .returning();
 
+    // 写入组成员关系
+    if (groupIds.length > 0) {
+      await db.insert(modelGroupMemberships).values(
+        groupIds.map((gid) => ({ groupId: gid, instanceId: instance.id }))
+      );
+    }
+
     logger.info(
-      { instanceId: instance.id, groupId: data.groupId, providerId: data.providerId },
+      { instanceId: instance.id, groupIds, providerId: data.providerId },
       'Model instance created'
     );
 
-    return c.json({ success: true, data: instance }, 201);
+    return c.json({
+      success: true,
+      data: { ...instance, groupIds, groupId: groupIds[0] ?? null },
+    }, 201);
   } catch (error) {
     logger.warn({ err: error }, 'Failed to create model instance');
     return c.json(
@@ -307,7 +372,7 @@ modelGroupRoutes.post('/instances', async (c) => {
 });
 
 /**
- * 更新模型实例
+ * 更新模型实例（不更新组关系，组关系通过 PUT /instances/:id/groups 管理）
  */
 modelGroupRoutes.put('/instances/:id', async (c) => {
   const id = c.req.param('id');
@@ -318,7 +383,6 @@ modelGroupRoutes.put('/instances/:id', async (c) => {
     const [updated] = await db
       .update(modelInstances)
       .set({
-        groupId: data.groupId,
         providerId: data.providerId,
         name: data.name,
         actualModelName: data.actualModelName,
@@ -336,9 +400,67 @@ modelGroupRoutes.put('/instances/:id', async (c) => {
       return c.json({ success: false, error: 'Model instance not found' }, 404);
     }
 
-    return c.json({ success: true, data: updated });
+    // 如果请求体包含 groupIds，同步更新组关系
+    if (data.groupIds !== undefined || data.groupId !== undefined) {
+      const groupIds: string[] = Array.isArray(data.groupIds)
+        ? data.groupIds
+        : data.groupId !== undefined
+          ? (data.groupId ? [data.groupId] : [])
+          : [];
+      await setInstanceGroups(db, id, groupIds);
+    }
+
+    const groupIdsMap = await fetchGroupIdsByInstanceIds(db, [id]);
+    return c.json({ success: true, data: attachGroupIds([updated], groupIdsMap)[0] });
   } catch (error) {
     logger.warn({ err: error }, 'Failed to update model instance');
+    return c.json(
+      { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
+      500
+    );
+  }
+});
+
+/**
+ * 设置实例的组列表（全量替换）
+ */
+modelGroupRoutes.put('/instances/:id/groups', async (c) => {
+  const id = c.req.param('id');
+  const { groupIds } = await c.req.json<{ groupIds: string[] }>();
+  const db = getDatabase();
+
+  try {
+    const instance = await db
+      .select()
+      .from(modelInstances)
+      .where(eq(modelInstances.id, id))
+      .limit(1);
+
+    if (instance.length === 0) {
+      return c.json({ success: false, error: 'Model instance not found' }, 404);
+    }
+
+    const resolvedGroupIds = groupIds ?? [];
+
+    if (resolvedGroupIds.length > 0) {
+      const groups = await db
+        .select({ id: modelGroups.id })
+        .from(modelGroups)
+        .where(inArray(modelGroups.id, resolvedGroupIds));
+      if (groups.length !== resolvedGroupIds.length) {
+        return c.json({ success: false, error: 'One or more model groups not found' }, 404);
+      }
+    }
+
+    await setInstanceGroups(db, id, resolvedGroupIds);
+
+    logger.info({ instanceId: id, groupIds: resolvedGroupIds }, 'Instance groups updated');
+    return c.json({
+      success: true,
+      data: { ...instance[0], groupIds: resolvedGroupIds, groupId: resolvedGroupIds[0] ?? null },
+    });
+  } catch (error) {
+    logger.warn({ err: error }, 'Failed to set instance groups');
     return c.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       500
@@ -374,7 +496,8 @@ modelGroupRoutes.delete('/instances/:id', async (c) => {
 });
 
 /**
- * 分配模型实例到模型组
+ * 分配模型实例到模型组（向后兼容，委托给 PUT /groups 逻辑）
+ * @deprecated 请使用 PUT /instances/:id/groups
  */
 modelGroupRoutes.patch('/instances/:id/assign', async (c) => {
   const id = c.req.param('id');
@@ -382,7 +505,6 @@ modelGroupRoutes.patch('/instances/:id/assign', async (c) => {
   const db = getDatabase();
 
   try {
-    // 验证实例存在
     const instance = await db
       .select()
       .from(modelInstances)
@@ -393,26 +515,25 @@ modelGroupRoutes.patch('/instances/:id/assign', async (c) => {
       return c.json({ success: false, error: 'Model instance not found' }, 404);
     }
 
-    // 如果有 groupId，验证模型组存在
     if (groupId) {
       const group = await db
-        .select()
+        .select({ id: modelGroups.id })
         .from(modelGroups)
         .where(eq(modelGroups.id, groupId))
         .limit(1);
-
       if (group.length === 0) {
         return c.json({ success: false, error: 'Model group not found' }, 404);
       }
     }
 
-    const [updated] = await db
-      .update(modelInstances)
-      .set({ groupId: groupId || null, updatedAt: new Date() })
-      .where(eq(modelInstances.id, id))
-      .returning();
+    // 单组分配：全量替换为 [groupId] 或 []
+    const groupIds = groupId ? [groupId] : [];
+    await setInstanceGroups(db, id, groupIds);
 
-    return c.json({ success: true, data: updated });
+    return c.json({
+      success: true,
+      data: { ...instance[0], groupIds, groupId: groupId ?? null },
+    });
   } catch (error) {
     logger.warn({ err: error }, 'Failed to assign model instance');
     return c.json(
@@ -449,7 +570,8 @@ modelGroupRoutes.patch('/instances/:id/toggle', async (c) => {
       .where(eq(modelInstances.id, id))
       .returning();
 
-    return c.json({ success: true, data: updated });
+    const groupIdsMap = await fetchGroupIdsByInstanceIds(db, [id]);
+    return c.json({ success: true, data: attachGroupIds([updated], groupIdsMap)[0] });
   } catch (error) {
     logger.warn({ err: error }, 'Failed to toggle model instance');
     return c.json(

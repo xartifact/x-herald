@@ -17,7 +17,7 @@ export interface GroupFormData {
 }
 
 export interface InstanceFormData {
-  groupId: string
+  groupIds: string[]
   providerId: string
   name: string
   actualModelName: string

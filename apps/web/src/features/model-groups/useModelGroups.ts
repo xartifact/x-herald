@@ -199,6 +199,7 @@ export function useCreateModelInstance() {
 
   return useMutation({
     mutationFn: async (data: {
+      groupIds?: string[]
       groupId?: string | null
       providerId: string
       name: string
@@ -235,11 +236,9 @@ export function useUpdateModelInstance() {
   return useMutation({
     mutationFn: async ({
       id,
-      groupId,
       data,
     }: {
       id: string
-      groupId: string
       data: Partial<{
         name: string
         actualModelName: string
@@ -274,7 +273,7 @@ export function useDeleteModelInstance() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ id }: { id: string; groupId: string }) => {
+    mutationFn: async ({ id }: { id: string }) => {
       const response = await deleteRequest<ApiResponse<ModelInstance>>(`/api/model-groups/instances/${id}`, { extractData: false })
       if (!response.success) {
         throw new Error(response.error || '删除模型实例失败')
@@ -291,25 +290,25 @@ export function useDeleteModelInstance() {
   })
 }
 
-// 分配模型实例到模型组
-export function useAssignInstance() {
+// 设置实例所属模型组（全量替换）
+export function useSetInstanceGroups() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ id, groupId }: { id: string; groupId: string | null }) => {
-      const response = await patch<ApiResponse<ModelInstance>>(
-        `/api/model-groups/instances/${id}/assign`,
-        { groupId },
+    mutationFn: async ({ id, groupIds }: { id: string; groupIds: string[] }) => {
+      const response = await put<ApiResponse<ModelInstance>>(
+        `/api/model-groups/instances/${id}/groups`,
+        { groupIds },
         { extractData: false }
       )
       if (!response.success) {
-        throw new Error(response.error || '分配失败')
+        throw new Error(response.error || '设置模型组失败')
       }
       return response.data
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: modelGroupKeys.instances() })
-      toast.success('分配成功')
+      toast.success('模型组设置成功')
     },
     onError: (error: Error) => {
       toast.error(error.message)
@@ -317,12 +316,15 @@ export function useAssignInstance() {
   })
 }
 
+/** @deprecated use useSetInstanceGroups */
+export const useAssignInstance = useSetInstanceGroups
+
 // 切换模型实例启用状态
 export function useToggleModelInstance() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ id }: { id: string; groupId: string }) => {
+    mutationFn: async ({ id }: { id: string }) => {
       const response = await patch<ApiResponse<ModelInstance>>(`/api/model-groups/instances/${id}/toggle`, undefined, { extractData: false })
       if (!response.success) {
         throw new Error(response.error || '切换状态失败')

@@ -22,6 +22,7 @@ import {
   FormMessage,
 } from '@/ui/form'
 import { Input } from '@/ui/input'
+import { Checkbox } from '@/ui/checkbox'
 import {
   Select,
   SelectContent,
@@ -77,26 +78,38 @@ export function ModelInstanceForm({
               <TabsContent value="basic" className="space-y-4">
                 <FormField
                   control={form.control}
-                  name="groupId"
+                  name="groupIds"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>模型组</FormLabel>
-                      <Select onValueChange={(v) => field.onChange(v === '__none__' ? '' : v)} value={field.value || '__none__'}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="选择模型组" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="__none__">不分组</SelectItem>
-                          {groups.map((group) => (
-                            <SelectItem key={group.id} value={group.id}>
+                      <FormLabel>模型组（可多选）</FormLabel>
+                      <div className="max-h-48 overflow-y-auto space-y-2 border rounded-md p-3">
+                        {groups.length === 0 && (
+                          <p className="text-sm text-muted-foreground">暂无模型组</p>
+                        )}
+                        {groups.map((group) => (
+                          <div key={group.id} className="flex items-center gap-2">
+                            <Checkbox
+                              id={`group-${group.id}`}
+                              checked={(field.value ?? []).includes(group.id)}
+                              onCheckedChange={(checked) => {
+                                const current = field.value ?? []
+                                field.onChange(
+                                  checked
+                                    ? [...current, group.id]
+                                    : current.filter((id) => id !== group.id)
+                                )
+                              }}
+                            />
+                            <label
+                              htmlFor={`group-${group.id}`}
+                              className="text-sm font-normal cursor-pointer"
+                            >
                               {group.displayName}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormDescription>可选，留空则为未分组实例</FormDescription>
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                      <FormDescription>可选，不选则为未分组实例</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

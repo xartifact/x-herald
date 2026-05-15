@@ -105,7 +105,7 @@ export function useProviderPage() {
 
   const instanceForm = useForm<InstanceFormData>({
     defaultValues: {
-      groupId: '',
+      groupIds: [],
       providerId: '',
       name: '',
       actualModelName: '',
@@ -236,7 +236,7 @@ export function useProviderPage() {
   const handleAddInstance = (providerId: string) => {
     setEditingInstanceId(null)
     instanceForm.reset({
-      groupId: '',
+      groupIds: [],
       providerId,
       name: '',
       actualModelName: '',
@@ -251,7 +251,7 @@ export function useProviderPage() {
   const handleEditInstance = (instance: ModelInstance) => {
     setEditingInstanceId(instance.id)
     instanceForm.reset({
-      groupId: instance.groupId || '',
+      groupIds: instance.groupIds ?? [],
       providerId: instance.providerId,
       name: instance.name,
       actualModelName: instance.actualModelName,
@@ -265,16 +265,16 @@ export function useProviderPage() {
 
   const handleDeleteInstance = async (instance: ModelInstance) => {
     if (!confirm(`确定要删除模型实例 "${instance.name}" 吗？`)) return
-    await deleteInstance.mutateAsync({ id: instance.id, groupId: instance.groupId || '' })
+    await deleteInstance.mutateAsync({ id: instance.id })
   }
 
   const handleToggleInstance = (instance: ModelInstance) => {
-    toggleInstance.mutate({ id: instance.id, groupId: instance.groupId || '' })
+    toggleInstance.mutate({ id: instance.id })
   }
 
   const onInstanceSubmit = async (data: InstanceFormData) => {
     const payload = {
-      groupId: data.groupId || null,
+      groupIds: data.groupIds,
       providerId: data.providerId,
       name: data.name,
       actualModelName: data.actualModelName,
@@ -286,7 +286,6 @@ export function useProviderPage() {
     if (editingInstanceId) {
       await updateInstance.mutateAsync({
         id: editingInstanceId,
-        groupId: data.groupId,
         data: payload,
       })
     } else {

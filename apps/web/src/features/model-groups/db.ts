@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { pgTable, varchar, boolean, timestamp, jsonb, uuid, text, integer } from 'drizzle-orm/pg-core';
+import { pgTable, varchar, boolean, timestamp, jsonb, uuid, text, integer, primaryKey } from 'drizzle-orm/pg-core';
 
 import { providers } from '@/features/providers/db';
 
@@ -152,9 +152,6 @@ export interface InstanceConfig {
 export const modelInstances = pgTable('model_instances', {
   id: uuid('id').primaryKey().defaultRandom(),
 
-  // 关联的模型组
-  groupId: uuid('group_id').references(() => modelGroups.id, { onDelete: 'set null' }),
-
   // 关联的供应商
   providerId: uuid('provider_id').notNull().references(() => providers.id, { onDelete: 'cascade' }),
 
@@ -201,15 +198,35 @@ export const modelInstances = pgTable('model_instances', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
+// 模型组-实例多对多关联表
+export const modelGroupMemberships = pgTable('model_group_memberships', {
+  groupId: uuid('group_id').notNull().references(() => modelGroups.id, { onDelete: 'cascade' }),
+  instanceId: uuid('instance_id').notNull().references(() => modelInstances.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.groupId, table.instanceId] }),
+}));
+
+export type ModelGroupMembership = typeof modelGroupMemberships.$inferSelect;
+export type NewModelGroupMembership = typeof modelGroupMemberships.$inferInsert;
+
 // 定义关系
-export const modelInstancesRelations = relations(modelInstances, ({ one }) => ({
-  group: one(modelGroups, {
-    fields: [modelInstances.groupId],
-    references: [modelGroups.id],
-  }),
+export const modelInstancesRelations = relations(modelInstances, ({ one, many }) => ({
+  memberships: many(modelGroupMemberships),
   provider: one(providers, {
     fields: [modelInstances.providerId],
     references: [providers.id],
+  }),
+}));
+
+export const modelGroupMembershipsRelations = relations(modelGroupMemberships, ({ one }) => ({
+  group: one(modelGroups, {
+    fields: [modelGroupMemberships.groupId],
+    references: [modelGroups.id],
+  }),
+  instance: one(modelInstances, {
+    fields: [modelGroupMemberships.instanceId],
+    references: [modelInstances.id],
   }),
 }));
 

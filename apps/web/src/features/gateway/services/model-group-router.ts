@@ -11,7 +11,7 @@ import {
   fetchGroupInstancesPerf,
   type InstancePerfData,
 } from '@/features/metrics/services/instance-perf-cache';
-import { modelGroups, modelInstances } from '@/features/model-groups/db';
+import { modelGroups, modelInstances, modelGroupMemberships } from '@/features/model-groups/db';
 import type { ModelGroup, ModelInstance } from '@/features/model-groups/types';
 import { providers } from '@/features/providers/db';
 
@@ -119,11 +119,12 @@ export class ModelGroupRouter {
 
     const instances = await db
       .select({ instance: modelInstances, provider: providers })
-      .from(modelInstances)
+      .from(modelGroupMemberships)
+      .innerJoin(modelInstances, eq(modelGroupMemberships.instanceId, modelInstances.id))
       .innerJoin(providers, eq(modelInstances.providerId, providers.id))
       .where(
         and(
-          eq(modelInstances.groupId, group.id),
+          eq(modelGroupMemberships.groupId, group.id),
           eq(modelInstances.enabled, true),
           eq(providers.enabled, true)
         )
@@ -336,9 +337,10 @@ export class ModelGroupRouter {
 
     const instances = await db
       .select({ instance: modelInstances, provider: providers })
-      .from(modelInstances)
+      .from(modelGroupMemberships)
+      .innerJoin(modelInstances, eq(modelGroupMemberships.instanceId, modelInstances.id))
       .innerJoin(providers, eq(modelInstances.providerId, providers.id))
-      .where(eq(modelInstances.groupId, groupId))
+      .where(eq(modelGroupMemberships.groupId, groupId))
       .orderBy(asc(modelInstances.priority), asc(modelInstances.createdAt));
 
     return { group: group[0], instances };

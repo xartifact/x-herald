@@ -240,6 +240,7 @@ export function useUpdateModelInstance() {
     }: {
       id: string
       data: Partial<{
+        providerId: string
         name: string
         actualModelName: string
         description: string
@@ -250,6 +251,7 @@ export function useUpdateModelInstance() {
           output: number
         }
         config: ModelInstance['config']
+        groupIds: string[]
       }>
     }) => {
       const response = await put<ApiResponse<ModelInstance>>(`/api/model-groups/instances/${id}`, data, { extractData: false })

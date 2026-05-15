@@ -105,7 +105,6 @@ export function useProviderPage() {
 
   const instanceForm = useForm<InstanceFormData>({
     defaultValues: {
-      groupIds: [],
       providerId: '',
       name: '',
       actualModelName: '',
@@ -131,7 +130,7 @@ export function useProviderPage() {
     (groupId: string | null): string => {
       if (!groupId) return '-'
       const group = groups.find((g) => g.id === groupId)
-      return group?.displayName || groupId
+      return group?.displayName || group?.name || groupId
     },
     [groups],
   )
@@ -236,7 +235,6 @@ export function useProviderPage() {
   const handleAddInstance = (providerId: string) => {
     setEditingInstanceId(null)
     instanceForm.reset({
-      groupIds: [],
       providerId,
       name: '',
       actualModelName: '',
@@ -251,7 +249,6 @@ export function useProviderPage() {
   const handleEditInstance = (instance: ModelInstance) => {
     setEditingInstanceId(instance.id)
     instanceForm.reset({
-      groupIds: instance.groupIds ?? [],
       providerId: instance.providerId,
       name: instance.name,
       actualModelName: instance.actualModelName,
@@ -274,7 +271,6 @@ export function useProviderPage() {
 
   const onInstanceSubmit = async (data: InstanceFormData) => {
     const payload = {
-      groupIds: data.groupIds,
       providerId: data.providerId,
       name: data.name,
       actualModelName: data.actualModelName,

@@ -61,7 +61,6 @@ export function useModelGroupPage() {
 
   const instanceForm = useForm<InstanceFormData>({
     defaultValues: {
-      groupIds: [],
       providerId: '',
       name: '',
       actualModelName: '',
@@ -119,10 +118,9 @@ export function useModelGroupPage() {
     await deleteGroup.mutateAsync(id)
   }
 
-  const handleAddInstance = (groupId?: string) => {
+  const handleAddInstance = () => {
     setEditingInstanceId(null)
     instanceForm.reset({
-      groupIds: groupId ? [groupId] : [],
       providerId: '',
       name: '',
       actualModelName: '',
@@ -136,7 +134,6 @@ export function useModelGroupPage() {
   const handleEditInstance = (instance: ModelInstance) => {
     setEditingInstanceId(instance.id)
     instanceForm.reset({
-      groupIds: instance.groupIds ?? [],
       providerId: instance.providerId,
       name: instance.name,
       actualModelName: instance.actualModelName,
@@ -207,7 +204,6 @@ export function useModelGroupPage() {
 
   const onInstanceSubmit = async (data: InstanceFormData) => {
     const payload = {
-      groupIds: data.groupIds,
       providerId: data.providerId,
       name: data.name,
       actualModelName: data.actualModelName,

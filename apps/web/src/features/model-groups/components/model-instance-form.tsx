@@ -22,7 +22,6 @@ import {
   FormMessage,
 } from '@/ui/form'
 import { Input } from '@/ui/input'
-import { Checkbox } from '@/ui/checkbox'
 import {
   Select,
   SelectContent,
@@ -33,7 +32,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/tabs'
 
 import type { InstanceFormData } from '../form-types'
-import type { ModelGroup } from '../types'
 import { InstanceConfigEditor } from './instance-config-editor'
 
 interface ModelInstanceFormProps {
@@ -42,7 +40,6 @@ interface ModelInstanceFormProps {
   form: UseFormReturn<InstanceFormData>
   editingId: string | null
   isPending: boolean
-  groups: ModelGroup[]
   providers: Provider[]
   onSubmit: (data: InstanceFormData) => void
 }
@@ -53,7 +50,6 @@ export function ModelInstanceForm({
   form,
   editingId,
   isPending,
-  groups,
   providers,
   onSubmit,
 }: ModelInstanceFormProps) {
@@ -63,7 +59,7 @@ export function ModelInstanceForm({
         <DialogHeader>
           <DialogTitle>{editingId ? '编辑模型实例' : '添加模型实例'}</DialogTitle>
           <DialogDescription>
-            {editingId ? '修改模型实例配置' : '将供应商模型添加到模型组'}
+            {editingId ? '修改模型实例配置' : '配置供应商模型实例，可在模型组页面进行分组'}
           </DialogDescription>
         </DialogHeader>
 
@@ -76,45 +72,6 @@ export function ModelInstanceForm({
               </TabsList>
 
               <TabsContent value="basic" className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="groupIds"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>模型组（可多选）</FormLabel>
-                      <div className="max-h-48 overflow-y-auto space-y-2 border rounded-md p-3">
-                        {groups.length === 0 && (
-                          <p className="text-sm text-muted-foreground">暂无模型组</p>
-                        )}
-                        {groups.map((group) => (
-                          <div key={group.id} className="flex items-center gap-2">
-                            <Checkbox
-                              id={`group-${group.id}`}
-                              checked={(field.value ?? []).includes(group.id)}
-                              onCheckedChange={(checked) => {
-                                const current = field.value ?? []
-                                field.onChange(
-                                  checked
-                                    ? [...current, group.id]
-                                    : current.filter((id) => id !== group.id)
-                                )
-                              }}
-                            />
-                            <label
-                              htmlFor={`group-${group.id}`}
-                              className="text-sm font-normal cursor-pointer"
-                            >
-                              {group.displayName}
-                            </label>
-                          </div>
-                        ))}
-                      </div>
-                      <FormDescription>可选，不选则为未分组实例</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
                 <FormField
                   control={form.control}
                   name="providerId"

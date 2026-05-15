@@ -55,7 +55,7 @@ export function ModelGroupCard({
           <div className="flex items-center gap-3">
             <Layers className="h-5 w-5 text-primary" />
             <div>
-              <CardTitle className="text-lg">{group.displayName}</CardTitle>
+              <CardTitle className="text-lg">{group.displayName || group.name}</CardTitle>
               <p className="text-sm text-muted-foreground">{group.name}</p>
             </div>
           </div>

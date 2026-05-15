@@ -175,7 +175,7 @@ export function SyncModelsDialog({
                 <SelectItem value="__none__">不绑定</SelectItem>
                 {groups.map((group) => (
                   <SelectItem key={group.id} value={group.id}>
-                    {group.displayName}
+                    {group.displayName || group.name}
                   </SelectItem>
                 ))}
               </SelectContent>

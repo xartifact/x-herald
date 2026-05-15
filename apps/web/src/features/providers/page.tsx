@@ -148,7 +148,6 @@ export default function ProvidersPage() {
         form={instanceForm}
         editingId={editingInstanceId}
         isPending={instanceSubmitPending}
-        groups={groups}
         providers={providers}
         onSubmit={onInstanceSubmit}
       />

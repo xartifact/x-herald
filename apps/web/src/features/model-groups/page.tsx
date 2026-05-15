@@ -108,7 +108,7 @@ export default function ModelGroupsPage() {
               onToggleExpand={() => setExpandedGroup(expandedGroup === group.id ? null : group.id)}
               onEdit={() => handleEditGroup(group)}
               onDelete={() => handleDeleteGroup(group.id, group.name)}
-              onAddInstance={() => handleAddInstance(group.id)}
+              onAddInstance={handleAddInstance}
               onEditInstance={handleEditInstance}
               onDeleteInstance={handleDeleteInstance}
               onToggleInstance={handleToggleInstance}
@@ -140,7 +140,6 @@ export default function ModelGroupsPage() {
         form={instanceForm}
         editingId={editingInstanceId}
         isPending={instanceSubmitPending}
-        groups={groups}
         providers={providers}
         onSubmit={onInstanceSubmit}
       />

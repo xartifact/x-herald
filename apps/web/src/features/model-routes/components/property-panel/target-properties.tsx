@@ -6,13 +6,12 @@ import type { Node } from '@xyflow/react'
 import { Layers } from 'lucide-react'
 
 import { useModelGroups, useModelInstances } from '@/features/model-groups/useModelGroups'
-import { useVirtualModels } from '@/features/virtual-models/useVirtualModels'
+import { useAccessModels } from '@/features/access-models/useAccessModels'
 import { Label } from '@/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select'
 
 const ACTION_TYPES = [
   { value: 'route_to_group', label: '路由到模型组' },
-  { value: 'route_to_virtual_model', label: '路由到虚拟模型' },
   { value: 'route_to_instance', label: '路由到实例' },
 ]
 
@@ -26,7 +25,7 @@ export function TargetProperties({ node, onUpdate }: TargetPropertiesProps) {
   const [actionType, setActionType] = useState((d.actionType as string) || 'route_to_group')
   const [targetId, setTargetId] = useState((d.targetId as string) || '')
 
-  const { data: vms = [] } = useVirtualModels()
+  const { data: vms = [] } = useAccessModels()
   const { data: groups = [] } = useModelGroups()
   const { data: instances = [] } = useModelInstances()
 
@@ -40,7 +39,7 @@ export function TargetProperties({ node, onUpdate }: TargetPropertiesProps) {
       const g = groups.find(x => x.id === id)
       return g?.displayName || g?.name || id
     }
-    if (actionType === 'route_to_virtual_model') {
+    if (actionType === 'route_to_access_model') {
       const vm = vms.find(x => x.id === id)
       return vm?.displayName || vm?.name || id
     }
@@ -56,14 +55,14 @@ export function TargetProperties({ node, onUpdate }: TargetPropertiesProps) {
       targetId: tid,
       targetName,
       targetType: at === 'route_to_group' ? 'model_group' :
-                  at === 'route_to_instance' ? 'model_instance' : 'virtual_model',
+                  at === 'route_to_instance' ? 'model_instance' : 'access_model',
       label: ACTION_TYPES.find(x => x.value === at)?.label || at,
     })
   }
 
   const options = actionType === 'route_to_group'
     ? groups.map(g => ({ value: g.id, label: g.displayName || g.name }))
-    : actionType === 'route_to_virtual_model'
+    : actionType === 'route_to_access_model'
       ? vms.map(vm => ({ value: vm.id, label: vm.displayName || vm.name }))
       : instances.map(i => ({ value: i.id, label: i.name }))
 

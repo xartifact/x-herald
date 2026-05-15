@@ -9,7 +9,7 @@ import {
   modelGroups,
   modelInstances,
   modelRoutes,
-  virtualModels,
+  accessModels,
 } from '@/features/model-groups/db';
 import { providers } from '@/features/providers/db';
 
@@ -32,7 +32,7 @@ export async function exportConfig(): Promise<ExportFormat> {
     allProviders,
     allModelGroups,
     allModelInstances,
-    allVirtualModels,
+    allAccessModels,
     allModelRoutes,
     allVirtualKeys,
     allGatewayConfigs,
@@ -40,7 +40,7 @@ export async function exportConfig(): Promise<ExportFormat> {
     db.select().from(providers),
     db.select().from(modelGroups),
     db.select().from(modelInstances),
-    db.select().from(virtualModels),
+    db.select().from(accessModels),
     db.select().from(modelRoutes),
     db.select().from(virtualKeys),
     db.select().from(gatewayConfigs),
@@ -49,7 +49,7 @@ export async function exportConfig(): Promise<ExportFormat> {
   // 构建辅助查找表
   const providerIdToName = new Map(allProviders.map((p) => [p.id, p.name]));
   const groupIdToName = new Map(allModelGroups.map((g) => [g.id, g.name]));
-  const virtualModelIdToName = new Map(allVirtualModels.map((v) => [v.id, v.name]));
+  const virtualModelIdToName = new Map(allAccessModels.map((v) => [v.id, v.name]));
   const instanceIdToRef = new Map(
     allModelInstances.map((i) => [
       i.id,
@@ -95,7 +95,7 @@ export async function exportConfig(): Promise<ExportFormat> {
         metadata: i.metadata,
       })),
 
-      virtualModels: allVirtualModels.map((v) => ({
+      virtualModels: allAccessModels.map((v) => ({
         name: v.name,
         displayName: v.displayName,
         description: v.description,
@@ -106,7 +106,7 @@ export async function exportConfig(): Promise<ExportFormat> {
         const action = r.action as { type: string; targetId?: string; reason?: string };
         let targetRef: string | undefined;
         if (action.targetId) {
-          if (action.type === 'route_to_virtual_model') {
+          if (action.type === 'route_to_access_model') {
             targetRef = virtualModelIdToName.get(action.targetId);
           } else if (action.type === 'route_to_group') {
             targetRef = groupIdToName.get(action.targetId);
@@ -117,8 +117,8 @@ export async function exportConfig(): Promise<ExportFormat> {
         return {
           name: r.name,
           description: r.description,
-          virtualModelName: (r.virtualModelIds && r.virtualModelIds.length > 0)
-            ? (virtualModelIdToName.get(r.virtualModelIds[0]) ?? null)
+          virtualModelName: (r.accessModelIds && r.accessModelIds.length > 0)
+            ? (virtualModelIdToName.get(r.accessModelIds[0]) ?? null)
             : null,
           conditions: (r.conditions as unknown[]) ?? [],
           action: { type: action.type, targetRef, reason: action.reason },
@@ -163,6 +163,7 @@ export async function importConfig(data: ExportFormat["data"]): Promise<ImportRe
     modelGroups: emptySummary(),
     modelInstances: emptySummary(),
     virtualModels: emptySummary(),
+    accessModels: emptySummary(),
     modelRoutes: emptySummary(),
     virtualKeys: emptySummary(),
     gatewayConfigs: emptySummary(),
@@ -258,34 +259,38 @@ export async function importConfig(data: ExportFormat["data"]): Promise<ImportRe
     }
   }
 
-  // ── 3. virtualModels ─────────────────────────────────────────────────────
-  for (const v of data.virtualModels) {
+  // ── 3. accessModels (formerly virtualModels) ─────────────────────────────
+  const amList = data.accessModels ?? data.virtualModels ?? [];
+  for (const v of amList) {
     try {
       const existing = await db
-        .select({ id: virtualModels.id })
-        .from(virtualModels)
-        .where(eq(virtualModels.name, v.name))
+        .select({ id: accessModels.id })
+        .from(accessModels)
+        .where(eq(accessModels.name, v.name))
         .limit(1);
 
       if (existing.length > 0) {
         await db
-          .update(virtualModels)
+          .update(accessModels)
           .set({ displayName: v.displayName, description: v.description, enabled: v.enabled, updatedAt: new Date() })
-          .where(eq(virtualModels.id, existing[0].id));
+          .where(eq(accessModels.id, existing[0].id));
         virtualModelNameToId.set(v.name, existing[0].id);
+        summary.accessModels.updated++;
         summary.virtualModels.updated++;
       } else {
         const [created] = await db
-          .insert(virtualModels)
+          .insert(accessModels)
           .values({ name: v.name, displayName: v.displayName, description: v.description, enabled: v.enabled })
-          .returning({ id: virtualModels.id });
+          .returning({ id: accessModels.id });
         virtualModelNameToId.set(v.name, created.id);
+        summary.accessModels.created++;
         summary.virtualModels.created++;
       }
     } catch (err) {
-      const msg = `VirtualModel "${v.name}": ${err instanceof Error ? err.message : String(err)}`;
+      const msg = `AccessModel "${v.name}": ${err instanceof Error ? err.message : String(err)}`;
       errors.push(msg);
-      logger.warn({ err, name: v.name }, '[Import] Failed to upsert virtual model');
+      logger.warn({ err, name: v.name }, '[Import] Failed to upsert access model');
+      summary.accessModels.errors++;
       summary.virtualModels.errors++;
     }
   }
@@ -454,7 +459,7 @@ export async function importConfig(data: ExportFormat["data"]): Promise<ImportRe
       // 解析 action.targetId
       let targetId: string | undefined;
       if (r.action.targetRef) {
-        if (r.action.type === 'route_to_virtual_model') {
+        if (r.action.type === 'route_to_access_model' || r.action.type === 'route_to_virtual_model') {
           targetId = virtualModelNameToId.get(r.action.targetRef);
         } else if (r.action.type === 'route_to_group') {
           targetId = groupNameToId.get(r.action.targetRef);
@@ -471,7 +476,7 @@ export async function importConfig(data: ExportFormat["data"]): Promise<ImportRe
         .where(
           and(
             virtualModelId
-              ? sql`${modelRoutes.virtualModelIds} @> ARRAY[${virtualModelId}]::text[]`
+              ? sql`${modelRoutes.accessModelIds} @> ARRAY[${virtualModelId}]::text[]`
               : eq(modelRoutes.name, r.name),
             eq(modelRoutes.name, r.name),
           ),
@@ -483,7 +488,7 @@ export async function importConfig(data: ExportFormat["data"]): Promise<ImportRe
           .update(modelRoutes)
           .set({
             description: r.description,
-            virtualModelIds: virtualModelId ? [virtualModelId] : [],
+            accessModelIds: virtualModelId ? [virtualModelId] : [],
             conditions: r.conditions as never,
             action: action as never,
             priority: r.priority,
@@ -497,7 +502,7 @@ export async function importConfig(data: ExportFormat["data"]): Promise<ImportRe
         await db.insert(modelRoutes).values({
           name: r.name,
           description: r.description,
-          virtualModelIds: virtualModelId ? [virtualModelId] : [],
+          accessModelIds: virtualModelId ? [virtualModelId] : [],
           conditions: r.conditions as never,
           action: action as never,
           priority: r.priority,

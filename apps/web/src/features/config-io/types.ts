@@ -36,12 +36,15 @@ export interface ExportedModelInstance {
   metadata: unknown;
 }
 
-export interface ExportedVirtualModel {
+export interface ExportedAccessModel {
   name: string;
   displayName: string | null;
   description: string | null;
   enabled: boolean;
 }
+
+/** @deprecated use ExportedAccessModel */
+export type ExportedVirtualModel = ExportedAccessModel;
 
 export interface ExportedModelRoute {
   name: string;
@@ -89,7 +92,9 @@ export interface ExportFormat {
     providers: ExportedProvider[];
     modelGroups: ExportedModelGroup[];
     modelInstances: ExportedModelInstance[];
-    virtualModels: ExportedVirtualModel[];
+    accessModels?: ExportedAccessModel[];
+    /** @deprecated use accessModels */
+    virtualModels: ExportedAccessModel[];
     modelRoutes: ExportedModelRoute[];
     virtualKeys: ExportedVirtualKey[];
     gatewayConfigs: ExportedGatewayConfig[];
@@ -108,6 +113,8 @@ export interface ImportResult {
     providers: ImportSummaryItem;
     modelGroups: ImportSummaryItem;
     modelInstances: ImportSummaryItem;
+    accessModels: ImportSummaryItem;
+    /** @deprecated use accessModels */
     virtualModels: ImportSummaryItem;
     modelRoutes: ImportSummaryItem;
     virtualKeys: ImportSummaryItem;

@@ -34,6 +34,8 @@ export interface ModelRoute {
   id: string
   name: string
   description: string | null
+  accessModelIds: string[]
+  /** @deprecated use accessModelIds */
   virtualModelIds: string[]
   conditions: RouteCondition[]
   action: RouteAction
@@ -42,15 +44,16 @@ export interface ModelRoute {
   flowData: FlowData | null
   createdAt: string
   updatedAt: string
-  virtualModel?: {
-    name: string
-    displayName: string | null
-  } | null
+  accessModel?: { name: string; displayName: string | null } | null
+  /** @deprecated use accessModel */
+  virtualModel?: { name: string; displayName: string | null } | null
 }
 
 export interface CreateModelRoutePayload {
   name: string
   description?: string
+  accessModelIds?: string[]
+  /** @deprecated use accessModelIds */
   virtualModelIds?: string[]
   conditions?: RouteCondition[]
   action: RouteAction
@@ -62,6 +65,8 @@ export interface CreateModelRoutePayload {
 export interface UpdateModelRoutePayload {
   name?: string
   description?: string
+  accessModelIds?: string[] | null
+  /** @deprecated use accessModelIds */
   virtualModelIds?: string[] | null
   conditions?: RouteCondition[]
   action?: RouteAction

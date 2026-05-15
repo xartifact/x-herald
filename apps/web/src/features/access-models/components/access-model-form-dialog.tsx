@@ -23,35 +23,35 @@ import {
 import { Input } from '@/ui/input'
 import { Switch } from '@/ui/switch'
 
-import type { VirtualModelFormData } from '../useVirtualModelPage'
+import type { AccessModelFormData } from '../useAccessModelPage'
 
 
-interface VirtualModelFormDialogProps {
+interface AccessModelFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  form: UseFormReturn<VirtualModelFormData>
+  form: UseFormReturn<AccessModelFormData>
   editingId: string | null
   isPending: boolean
-  onSubmit: (data: VirtualModelFormData) => void
+  onSubmit: (data: AccessModelFormData) => void
 }
 
-export function VirtualModelFormDialog({
+export function AccessModelFormDialog({
   open,
   onOpenChange,
   form,
   editingId,
   isPending,
   onSubmit,
-}: VirtualModelFormDialogProps) {
+}: AccessModelFormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{editingId ? '编辑虚拟模型' : '创建虚拟模型'}</DialogTitle>
+          <DialogTitle>{editingId ? '编辑接入模型' : '创建接入模型'}</DialogTitle>
           <DialogDescription>
             {editingId
-              ? '修改虚拟模型配置。路由规则请在详情页管理。'
-              : '创建一个对外暴露的虚拟模型名称，通过规则引擎路由到具体模型'}
+              ? '修改接入模型配置。路由规则请在详情页管理。'
+              : '创建一个对外暴露的接入模型名称，通过规则引擎路由到具体模型'}
           </DialogDescription>
         </DialogHeader>
 
@@ -60,7 +60,7 @@ export function VirtualModelFormDialog({
             <FormField
               control={form.control}
               name="name"
-              rules={{ required: '虚拟模型名称不能为空' }}
+              rules={{ required: '接入模型名称不能为空' }}
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>模型名称 *</FormLabel>
@@ -94,7 +94,7 @@ export function VirtualModelFormDialog({
                 <FormItem>
                   <FormLabel>描述</FormLabel>
                   <FormControl>
-                    <Input placeholder="路由到 GPT-4 Turbo 的虚拟模型" {...field} />
+                    <Input placeholder="路由到 GPT-4 Turbo 的接入模型" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -108,7 +108,7 @@ export function VirtualModelFormDialog({
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
                   <div className="space-y-0.5">
                     <FormLabel>启用</FormLabel>
-                    <FormDescription>启用后客户端可以使用此虚拟模型名称</FormDescription>
+                    <FormDescription>启用后客户端可以使用此接入模型名称</FormDescription>
                   </div>
                   <FormControl>
                     <Switch checked={field.value} onCheckedChange={field.onChange} />

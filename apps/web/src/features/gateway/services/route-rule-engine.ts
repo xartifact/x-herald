@@ -42,7 +42,7 @@ export class RouteRuleEngine {
     // 查询启用的规则，按优先级排序
     const conditions = virtualModelId
       ? and(
-          sql`${modelRoutes.virtualModelIds} @> ARRAY[${virtualModelId}]::text[]`,
+          sql`${modelRoutes.accessModelIds} @> ARRAY[${virtualModelId}]::text[]`,
           eq(modelRoutes.enabled, true)
         )
       : eq(modelRoutes.enabled, true);

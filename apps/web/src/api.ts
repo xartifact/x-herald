@@ -21,7 +21,7 @@ import { modelGroupsRoutes } from './features/model-groups';
 import { modelRoutesApi } from './features/model-routes';
 import { providersRoutes } from './features/providers';
 import { settingsRoutes } from './features/settings';
-import { virtualModelRoutes } from './features/virtual-models';
+import { accessModelRoutes } from './features/access-models';
 
 // Create API app
 export const createApiApp = async () => {
@@ -63,7 +63,7 @@ export const createApiApp = async () => {
   app.route('/api/keys', keysRoutes);
   app.route('/api/logs', logsRoutes);
   app.route('/api/settings', settingsRoutes);
-  app.route('/api/virtual-models', virtualModelRoutes);
+  app.route('/api/access-models', accessModelRoutes);
   app.route('/api/model-routes', modelRoutesApi);
   app.route('/api/config', configIORoutes);
   app.route('/api/circuit-breaker', circuitBreakerRoutes);

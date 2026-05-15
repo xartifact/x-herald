@@ -17,7 +17,7 @@ export function VmProperties({ node }: VmPropertiesProps) {
     <div className="space-y-4">
       <div className="flex items-center gap-2 text-blue-600 font-semibold text-sm">
         <Network className="h-4 w-4" />
-        <span>虚拟模型入口</span>
+        <span>接入模型入口</span>
       </div>
 
       <div className="space-y-2">
@@ -36,8 +36,8 @@ export function VmProperties({ node }: VmPropertiesProps) {
       <div className="pt-2 border-t">
         <Badge variant="outline" className="text-xs">只读节点</Badge>
         <p className="text-xs text-muted-foreground mt-1.5">
-          虚拟模型节点由系统生成，不可在画布中修改。
-          <br />在"虚拟模型"管理页面管理。
+          接入模型节点由系统生成，不可在画布中修改。
+          <br />在"接入模型"管理页面管理。
         </p>
       </div>
     </div>

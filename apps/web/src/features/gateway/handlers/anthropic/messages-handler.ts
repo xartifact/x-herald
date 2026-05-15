@@ -14,7 +14,7 @@ import { logRequestStart, markLogAsFailed } from '../../services/log-service';
 import { ModelNotFoundError } from '../../services/model-group-router';
 import { getProviderProtocol, getProviderUrl, getEndpoint } from '../../services/protocol-detector';
 import { handleNonStreamingResponse, handleStreamingResponse } from '../../services/response-handlers';
-import { virtualModelRouter } from '../../services/virtual-model-router';
+import { virtualModelRouter } from '../../services/access-model-router';
 import { getTransformer, createTransformerContext } from '../../transformer';
 import { buildHeaders } from '../../transformer/shared/parameter-transformer';
 import { AbortManager } from '../shared/abort-manager';

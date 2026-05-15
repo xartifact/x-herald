@@ -4,36 +4,36 @@ import { Hono } from 'hono';
 import { getDatabase } from '@/core/db/client';
 import rootLogger from '@/core/lib/logger';
 import { authMiddleware } from '@/features/auth/middleware';
-import { virtualModels } from '@/features/model-groups/db';
+import { accessModels } from '@/features/model-groups/db';
 
 import { CATCHALL_VM_NAME } from './constants';
 
-const logger = rootLogger.child({ module: 'virtual-models' });
+const logger = rootLogger.child({ module: 'access-models' });
 
-const virtualModelRoutes = new Hono();
+const accessModelRoutes = new Hono();
 
-virtualModelRoutes.use('*', authMiddleware);
+accessModelRoutes.use('*', authMiddleware);
 
-// GET /api/virtual-models - 列表
-virtualModelRoutes.get('/', async (c) => {
+// GET /api/access-models - 列表
+accessModelRoutes.get('/', async (c) => {
   const db = getDatabase();
 
   try {
     const results = await db
       .select({
-        id: virtualModels.id,
-        name: virtualModels.name,
-        displayName: virtualModels.displayName,
-        description: virtualModels.description,
-        enabled: virtualModels.enabled,
-        createdAt: virtualModels.createdAt,
-        updatedAt: virtualModels.updatedAt,
+        id: accessModels.id,
+        name: accessModels.name,
+        displayName: accessModels.displayName,
+        description: accessModels.description,
+        enabled: accessModels.enabled,
+        createdAt: accessModels.createdAt,
+        updatedAt: accessModels.updatedAt,
       })
-      .from(virtualModels);
+      .from(accessModels);
 
     return c.json({ success: true, data: results });
   } catch (error) {
-    logger.warn({ err: error }, 'Failed to list virtual models');
+    logger.warn({ err: error }, 'Failed to list access models');
     return c.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       500
@@ -41,33 +41,33 @@ virtualModelRoutes.get('/', async (c) => {
   }
 });
 
-// GET /api/virtual-models/:id - 详情
-virtualModelRoutes.get('/:id', async (c) => {
+// GET /api/access-models/:id - 详情
+accessModelRoutes.get('/:id', async (c) => {
   const id = c.req.param('id');
   const db = getDatabase();
 
   try {
     const results = await db
       .select({
-        id: virtualModels.id,
-        name: virtualModels.name,
-        displayName: virtualModels.displayName,
-        description: virtualModels.description,
-        enabled: virtualModels.enabled,
-        createdAt: virtualModels.createdAt,
-        updatedAt: virtualModels.updatedAt,
+        id: accessModels.id,
+        name: accessModels.name,
+        displayName: accessModels.displayName,
+        description: accessModels.description,
+        enabled: accessModels.enabled,
+        createdAt: accessModels.createdAt,
+        updatedAt: accessModels.updatedAt,
       })
-      .from(virtualModels)
-      .where(eq(virtualModels.id, id))
+      .from(accessModels)
+      .where(eq(accessModels.id, id))
       .limit(1);
 
     if (results.length === 0) {
-      return c.json({ success: false, error: 'Virtual model not found' }, 404);
+      return c.json({ success: false, error: 'Access model not found' }, 404);
     }
 
     return c.json({ success: true, data: results[0] });
   } catch (error) {
-    logger.warn({ err: error }, 'Failed to get virtual model detail');
+    logger.warn({ err: error }, 'Failed to get access model detail');
     return c.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       500
@@ -75,14 +75,14 @@ virtualModelRoutes.get('/:id', async (c) => {
   }
 });
 
-// POST /api/virtual-models - 创建
-virtualModelRoutes.post('/', async (c) => {
+// POST /api/access-models - 创建
+accessModelRoutes.post('/', async (c) => {
   const data = await c.req.json();
   const db = getDatabase();
 
   try {
-    const [vm] = await db
-      .insert(virtualModels)
+    const [am] = await db
+      .insert(accessModels)
       .values({
         name: data.name,
         displayName: data.displayName || null,
@@ -91,38 +91,37 @@ virtualModelRoutes.post('/', async (c) => {
       })
       .returning();
 
-    logger.info({ id: vm.id, name: vm.name }, 'Virtual model created');
-    return c.json({ success: true, data: vm }, 201);
+    logger.info({ id: am.id, name: am.name }, 'Access model created');
+    return c.json({ success: true, data: am }, 201);
   } catch (error) {
-    logger.warn({ err: error }, 'Failed to create virtual model');
+    logger.warn({ err: error }, 'Failed to create access model');
     const msg = error instanceof Error ? error.message : 'Unknown error';
     const status = msg.includes('unique') ? 409 : 500;
     return c.json({ success: false, error: msg }, status);
   }
 });
 
-// PUT /api/virtual-models/:id - 更新
-virtualModelRoutes.put('/:id', async (c) => {
+// PUT /api/access-models/:id - 更新
+accessModelRoutes.put('/:id', async (c) => {
   const id = c.req.param('id');
   const data = await c.req.json();
   const db = getDatabase();
 
   try {
-    // 保护系统内置模型：name 不可修改
-    const currentVm = await db
-      .select({ name: virtualModels.name })
-      .from(virtualModels)
-      .where(eq(virtualModels.id, id))
+    const currentAm = await db
+      .select({ name: accessModels.name })
+      .from(accessModels)
+      .where(eq(accessModels.id, id))
       .limit(1);
 
-    if (currentVm.length === 0) {
-      return c.json({ success: false, error: 'Virtual model not found' }, 404);
+    if (currentAm.length === 0) {
+      return c.json({ success: false, error: 'Access model not found' }, 404);
     }
 
-    const isSystem = currentVm[0].name === CATCHALL_VM_NAME;
+    const isSystem = currentAm[0].name === CATCHALL_VM_NAME;
 
     if (isSystem && data.name !== undefined && data.name !== CATCHALL_VM_NAME) {
-      return c.json({ success: false, error: 'System virtual model name cannot be changed' }, 403);
+      return c.json({ success: false, error: 'System access model name cannot be changed' }, 403);
     }
 
     const updateData: Record<string, unknown> = {
@@ -134,18 +133,18 @@ virtualModelRoutes.put('/:id', async (c) => {
     if (data.enabled !== undefined) updateData.enabled = data.enabled;
 
     const [updated] = await db
-      .update(virtualModels)
+      .update(accessModels)
       .set(updateData)
-      .where(eq(virtualModels.id, id))
+      .where(eq(accessModels.id, id))
       .returning();
 
     if (!updated) {
-      return c.json({ success: false, error: 'Virtual model not found' }, 404);
+      return c.json({ success: false, error: 'Access model not found' }, 404);
     }
 
     return c.json({ success: true, data: updated });
   } catch (error) {
-    logger.warn({ err: error }, 'Failed to update virtual model');
+    logger.warn({ err: error }, 'Failed to update access model');
     return c.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       500
@@ -153,34 +152,34 @@ virtualModelRoutes.put('/:id', async (c) => {
   }
 });
 
-// DELETE /api/virtual-models/:id - 删除
-virtualModelRoutes.delete('/:id', async (c) => {
+// DELETE /api/access-models/:id - 删除
+accessModelRoutes.delete('/:id', async (c) => {
   const id = c.req.param('id');
   const db = getDatabase();
 
   try {
     const target = await db
-      .select({ name: virtualModels.name })
-      .from(virtualModels)
-      .where(eq(virtualModels.id, id))
+      .select({ name: accessModels.name })
+      .from(accessModels)
+      .where(eq(accessModels.id, id))
       .limit(1);
 
     if (target.length === 0) {
-      return c.json({ success: false, error: 'Virtual model not found' }, 404);
+      return c.json({ success: false, error: 'Access model not found' }, 404);
     }
 
     if (target[0].name === CATCHALL_VM_NAME) {
-      return c.json({ success: false, error: 'System virtual model cannot be deleted' }, 403);
+      return c.json({ success: false, error: 'System access model cannot be deleted' }, 403);
     }
 
     const [deleted] = await db
-      .delete(virtualModels)
-      .where(eq(virtualModels.id, id))
+      .delete(accessModels)
+      .where(eq(accessModels.id, id))
       .returning();
 
     return c.json({ success: true, data: deleted });
   } catch (error) {
-    logger.warn({ err: error }, 'Failed to delete virtual model');
+    logger.warn({ err: error }, 'Failed to delete access model');
     return c.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       500
@@ -188,34 +187,34 @@ virtualModelRoutes.delete('/:id', async (c) => {
   }
 });
 
-// PATCH /api/virtual-models/:id/toggle - 切换启用
-virtualModelRoutes.patch('/:id/toggle', async (c) => {
+// PATCH /api/access-models/:id/toggle - 切换启用
+accessModelRoutes.patch('/:id/toggle', async (c) => {
   const id = c.req.param('id');
   const db = getDatabase();
 
   try {
     const existing = await db
       .select()
-      .from(virtualModels)
-      .where(eq(virtualModels.id, id))
+      .from(accessModels)
+      .where(eq(accessModels.id, id))
       .limit(1);
 
     if (existing.length === 0) {
-      return c.json({ success: false, error: 'Virtual model not found' }, 404);
+      return c.json({ success: false, error: 'Access model not found' }, 404);
     }
 
     const [updated] = await db
-      .update(virtualModels)
+      .update(accessModels)
       .set({
         enabled: !existing[0].enabled,
         updatedAt: new Date(),
       })
-      .where(eq(virtualModels.id, id))
+      .where(eq(accessModels.id, id))
       .returning();
 
     return c.json({ success: true, data: updated });
   } catch (error) {
-    logger.warn({ err: error }, 'Failed to toggle virtual model');
+    logger.warn({ err: error }, 'Failed to toggle access model');
     return c.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       500
@@ -223,4 +222,4 @@ virtualModelRoutes.patch('/:id/toggle', async (c) => {
   }
 });
 
-export default virtualModelRoutes;
+export default accessModelRoutes;

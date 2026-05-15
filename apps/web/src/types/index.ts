@@ -101,7 +101,7 @@ export interface ModelRoute {
 
 // Health Types
 export type HealthStatus = 'healthy' | 'degraded' | 'down';
-export type HealthTargetType = 'model' | 'virtual_model';
+export type HealthTargetType = 'model' | 'access_model' | 'virtual_model';
 
 export interface HealthTarget {
   id: string;

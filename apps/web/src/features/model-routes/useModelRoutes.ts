@@ -52,6 +52,8 @@ export function useModelRoute(id: string | null) {
 
 interface FlowDataResponse {
   routes: ModelRoute[]
+  accessModels: Array<{ id: string; name: string; displayName: string | null }>
+  /** @deprecated use accessModels */
   virtualModels: Array<{ id: string; name: string; displayName: string | null }>
 }
 

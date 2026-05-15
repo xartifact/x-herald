@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 
 import { useModelGroups, useModelInstances } from '@/features/model-groups/useModelGroups'
-import { useVirtualModels } from '@/features/virtual-models/useVirtualModels'
+import { useAccessModels } from '@/features/access-models/useAccessModels'
 import { Card, CardContent } from '@/ui/card'
 
 import { DeployBanner } from './components/deploy-banner'
@@ -14,7 +14,7 @@ import { useModelRoutes } from './useModelRoutes'
 
 export default function ModelRoutesPage() {
   const { data: routes = [], isLoading: routesLoading } = useModelRoutes()
-  const { data: vms = [], isLoading: vmsLoading } = useVirtualModels()
+  const { data: vms = [], isLoading: vmsLoading } = useAccessModels()
   const { data: groups = [], isLoading: groupsLoading } = useModelGroups()
   const { data: instances = [], isLoading: instancesLoading } = useModelInstances()
 

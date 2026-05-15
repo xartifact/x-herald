@@ -151,7 +151,7 @@ export function compileFlowToRoutes(nodes: Node[], edges: Edge[]): CreateModelRo
         : action.type)).slice(0, 255)
     return {
       name,
-      virtualModelIds: [...new Set(entry.vmIds)],
+      accessModelIds: [...new Set(entry.vmIds)],
       conditions: entry.conditions,
       action,
       enabled: true,

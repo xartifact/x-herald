@@ -217,11 +217,11 @@ export type ModelInstance = typeof modelInstances.$inferSelect;
 export type NewModelInstance = typeof modelInstances.$inferInsert;
 
 /**
- * 虚拟模型 (Virtual Model)
+ * 接入模型 (Access Model)
  *
- * 虚拟模型是对外暴露的模型名称，通过规则引擎路由到模型组或模型实例。
+ * 接入模型是对外暴露的模型名称，通过规则引擎路由到模型组或模型实例。
  */
-export const virtualModels = pgTable('virtual_models', {
+export const accessModels = pgTable('access_models', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: varchar('name', { length: 255 }).notNull().unique(),
   displayName: varchar('display_name', { length: 255 }),
@@ -231,8 +231,15 @@ export const virtualModels = pgTable('virtual_models', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-export type VirtualModel = typeof virtualModels.$inferSelect;
-export type NewVirtualModel = typeof virtualModels.$inferInsert;
+export type AccessModel = typeof accessModels.$inferSelect;
+export type NewAccessModel = typeof accessModels.$inferInsert;
+
+/** @deprecated Use `accessModels` */
+export const virtualModels = accessModels;
+/** @deprecated Use `AccessModel` */
+export type VirtualModel = AccessModel;
+/** @deprecated Use `NewAccessModel` */
+export type NewVirtualModel = NewAccessModel;
 
 /**
  * 路由规则 (Model Route)
@@ -265,7 +272,7 @@ export const modelRoutes = pgTable('model_routes', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: varchar('name', { length: 255 }).notNull(),
   description: text('description'),
-  virtualModelIds: text('virtual_model_ids').array().notNull().default([]),
+  accessModelIds: text('access_model_ids').array().notNull().default([]),
   conditions: jsonb('conditions').$type<RouteCondition[]>().default([]),
   action: jsonb('action').$type<RouteAction>().notNull(),
   priority: integer('priority').default(0).notNull(),
@@ -276,8 +283,8 @@ export const modelRoutes = pgTable('model_routes', {
 });
 
 export const modelRoutesRelations = relations(modelRoutes, ({ many }) => ({
-  // Note: virtualModelIds is a TEXT[] array - no FK relationship
-  // Virtual model lookup is done at application layer
+  // Note: accessModelIds is a TEXT[] array - no FK relationship
+  // Access model lookup is done at application layer
 }));
 
 export type ModelRoute = typeof modelRoutes.$inferSelect;

@@ -21,7 +21,7 @@ export interface ModelInstanceFlowData {
 }
 
 const ACTION_LABELS: Record<string, string> = {
-  route_to_virtual_model: '虚拟模型',
+  route_to_access_model: '接入模型',
   route_to_group: '模型组',
   route_to_instance: '实例',
   reject: '拒绝',
@@ -37,7 +37,7 @@ function getTargetName(
 ): string {
   if (!targetId) return '未指定'
   switch (actionType) {
-    case 'route_to_virtual_model': return vmMap.get(targetId) || '未指定'
+    case 'route_to_access_model': return vmMap.get(targetId) || '未指定'
     case 'route_to_group': return groupMap.get(targetId) || '未指定'
     case 'route_to_instance': return instanceMap.get(targetId) || '未指定'
     default: return '未指定'
@@ -104,7 +104,7 @@ export function buildFlowFromData(
       })
 
       if (i === 0) {
-        route.virtualModelIds?.forEach(vmId => {
+        route.accessModelIds?.forEach(vmId => {
           edges.push({
             id: `e-vm-${vmId}-${condNodeId}`,
             source: `vm-${vmId}`,
@@ -136,7 +136,7 @@ export function buildFlowFromData(
           target: leafId,
         })
       } else {
-        route.virtualModelIds?.forEach(vmId => {
+        route.accessModelIds?.forEach(vmId => {
           edges.push({
             id: `e-vm-${vmId}-${leafId}`,
             source: `vm-${vmId}`,
@@ -179,7 +179,7 @@ export function buildFlowFromData(
           label: typeLabel,
           actionType: action.type,
           targetType: action.type === 'route_to_group' ? 'model_group' :
-                      action.type === 'route_to_instance' ? 'model_instance' : 'virtual_model',
+                      action.type === 'route_to_instance' ? 'model_instance' : 'access_model',
           targetName,
           targetId: action.targetId,
           ruleName: route.name || '未命名规则',

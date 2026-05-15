@@ -155,6 +155,13 @@
       "when": 1778184143000,
       "tag": "0021_add_circuit_breaker_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1747267200000,
+      "tag": "0022_rename_virtual_to_access_models",
+      "breakpoints": true
     }
   ]
 }

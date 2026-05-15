@@ -46,7 +46,7 @@ const navGroups: NavGroup[] = [
     items: [
       { href: '/admin/providers', label: '供应商', icon: <Server className="h-4 w-4" /> },
       { href: '/admin/model-groups', label: '模型组', icon: <Layers className="h-4 w-4" /> },
-      { href: '/admin/virtual-models', label: '虚拟模型', icon: <Network className="h-4 w-4" /> },
+      { href: '/admin/access-models', label: '接入模型', icon: <Network className="h-4 w-4" /> },
       { href: '/admin/model-routes', label: '路由规则', icon: <GitBranch className="h-4 w-4" /> },
       { href: '/admin/keys', label: '密钥', icon: <Key className="h-4 w-4" /> },
       { href: '/admin/settings', label: '系统设置', icon: <Cog className="h-4 w-4" /> },

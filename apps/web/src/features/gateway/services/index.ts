@@ -18,6 +18,7 @@ export {
 } from './model-mapping';
 
 export {
-  VirtualModelRouter,
+  AccessModelRouter,
+  accessModelRouter,
   virtualModelRouter,
-} from './virtual-model-router';
+} from './access-model-router';

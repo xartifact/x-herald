@@ -65,12 +65,19 @@ gatewayRoutes.get('/models', async (c) => {
     });
 
     if (protocol === 'anthropic') {
-      const data = models.map((m) => ({
-        type: 'model' as const,
-        id: m.name,
-        display_name: m.displayName || m.name,
-        created_at: new Date(m.createdAt).toISOString(),
-      }));
+      const data = models.map((m) => {
+        const entry: Record<string, unknown> = {
+          type: 'model' as const,
+          id: m.name,
+          display_name: m.displayName || m.name,
+          created_at: new Date(m.createdAt).toISOString(),
+        };
+        if (m.capabilities) {
+          if (m.capabilities.contextWindow) entry.context_window = m.capabilities.contextWindow;
+          if (m.capabilities.maxOutputTokens) entry.max_output_tokens = m.capabilities.maxOutputTokens;
+        }
+        return entry;
+      });
       return c.json({
         data,
         has_more: false,
@@ -79,12 +86,26 @@ gatewayRoutes.get('/models', async (c) => {
       });
     }
 
-    const data = models.map((m) => ({
-      id: m.name,
-      object: 'model' as const,
-      created: Math.floor(new Date(m.createdAt).getTime() / 1000),
-      owned_by: 'x-llm-gateway',
-    }));
+    const data = models.map((m) => {
+      const entry: Record<string, unknown> = {
+        id: m.name,
+        object: 'model' as const,
+        created: Math.floor(new Date(m.createdAt).getTime() / 1000),
+        owned_by: 'x-llm-gateway',
+      };
+      if (m.capabilities) {
+        if (m.capabilities.contextWindow) entry.context_window = m.capabilities.contextWindow;
+        if (m.capabilities.maxOutputTokens) entry.max_output_tokens = m.capabilities.maxOutputTokens;
+        entry.capabilities = {
+          streaming: m.capabilities.streaming,
+          function_calling: m.capabilities.functionCalling,
+          vision: m.capabilities.vision,
+          json_mode: m.capabilities.jsonMode,
+          reasoning: m.capabilities.reasoning,
+        };
+      }
+      return entry;
+    });
     return c.json({ object: 'list', data });
 
   } catch (error) {

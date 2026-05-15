@@ -6,7 +6,7 @@ import rootLogger from '@/core/lib/logger';
 
 const logger = rootLogger.child({ module: 'model-routes' });
 import { authMiddleware } from '@/features/auth/middleware';
-import { modelRoutes, virtualModels } from '@/features/model-groups/db';
+import { modelRoutes, accessModels } from '@/features/model-groups/db';
 
 const modelRoutesApi = new Hono();
 
@@ -15,7 +15,7 @@ modelRoutesApi.use('*', authMiddleware);
 // GET /api/model-routes - 列表
 modelRoutesApi.get('/', async (c) => {
   const db = getDatabase();
-  const virtualModelId = c.req.query('virtualModelId');
+  const accessModelId = c.req.query('accessModelId') ?? c.req.query('virtualModelId');
 
   try {
     let query = db
@@ -23,7 +23,7 @@ modelRoutesApi.get('/', async (c) => {
         id: modelRoutes.id,
         name: modelRoutes.name,
         description: modelRoutes.description,
-        virtualModelIds: modelRoutes.virtualModelIds,
+        accessModelIds: modelRoutes.accessModelIds,
         conditions: modelRoutes.conditions,
         action: modelRoutes.action,
         priority: modelRoutes.priority,
@@ -35,8 +35,8 @@ modelRoutesApi.get('/', async (c) => {
       .from(modelRoutes)
       .$dynamic();
 
-    if (virtualModelId) {
-      query = query.where(sql`${modelRoutes.virtualModelIds} @> ARRAY[${virtualModelId}]::text[]`);
+    if (accessModelId) {
+      query = query.where(sql`${modelRoutes.accessModelIds} @> ARRAY[${accessModelId}]::text[]`);
     }
 
     const results = await query;
@@ -45,7 +45,8 @@ modelRoutesApi.get('/', async (c) => {
       id: r.id,
       name: r.name,
       description: r.description,
-      virtualModelIds: r.virtualModelIds,
+      accessModelIds: r.accessModelIds,
+      virtualModelIds: r.accessModelIds,
       conditions: r.conditions,
       action: r.action,
       priority: r.priority,
@@ -54,6 +55,7 @@ modelRoutesApi.get('/', async (c) => {
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
       virtualModel: null,
+      accessModel: null,
     }));
 
     return c.json({ success: true, data });
@@ -75,7 +77,7 @@ modelRoutesApi.get('/flow', async (c) => {
       .select({
         id: modelRoutes.id,
         name: modelRoutes.name,
-        virtualModelIds: modelRoutes.virtualModelIds,
+        accessModelIds: modelRoutes.accessModelIds,
         conditions: modelRoutes.conditions,
         action: modelRoutes.action,
         priority: modelRoutes.priority,
@@ -85,17 +87,16 @@ modelRoutesApi.get('/flow', async (c) => {
       .from(modelRoutes)
       .where(eq(modelRoutes.enabled, true));
 
-    // 获取所有启用的虚拟模型作为起点节点
-    const vms = await db
+    const ams = await db
       .select({
-        id: virtualModels.id,
-        name: virtualModels.name,
-        displayName: virtualModels.displayName,
+        id: accessModels.id,
+        name: accessModels.name,
+        displayName: accessModels.displayName,
       })
-      .from(virtualModels)
-      .where(eq(virtualModels.enabled, true));
+      .from(accessModels)
+      .where(eq(accessModels.enabled, true));
 
-    return c.json({ success: true, data: { routes, virtualModels: vms } });
+    return c.json({ success: true, data: { routes, accessModels: ams, virtualModels: ams } });
   } catch (error) {
     logger.warn({ err: error }, 'Failed to get flow data');
     return c.json(
@@ -116,7 +117,7 @@ modelRoutesApi.get('/:id', async (c) => {
         id: modelRoutes.id,
         name: modelRoutes.name,
         description: modelRoutes.description,
-        virtualModelIds: modelRoutes.virtualModelIds,
+        accessModelIds: modelRoutes.accessModelIds,
         conditions: modelRoutes.conditions,
         action: modelRoutes.action,
         priority: modelRoutes.priority,
@@ -138,7 +139,9 @@ modelRoutesApi.get('/:id', async (c) => {
       success: true,
       data: {
         ...r,
+        virtualModelIds: r.accessModelIds,
         virtualModel: null,
+        accessModel: null,
       },
     });
   } catch (error) {
@@ -161,7 +164,7 @@ modelRoutesApi.post('/', async (c) => {
       .values({
         name: data.name,
         description: data.description || null,
-        virtualModelIds: data.virtualModelIds || [],
+        accessModelIds: data.accessModelIds ?? data.virtualModelIds ?? [],
         conditions: data.conditions || [],
         action: data.action,
         priority: data.priority ?? 0,
@@ -191,7 +194,8 @@ modelRoutesApi.put('/:id', async (c) => {
     const updateData: Record<string, unknown> = { updatedAt: new Date() };
     if (data.name !== undefined) updateData.name = data.name;
     if (data.description !== undefined) updateData.description = data.description;
-    if (data.virtualModelIds !== undefined) updateData.virtualModelIds = data.virtualModelIds || [];
+    if (data.accessModelIds !== undefined) updateData.accessModelIds = data.accessModelIds ?? [];
+    else if (data.virtualModelIds !== undefined) updateData.accessModelIds = data.virtualModelIds ?? [];
     if (data.conditions !== undefined) updateData.conditions = data.conditions;
     if (data.action !== undefined) updateData.action = data.action;
     if (data.priority !== undefined) updateData.priority = data.priority;

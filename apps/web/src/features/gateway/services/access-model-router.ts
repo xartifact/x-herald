@@ -1,6 +1,6 @@
 /**
- * 虚拟模型路由器
- * 通过规则引擎将虚拟模型请求路由到模型组或模型实例
+ * 接入模型路由器
+ * 通过规则引擎将接入模型请求路由到模型组或模型实例
  */
 
 import { eq, and, sql } from 'drizzle-orm';
@@ -8,40 +8,37 @@ import { eq, and, sql } from 'drizzle-orm';
 import { getDatabase } from '@/core/db/client';
 import logger from '@/core/lib/logger';
 import { fetchPerfContext } from '@/features/metrics/services/perf-context-fetcher';
-import { virtualModels, modelInstances, modelGroups, modelRoutes } from '@/features/model-groups/db';
+import { accessModels, modelInstances, modelGroups, modelRoutes } from '@/features/model-groups/db';
 import { providers } from '@/features/providers/db';
-import { CATCHALL_VM_NAME } from '@/features/virtual-models/constants';
+import { CATCHALL_VM_NAME } from '@/features/access-models/constants';
 
 
 import { modelGroupRouter, RequestRejectedError, type RouteResult, type RoutingContext } from './model-group-router';
 import type { ModelMappingResult } from './model-mapping';
 import { routeRuleEngine } from './route-rule-engine';
 
-/**
- * 虚拟模型路由器
- */
-export class VirtualModelRouter {
+export class AccessModelRouter {
   /**
-   * 通过规则引擎路由虚拟模型请求，返回按策略排序的所有候选实例
+   * 通过规则引擎路由接入模型请求，返回按策略排序的所有候选实例
    * 第一个为首选，其余为故障转移备选；空数组表示无可用路由
    */
   async routeCandidates(context: RoutingContext): Promise<RouteResult[]> {
     const db = getDatabase();
 
-    const vmResult = await db
+    const amResult = await db
       .select()
-      .from(virtualModels)
-      .where(and(eq(virtualModels.name, context.requestedModel), eq(virtualModels.enabled, true)))
+      .from(accessModels)
+      .where(and(eq(accessModels.name, context.requestedModel), eq(accessModels.enabled, true)))
       .limit(1);
 
-    if (vmResult.length === 0) {
+    if (amResult.length === 0) {
       return this.routeCandidatesViaDefault(context);
     }
 
-    const vm = vmResult[0];
+    const am = amResult[0];
 
-    const perf = await this.fetchVmPerfContext(vm.id);
-    const ruleMatch = await routeRuleEngine.match(vm.id, {
+    const perf = await this.fetchAmPerfContext(am.id);
+    const ruleMatch = await routeRuleEngine.match(am.id, {
       model: context.requestedModel,
       streaming: context.streaming,
       perf,
@@ -51,7 +48,7 @@ export class VirtualModelRouter {
 
     const action = ruleMatch.action;
     const mappingResult: ModelMappingResult = {
-      modelName: vm.name,
+      modelName: am.name,
       isMapped: true,
       originalModel: context.requestedModel,
       mappingType: 'virtual',
@@ -73,14 +70,14 @@ export class VirtualModelRouter {
         }));
       }
       logger.warn(
-        { virtualModel: vm.name, targetGroupId: action.targetId },
+        { accessModel: am.name, targetGroupId: action.targetId },
         'Route rule target group returned no candidates'
       );
       return [];
     }
 
     if (action.type === 'route_to_instance' && action.targetId) {
-      const result = await this.routeToInstance(action.targetId, vm, context, mappingResult, ruleMatch);
+      const result = await this.routeToInstance(action.targetId, am, context, mappingResult, ruleMatch);
       return result ? [result] : [];
     }
 
@@ -88,7 +85,7 @@ export class VirtualModelRouter {
   }
 
   /**
-   * 通过规则引擎路由虚拟模型请求（返回首选实例）
+   * 通过规则引擎路由接入模型请求（返回首选实例）
    * 如需故障转移请使用 routeCandidates
    */
   async route(context: RoutingContext): Promise<RouteResult | null> {
@@ -97,23 +94,23 @@ export class VirtualModelRouter {
   }
 
   /**
-   * 兜底路由：当找不到虚拟模型时，使用 __catchall__ 虚拟模型处理请求
+   * 兜底路由：当找不到接入模型时，使用 __catchall__ 接入模型处理请求
    */
   private async routeCandidatesViaDefault(context: RoutingContext): Promise<RouteResult[]> {
     const db = getDatabase();
 
-    const defaultVmResult = await db
+    const defaultAmResult = await db
       .select()
-      .from(virtualModels)
-      .where(and(eq(virtualModels.name, CATCHALL_VM_NAME), eq(virtualModels.enabled, true)))
+      .from(accessModels)
+      .where(and(eq(accessModels.name, CATCHALL_VM_NAME), eq(accessModels.enabled, true)))
       .limit(1);
 
-    if (defaultVmResult.length === 0) return [];
+    if (defaultAmResult.length === 0) return [];
 
-    const defaultVm = defaultVmResult[0];
+    const defaultAm = defaultAmResult[0];
 
-    const perf = await this.fetchVmPerfContext(defaultVm.id);
-    const ruleMatch = await routeRuleEngine.match(defaultVm.id, {
+    const perf = await this.fetchAmPerfContext(defaultAm.id);
+    const ruleMatch = await routeRuleEngine.match(defaultAm.id, {
       model: context.requestedModel,
       streaming: context.streaming,
       perf,
@@ -131,7 +128,7 @@ export class VirtualModelRouter {
     const action = ruleMatch.action;
 
     if (action.type === 'reject') {
-      throw new RequestRejectedError(action.reason ?? `Rejected by default virtual model rule '${ruleMatch.name}'`);
+      throw new RequestRejectedError(action.reason ?? `Rejected by default access model rule '${ruleMatch.name}'`);
     }
 
     if (action.type === 'fallback') return [];
@@ -140,8 +137,8 @@ export class VirtualModelRouter {
       const candidates = await modelGroupRouter.routeCandidatesByGroupId(action.targetId, context);
       if (candidates.length > 0) {
         logger.info(
-          { requestedModel: context.requestedModel, defaultVm: defaultVm.name },
-          'Request routed via default virtual model fallback'
+          { requestedModel: context.requestedModel, defaultAm: defaultAm.name },
+          'Request routed via default access model fallback'
         );
         return candidates.map((r) => ({
           ...r,
@@ -155,7 +152,7 @@ export class VirtualModelRouter {
     if (action.type === 'route_to_instance' && action.targetId) {
       const result = await this.routeToInstance(
         action.targetId,
-        { name: defaultVm.name, displayName: defaultVm.displayName },
+        { name: defaultAm.name, displayName: defaultAm.displayName },
         context,
         fallbackMapping,
         ruleMatch
@@ -167,17 +164,17 @@ export class VirtualModelRouter {
   }
 
   /**
-   * 获取虚拟模型的性能上下文（用于路由条件判断）
-   * 收集该 VM 所有 route_to_group 规则的目标 groupId，查询最近性能快照
+   * 获取接入模型的性能上下文（用于路由条件判断）
+   * 收集该 AM 所有 route_to_group 规则的目标 groupId，查询最近性能快照
    */
-  private async fetchVmPerfContext(vmId: string): ReturnType<typeof fetchPerfContext> {
+  private async fetchAmPerfContext(amId: string): ReturnType<typeof fetchPerfContext> {
     const db = getDatabase();
     const rules = await db
       .select({ action: modelRoutes.action })
       .from(modelRoutes)
       .where(
         and(
-          sql`${modelRoutes.virtualModelIds} @> ARRAY[${vmId}]::text[]`,
+          sql`${modelRoutes.accessModelIds} @> ARRAY[${amId}]::text[]`,
           eq(modelRoutes.enabled, true)
         )
       );
@@ -186,7 +183,7 @@ export class VirtualModelRouter {
       .filter((r) => r.action.type === 'route_to_group' && r.action.targetId)
       .map((r) => r.action.targetId as string);
 
-    return fetchPerfContext(vmId, groupIds);
+    return fetchPerfContext(amId, groupIds);
   }
 
   /**
@@ -194,7 +191,7 @@ export class VirtualModelRouter {
    */
   private async routeToInstance(
     instanceId: string,
-    vm: { name: string; displayName: string | null },
+    am: { name: string; displayName: string | null },
     context: RoutingContext,
     mappingResult: ModelMappingResult,
     ruleMatch?: { id: string; name: string; priority: number }
@@ -216,8 +213,8 @@ export class VirtualModelRouter {
 
     if (instanceResult.length === 0) {
       logger.warn(
-        { virtualModel: vm.name, targetInstanceId: instanceId },
-        'Virtual model rule target instance not available'
+        { accessModel: am.name, targetInstanceId: instanceId },
+        'Access model rule target instance not available'
       );
       return null;
     }
@@ -235,9 +232,9 @@ export class VirtualModelRouter {
     }
 
     const resolvedGroup = group || {
-      id: 'virtual',
-      name: vm.name,
-      displayName: vm.displayName || vm.name,
+      id: 'access',
+      name: am.name,
+      displayName: am.displayName || am.name,
       description: null,
       aliases: [],
       category: 'chat' as const,
@@ -263,7 +260,7 @@ export class VirtualModelRouter {
       group: resolvedGroup,
       decision: {
         strategy: 'direct',
-        reason: `Virtual model '${vm.name}' → instance '${instance.name}'`,
+        reason: `Access model '${am.name}' → instance '${instance.name}'`,
         candidates: 1,
         responseTime: 0,
       },
@@ -273,4 +270,7 @@ export class VirtualModelRouter {
   }
 }
 
-export const virtualModelRouter = new VirtualModelRouter();
+export const accessModelRouter = new AccessModelRouter();
+
+/** @deprecated Use `accessModelRouter` */
+export const virtualModelRouter = accessModelRouter;

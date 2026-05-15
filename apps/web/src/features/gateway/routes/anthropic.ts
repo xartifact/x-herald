@@ -8,7 +8,7 @@ import { identifyClient } from '../services/client-identifier';
 import { shouldFilterHeader } from '../services/headers';
 import { logRequest } from '../services/log-service';
 import { ModelNotFoundError } from '../services/model-group-router';
-import { virtualModelRouter } from '../services/virtual-model-router';
+import { virtualModelRouter } from '../services/access-model-router';
 
 const anthropicRoutes = new Hono<{
   Variables: {

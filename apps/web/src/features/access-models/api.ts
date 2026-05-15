@@ -26,6 +26,7 @@ accessModelRoutes.get('/', async (c) => {
         displayName: accessModels.displayName,
         description: accessModels.description,
         enabled: accessModels.enabled,
+        capabilities: accessModels.capabilities,
         createdAt: accessModels.createdAt,
         updatedAt: accessModels.updatedAt,
       })
@@ -54,6 +55,7 @@ accessModelRoutes.get('/:id', async (c) => {
         displayName: accessModels.displayName,
         description: accessModels.description,
         enabled: accessModels.enabled,
+        capabilities: accessModels.capabilities,
         createdAt: accessModels.createdAt,
         updatedAt: accessModels.updatedAt,
       })
@@ -88,6 +90,7 @@ accessModelRoutes.post('/', async (c) => {
         displayName: data.displayName || null,
         description: data.description || null,
         enabled: data.enabled ?? true,
+        capabilities: data.capabilities ?? null,
       })
       .returning();
 
@@ -131,6 +134,7 @@ accessModelRoutes.put('/:id', async (c) => {
     if (data.displayName !== undefined) updateData.displayName = data.displayName;
     if (data.description !== undefined) updateData.description = data.description;
     if (data.enabled !== undefined) updateData.enabled = data.enabled;
+    if ('capabilities' in data) updateData.capabilities = data.capabilities ?? null;
 
     const [updated] = await db
       .update(accessModels)

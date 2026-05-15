@@ -18,6 +18,25 @@ export interface AccessModelFormData {
   displayName: string
   description: string
   enabled: boolean
+  capabilities: {
+    streaming: boolean
+    functionCalling: boolean
+    vision: boolean
+    jsonMode: boolean
+    reasoning: boolean
+    contextWindow: number
+    maxTokens: number
+  }
+}
+
+const DEFAULT_CAPABILITIES: AccessModelFormData['capabilities'] = {
+  streaming: true,
+  functionCalling: false,
+  vision: false,
+  jsonMode: false,
+  reasoning: false,
+  contextWindow: 0,
+  maxTokens: 0,
 }
 
 export function useAccessModelPage() {
@@ -37,6 +56,7 @@ export function useAccessModelPage() {
       displayName: '',
       description: '',
       enabled: true,
+      capabilities: DEFAULT_CAPABILITIES,
     },
   })
 
@@ -47,17 +67,28 @@ export function useAccessModelPage() {
       displayName: '',
       description: '',
       enabled: true,
+      capabilities: DEFAULT_CAPABILITIES,
     })
     setDialogOpen(true)
   }
 
   const handleEdit = (am: AccessModel) => {
     setEditingId(am.id)
+    const cap = am.capabilities
     form.reset({
       name: am.name,
       displayName: am.displayName || '',
       description: am.description || '',
       enabled: am.enabled,
+      capabilities: cap ? {
+        streaming: cap.streaming ?? true,
+        functionCalling: cap.functionCalling ?? false,
+        vision: cap.vision ?? false,
+        jsonMode: cap.jsonMode ?? false,
+        reasoning: Boolean(cap.reasoning),
+        contextWindow: Number(cap.contextWindow ?? 0),
+        maxTokens: Number(cap.maxTokens ?? 0),
+      } : DEFAULT_CAPABILITIES,
     })
     setDialogOpen(true)
   }
@@ -77,6 +108,15 @@ export function useAccessModelPage() {
       displayName: data.displayName || undefined,
       description: data.description || undefined,
       enabled: data.enabled,
+      capabilities: {
+        streaming: data.capabilities.streaming,
+        functionCalling: data.capabilities.functionCalling,
+        vision: data.capabilities.vision,
+        jsonMode: data.capabilities.jsonMode,
+        reasoning: data.capabilities.reasoning,
+        contextWindow: data.capabilities.contextWindow,
+        maxTokens: data.capabilities.maxTokens,
+      },
     }
 
     if (editingId) {

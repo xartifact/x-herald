@@ -34,6 +34,7 @@ export async function fetchAccessibleModels(virtualKey: VirtualKey): Promise<Acc
       id: accessModels.id,
       name: accessModels.name,
       displayName: accessModels.displayName,
+      capabilities: accessModels.capabilities,
       createdAt: accessModels.createdAt,
     })
     .from(accessModels)
@@ -95,12 +96,31 @@ export async function fetchAccessibleModels(virtualKey: VirtualKey): Promise<Acc
       }
     }
 
-    return accessible.map((am) => ({
-      name: am.name,
-      displayName: am.displayName,
-      createdAt: am.createdAt,
-      capabilities: capMap.get(am.id) ?? null,
-    }));
+    return accessible.map((am) => {
+      const ownCap = am.capabilities as Record<string, unknown> | null;
+      if (ownCap) {
+        return {
+          name: am.name,
+          displayName: am.displayName,
+          createdAt: am.createdAt,
+          capabilities: {
+            streaming: Boolean(ownCap.streaming),
+            functionCalling: Boolean(ownCap.functionCalling),
+            vision: Boolean(ownCap.vision),
+            jsonMode: Boolean(ownCap.jsonMode),
+            reasoning: Boolean(ownCap.reasoning),
+            contextWindow: Number(ownCap.contextWindow ?? 0),
+            maxOutputTokens: Number(ownCap.maxOutputTokens ?? ownCap.maxTokens ?? 0),
+          },
+        };
+      }
+      return {
+        name: am.name,
+        displayName: am.displayName,
+        createdAt: am.createdAt,
+        capabilities: capMap.get(am.id) ?? null,
+      };
+    });
   }
 
   const allGroups = await db

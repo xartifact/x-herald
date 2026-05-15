@@ -1,9 +1,14 @@
+import type { ModelCapabilities } from '@/features/model-groups/db'
+
+export type { ModelCapabilities }
+
 export interface AccessModel {
   id: string
   name: string
   displayName: string | null
   description: string | null
   enabled: boolean
+  capabilities: ModelCapabilities | null
   createdAt: string
   updatedAt: string
 }
@@ -13,6 +18,7 @@ export interface CreateAccessModelPayload {
   displayName?: string
   description?: string
   enabled?: boolean
+  capabilities?: ModelCapabilities | null
 }
 
 export interface UpdateAccessModelPayload {
@@ -20,6 +26,7 @@ export interface UpdateAccessModelPayload {
   displayName?: string
   description?: string
   enabled?: boolean
+  capabilities?: ModelCapabilities | null
 }
 
 /** @deprecated Use `AccessModel` */

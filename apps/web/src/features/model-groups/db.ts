@@ -244,6 +244,7 @@ export const accessModels = pgTable('access_models', {
   displayName: varchar('display_name', { length: 255 }),
   description: text('description'),
   enabled: boolean('enabled').default(true).notNull(),
+  capabilities: jsonb('capabilities').$type<ModelCapabilities>(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

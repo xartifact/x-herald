@@ -1,4 +1,8 @@
+import rootLogger from '@/core/lib/logger';
+
 import type { GatewayConfig } from './schema';
+
+const logger = rootLogger.child({ module: 'config' });
 
 /**
  * Load configuration from environment variables
@@ -79,7 +83,7 @@ export function validateConfig(config: GatewayConfig): void {
       throw new Error('Database name is required');
     }
     if (!config.database.password && process.env.NODE_ENV === 'production') {
-      console.warn('WARNING: No database password set in production!');
+      logger.warn('No database password set in production!');
     }
   }
 

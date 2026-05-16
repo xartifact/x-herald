@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 
-import { loadConfig, validateConfig } from '@/core/config';
+import { loadConfig, validateConfig, APP_VERSION, IS_PRODUCTION, ENABLE_LOG_CLEANUP } from '@/core/config';
 import { getDatabase } from '@/core/db/client';
 import { startAutoCleanup } from '@/features/logs/log-cleanup';
 import { metricsRoutes } from '@/features/metrics/routes';
@@ -41,7 +41,7 @@ export const createApiApp = async () => {
 
   // 启动日志自动清理（每24小时检查一次，保留30天）
   // 生产环境始终启用，开发环境可通过 ENABLE_LOG_CLEANUP=true 启用
-  if (process.env.NODE_ENV === 'production' || process.env.ENABLE_LOG_CLEANUP === 'true') {
+  if (IS_PRODUCTION || ENABLE_LOG_CLEANUP) {
     startAutoCleanup(24, 30);
     logger.info('Auto log cleanup scheduler started (retention: 30 days)');
   }
@@ -76,7 +76,7 @@ export const createApiApp = async () => {
   app.get('/api', (c) => {
     return c.json({
       name: 'x-llm-gateway API',
-      version: process.env.APP_VERSION || 'dev',
+      version: APP_VERSION,
       status: 'running',
       timestamp: new Date().toISOString(),
     });

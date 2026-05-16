@@ -39,33 +39,40 @@ const NUMERIC_OPERATORS = [
   { value: 'lte', label: '小于等于 (<=)' },
 ]
 
-interface ConditionPropertiesProps {
-  node: Node
-  onUpdate: (nodeId: string, data: Record<string, unknown>) => void
+interface ConditionNodeData {
+  label?: string;
+  field?: string;
+  operator?: string;
+  value?: unknown;
+  [key: string]: unknown;
 }
 
-function isNumericField(f: string) {
+interface ConditionPropertiesProps {
+  node: Node<ConditionNodeData>;
+  onUpdate: (nodeId: string, data: Record<string, unknown>) => void;
+}
+
+function isNumericField(f: string): boolean {
   return FIELDS.find((x) => x.value === f)?.numeric ?? false
 }
 
 export function ConditionProperties({ node, onUpdate }: ConditionPropertiesProps) {
-  const d = node.data as Record<string, unknown>
-  const [label, setLabel] = useState((d.label as string) || '')
-  const [field, setField] = useState((d.field as string) || '')
-  const [operator, setOperator] = useState((d.operator as string) || 'eq')
-  const [value, setValue] = useState(String(d.value ?? ''))
+  const [label, setLabel] = useState(node.data.label ?? '')
+  const [field, setField] = useState(node.data.field ?? '')
+  const [operator, setOperator] = useState(node.data.operator ?? 'eq')
+  const [value, setValue] = useState(String(node.data.value ?? ''))
 
   useEffect(() => {
-    setLabel((d.label as string) || '')
-    setField((d.field as string) || '')
-    setOperator((d.operator as string) || 'eq')
-    setValue(String(d.value ?? ''))
+    setLabel(node.data.label ?? '')
+    setField(node.data.field ?? '')
+    setOperator(node.data.operator ?? 'eq')
+    setValue(String(node.data.value ?? ''))
   }, [node.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const operators = isNumericField(field) ? NUMERIC_OPERATORS : STRING_OPERATORS
 
   const update = (patch: Record<string, unknown>) => {
-    onUpdate(node.id, { label, field, operator, value, ...d, ...patch })
+    onUpdate(node.id, { label, field, operator, value, ...node.data, ...patch })
   }
 
   const handleFieldChange = (v: string) => {

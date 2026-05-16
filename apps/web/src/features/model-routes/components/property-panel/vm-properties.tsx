@@ -5,14 +5,19 @@ import { Network } from 'lucide-react'
 
 import { Badge } from '@/ui/badge'
 
+interface VmNodeData {
+  modelName?: string;
+  label?: string;
+  [key: string]: unknown;
+}
+
 interface VmPropertiesProps {
-  node: Node
+  node: Node<VmNodeData>;
 }
 
 export function VmProperties({ node }: VmPropertiesProps) {
-  const d = node.data as Record<string, unknown>
-  const modelName = String(d.modelName ?? '')
-  const label = String(d.label ?? '')
+  const modelName = node.data.modelName ?? '';
+  const label = node.data.label ?? '';
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 text-blue-600 font-semibold text-sm">

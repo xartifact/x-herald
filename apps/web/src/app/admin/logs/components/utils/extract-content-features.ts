@@ -161,8 +161,7 @@ export function extractContentFeatures(log: Log): ContentFeatures | null {
     }
 
     return Object.keys(features).length > 0 ? features : null
-  } catch (error) {
-    console.error('Failed to extract content features:', error)
+  } catch {
     return null
   }
 }

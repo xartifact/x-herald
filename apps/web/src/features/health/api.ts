@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 
+import { APP_VERSION } from '@/core/config/env';
 import { getDatabase } from '@/core/db/client';
 
 const health = new Hono();
@@ -14,7 +15,7 @@ health.get('/', async (c) => {
 
     return c.json({
       status: 'healthy',
-      version: process.env.APP_VERSION || 'dev',
+      version: APP_VERSION,
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       database: 'connected',

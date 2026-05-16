@@ -16,7 +16,7 @@ export class AppError extends Error {
   }
 }
 
-export async function errorHandler(c: Context, next: Next) {
+export async function errorHandler(c: Context, next: Next): Promise<void | Response> {
   try {
     await next();
   } catch (error) {
@@ -38,7 +38,7 @@ export async function errorHandler(c: Context, next: Next) {
           error: error.message,
           code: error.code || 'INTERNAL_ERROR',
         },
-        error.statusCode as any
+error.statusCode as 400 | 401 | 403 | 404 | 500
       );
     }
 

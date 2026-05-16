@@ -15,23 +15,31 @@ const ACTION_TYPES = [
   { value: 'route_to_instance', label: '路由到实例' },
 ]
 
+interface TargetNodeData {
+  actionType?: string;
+  targetId?: string;
+  targetName?: string;
+  targetType?: string;
+  label?: string;
+  [key: string]: unknown;
+}
+
 interface TargetPropertiesProps {
-  node: Node
-  onUpdate: (nodeId: string, data: Record<string, unknown>) => void
+  node: Node<TargetNodeData>;
+  onUpdate: (nodeId: string, data: Record<string, unknown>) => void;
 }
 
 export function TargetProperties({ node, onUpdate }: TargetPropertiesProps) {
-  const d = node.data as Record<string, unknown>
-  const [actionType, setActionType] = useState((d.actionType as string) || 'route_to_group')
-  const [targetId, setTargetId] = useState((d.targetId as string) || '')
+  const [actionType, setActionType] = useState(node.data.actionType ?? 'route_to_group')
+  const [targetId, setTargetId] = useState(node.data.targetId ?? '')
 
   const { data: vms = [] } = useAccessModels()
   const { data: groups = [] } = useModelGroups()
   const { data: instances = [] } = useModelInstances()
 
   useEffect(() => {
-    setActionType((d.actionType as string) || 'route_to_group')
-    setTargetId((d.targetId as string) || '')
+    setActionType(node.data.actionType ?? 'route_to_group')
+    setTargetId(node.data.targetId ?? '')
   }, [node.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const getTargetName = (id: string): string => {
@@ -50,7 +58,7 @@ export function TargetProperties({ node, onUpdate }: TargetPropertiesProps) {
   const update = (at: string, tid: string) => {
     const targetName = tid ? getTargetName(tid) : ''
     onUpdate(node.id, {
-      ...d,
+      ...node.data,
       actionType: at,
       targetId: tid,
       targetName,

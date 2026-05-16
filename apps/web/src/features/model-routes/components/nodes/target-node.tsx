@@ -2,7 +2,7 @@
 
 import { memo } from 'react'
 
-import { Handle, Position, type NodeProps } from '@xyflow/react'
+import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
 import { Layers, Server } from 'lucide-react'
 
 interface TargetData {
@@ -13,9 +13,8 @@ interface TargetData {
   [key: string]: unknown
 }
 
-function TargetNodeComponent({ data }: NodeProps) {
-  const nodeData = data as TargetData
-  const isGroup = nodeData.targetType === 'model_group' || nodeData.targetType === 'virtual_model'
+function TargetNodeComponent({ data }: NodeProps<Node<TargetData>>) {
+  const isGroup = data.targetType === 'model_group' || data.targetType === 'virtual_model'
 
   return (
     <div className="rounded-lg border-2 border-green-500 bg-green-50 px-4 py-3 shadow-sm min-w-[160px]">
@@ -27,17 +26,17 @@ function TargetNodeComponent({ data }: NodeProps) {
           <Server className="h-4 w-4 text-green-600" />
         )}
         <span className="text-xs font-semibold text-green-600 uppercase">
-          {nodeData.targetType === 'virtual_model' ? '虚拟模型' :
-           nodeData.targetType === 'model_group' ? '模型组' : '实例'}
+          {data.targetType === 'virtual_model' ? '虚拟模型' :
+           data.targetType === 'model_group' ? '模型组' : '实例'}
         </span>
       </div>
-      {nodeData.ruleName && (
+      {data.ruleName && (
         <div className="text-xs text-muted-foreground truncate max-w-[180px]">
-          {nodeData.ruleName}
+          {data.ruleName}
         </div>
       )}
       <div className="mt-1 text-sm font-medium text-green-900">
-        {nodeData.targetName || nodeData.label}
+        {data.targetName || data.label}
       </div>
     </div>
   )

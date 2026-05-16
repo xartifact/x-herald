@@ -2,6 +2,7 @@ import { eq, gte, lte, sql, desc, lt, isNotNull, and, ne } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { stream, streamSSE } from 'hono/streaming';
 
+import { CRON_SECRET } from '@/core/config/env';
 import { getDatabase } from '@/core/db/client';
 import { getAiModel, AiNotConfiguredError } from '@/core/lib/ai-caller';
 import rootLogger from '@/core/lib/logger';
@@ -23,15 +24,13 @@ let isRecalculating = false;
 // POST /api/logs/rank-recalculate - CRON endpoint with Bearer token authentication
 logsRoutes.post('/rank-recalculate', async (c) => {
   const authHeader = c.req.header('authorization');
-  const cronSecret = process.env.CRON_SECRET;
-
   // Fail-safe: reject if CRON_SECRET is not configured
-  if (!cronSecret) {
+  if (!CRON_SECRET) {
     logger.error('CRON_SECRET environment variable not configured');
     return c.json({ error: 'Server misconfiguration', code: 'CONFIG_ERROR' }, 500);
   }
 
-  if (authHeader !== `Bearer ${cronSecret}`) {
+  if (authHeader !== `Bearer ${CRON_SECRET}`) {
     return c.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, 401);
   }
 

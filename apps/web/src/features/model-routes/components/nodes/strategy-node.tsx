@@ -2,7 +2,7 @@
 
 import { memo } from 'react'
 
-import { Handle, Position, type NodeProps } from '@xyflow/react'
+import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
 import { Ban, ArrowDownToLine } from 'lucide-react'
 
 interface StrategyNodeData {
@@ -32,9 +32,8 @@ const themeConfig = {
   },
 } as const
 
-function StrategyNodeComponent({ data }: NodeProps) {
-  const nodeData = data as StrategyNodeData
-  const theme = themeConfig[nodeData.strategyType] ?? themeConfig.reject
+function StrategyNodeComponent({ data }: NodeProps<Node<StrategyNodeData>>) {
+  const theme = themeConfig[data.strategyType] ?? themeConfig.reject
   const Icon = theme.icon
 
   return (
@@ -52,9 +51,9 @@ function StrategyNodeComponent({ data }: NodeProps) {
           {theme.label}
         </span>
       </div>
-      {(nodeData.reason || nodeData.description) && (
+      {(data.reason || data.description) && (
         <div className={`mt-1 text-sm ${theme.text}`}>
-          {nodeData.reason || nodeData.description}
+          {data.reason || data.description}
         </div>
       )}
       <Handle

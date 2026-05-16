@@ -1,5 +1,6 @@
 import { eq, sql } from 'drizzle-orm';
 
+import { IS_PRODUCTION } from '@/core/config/env';
 import { getDatabase } from '@/core/db/client';
 import logger from '@/core/lib/logger';
 import type { VirtualKey } from '@/features/keys/db';
@@ -256,7 +257,7 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
     );
 
     // 非生产环境抛出错误以便调试
-    if (process.env.NODE_ENV !== 'production') {
+    if (!IS_PRODUCTION) {
       throw error;
     }
   }
@@ -535,7 +536,7 @@ export async function finalizeStreamLog(
   } catch (error) {
     logger.error({ error, logId }, 'Failed to finalize stream log');
     // 非生产环境抛出错误
-    if (process.env.NODE_ENV !== 'production') {
+    if (!IS_PRODUCTION) {
       throw error;
     }
   }

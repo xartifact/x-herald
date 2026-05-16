@@ -8,17 +8,21 @@ import { Ban } from 'lucide-react'
 import { Label } from '@/ui/label'
 import { Textarea } from '@/ui/textarea'
 
+interface RejectNodeData {
+  reason?: string;
+  [key: string]: unknown;
+}
+
 interface RejectPropertiesProps {
-  node: Node
-  onUpdate: (nodeId: string, data: Record<string, unknown>) => void
+  node: Node<RejectNodeData>;
+  onUpdate: (nodeId: string, data: Record<string, unknown>) => void;
 }
 
 export function RejectProperties({ node, onUpdate }: RejectPropertiesProps) {
-  const d = node.data as Record<string, unknown>
-  const [reason, setReason] = useState((d.reason as string) || '')
+  const [reason, setReason] = useState(node.data.reason ?? '')
 
   useEffect(() => {
-    setReason((d.reason as string) || '')
+    setReason(node.data.reason ?? '')
   }, [node.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
@@ -34,7 +38,7 @@ export function RejectProperties({ node, onUpdate }: RejectPropertiesProps) {
           value={reason}
           onChange={e => {
             setReason(e.target.value)
-            onUpdate(node.id, { ...d, reason: e.target.value })
+            onUpdate(node.id, { ...node.data, reason: e.target.value })
           }}
           placeholder="请求被拒绝的原因（可选）"
           rows={3}

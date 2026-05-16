@@ -159,8 +159,8 @@ export function useKeyPage() {
       await navigator.clipboard.writeText(keyValue)
       setCopiedKey(keyId)
       setTimeout(() => setCopiedKey(null), 2000)
-    } catch (err) {
-      console.error('Failed to copy:', err)
+    } catch {
+      // clipboard 写入失败，静默忽略
     }
   }
 

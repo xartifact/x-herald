@@ -249,23 +249,23 @@ export function MetadataBasicSections({
           title="工具调用"
           badge={<Badge variant="secondary" className="text-xs">{log.toolCallsCount}</Badge>}
         >
-          {(log.metadata?.toolCalls as Record<string, string> | undefined)?.pattern && (
+          {log.metadata?.toolCalls?.pattern && (
             <InfoRow
               label="调用模式"
               value={
                 <Badge variant="outline">
-                  {(log.metadata?.toolCalls as Record<string, string>).pattern === 'single' ? '单次' :
-                   (log.metadata?.toolCalls as Record<string, string>).pattern === 'parallel' ? '并行' : '顺序'}
+                  {log.metadata.toolCalls.pattern === 'single' ? '单次' :
+                   log.metadata.toolCalls.pattern === 'parallel' ? '并行' : '顺序'}
                 </Badge>
               }
             />
           )}
-          {(log.metadata?.toolCalls as { tools?: string[] } | undefined)?.tools && (log.metadata?.toolCalls as { tools: string[] }).tools.length > 0 && (
+          {(log.metadata?.toolCalls?.tools?.length ?? 0) > 0 && (
             <InfoRow
               label="工具列表"
               value={
                 <div className="flex flex-wrap gap-1">
-                  {(log.metadata?.toolCalls as { tools: string[] }).tools.map((tool: string, idx: number) => (
+                  {log.metadata!.toolCalls!.tools!.map((tool: string, idx: number) => (
                     <Badge key={idx} variant="secondary" className="text-xs font-mono bg-blue-50 text-blue-700 border-blue-200">
                       {tool}
                     </Badge>

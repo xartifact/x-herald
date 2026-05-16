@@ -5,13 +5,34 @@
 - 语言：TypeScript（严格模式）
 - 包管理：bun
 
+## 绝对红线（零容忍，Code Review 直接打回）
+
+- **禁止 `any`**。不确定类型使用 `unknown`，边界处必须显式 interface 包裹
+- **禁止 `as` 强制断言**。数据解析必须用 Zod 做运行时校验，再通过 `z.infer<>` 推导类型
+- **禁止裸 `console.log`**。后端必须使用 Pino logger，前端调试完毕后删除日志代码
+- **函数位置参数 ≥ 4 个**。3 个参数需重构为 Options Object；≥ 4 个直接打回
+
 ## 代码规范
-- 类型安全优先
-- 禁止使用any
-- 不确定类型使用unknown
-- 单组件不超过 250 行代码，超过需要拆分封装
-- 单函数不超过 150 行代码，超过需要拆分
-- 优先使用 `const` 和 `let`，避免使用 `var`
+
+### 行数限制
+
+| 维度 | 黄金标准 | 可接受 | 红线（必须拆分） |
+|------|----------|--------|----------------|
+| 业务函数逻辑行（不含注释/空行） | ≤ 20 行 | ≤ 35 行 | > 50 行 |
+| React 组件文件（含 import/JSX） | ≤ 100 行 | ≤ 150 行 | > 150 行 |
+
+### 类型系统
+
+- 公共导出函数和组件必须显式声明返回类型
+- 内部私有函数可依赖 TypeScript 推断，但建议显式
+- 接口命名：
+  - 前端 Props/Hook 返回：`PascalCase`，语义后缀。如 `UserCardProps`、`UseAuthReturn`
+  - 后端 DTO：`PascalCase` + `Command`/`Query`/`Dto`。如 `CreateOrderCommand`、`GetUserQuery`
+- 禁止内联 Props 类型（如 `({ name }: { name: string })`），必须提取为具名 interface
+
+### 通用约束
+
+- 优先使用 `const` 和 `let`，禁止 `var`
 - 命名规范：
   - 变量/函数：camelCase
   - 常量：UPPER_SNAKE_CASE
@@ -24,7 +45,6 @@
 
 ## 禁止事项
 - 禁止创建任何文档
-- 禁止写入说明文档
 - 禁止硬编码敏感信息
 - 禁止提交包含密钥的配置文件
 

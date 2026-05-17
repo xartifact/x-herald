@@ -10,6 +10,7 @@ import logger from './core/lib/logger';
 import { createCorsMiddleware } from './core/middleware/cors';
 import { errorHandler } from './core/middleware/error';
 import { requestLogger } from './core/middleware/logger';
+import { accessModelRoutes } from './features/access-models';
 import { authRoutes } from './features/auth';
 import { circuitBreakerRoutes } from './features/circuit-breaker';
 import { configIORoutes } from './features/config-io';
@@ -21,7 +22,6 @@ import { modelGroupsRoutes } from './features/model-groups';
 import { modelRoutesApi } from './features/model-routes';
 import { providersRoutes } from './features/providers';
 import { settingsRoutes } from './features/settings';
-import { accessModelRoutes } from './features/access-models';
 
 // Create API app
 export const createApiApp = async () => {

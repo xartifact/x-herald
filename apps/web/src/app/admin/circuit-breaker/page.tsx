@@ -2,208 +2,22 @@
 
 import { useState } from 'react'
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { AlertTriangle, CheckCircle, RefreshCw, ShieldAlert, ShieldCheck, ShieldOff, Zap, Octagon, RotateCcw, Timer } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
+import { RefreshCw } from 'lucide-react'
 
-import { Badge } from '@/ui/badge'
 import { Button } from '@/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/ui/table'
-import { toast } from 'sonner'
 
-const API_BASE = '/api'
-
-function authHeaders() {
-  return { Authorization: `Bearer ${localStorage.getItem('admin_token') || ''}` }
-}
-
-interface Stats {
-  todayOpened: number
-  weekOpened: number
-  trippedInstanceCount: number
-  topInstances: Array<{
-    instanceId: string
-    instanceName: string
-    groupName: string
-    providerName: string
-    openCount: number
-    lastOpenedAt: string
-    tripCount: number
-  }>
-}
-
-interface CBEvent {
-  id: string
-  instanceId: string
-  instanceName: string
-  groupName: string
-  providerName: string
-  event: 'opened' | 'half_open' | 'closed' | 'cooldown' | 'reset' | 'manual_trip'
-  failureCount: number
-  openUntil: string | null
-  createdAt: string
-}
-
-interface RealtimeState {
-  instanceId: string
-  state: 'closed' | 'open' | 'half_open' | 'cooldown'
-  tripCount: number
-  failures: number
-  remainingMs: number
-  openUntil: number
-  cooldownUntil: number
-}
-
-function useCircuitBreakerStats() {
-  return useQuery<Stats>({
-    queryKey: ['circuit-breaker', 'stats'],
-    queryFn: async () => {
-      const res = await fetch(`${API_BASE}/circuit-breaker/stats`, { headers: authHeaders() })
-      const json = await res.json()
-      return json.data
-    },
-    refetchInterval: 30_000,
-  })
-}
-
-function useRealtimeStates() {
-  return useQuery<{ instances: RealtimeState[] }>({
-    queryKey: ['circuit-breaker', 'realtime-states'],
-    queryFn: async () => {
-      const res = await fetch(`${API_BASE}/circuit-breaker/realtime-states`, { headers: authHeaders() })
-      const json = await res.json()
-      return json.data
-    },
-    refetchInterval: 10_000,
-    refetchIntervalInBackground: false,
-  })
-}
-
-function useCircuitBreakerEvents(eventFilter: string) {
-  return useQuery<{ events: CBEvent[]; total: number }>({
-    queryKey: ['circuit-breaker', 'events', eventFilter],
-    queryFn: async () => {
-      const params = new URLSearchParams({ limit: '100' })
-      if (eventFilter !== 'all') params.set('event', eventFilter)
-      const res = await fetch(`${API_BASE}/circuit-breaker/events?${params}`, { headers: authHeaders() })
-      const json = await res.json()
-      return json.data
-    },
-    refetchInterval: 30_000,
-  })
-}
-
-function useManualAction(action: 'reset' | 'trip') {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: async (instanceId: string) => {
-      const res = await fetch(`${API_BASE}/circuit-breaker/${instanceId}/${action}`, {
-        method: 'POST',
-        headers: authHeaders(),
-      })
-      return res.json()
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['circuit-breaker'] })
-      toast.success(action === 'reset' ? '熔断已重置' : '已强制熔断')
-    },
-    onError: () => {
-      toast.error(action === 'reset' ? '重置失败' : '熔断失败')
-    },
-  })
-}
-
-function stateBadgeColor(state: RealtimeState['state']): string {
-  switch (state) {
-    case 'closed': return 'text-green-600'
-    case 'half_open': return 'text-yellow-600'
-    case 'open': return 'text-red-600'
-    case 'cooldown': return 'text-blue-600'
-  }
-}
-
-function stateLabel(state: RealtimeState['state']): string {
-  switch (state) {
-    case 'closed': return '正常'
-    case 'half_open': return '半开'
-    case 'open': return '开路'
-    case 'cooldown': return '冷却'
-  }
-}
-
-function tripCountBadge(tripCount: number): { color: string; label: string } {
-  if (tripCount === 0) return { color: 'bg-gray-100 text-gray-600', label: '0' }
-  if (tripCount === 1) return { color: 'bg-gray-100 text-gray-600', label: '1' }
-  if (tripCount <= 3) return { color: 'bg-yellow-100 text-yellow-700', label: String(tripCount) }
-  return { color: 'bg-orange-100 text-orange-700', label: String(tripCount) }
-}
-
-function formatDuration(ms: number): string {
-  if (ms <= 0) return '已到期'
-  const seconds = Math.round(ms / 1000)
-  if (seconds < 60) return `${seconds}秒`
-  const minutes = Math.round(seconds / 60)
-  if (minutes < 60) return `${minutes}分钟`
-  const hours = Math.round(minutes / 60)
-  return `${hours}小时`
-}
-
-function EventBadge({ event }: { event: CBEvent['event'] }) {
-  switch (event) {
-    case 'opened':
-      return (
-        <Badge variant="destructive" className="gap-1">
-          <ShieldOff className="h-3 w-3" />熔断
-        </Badge>
-      )
-    case 'half_open':
-      return (
-        <Badge variant="outline" className="gap-1 border-yellow-400 text-yellow-700">
-          <AlertTriangle className="h-3 w-3" />半开
-        </Badge>
-      )
-    case 'closed':
-      return (
-        <Badge variant="outline" className="gap-1 border-green-400 text-green-700">
-          <CheckCircle className="h-3 w-3" />恢复
-        </Badge>
-      )
-    case 'cooldown':
-      return (
-        <Badge variant="outline" className="gap-1 border-blue-400 text-blue-700">
-          <Timer className="h-3 w-3" />冷却
-        </Badge>
-      )
-    case 'reset':
-      return (
-        <Badge variant="outline" className="gap-1 border-green-400 text-green-700">
-          <RotateCcw className="h-3 w-3" />重置
-        </Badge>
-      )
-    case 'manual_trip':
-      return (
-        <Badge variant="destructive" className="gap-1">
-          <Octagon className="h-3 w-3" />手动熔断
-        </Badge>
-      )
-  }
-}
-
-function relativeTime(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime()
-  if (diff < 60_000) return `${Math.round(diff / 1000)}秒前`
-  if (diff < 3_600_000) return `${Math.round(diff / 60_000)}分钟前`
-  if (diff < 86_400_000) return `${Math.round(diff / 3_600_000)}小时前`
-  return `${Math.round(diff / 86_400_000)}天前`
-}
+import { CircuitBreakerEventHistory } from './circuit-breaker-event-history'
+import { useCircuitBreakerEvents, useCircuitBreakerStats, useManualAction, useRealtimeStates } from './circuit-breaker-hooks'
+import { CircuitBreakerRealtimeTable } from './circuit-breaker-realtime-table'
+import { CircuitBreakerStats } from './circuit-breaker-stats'
 
 export default function CircuitBreakerPage() {
   const queryClient = useQueryClient()
   const [eventFilter, setEventFilter] = useState('all')
 
   const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useCircuitBreakerStats()
-  const { data: realtimeData, isLoading: realtimeLoading } = useRealtimeStates()
+  const { data: realtimeData } = useRealtimeStates()
   const { data: eventsData, isLoading: eventsLoading, refetch: refetchEvents } = useCircuitBreakerEvents(eventFilter)
 
   const resetMutation = useManualAction('reset')
@@ -222,14 +36,9 @@ export default function CircuitBreakerPage() {
         : `确认强制熔断？实例 ${instanceId.slice(0, 12)}... 将被排除在路由之外。`
     )
     if (!confirmed) return
-    if (action === 'reset') {
-      resetMutation.mutate(instanceId)
-    } else {
-      tripMutation.mutate(instanceId)
-    }
+    if (action === 'reset') resetMutation.mutate(instanceId)
+    else tripMutation.mutate(instanceId)
   }
-
-  const allInstances = realtimeData?.instances ?? []
 
   return (
     <div className="space-y-6">
@@ -243,207 +52,20 @@ export default function CircuitBreakerPage() {
         </Button>
       </div>
 
-      {/* 实时状态面板 */}
-      {allInstances.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">实时状态</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>实例</TableHead>
-                  <TableHead>状态</TableHead>
-                  <TableHead className="text-right">熔断次数</TableHead>
-                  <TableHead className="text-right">剩余时间</TableHead>
-                  <TableHead className="text-right">操作</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {allInstances.map((inst) => (
-                  <TableRow key={inst.instanceId}>
-                    <TableCell className="font-medium">{inst.instanceId.slice(0, 12)}</TableCell>
-                    <TableCell>
-                      <span className={`font-medium ${stateBadgeColor(inst.state)}`}>
-                        {stateLabel(inst.state)}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {inst.tripCount > 0 ? (
-                        <Badge className={tripCountBadge(inst.tripCount).color}>{inst.tripCount}</Badge>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right text-muted-foreground">
-                      {inst.state === 'open' || inst.state === 'cooldown' ? formatDuration(inst.remainingMs) : '—'}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex gap-2 justify-end">
-                        <Button
-                          variant="ghost" size="sm"
-                          disabled={resetMutation.isPending || tripMutation.isPending}
-                          onClick={() => handleManualAction(inst.instanceId, 'reset')}
-                        >
-                          <RotateCcw className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost" size="sm"
-                          disabled={resetMutation.isPending || tripMutation.isPending}
-                          onClick={() => handleManualAction(inst.instanceId, 'trip')}
-                        >
-                          <Octagon className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
+      <CircuitBreakerRealtimeTable
+        instances={realtimeData?.instances ?? []}
+        onAction={handleManualAction}
+        isPending={resetMutation.isPending || tripMutation.isPending}
+      />
 
-      {/* 统计卡片 */}
-      <div className="grid grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Zap className="h-4 w-4" />今日熔断次数
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {statsLoading ? '—' : stats?.todayOpened ?? 0}
-            </div>
-          </CardContent>
-        </Card>
+      <CircuitBreakerStats stats={stats} isLoading={statsLoading} />
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <ShieldAlert className="h-4 w-4" />7 天熔断次数
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {statsLoading ? '—' : stats?.weekOpened ?? 0}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4" />触发过熔断的实例
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {statsLoading ? '—' : stats?.trippedInstanceCount ?? stats?.topInstances.length ?? 0}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Top 实例 */}
-      {stats && stats.topInstances.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">高频熔断实例</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>实例</TableHead>
-                  <TableHead>模型组</TableHead>
-                  <TableHead>供应商</TableHead>
-                  <TableHead className="text-right">熔断次数</TableHead>
-                  <TableHead className="text-right">熔断等级</TableHead>
-                  <TableHead className="text-right">最近一次</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {stats.topInstances.map((inst) => (
-                  <TableRow key={inst.instanceId}>
-                    <TableCell className="font-medium">{inst.instanceName || inst.instanceId.slice(0, 8)}</TableCell>
-                    <TableCell className="text-muted-foreground">{inst.groupName}</TableCell>
-                    <TableCell className="text-muted-foreground">{inst.providerName}</TableCell>
-                    <TableCell className="text-right">
-                      <Badge variant="secondary">{inst.openCount}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Badge className={tripCountBadge(inst.tripCount).color}>{inst.tripCount}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right text-muted-foreground text-sm">
-                      {relativeTime(inst.lastOpenedAt)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* 事件历史 */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base">事件历史</CardTitle>
-            <Select value={eventFilter} onValueChange={setEventFilter}>
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">全部</SelectItem>
-                <SelectItem value="opened">熔断</SelectItem>
-                <SelectItem value="half_open">半开</SelectItem>
-                <SelectItem value="closed">恢复</SelectItem>
-                <SelectItem value="cooldown">冷却</SelectItem>
-                <SelectItem value="reset">重置</SelectItem>
-                <SelectItem value="manual_trip">手动熔断</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          {eventsLoading ? (
-            <div className="p-6 text-sm text-muted-foreground text-center">加载中...</div>
-          ) : !eventsData?.events.length ? (
-            <div className="p-6 text-sm text-muted-foreground text-center">暂无熔断事件</div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>时间</TableHead>
-                  <TableHead>实例</TableHead>
-                  <TableHead>模型组</TableHead>
-                  <TableHead>供应商</TableHead>
-                  <TableHead>事件</TableHead>
-                  <TableHead className="text-right">失败次数</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {eventsData.events.map((e) => (
-                  <TableRow key={e.id}>
-                    <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                      {relativeTime(e.createdAt)}
-                    </TableCell>
-                    <TableCell className="font-medium">{e.instanceName || e.instanceId.slice(0, 8)}</TableCell>
-                    <TableCell className="text-muted-foreground">{e.groupName}</TableCell>
-                    <TableCell className="text-muted-foreground">{e.providerName}</TableCell>
-                    <TableCell><EventBadge event={e.event} /></TableCell>
-                    <TableCell className="text-right text-muted-foreground">{e.failureCount}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      <CircuitBreakerEventHistory
+        events={eventsData?.events ?? []}
+        isLoading={eventsLoading}
+        filter={eventFilter}
+        onFilterChange={setEventFilter}
+      />
     </div>
   )
 }

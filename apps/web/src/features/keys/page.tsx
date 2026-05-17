@@ -99,15 +99,9 @@ export default function KeysPage() {
       ) : (
         <KeyTable
           keys={filteredKeys}
-          showKeyValue={showKeyValue}
-          copiedKey={copiedKey}
-          statsMap={statsMap}
-          onToggleShow={toggleShowKey}
-          onCopy={copyToClipboard}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onReset={handleReset}
-          onShowStats={handleShowStats}
+          display={{ showKeyValue, copiedKey, onToggleShow: toggleShowKey, onCopy: copyToClipboard }}
+          actions={{ onEdit: handleEdit, onDelete: handleDelete, onReset: handleReset, onShowStats: handleShowStats }}
+          stats={statsMap}
           formatDate={formatDate}
         />
       )}

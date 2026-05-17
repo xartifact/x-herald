@@ -5,8 +5,8 @@ import { useEffect, useState } from 'react'
 import type { Node } from '@xyflow/react'
 import { Layers } from 'lucide-react'
 
-import { useModelGroups, useModelInstances } from '@/features/model-groups/useModelGroups'
 import { useAccessModels } from '@/features/access-models/useAccessModels'
+import { useModelGroups, useModelInstances } from '@/features/model-groups/useModelGroups'
 import { Label } from '@/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select'
 

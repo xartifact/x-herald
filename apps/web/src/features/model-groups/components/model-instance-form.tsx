@@ -12,26 +12,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/ui/dialog'
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/ui/form'
-import { Input } from '@/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/ui/select'
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@/ui/form'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/tabs'
 
 import type { InstanceFormData } from '../form-types'
+import { InstanceBasicFields } from './instance-basic-fields'
 import { InstanceConfigEditor } from './instance-config-editor'
 
 interface ModelInstanceFormProps {
@@ -44,15 +29,7 @@ interface ModelInstanceFormProps {
   onSubmit: (data: InstanceFormData) => void
 }
 
-export function ModelInstanceForm({
-  open,
-  onOpenChange,
-  form,
-  editingId,
-  isPending,
-  providers,
-  onSubmit,
-}: ModelInstanceFormProps) {
+export function ModelInstanceForm({ open, onOpenChange, form, editingId, isPending, providers, onSubmit }: ModelInstanceFormProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
@@ -72,99 +49,7 @@ export function ModelInstanceForm({
               </TabsList>
 
               <TabsContent value="basic" className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="providerId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>供应商 *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="选择供应商" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {providers.map((provider) => (
-                            <SelectItem key={provider.id} value={provider.id}>
-                              {provider.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>实例名称 *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="OpenAI GPT-4" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="actualModelName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>实际模型名称 *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="gpt-4-turbo-preview" {...field} />
-                        </FormControl>
-                        <FormDescription>供应商 API 中的模型名称</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="weight"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>权重</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            min={0}
-                            {...field}
-                            onChange={(e) => field.onChange(parseInt(e.target.value))}
-                          />
-                        </FormControl>
-                        <FormDescription>用于加权路由</FormDescription>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="priority"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>优先级</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            min={0}
-                            {...field}
-                            onChange={(e) => field.onChange(parseInt(e.target.value))}
-                          />
-                        </FormControl>
-                        <FormDescription>数字越小优先级越高</FormDescription>
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                <InstanceBasicFields form={form} providers={providers} />
               </TabsContent>
 
               <TabsContent value="advanced" className="space-y-4">
@@ -174,10 +59,7 @@ export function ModelInstanceForm({
                   render={({ field }) => (
                     <FormItem>
                       <FormControl>
-                        <InstanceConfigEditor
-                          value={field.value}
-                          onChange={field.onChange}
-                        />
+                        <InstanceConfigEditor value={field.value} onChange={field.onChange} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -187,9 +69,7 @@ export function ModelInstanceForm({
             </Tabs>
 
             <DialogFooter className="pt-4">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                取消
-              </Button>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>取消</Button>
               <Button type="submit" disabled={isPending}>
                 {isPending ? '保存中...' : editingId ? '保存更改' : '创建'}
               </Button>

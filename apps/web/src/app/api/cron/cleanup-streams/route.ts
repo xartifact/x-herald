@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { CRON_SECRET } from '@/core/config';
 import { cleanupStaleStreams } from '@/features/gateway/services/stream-cleanup';
 
 /**
@@ -19,7 +20,7 @@ import { cleanupStaleStreams } from '@/features/gateway/services/stream-cleanup'
 export async function GET(request: NextRequest) {
   // 验证 cron secret（推荐）
   const authHeader = request.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET;
+  const cronSecret = CRON_SECRET;
 
   if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

@@ -3,13 +3,12 @@
 import { useEffect, useState } from 'react';
 
 import { Activity, Brain, Clock, X, Zap } from 'lucide-react';
-
-import { Button } from '@/ui/button';
-import { useLiveLogs } from '@/hooks/use-live-logs';
-import type { LiveStreamItem } from '@/hooks/use-live-logs';
-import { Badge } from '@/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card';
 import { toast } from 'sonner';
+
+import { useLiveLogs, type LiveStreamItem } from '@/hooks/use-live-logs';
+import { Badge } from '@/ui/badge';
+import { Button } from '@/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card';
 
 const API_BASE = '/api';
 

@@ -4,7 +4,7 @@ import rootLogger, { isRequestLogEnabled } from '../lib/logger';
 
 const logger = rootLogger.child({ module: 'http' });
 
-export async function requestLogger(c: Context, next: Next) {
+export async function requestLogger(c: Context, next: Next): Promise<void> {
   const start = Date.now();
   const method = c.req.method;
   const path = c.req.path;

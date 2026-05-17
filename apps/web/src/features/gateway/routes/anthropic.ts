@@ -4,11 +4,11 @@ import logger from '@/core/lib/logger';
 import type { VirtualKey } from '@/features/keys/db';
 
 import { handleAnthropicMessages } from '../handlers/anthropic/messages-handler';
+import { virtualModelRouter } from '../services/access-model-router';
 import { identifyClient } from '../services/client-identifier';
 import { shouldFilterHeader } from '../services/headers';
 import { logRequest } from '../services/log-service';
 import { ModelNotFoundError } from '../services/model-group-router';
-import { virtualModelRouter } from '../services/access-model-router';
 
 const anthropicRoutes = new Hono<{
   Variables: {

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 
+import { IS_DEVELOPMENT } from '@/core/config/env';
 import { Button } from '@/ui/button';
 
 import RenderMonitor from './RenderMonitor';
@@ -14,7 +15,7 @@ export default function DevTools() {
   const [showRenderMonitor, setShowRenderMonitor] = useState(false);
 
   // 仅在开发环境显示
-  if (process.env.NODE_ENV !== 'development') {
+  if (!IS_DEVELOPMENT) {
     return null;
   }
 

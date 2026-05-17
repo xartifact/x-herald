@@ -1,6 +1,7 @@
-import { defineConfig } from 'vitest/config'
 import path from 'path'
+
 import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vitest/config'
 
 /**
  * Vitest 配置 — 仅用于 React 组件测试 (*.ui.test.tsx)

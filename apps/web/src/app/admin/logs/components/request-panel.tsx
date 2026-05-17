@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 
+import { z } from 'zod'
+
 import { HeadersViewer } from '@/components/admin/JsonViewer'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/core/lib/utils'
@@ -16,15 +18,19 @@ interface RequestPanelProps {
   className?: string
 }
 
+const RequestBodySchema = z.object({
+  messages: z.array(z.object({ role: z.string(), content: z.unknown() })).optional(),
+}).catch({ messages: [] })
+
 export function RequestPanel({ log, className }: RequestPanelProps) {
   const hasMessageAnalysis = !!log.metadata?.messageSequence
   const [selectedMessageIndices, setSelectedMessageIndices] = useState<number[]>([])
 
   const messages = (
-    (log.standardRequestBody as { messages?: unknown[] } | null)?.messages ??
-    (log.requestBody as { messages?: unknown[] } | null)?.messages ??
+    RequestBodySchema.parse(log.standardRequestBody).messages ??
+    RequestBodySchema.parse(log.requestBody).messages ??
     []
-  ) as Array<{ role: string; content: unknown }>
+  )
 
   return (
     <div className={cn("flex flex-col border-r last:border-r-0 bg-background overflow-hidden", className)}>

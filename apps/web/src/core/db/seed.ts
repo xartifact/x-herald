@@ -11,9 +11,9 @@
 import { eq } from 'drizzle-orm';
 
 import logger from '@/core/lib/logger';
+import { CATCHALL_VM_NAME } from '@/features/access-models/constants';
 import { gatewayConfigs } from '@/features/gateway-config/db';
 import { accessModels, modelRoutes } from '@/features/model-groups/db';
-import { CATCHALL_VM_NAME } from '@/features/access-models/constants';
 
 import { getDatabase } from './client';
 

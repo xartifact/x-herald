@@ -5,6 +5,8 @@
 
 import { useEffect, useRef } from 'react';
 
+import { IS_DEVELOPMENT } from '@/core/config/env';
+
 interface RenderInfo {
   componentName: string;
   renderCount: number;
@@ -14,40 +16,23 @@ interface RenderInfo {
 // 全局渲染统计
 const renderStats = new Map<string, RenderInfo>();
 
-// 检查是否为开发环境
-const isDev = process.env.NODE_ENV === 'development';
+const isDev = IS_DEVELOPMENT;
 
-export function useRenderCount(componentName: string, logToConsole = false) {
-  // 生产环境直接返回 0，不执行任何逻辑
-  if (!isDev) {
-    return 0;
-  }
-
+export function useRenderCount(componentName: string) {
   const renderCount = useRef(0);
-  const mountTime = useRef(Date.now());
 
   useEffect(() => {
+    if (!isDev) return;
     renderCount.current += 1;
     const now = Date.now();
-
-    // 更新全局统计
     renderStats.set(componentName, {
       componentName,
       renderCount: renderCount.current,
       lastRenderTime: now,
     });
-
-    if (logToConsole) {
-      const timeSinceMount = now - mountTime.current;
-      console.log(
-        `%c[Render] ${componentName}`,
-        'color: #10b981; font-weight: bold',
-        `#${renderCount.current}`,
-        `(${timeSinceMount}ms since mount)`
-      );
-    }
   });
 
+  if (!isDev) return 0;
   return renderCount.current;
 }
 
@@ -81,13 +66,10 @@ export function printRenderStats() {
     return;
   }
   const stats = getRenderStats();
+  // eslint-disable-next-line no-console
   console.group('%c📊 渲染统计', 'color: #3b82f6; font-weight: bold; font-size: 14px');
-  console.table(
-    stats.map((stat) => ({
-      组件: stat.componentName,
-      渲染次数: stat.renderCount,
-      最后渲染: new Date(stat.lastRenderTime).toLocaleTimeString(),
-    }))
-  );
+  // eslint-disable-next-line no-console
+  console.table(stats.map((stat) => ({ 组件: stat.componentName, 渲染次数: stat.renderCount, 最后渲染: new Date(stat.lastRenderTime).toLocaleTimeString() })));
+  // eslint-disable-next-line no-console
   console.groupEnd();
 }

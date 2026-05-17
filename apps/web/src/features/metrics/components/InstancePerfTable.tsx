@@ -31,24 +31,52 @@ function fmtTps(v: number | null | undefined): string {
 
 function successRateColor(rate: number | null): string {
   if (rate == null) return '';
-  if (rate >= 0.95) return 'text-green-600';
-  if (rate >= 0.8) return 'text-yellow-600';
-  return 'text-red-600';
+  return rate >= 0.95 ? 'text-green-600' : rate >= 0.8 ? 'text-yellow-600' : 'text-red-600';
 }
 
 function ttfbColor(ms: number | null): string {
   if (ms == null) return '';
-  if (ms < 3000) return 'text-green-600';
-  if (ms < 10000) return 'text-yellow-600';
-  return 'text-red-600';
+  return ms < 3000 ? 'text-green-600' : ms < 10000 ? 'text-yellow-600' : 'text-red-600';
+}
+
+interface InstanceRowProps { inst: InstanceSummary; expanded: string | null; onToggle: (id: string) => void }
+
+function InstanceRow({ inst, expanded, onToggle }: InstanceRowProps) {
+  const isExpanded = expanded === inst.instanceId;
+  return (
+    <>
+      <TableRow key={inst.instanceId} className="cursor-pointer hover:bg-muted/50" onClick={() => onToggle(inst.instanceId)}>
+        <TableCell>{isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}</TableCell>
+        <TableCell className="font-medium">
+          {inst.instanceName ?? inst.instanceId.slice(0, 8)}
+          {inst.groupName && <span className="text-xs text-muted-foreground ml-1">({inst.groupName})</span>}
+        </TableCell>
+        <TableCell>{inst.providerName ?? '—'}</TableCell>
+        <TableCell><AnomalyBadge level={inst.anomalyLevel} score={inst.anomalyScore} /></TableCell>
+        <TableCell className={`text-right font-mono ${ttfbColor(inst.ttfbP95)}`}>{fmtMs(inst.ttfbP95)}</TableCell>
+        <TableCell className={`text-right font-mono ${ttfbColor(inst.latencyP95)}`}>{fmtMs(inst.latencyP95)}</TableCell>
+        <TableCell className={`text-right font-mono ${successRateColor(inst.successRate)}`}>{fmtPct(inst.successRate)}</TableCell>
+        <TableCell className="text-right font-mono">{fmtTps(inst.tpsAvg)}</TableCell>
+        <TableCell className="text-right font-mono text-muted-foreground" title="服务运行满 6 小时后自动生成基线">
+          {inst.baselineTtfbP95 == null ? <span className="text-muted-foreground/50">—</span> : fmtMs(inst.baselineTtfbP95)}
+        </TableCell>
+        <TableCell className="text-right text-muted-foreground">{inst.sampleCount.toLocaleString()}</TableCell>
+      </TableRow>
+      {isExpanded && (
+        <TableRow key={`${inst.instanceId}-chart`}>
+          <TableCell colSpan={10} className="bg-muted/30 p-4">
+            <InstancePerfChart instanceId={inst.instanceId} instanceName={inst.instanceName ?? inst.instanceId} />
+          </TableCell>
+        </TableRow>
+      )}
+    </>
+  );
 }
 
 export function InstancePerfTable() {
   const { data, isLoading, refetch } = useInstancesSummary();
   const [expanded, setExpanded] = useState<string | null>(null);
-
   const instances = data?.data ?? [];
-
   const toggle = (id: string) => setExpanded((prev) => (prev === id ? null : id));
 
   return (
@@ -76,75 +104,9 @@ export function InstancePerfTable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading && (
-              <TableRow>
-                <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
-                  加载中…
-                </TableCell>
-              </TableRow>
-            )}
-            {!isLoading && instances.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
-                  暂无数据，等待首次聚合（约5分钟）
-                </TableCell>
-              </TableRow>
-            )}
-            {instances.map((inst: InstanceSummary) => (
-              <>
-                <TableRow
-                  key={inst.instanceId}
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => toggle(inst.instanceId)}
-                >
-                  <TableCell>
-                    {expanded === inst.instanceId
-                      ? <ChevronDown className="h-4 w-4" />
-                      : <ChevronRight className="h-4 w-4" />}
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    {inst.instanceName ?? inst.instanceId.slice(0, 8)}
-                    {inst.groupName && (
-                      <span className="text-xs text-muted-foreground ml-1">({inst.groupName})</span>
-                    )}
-                  </TableCell>
-                  <TableCell>{inst.providerName ?? '—'}</TableCell>
-                  <TableCell>
-                    <AnomalyBadge level={inst.anomalyLevel} score={inst.anomalyScore} />
-                  </TableCell>
-                  <TableCell className={`text-right font-mono ${ttfbColor(inst.ttfbP95)}`}>
-                    {fmtMs(inst.ttfbP95)}
-                  </TableCell>
-                  <TableCell className={`text-right font-mono ${ttfbColor(inst.latencyP95)}`}>
-                    {fmtMs(inst.latencyP95)}
-                  </TableCell>
-                  <TableCell className={`text-right font-mono ${successRateColor(inst.successRate)}`}>
-                    {fmtPct(inst.successRate)}
-                  </TableCell>
-                  <TableCell className="text-right font-mono">{fmtTps(inst.tpsAvg)}</TableCell>
-                  <TableCell className="text-right font-mono text-muted-foreground" title="服务运行满 6 小时后自动生成基线">
-                    {inst.baselineTtfbP95 == null ? (
-                      <span className="text-muted-foreground/50">—</span>
-                    ) : (
-                      fmtMs(inst.baselineTtfbP95)
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right text-muted-foreground">
-                    {inst.sampleCount.toLocaleString()}
-                  </TableCell>
-                </TableRow>
-                {expanded === inst.instanceId && (
-                  <TableRow key={`${inst.instanceId}-chart`}>
-                    <TableCell colSpan={10} className="bg-muted/30 p-4">
-                      <InstancePerfChart
-                        instanceId={inst.instanceId}
-                        instanceName={inst.instanceName ?? inst.instanceId}
-                      />
-                    </TableCell>
-                  </TableRow>
-                )}
-              </>
-            ))}
+            {isLoading && <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">加载中…</TableCell></TableRow>}
+            {!isLoading && instances.length === 0 && <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">暂无数据，等待首次聚合（约5分钟）</TableCell></TableRow>}
+            {instances.map((inst: InstanceSummary) => <InstanceRow key={inst.instanceId} inst={inst} expanded={expanded} onToggle={toggle} />)}
           </TableBody>
         </Table>
       </CardContent>

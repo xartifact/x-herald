@@ -4,6 +4,7 @@ import type { Node } from '@xyflow/react'
 import { MousePointerClick, X } from 'lucide-react'
 
 import { Button } from '@/ui/button'
+
 import { ConditionProperties } from './condition-properties'
 import { RejectProperties } from './reject-properties'
 import { TargetProperties } from './target-properties'
@@ -41,7 +42,7 @@ export function PropertyPanel({ selectedNode, onUpdate }: PropertyPanelProps) {
           className="h-5 w-5 text-muted-foreground hover:text-foreground"
           onClick={() => {
             // 点击关闭：模拟点击画布空白处取消选中
-            const pane = document.querySelector('.react-flow__pane') as HTMLElement
+            const pane = document.querySelector<HTMLElement>('.react-flow__pane')
             if (pane) pane.click()
           }}
         >

@@ -13,7 +13,7 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  useRenderCount('AdminLayout', true);
+  useRenderCount('AdminLayout');
 
   const router = useRouter();
   const pathname = usePathname();

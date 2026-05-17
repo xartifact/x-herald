@@ -2,8 +2,8 @@
 
 import { useMemo } from 'react'
 
-import { useModelGroups, useModelInstances } from '@/features/model-groups/useModelGroups'
 import { useAccessModels } from '@/features/access-models/useAccessModels'
+import { useModelGroups, useModelInstances } from '@/features/model-groups/useModelGroups'
 import { Card, CardContent } from '@/ui/card'
 
 import { DeployBanner } from './components/deploy-banner'

@@ -57,8 +57,8 @@ export function RequestPanel({ log, className }: RequestPanelProps) {
           <BodySubTabs
             tabs={[
               { key: 'client', label: '客户端', data: log.requestBody, emptyText: '无客户端请求数据' },
-              { key: 'provider', label: 'Provider', data: log.transformedRequestBody, emptyText: '无 Provider 请求数据' },
-              { key: 'standard', label: '标准格式', data: log.standardRequestBody, emptyText: '无标准格式请求数据' },
+              { key: 'provider', label: 'Provider', data: log.transformedRequestBody ?? null, emptyText: '无 Provider 请求数据' },
+              { key: 'standard', label: '标准格式', data: log.standardRequestBody ?? null, emptyText: '无标准格式请求数据' },
             ]}
           />
         </TabsContent>

@@ -33,8 +33,8 @@ export function ResponsePanel({ log, className }: ResponsePanelProps) {
           <BodySubTabs
             tabs={[
               { key: 'client', label: '客户端', data: log.responseBody, emptyText: '无客户端响应数据' },
-              { key: 'provider', label: 'Provider', data: log.providerResponseBody, emptyText: '无 Provider 响应数据' },
-              { key: 'standard', label: '标准格式', data: log.standardResponseBody, emptyText: '无标准格式数据' },
+              { key: 'provider', label: 'Provider', data: log.providerResponseBody ?? null, emptyText: '无 Provider 响应数据' },
+              { key: 'standard', label: '标准格式', data: log.standardResponseBody ?? null, emptyText: '无标准格式数据' },
             ]}
           />
         </TabsContent>

@@ -112,15 +112,16 @@ export interface LogListItem {
 
 export interface Log extends LogListItem {
   requestHeaders: Record<string, string> | null
-  providerRequestHeaders: Record<string, string> | null
   requestBody: Record<string, unknown> | null
-  standardRequestBody: Record<string, unknown> | null
-  transformedRequestBody: Record<string, unknown> | null
-  providerResponseHeaders: Record<string, string> | null
   clientResponseHeaders: Record<string, string> | null
-  providerResponseBody: Record<string, unknown> | null
-  standardResponseBody: Record<string, unknown> | null
   responseBody: Record<string, unknown> | null
+  // 以下字段已迁移至 requestAttempts 表，仅旧记录可能存在
+  providerRequestHeaders?: Record<string, string> | null
+  standardRequestBody?: Record<string, unknown> | null
+  transformedRequestBody?: Record<string, unknown> | null
+  providerResponseHeaders?: Record<string, string> | null
+  providerResponseBody?: Record<string, unknown> | null
+  standardResponseBody?: Record<string, unknown> | null
   clientIp: string | null
   userAgent: string | null
   requestPath: string | null

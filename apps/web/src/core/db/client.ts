@@ -159,6 +159,7 @@ async function createPgliteDatabase(dataDir: string): Promise<PostgresDb> {
       continue;
     }
 
+      logger.trace({ file }, '[DB] 正在执行迁移');
       try {
         // exec() 支持多条 SQL 语句，但整体是事务：任一语句失败则全部回滚
         await pgliteClient.exec(content);

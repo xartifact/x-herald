@@ -18,18 +18,22 @@ export const MIN_TTFB_TIMEOUT_MS = 30_000;
 
 /**
  * 计算实例级 TTFB 超时：
- * ttfbTimeout = max(baselineP95 × 2, MIN_TTFB_TIMEOUT, configuredTimeout)
+ * ttfbTimeout = min(max(baselineP95 × 2, MIN_TTFB_TIMEOUT, configuredTimeout), totalLimit)
+ *
+ * 单次尝试超时不得超过全局 total limit，否则全局保护无法生效。
  */
 export function calculateTtfbTimeout(
   baselineTtfbP95: number | undefined,
   configuredTimeout: number,
+  totalLimit: number,
 ): number {
   const fromBaseline = baselineTtfbP95 != null && baselineTtfbP95 > 0
     ? baselineTtfbP95 * 2
     : 0;
-  const timeout = Math.max(fromBaseline, MIN_TTFB_TIMEOUT_MS, configuredTimeout);
+  const uncapped = Math.max(fromBaseline, MIN_TTFB_TIMEOUT_MS, configuredTimeout);
+  const timeout = Math.min(uncapped, totalLimit);
   logger.debug(
-    { baselineTtfbP95, configuredTimeout, fromBaseline, computed: timeout },
+    { baselineTtfbP95, configuredTimeout, fromBaseline, uncapped, totalLimit, computed: timeout },
     '[TTFB] Dynamic timeout calculated',
   );
   return timeout;

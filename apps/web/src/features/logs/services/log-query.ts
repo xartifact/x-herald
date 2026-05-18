@@ -69,7 +69,7 @@ export async function getLogsPage(params: LogsPageParams) {
   const [countResult, logs] = await Promise.all([
     db.select({ count: sql<number>`count(*)` }).from(requestLogs).where(where),
     db.select(LIST_SELECT).from(requestLogs).where(where)
-      .orderBy(desc(requestLogs.createdAt)).limit(pageSize).offset(offset),
+      .orderBy(desc(requestLogs.lastUpdatedAt)).limit(pageSize).offset(offset),
   ])
 
   const total = Number(countResult[0]?.count ?? 0)
@@ -273,9 +273,9 @@ export async function getProviderStats(range: DateRange) {
     minResponseTime: sql<number>`min(${requestLogs.responseTimeMs})`.mapWith(Number),
     maxResponseTime: sql<number>`max(${requestLogs.responseTimeMs})`.mapWith(Number),
     p95ResponseTime: sql<number>`round(percentile_cont(0.95) within group (order by ${requestLogs.responseTimeMs}))`.mapWith(Number),
-    avgTtfb: sql<number | null>`round(avg(${ttfbExpr}))`.mapWith(Number),
-    p95Ttfb: sql<number | null>`round(percentile_cont(0.95) within group (order by ${ttfbExpr}))`.mapWith(Number),
-    ttfbCount: sql<number>`count(*) filter (where ${ttfbExpr} is not null)`.mapWith(Number),
+    avgTtfb: sql<number | null>`round(avg(${ttfbExpr}) filter (where ${requestLogs.status} = 'success' and ${ttfbExpr} is not null))`.mapWith(Number),
+    p95Ttfb: sql<number | null>`round(percentile_cont(0.95) within group (order by ${ttfbExpr}) filter (where ${requestLogs.status} = 'success' and ${ttfbExpr} is not null))`.mapWith(Number),
+    ttfbCount: sql<number>`count(*) filter (where ${requestLogs.status} = 'success' and ${ttfbExpr} is not null)`.mapWith(Number),
     lastRequestAt: sql<string>`max(${requestLogs.createdAt})`,
   }).from(requestLogs).where(and(...conditions)).groupBy(requestLogs.providerId, requestLogs.providerName).orderBy(sql`avg(${requestLogs.responseTimeMs}) asc nulls last`)
 }

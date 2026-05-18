@@ -32,6 +32,7 @@ export interface ResponseHandlerParams {
   isPassthroughEnabled?: boolean;
   clientType?: string;
   logId?: string;
+  attemptId?: string;
   retryCount?: number;
   routingTrace?: {
     matchedRuleId?: string;

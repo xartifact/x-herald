@@ -21,8 +21,9 @@ import { buildHeaders } from '../../transformer/shared/parameter-transformer';
 import { AbortManager } from '../shared/abort-manager';
 import {
   CONNECT_TIMEOUT_MS,
-  TTFB_TIMEOUT_MS_NON_STREAMING,
-  TTFB_TIMEOUT_MS_STREAMING,
+  TOTAL_TTFB_TIMEOUT_MS_NON_STREAMING,
+  TOTAL_TTFB_TIMEOUT_MS_STREAMING,
+  calculateTtfbTimeout,
 } from '../shared/constants';
 import { joinUrl } from '../shared/join-url';
 import { executeWithRetry, type RetryConfig } from '../shared/retry-executor';
@@ -103,15 +104,16 @@ function buildLogParams(opts: {
   conversationId?: string;
   virtualKey: VirtualKey;
 }) {
-  const { candidate, clientRequestHeaders, responsesBody, standardRequestBody, providerRequestHeaders, transformedBody, clientIp, userAgent, clientType, requestPath, requestMethod, incomingProtocol, targetProtocol, conversationId, virtualKey } = opts;
+  const { candidate, clientRequestHeaders, responsesBody, providerRequestHeaders, transformedBody, clientIp, userAgent, clientType, requestPath, requestMethod, incomingProtocol, targetProtocol, conversationId, virtualKey } = opts;
   const { instance, provider, group, matchedRule, mapping, decision } = candidate;
   return {
     virtualKey, modelName: mapping.modelName, originalModelName: mapping.originalModel,
     mappingType: mapping.mappingType, isMapped: mapping.isMapped,
     providerId: provider.id, providerName: provider.name,
     requestHeaders: clientRequestHeaders, providerRequestHeaders,
-    requestBody: responsesBody, standardRequestBody, transformedRequestBody: transformedBody,
+    requestBody: responsesBody, transformedRequestBody: transformedBody,
     clientIp, userAgent, clientType, requestPath, requestMethod, incomingProtocol, targetProtocol, conversationId,
+    instanceId: instance.id,
     routingTrace: {
       matchedRuleId: matchedRule?.id, matchedRuleName: matchedRule?.name, matchedRulePriority: matchedRule?.priority,
       modelGroupId: group.id, modelGroupName: group.name, instanceId: instance.id,
@@ -146,6 +148,8 @@ export async function handleResponsesAPI(
   let targetProtocol: 'openai' | 'anthropic' | undefined;
   let providerRequestHeaders: Record<string, string> | undefined;
   let logId: string | undefined;
+  let attemptId: string | undefined;
+  const requestGroupId = crypto.randomUUID();
   let retryCount = 0;
 
   try {
@@ -195,7 +199,9 @@ export async function handleResponsesAPI(
 
     logger.debug({ requestId, targetUrl: providerReq.targetUrl, targetProtocol, model: standardReq.model, isPassthrough: isPassthroughEnabled }, 'Forwarding to provider');
 
-    logId = await logRequestStart(buildLogParams({ candidate, clientRequestHeaders, responsesBody, standardRequestBody, providerRequestHeaders, transformedBody, clientIp, userAgent, clientType, requestPath, requestMethod, incomingProtocol, targetProtocol, conversationId, virtualKey }));
+    const logStartResult = await logRequestStart({ ...buildLogParams({ candidate, clientRequestHeaders, responsesBody, standardRequestBody, providerRequestHeaders, transformedBody, clientIp, userAgent, clientType, requestPath, requestMethod, incomingProtocol, targetProtocol, conversationId, virtualKey }), requestGroupId, candidateIndex: 0 });
+    logId = logStartResult.logId;
+    attemptId = logStartResult.attemptId;
     const preprocessEndTime = Date.now();
 
     const retryConfig: RetryConfig = {
@@ -214,7 +220,11 @@ export async function handleResponsesAPI(
       const retryResult = await executeWithRetry({
         abortManager,
         operation: async (signal) => fetch(providerReq.targetUrl, { method: 'POST', headers: providerRequestHeaders, body: providerReq.requestBody, signal, connectTimeout: CONNECT_TIMEOUT_MS } as RequestInit),
-        timeout: isStreaming ? TTFB_TIMEOUT_MS_STREAMING : TTFB_TIMEOUT_MS_NON_STREAMING,
+        timeout: calculateTtfbTimeout(
+          undefined,
+          isStreaming ? 60_000 : 30_000,
+          isStreaming ? TOTAL_TTFB_TIMEOUT_MS_STREAMING : TOTAL_TTFB_TIMEOUT_MS_NON_STREAMING,
+        ),
         requestId, isStreaming, config: retryConfig,
         onRetry: (attempt, delay, lastResponse) => { logger.info({ requestId, attempt, statusCode: lastResponse?.status, retryDelay: delay }, '[Retry] Retrying upstream request'); },
       });
@@ -224,8 +234,9 @@ export async function handleResponsesAPI(
       retryCount = finalRetryCount;
 
       if (retryResult.aborted || !rawResponse) {
+        const totalLimit = isStreaming ? TOTAL_TTFB_TIMEOUT_MS_STREAMING : TOTAL_TTFB_TIMEOUT_MS_NON_STREAMING;
         const abortMessage = retryResult.aborted === 'client_disconnect' ? 'Client disconnected'
-          : retryResult.aborted === 'timeout' ? `Request TTFB timeout after ${(isStreaming ? TTFB_TIMEOUT_MS_STREAMING : TTFB_TIMEOUT_MS_NON_STREAMING) / 1000}s`
+          : retryResult.aborted === 'timeout' ? `Request TTFB timeout after ${totalLimit / 1000}s`
           : 'Client disconnected';
         return handleGatewayError({ error: new Error(abortMessage), c, virtualKey, requestHeaders: clientRequestHeaders, providerRequestHeaders, rawBody, clientIp, userAgent, requestPath, requestMethod, isStreaming, startTime, transformedBody, incomingProtocol, targetProtocol, logId, retryCount });
       }

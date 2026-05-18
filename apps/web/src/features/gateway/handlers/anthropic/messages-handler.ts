@@ -64,6 +64,7 @@ export async function handleAnthropicMessages(
     if (!candidates.length) throw new ModelNotFoundError(standardReq.model);
 
     const config = loadConfig();
+    const requestGroupId = crypto.randomUUID();
     const abortManager = new AbortManager(c.req.raw.signal);
     abortManager.registerClientDisconnect();
 
@@ -107,6 +108,7 @@ export async function handleAnthropicMessages(
         const executor = new AnthropicMessagesExecutor({
           c, ctx, candidate: { instance, provider, group, matchedRule, mapping, decision },
           req, abortManager, providerUrl, isPassthroughEnabled, targetProtocol, retryCount,
+          requestGroupId, candidateIndex: i,
         });
 
         const retryConfig = {
@@ -118,7 +120,7 @@ export async function handleAnthropicMessages(
 
         const result = await executeFailoverIteration({
           c, abortManager, isStreaming, isLastCandidate, requestId, startTime,
-          logId: executor.logId, preprocessEndTime: executor.preprocessEndTime,
+          getLogId: () => executor.logId, getAttemptId: () => executor.attemptId, getPreprocessEndTime: () => executor.preprocessEndTime,
           clientIp, userAgent, requestPath, requestMethod, rawBody,
           baselineTtfbP95: perf?.ttfbP95 ?? perf?.ttfbAvg ?? undefined,
           retryConfig,
@@ -127,7 +129,7 @@ export async function handleAnthropicMessages(
           onRetry: (a, d, r) => executor.retry(a, d, r),
           onRecordFailure: () => executor.recordFailure(),
           onRecordSuccess: () => executor.recordSuccess(),
-          onMarkLogAsFailed: (id, code, msg, rc, dur, body, ttfb) => executor.markLogFailed(id, code, msg, rc, dur, body, ttfb),
+          onMarkLogAsFailed: (params) => executor.markLogFailed(params),
           onLogEventBusEmitAborted: (id) => executor.emitAbortedEvent(id),
           handleGatewayError: (code, msg) => executor.gatewayError(code, msg),
           handleProviderError: (resp, rb) => executor.providerError(resp, rb),
@@ -158,7 +160,7 @@ export async function handleAnthropicMessages(
           rawBody, standardRequestBody, transformedBody: executor.transformedBody,
           clientIp, userAgent, requestPath, requestMethod, conversationId,
           isPassthroughEnabled, clientType: clientInfo.type,
-          logId: executor.logId, retryCount, request: c.req.raw,
+          logId: executor.logId, attemptId: executor.attemptId, retryCount, request: c.req.raw,
           routingTrace: { matchedRuleId: matchedRule?.id, matchedRuleName: matchedRule?.name, matchedRulePriority: matchedRule?.priority, modelGroupId: group.id, modelGroupName: group.name, instanceId: instance.id, actualModelName: instance.actualModelName, strategy: decision.strategy },
         };
 

@@ -57,6 +57,8 @@ interface RequestContext {
 }
 
 export interface AnthropicExecutorConfig {
+  requestGroupId: string;
+  candidateIndex: number;
   c: Context;
   ctx: TransformerContext;
   candidate: CandidateInfo;
@@ -70,6 +72,7 @@ export interface AnthropicExecutorConfig {
 
 export class AnthropicMessagesExecutor {
   logId?: string;
+  attemptId?: string;
   transformedBody?: unknown;
   providerRequestHeaders?: Record<string, string>;
   preprocessEndTime = Date.now();
@@ -94,7 +97,9 @@ export class AnthropicMessagesExecutor {
 
     logger.debug({ requestId, targetUrl, targetProtocol, model: standardReq.model, isPassthrough: isPassthroughEnabled }, 'Forwarding to provider');
 
-    this.logId = await logRequestStart(this.buildLogStartParams(transformedBody, pHeaders));
+    const logResult = await logRequestStart(this.buildLogStartParams(transformedBody, pHeaders));
+    this.logId = logResult.logId;
+    this.attemptId = logResult.attemptId;
     this.transformedBody = transformedBody;
     this.providerRequestHeaders = pHeaders;
     this.preprocessEndTime = Date.now();
@@ -131,12 +136,13 @@ export class AnthropicMessagesExecutor {
 
   private buildLogStartParams(transformedBody: unknown, pHeaders: Record<string, string>) {
     const { instance, provider, group, matchedRule, mapping, decision } = this.candidate;
-    const { rawBody, standardRequestBody, virtualKey, clientRequestHeaders, clientIp, userAgent, clientType, requestPath, requestMethod, conversationId, incomingProtocol } = this.req;
-    const { targetProtocol } = this.config;
+    const { rawBody, virtualKey, clientRequestHeaders, clientIp, userAgent, clientType, requestPath, requestMethod, conversationId, incomingProtocol } = this.req;
+    const { targetProtocol, requestGroupId, candidateIndex } = this.config;
     return {
       virtualKey, modelName: mapping.modelName, originalModelName: mapping.originalModel, mappingType: mapping.mappingType, isMapped: mapping.isMapped,
       providerId: provider.id, providerName: provider.name, requestHeaders: clientRequestHeaders, providerRequestHeaders: pHeaders,
-      requestBody: rawBody, standardRequestBody, transformedRequestBody: transformedBody, clientIp, userAgent, clientType, requestPath, requestMethod, incomingProtocol, targetProtocol, conversationId,
+      requestBody: rawBody, transformedRequestBody: transformedBody, clientIp, userAgent, clientType, requestPath, requestMethod, incomingProtocol, targetProtocol, conversationId,
+      requestGroupId, candidateIndex, instanceId: instance.id,
       routingTrace: { matchedRuleId: matchedRule?.id, matchedRuleName: matchedRule?.name, matchedRulePriority: matchedRule?.priority, modelGroupId: group.id, modelGroupName: group.name, instanceId: instance.id, actualModelName: instance.actualModelName, strategy: decision.strategy },
     };
   }
@@ -169,8 +175,8 @@ export class AnthropicMessagesExecutor {
   recordFailure(): void { circuitBreakerRegistry.recordFailure(this.config.candidate.instance.id, this.circuitBreakerMeta); }
   recordSuccess(): void { circuitBreakerRegistry.recordSuccess(this.config.candidate.instance.id, this.circuitBreakerMeta); }
 
-  async markLogFailed(id: string, statusCode: number, errorMessage: string, retryCountParam: number, duration: number, body: unknown, providerTtfbMs?: number): Promise<void> {
-    await markLogAsFailed(id, statusCode, errorMessage, retryCountParam, duration, body, providerTtfbMs);
+  async markLogFailed(params: import('../shared/failover-executor').MarkLogFailedParams): Promise<void> {
+    await markLogAsFailed(params);
   }
 
   emitAbortedEvent(id: string): void { logEventBus.emitLog({ event: 'aborted', logId: id }); }

@@ -1,5 +1,7 @@
 import { pgTable, varchar, integer, timestamp, text, uuid, jsonb, index, boolean, doublePrecision } from 'drizzle-orm/pg-core';
 
+export type FailoverReason = 'http_429' | 'http_5xx' | 'ttfb_timeout' | 'network_error';
+
 /**
  * 日志元数据结构
  * 用于存储灵活的业务标记和自定义元数据
@@ -138,10 +140,15 @@ import { providers } from '@/features/providers/db';
 
 export const requestLogs = pgTable('request_logs', {
   id: uuid('id').primaryKey().defaultRandom(),
+  // Failover 链路追踪：同一次客户端请求的所有候选尝试共享同一个 requestGroupId
+  requestGroupId: uuid('request_group_id').notNull(),
+  candidateIndex: integer('candidate_index').default(0).notNull(),
+  failoverReason: varchar('failover_reason', { length: 20 }).$type<FailoverReason>(),
   virtualKeyId: uuid('virtual_key_id').references(() => virtualKeys.id),
   virtualKeyName: varchar('virtual_key_name', { length: 255 }),
   modelName: varchar('model_name', { length: 255 }).notNull(),
   originalModelName: varchar('original_model_name', { length: 255 }),
+  // 最终服务此请求的 Provider（便于快速查询）
   providerId: uuid('provider_id').references(() => providers.id),
   providerName: varchar('provider_name', { length: 255 }),
   status: varchar('status', { length: 20 }).notNull().$type<'success' | 'failure' | 'pending'>(),
@@ -150,20 +157,11 @@ export const requestLogs = pgTable('request_logs', {
   inputTokens: integer('input_tokens').default(0).notNull(),
   outputTokens: integer('output_tokens').default(0).notNull(),
   totalTokens: integer('total_tokens').default(0).notNull(),
+  // 客户端视角的请求/响应（不含 Provider 内部数据，Provider 数据存 requestAttempts）
   requestHeaders: jsonb('request_headers'),
-  // 请求链路追踪
-  requestBody: jsonb('request_body'),                         // 客户端原始请求
-  standardRequestBody: jsonb('standard_request_body'),        // 标准格式请求
-  transformedRequestBody: jsonb('transformed_request_body'),  // Provider 请求
-  // 请求头链路追踪
-  providerRequestHeaders: jsonb('provider_request_headers'),   // Provider 请求头
-  // 响应头链路追踪
-  providerResponseHeaders: jsonb('provider_response_headers'), // Provider 响应头
-  clientResponseHeaders: jsonb('client_response_headers'),     // 客户端响应头
-  // 响应链路追踪
-  providerResponseBody: jsonb('provider_response_body'),      // Provider 原始响应
-  standardResponseBody: jsonb('standard_response_body'),      // 标准格式（可选）
-  responseBody: jsonb('response_body'),                       // 客户端最终响应
+  requestBody: jsonb('request_body'),
+  clientResponseHeaders: jsonb('client_response_headers'),
+  responseBody: jsonb('response_body'),
   errorMessage: text('error_message'),
   errorType: varchar('error_type', { length: 50 }),
   clientIp: varchar('client_ip', { length: 45 }),
@@ -174,35 +172,21 @@ export const requestLogs = pgTable('request_logs', {
   streaming: varchar('streaming', { length: 10 }).default('false').notNull(),
   incomingProtocol: varchar('incoming_protocol', { length: 50 }),
   targetProtocol: varchar('target_protocol', { length: 50 }),
-  // 新增字段：标记系统
-  metadata: jsonb('metadata').$type<LogMetadata>(),              // 灵活的元数据标记
-  toolCallsCount: integer('tool_calls_count').default(0),        // 工具调用计数
-  retryCount: integer('retry_count').default(0).notNull(),       // 重试次数
-  conversationId: uuid('conversation_id'),                       // 对话追踪 ID
-  
-  // Phase 1 新增字段：流状态管理
+  metadata: jsonb('metadata').$type<LogMetadata>(),
+  toolCallsCount: integer('tool_calls_count').default(0),
+  retryCount: integer('retry_count').default(0).notNull(),
+  conversationId: uuid('conversation_id'),
   streamStatus: varchar('stream_status', { length: 20 })
     .$type<'pending' | 'streaming' | 'completed' | 'failed' | 'aborted'>()
     .default('pending'),
-  
-  // 流处理进度
   streamProgress: jsonb('stream_progress').$type<StreamProgress>(),
-  
-  // 完整的流内容
   streamContent: jsonb('stream_content').$type<StreamContent>(),
-  
-  // 时间戳
-  // 使用 $defaultFn 替代 defaultNow()，避免 PGlite 的 NOW() 返回本地时间导致时区偏差
   streamStartedAt: timestamp('stream_started_at').$defaultFn(() => new Date()),
   streamCompletedAt: timestamp('stream_completed_at').$defaultFn(() => new Date()),
   lastUpdatedAt: timestamp('last_updated_at').$defaultFn(() => new Date()),
-
-  // 完成标记（用于查询优化）
   isComplete: boolean('is_complete').default(false).notNull(),
-
   createdAt: timestamp('created_at').$defaultFn(() => new Date()).notNull(),
 }, (table) => ({
-  // 添加常用查询索引
   virtualKeyIdIdx: index('idx_request_logs_virtual_key_id').on(table.virtualKeyId),
   modelNameIdx: index('idx_request_logs_model_name').on(table.modelName),
   originalModelNameIdx: index('idx_request_logs_original_model_name').on(table.originalModelName),
@@ -210,21 +194,53 @@ export const requestLogs = pgTable('request_logs', {
   statusIdx: index('idx_request_logs_status').on(table.status),
   createdAtIdx: index('idx_request_logs_created_at').on(table.createdAt),
   streamingIdx: index('idx_request_logs_streaming').on(table.streaming),
-  // 新增索引：标记系统
   toolCallsCountIdx: index('idx_request_logs_tool_calls_count').on(table.toolCallsCount),
   conversationIdIdx: index('idx_request_logs_conversation_id').on(table.conversationId),
   statusCreatedAtIdx: index('idx_request_logs_status_created_at').on(table.status, table.createdAt),
-  
-  // Phase 1 新增索引：流状态追踪
   streamStatusIdx: index('idx_request_logs_stream_status').on(table.streamStatus),
   isCompleteIdx: index('idx_request_logs_is_complete').on(table.isComplete),
-  streamStatusIsCompleteIdx: index('idx_stream_status_complete')
-    .on(table.streamStatus, table.isComplete),
+  streamStatusIsCompleteIdx: index('idx_stream_status_complete').on(table.streamStatus, table.isComplete),
   lastUpdatedAtIdx: index('idx_request_logs_last_updated_at').on(table.lastUpdatedAt),
+  requestGroupIdIdx: index('idx_request_logs_request_group_id').on(table.requestGroupId),
+}));
+
+/**
+ * Provider 尝试记录表（每次 Failover 候选各一条）
+ * 存储 Provider 视角的请求/响应数据，与 requestLogs 通过 requestGroupId 关联
+ */
+export const requestAttempts = pgTable('request_attempts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  requestLogId: uuid('request_log_id').references(() => requestLogs.id).notNull(),
+  requestGroupId: uuid('request_group_id').notNull(),
+  candidateIndex: integer('candidate_index').default(0).notNull(),
+  instanceId: uuid('instance_id'),
+  providerId: uuid('provider_id').references(() => providers.id),
+  providerName: varchar('provider_name', { length: 255 }),
+  targetProtocol: varchar('target_protocol', { length: 50 }),
+  status: varchar('status', { length: 20 }).$type<'success' | 'failure' | 'pending'>().default('pending').notNull(),
+  statusCode: integer('status_code'),
+  failoverReason: varchar('failover_reason', { length: 20 }).$type<FailoverReason>(),
+  retryCount: integer('retry_count').default(0).notNull(),
+  ttfbMs: integer('ttfb_ms'),
+  durationMs: integer('duration_ms'),
+  // Provider 视角的请求/响应体
+  transformedRequestBody: jsonb('transformed_request_body'),
+  providerRequestHeaders: jsonb('provider_request_headers'),
+  providerResponseBody: jsonb('provider_response_body'),
+  providerResponseHeaders: jsonb('provider_response_headers'),
+  createdAt: timestamp('created_at').$defaultFn(() => new Date()).notNull(),
+}, (table) => ({
+  requestLogIdIdx: index('idx_request_attempts_log_id').on(table.requestLogId),
+  requestGroupIdIdx: index('idx_request_attempts_group_id').on(table.requestGroupId),
+  providerIdIdx: index('idx_request_attempts_provider_id').on(table.providerId),
+  statusIdx: index('idx_request_attempts_status').on(table.status),
+  candidateIndexIdx: index('idx_request_attempts_candidate_index').on(table.requestGroupId, table.candidateIndex),
 }));
 
 export type RequestLog = typeof requestLogs.$inferSelect;
 export type NewRequestLog = typeof requestLogs.$inferInsert;
+export type RequestAttempt = typeof requestAttempts.$inferSelect;
+export type NewRequestAttempt = typeof requestAttempts.$inferInsert;
 
 /**
  * 客户端请求的模型名称记录表

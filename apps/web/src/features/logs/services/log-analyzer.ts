@@ -39,7 +39,6 @@ export async function buildAnalysisStream(logId: string, indices?: number[]): Pr
   if (!log) throw new AnalyzeLogError('Log not found', 404);
 
   const rawMessages =
-    (log.standardRequestBody as Record<string, unknown> | null)?.messages ??
     (log.requestBody as Record<string, unknown> | null)?.messages;
   if (!Array.isArray(rawMessages) || rawMessages.length === 0) {
     throw new AnalyzeLogError('No messages in this log', 400);

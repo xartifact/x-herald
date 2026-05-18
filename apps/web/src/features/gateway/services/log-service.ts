@@ -1,15 +1,16 @@
-import { eq, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 
 import { IS_PRODUCTION } from '@/core/config/env';
 import { getDatabase } from '@/core/db/client';
 import logger from '@/core/lib/logger';
 import type { VirtualKey } from '@/features/keys/db';
-import { requestLogs } from '@/features/logs/db';
+import { requestLogs, requestAttempts } from '@/features/logs/db';
+import type { FailoverReason } from '@/features/logs/db';
 
 import { extractMetadata } from './metadata-extractor';
 import { estimateUsageFromContent } from './token-estimator';
 
-export type { StreamLogParams } from './log-stream';
+export type { StreamLogParams, LogStartResult, FinalizeStreamParams } from './log-stream';
 export {
   logStreamStart,
   logRequestStart,
@@ -18,6 +19,7 @@ export {
   finalizeStreamLog,
   markStreamFailed,
   markStreamAborted,
+  markAttemptFailed,
 } from './log-stream';
 
 export interface LogRequestParams {
@@ -36,12 +38,10 @@ export interface LogRequestParams {
   requestHeaders?: Record<string, string>;
   providerRequestHeaders?: Record<string, string>;
   requestBody?: unknown;
-  standardRequestBody?: unknown;
   transformedRequestBody?: unknown;
   providerResponseHeaders?: Record<string, string>;
   clientResponseHeaders?: Record<string, string>;
   providerResponseBody?: unknown;
-  standardResponseBody?: unknown;
   responseBody?: unknown;
   errorMessage?: string;
   errorType?: string;
@@ -58,6 +58,9 @@ export interface LogRequestParams {
   organizationId?: string;
   tags?: string[];
   logId?: string;
+  attemptId?: string;
+  requestGroupId?: string;
+  candidateIndex?: number;
   gatewayOverheadMs?: number;
   providerTtfbMs?: number;
   streamDurationMs?: number;
@@ -79,6 +82,9 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyRecord = Record<string, any>;
+
 interface LogData {
   metadata: ReturnType<typeof extractMetadata>;
   inputTokens: number;
@@ -88,8 +94,8 @@ interface LogData {
 
 function buildLogData(params: LogRequestParams): LogData {
   const metadata = extractMetadata({
-    requestBody: params.requestBody, standardRequestBody: params.standardRequestBody,
-    standardResponseBody: params.standardResponseBody, responseBody: params.responseBody,
+    requestBody: params.requestBody,
+    responseBody: params.responseBody,
     errorMessage: params.errorMessage, errorType: params.errorType, statusCode: params.statusCode,
     responseTimeMs: params.responseTimeMs, gatewayOverheadMs: params.gatewayOverheadMs,
     providerTtfbMs: params.providerTtfbMs, streamDurationMs: params.streamDurationMs,
@@ -114,22 +120,20 @@ function buildLogData(params: LogRequestParams): LogData {
   return { metadata, inputTokens, outputTokens, toolCallsCount };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyRecord = Record<string, any>;
-
-function buildInsertValues(params: LogRequestParams, { metadata, inputTokens, outputTokens, toolCallsCount }: LogData): AnyRecord {
+function buildLogInsertValues(params: LogRequestParams, { metadata, inputTokens, outputTokens, toolCallsCount }: LogData): AnyRecord {
   return {
+    requestGroupId: params.requestGroupId ?? crypto.randomUUID(),
+    candidateIndex: params.candidateIndex ?? 0,
     virtualKeyId: params.virtualKey.id, virtualKeyName: params.virtualKey.name,
     modelName: params.modelName, originalModelName: params.originalModelName,
     providerId: params.providerId, providerName: params.providerName,
     status: params.status, statusCode: params.statusCode, responseTimeMs: params.responseTimeMs,
     inputTokens, outputTokens, totalTokens: inputTokens + outputTokens,
-    requestHeaders: params.requestHeaders, providerRequestHeaders: params.providerRequestHeaders,
-    requestBody: params.requestBody, standardRequestBody: params.standardRequestBody,
-    transformedRequestBody: params.transformedRequestBody,
-    providerResponseHeaders: params.providerResponseHeaders, clientResponseHeaders: params.clientResponseHeaders,
-    providerResponseBody: params.providerResponseBody, standardResponseBody: params.standardResponseBody,
-    responseBody: params.responseBody, errorMessage: params.errorMessage, errorType: params.errorType,
+    requestHeaders: params.requestHeaders,
+    requestBody: params.requestBody,
+    clientResponseHeaders: params.clientResponseHeaders,
+    responseBody: params.responseBody,
+    errorMessage: params.errorMessage, errorType: params.errorType,
     clientIp: params.clientIp, userAgent: params.userAgent, clientType: params.clientType,
     requestPath: params.requestPath, requestMethod: params.requestMethod,
     streaming: params.streaming ? 'true' : 'false',
@@ -150,26 +154,57 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
     const db = getDatabase();
 
     if (params.logId) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await db.update(requestLogs).set({
         status: params.status, statusCode: params.statusCode, responseTimeMs: params.responseTimeMs,
         inputTokens, outputTokens, totalTokens: inputTokens + outputTokens,
         streaming: params.streaming ? 'true' : 'false',
-        providerResponseHeaders: params.providerResponseHeaders as AnyRecord,
         clientResponseHeaders: params.clientResponseHeaders as AnyRecord,
-        providerResponseBody: params.providerResponseBody as AnyRecord,
-        standardResponseBody: params.standardResponseBody as AnyRecord,
         responseBody: params.responseBody as AnyRecord,
         errorMessage: params.errorMessage, errorType: params.errorType,
         isComplete: true, streamStatus: 'completed', streamCompletedAt: new Date(), lastUpdatedAt: new Date(),
         metadata: metadata as AnyRecord, toolCallsCount, retryCount: params.retryCount ?? 0,
       }).where(eq(requestLogs.id, params.logId));
+
+      if (params.attemptId && !params.attemptId.startsWith('temp-')) {
+        await db.update(requestAttempts).set({
+          status: params.status,
+          statusCode: params.statusCode,
+          durationMs: params.responseTimeMs,
+          ...(params.providerTtfbMs !== undefined && { ttfbMs: params.providerTtfbMs }),
+          retryCount: params.retryCount ?? 0,
+          providerResponseBody: params.providerResponseBody as AnyRecord,
+          providerResponseHeaders: params.providerResponseHeaders as AnyRecord,
+        }).where(eq(requestAttempts.id, params.attemptId));
+      }
+
       logger.debug({ logId: params.logId, modelName: params.modelName, status: params.status }, 'Request log updated');
       return;
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await db.insert(requestLogs).values(buildInsertValues(params, logData) as any);
+    const logResult = await (db.insert(requestLogs) as any).values(buildLogInsertValues(params, logData)).returning({ id: requestLogs.id });
+    const logId = logResult[0].id;
+
+    await db.insert(requestAttempts).values({
+      requestLogId: logId,
+      requestGroupId: params.requestGroupId ?? logId,
+      candidateIndex: params.candidateIndex ?? 0,
+      instanceId: params.routingTrace?.instanceId,
+      providerId: params.providerId,
+      providerName: params.providerName,
+      targetProtocol: params.targetProtocol,
+      status: params.status,
+      statusCode: params.statusCode,
+      durationMs: params.responseTimeMs,
+      ...(params.providerTtfbMs !== undefined && { ttfbMs: params.providerTtfbMs }),
+      retryCount: params.retryCount ?? 0,
+      transformedRequestBody: params.transformedRequestBody as AnyRecord,
+      providerRequestHeaders: params.providerRequestHeaders as AnyRecord,
+      providerResponseBody: params.providerResponseBody as AnyRecord,
+      providerResponseHeaders: params.providerResponseHeaders as AnyRecord,
+      createdAt: new Date(),
+    });
+
     const { recordClientRequestedModel } = await import('@/features/logs/services/client-model-recorder');
     await recordClientRequestedModel(params.originalModelName || params.modelName);
     logger.debug({ modelName: params.modelName, status: params.status }, 'Request logged successfully');
@@ -180,33 +215,47 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
   }
 }
 
-export async function markLogAsFailed(
-  logId: string,
-  statusCode: number,
-  errorMessage: string,
-  retryCount?: number,
-  responseTimeMs?: number,
-  providerResponseBody?: unknown,
-  providerTtfbMs?: number,
-): Promise<void> {
+export async function markLogAsFailed(params: {
+  logId: string;
+  attemptId: string;
+  statusCode: number;
+  errorMessage: string;
+  failoverReason?: FailoverReason;
+  retryCount?: number;
+  responseTimeMs?: number;
+  providerResponseBody?: unknown;
+  providerTtfbMs?: number;
+}): Promise<void> {
+  const { logId, attemptId } = params;
   if (!logId || logId.startsWith('temp-')) return;
   try {
     const db = getDatabase();
     await db.update(requestLogs).set({
       status: 'failure',
-      statusCode,
-      errorMessage,
+      statusCode: params.statusCode,
+      errorMessage: params.errorMessage,
+      failoverReason: params.failoverReason,
       isComplete: true,
       streamStatus: 'failed',
       lastUpdatedAt: new Date(),
-      ...(retryCount !== undefined && { retryCount }),
-      ...(responseTimeMs !== undefined && { responseTimeMs }),
-      ...(providerResponseBody !== undefined && { providerResponseBody }),
-      ...(providerTtfbMs !== undefined && {
-        metadata: sql`jsonb_set(COALESCE(metadata, '{}'::jsonb), '{performance,providerTtfbMs}', to_jsonb(${providerTtfbMs}::real))`,
-      }),
+      ...(params.retryCount !== undefined && { retryCount: params.retryCount }),
+      ...(params.responseTimeMs !== undefined && { responseTimeMs: params.responseTimeMs }),
     }).where(eq(requestLogs.id, logId));
-    logger.debug({ logId, statusCode }, 'Log marked as failed (failover)');
+
+    if (attemptId && !attemptId.startsWith('temp-')) {
+      await db.update(requestAttempts).set({
+        status: 'failure',
+        statusCode: params.statusCode,
+        failoverReason: params.failoverReason,
+        retryCount: params.retryCount ?? 0,
+        ...(params.responseTimeMs !== undefined && { durationMs: params.responseTimeMs }),
+        ...(params.providerTtfbMs !== undefined && { ttfbMs: params.providerTtfbMs }),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ...(params.providerResponseBody !== undefined && { providerResponseBody: params.providerResponseBody as any }),
+      }).where(eq(requestAttempts.id, attemptId));
+    }
+
+    logger.debug({ logId, attemptId, statusCode: params.statusCode }, 'Log marked as failed (failover)');
   } catch (error) {
     logger.warn({ error, logId }, 'Failed to mark log as failed');
   }

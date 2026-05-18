@@ -19,7 +19,8 @@ function buildBaseLogParams(params: ResponseHandlerParams, responseTimeMs: numbe
     requestBody: rawBody, transformedRequestBody: params.transformedBody,
     providerResponseHeaders, clientResponseHeaders: mergedHeaders,
     clientIp, userAgent, requestPath, requestMethod, incomingProtocol, targetProtocol,
-    conversationId: params.conversationId, clientType: params.clientType, logId: params.logId,
+    conversationId: params.conversationId, clientType: params.clientType,
+    logId: params.logId, attemptId: params.attemptId,
     gatewayOverheadMs: preprocessEndTime - startTime, providerTtfbMs: providerTtfbTime - preprocessEndTime,
     retryCount: params.retryCount, routingTrace: params.routingTrace,
   };
@@ -53,7 +54,7 @@ async function handlePassthrough(params: ResponseHandlerParams, response: Respon
   const mergedHeaders = mergeResponseHeaders(getClientNonStreamingHeaders(), providerResponseHeaders);
   const providerResponseData = await parseJsonSafely(response, ctx, provider) as Record<string, unknown>;
   for (const [key, value] of Object.entries(mergedHeaders)) c.header(key, value);
-  await logRequest({ ...buildBaseLogParams(params, responseTimeMs, providerResponseHeaders, mergedHeaders), streaming: false, providerResponseBody: providerResponseData, standardResponseBody: providerResponseData, responseBody: providerResponseData });
+  await logRequest({ ...buildBaseLogParams(params, responseTimeMs, providerResponseHeaders, mergedHeaders), streaming: false, providerResponseBody: providerResponseData, responseBody: providerResponseData });
   if (isMapped && originalModelName && providerResponseData?.model !== undefined) providerResponseData.model = originalModelName;
   return c.json(providerResponseData);
 }
@@ -88,9 +89,9 @@ async function handleTransformed(params: ResponseHandlerParams, response: Respon
 
   await logRequest({
     ...buildBaseLogParams(params, responseTimeMs, providerResponseHeaders, mergedHeaders),
-    streaming: false, standardRequestBody: params.standardRequestBody,
+    streaming: false,
     inputTokens: standardRes.usage?.prompt_tokens, outputTokens: standardRes.usage?.completion_tokens,
-    providerResponseBody: providerResponseData, standardResponseBody: standardRes, responseBody: responseData,
+    providerResponseBody: providerResponseData, responseBody: responseData,
     routingTrace: { ...params.routingTrace, responseModelName: providerResponseData?.model as string | undefined },
   });
 

@@ -35,6 +35,7 @@ function buildStreamTimings(providerTtfbTime: number, collector: StreamResponseC
 
 interface FinalizeContext {
   logId: string
+  attemptId: string
   clientCollector: StreamResponseCollector
   providerCollector: StreamResponseCollector
   standardCollector: StreamResponseCollector
@@ -50,7 +51,7 @@ interface FinalizeContext {
 }
 
 async function finalizeStreamWithLog(ctx: FinalizeContext, status: 'success' | 'failure'): Promise<void> {
-  const { logId, clientCollector, providerCollector, standardCollector, needsTransformation, startTime, preprocessEndTime, providerTtfbTime, mergedHeaders, providerResponseHeaders, params, targetProtocol, incomingProtocol } = ctx;
+  const { logId, attemptId, clientCollector, providerCollector, standardCollector, needsTransformation, startTime, preprocessEndTime, providerTtfbTime, mergedHeaders, providerResponseHeaders, params, targetProtocol, incomingProtocol } = ctx;
   const usage = clientCollector.getUsage();
   const fullContent = clientCollector.getFullContent();
   const providerProgress = providerCollector.getProgress();
@@ -80,16 +81,17 @@ async function finalizeStreamWithLog(ctx: FinalizeContext, status: 'success' | '
   }
 
   await finalizeStreamLogRecord(logId, {
+    attemptId,
     status,
     statusCode: status === 'success' ? 200 : 500,
     startTime,
     inputTokens: usage.inputTokens,
     outputTokens: usage.outputTokens,
     usageEstimated: usage.estimated,
+    providerTtfbMs: providerTtfbTime > 0 ? providerTtfbTime - preprocessEndTime : undefined,
     providerResponseHeaders,
     clientResponseHeaders: mergedHeaders,
     providerResponseBody: { ...(providerCollector.getSummary(targetProtocol) as Record<string, unknown>), streamContent: providerCollector.getFullContent(), streamProgress: providerCollector.getProgress() },
-    standardResponseBody: responseContent,
     responseBody: { ...(clientCollector.getSummary(incomingProtocol) as Record<string, unknown>), streamContent: fullContent, streamProgress: progress },
     streamContent: fullContent,
     streamProgress: progress,
@@ -106,6 +108,7 @@ export async function handleStreamingResponse(params: ResponseHandlerParams): Pr
   const { response, ctx, provider, originalModelName, resolvedModelName, isMapped, startTime, preprocessEndTime, providerTtfbTime, incomingProtocol, targetProtocol } = params;
 
   const logId = params.logId || 'temp-' + Date.now();
+  const attemptId = params.attemptId || 'temp-' + Date.now();
   await upgradeToStreamLog(logId);
 
   logEventBus.emitLog({ event: 'started', logId, modelName: resolvedModelName || originalModelName || 'unknown', originalModelName: originalModelName ?? undefined, providerName: provider.name, virtualKeyName: params.virtualKey.name ?? undefined, startTime, incomingProtocol });
@@ -155,7 +158,7 @@ export async function handleStreamingResponse(params: ResponseHandlerParams): Pr
 
   const mergedHeaders = mergeResponseHeaders(clientResponseHeaders, providerResponseHeaders);
   let isLogFinalized = false;
-  const finalizeCtx: FinalizeContext = { logId, clientCollector, providerCollector, standardCollector, needsTransformation, startTime, preprocessEndTime, providerTtfbTime, mergedHeaders, providerResponseHeaders, params, targetProtocol, incomingProtocol };
+  const finalizeCtx: FinalizeContext = { logId, attemptId, clientCollector, providerCollector, standardCollector, needsTransformation, startTime, preprocessEndTime, providerTtfbTime, mergedHeaders, providerResponseHeaders, params, targetProtocol, incomingProtocol };
 
   const finalizeLog = async (status: 'success' | 'failure' = 'success') => {
     if (isLogFinalized) return;
@@ -164,7 +167,7 @@ export async function handleStreamingResponse(params: ResponseHandlerParams): Pr
       await finalizeStreamWithLog(finalizeCtx, status);
     } catch (error) {
       logger.error({ error, logId }, 'Failed to finalize stream log');
-      await markStreamFailed(logId, { message: error instanceof Error ? error.message : 'Unknown error', type: 'log_finalization_error' });
+      await markStreamFailed(logId, attemptId, { message: error instanceof Error ? error.message : 'Unknown error', type: 'log_finalization_error' });
     }
   };
 
@@ -209,7 +212,7 @@ export async function handleStreamingResponse(params: ResponseHandlerParams): Pr
       logger.info({ logId }, 'Client disconnected, finalizing stream log');
       if (streamIdleTimer) clearTimeout(streamIdleTimer);
       await finalizeLog('failure');
-      await markStreamAborted(logId);
+      await markStreamAborted(logId, attemptId);
       logEventBus.emitLog({ event: 'aborted', logId });
     }, { once: true });
   }

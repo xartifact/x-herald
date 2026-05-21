@@ -1,7 +1,6 @@
 'use client'
 
 import { LogOut } from 'lucide-react'
-import { useLocation } from '@tanstack/react-router'
 
 import { APP_VERSION } from '@x-llm-gateway/shared'
 
@@ -12,8 +11,7 @@ import { NavDesktopDropdowns } from './nav-desktop-dropdowns'
 import { NavMobileMenu, NavMobileSubnav } from './nav-mobile-section'
 
 export default function AdminNav() {
-  const pathname = useLocation().pathname
-  const navigate = useNavigate()
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : ''
 
   const currentLabel = allNavItems.find(
     item => pathname === item.href || pathname.startsWith(item.href + '/')
@@ -38,9 +36,9 @@ export default function AdminNav() {
                 v{APP_VERSION}
               </span>
             )}
-            <Button variant="ghost" size="sm" onClick={() => () => { localStorage.removeItem('admin_token'); window.location.href = '/login' }} disabled={logout.isPending}>
+            <Button variant="ghost" size="sm" onClick={() => { localStorage.removeItem('admin_token'); window.location.href = '/login' }}>
               <LogOut className="mr-2 h-4 w-4" />
-              {logout.isPending ? '退出中...' : '退出'}
+              退出
             </Button>
           </div>
         </div>

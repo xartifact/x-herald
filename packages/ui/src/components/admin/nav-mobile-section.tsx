@@ -2,7 +2,7 @@
 
 import { ChevronDown } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
-import { useLocation } from '@tanstack/react-router'
+
 
 import { cn } from '../../lib/utils'
 import {
@@ -24,7 +24,7 @@ function isItemActive(href: string, pathname: string): boolean {
 }
 
 export function NavMobileMenu() {
-  const pathname = useLocation().pathname
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : ''
 
   return (
     <div className="md:hidden ml-4 flex items-center">
@@ -41,13 +41,13 @@ export function NavMobileMenu() {
               <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">{group.label}</div>
               {group.items.map((item) => (
                 <DropdownMenuItem key={item.href} asChild>
-                  <Link
+                  <a
                     href={item.href}
                     className={cn('flex items-center cursor-pointer', isItemActive(item.href, pathname) && 'bg-primary/10 text-primary')}
                   >
                     {item.icon && <span className="mr-2">{item.icon}</span>}
                     {item.label}
-                  </Link>
+                  </a>
                 </DropdownMenuItem>
               ))}
             </div>
@@ -59,7 +59,7 @@ export function NavMobileMenu() {
 }
 
 export function NavMobileSubnav() {
-  const pathname = useLocation().pathname
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : ''
 
   return (
     <div className="md:hidden border-t bg-gray-50">
@@ -69,7 +69,7 @@ export function NavMobileSubnav() {
             .filter(group => isGroupActive(group, pathname))
             .flatMap(group => group.items)
             .map((item) => (
-              <Link
+              <a
                 key={item.href}
                 href={item.href}
                 className={cn(
@@ -78,7 +78,7 @@ export function NavMobileSubnav() {
                 )}
               >
                 {item.label}
-              </Link>
+              </a>
             ))}
         </div>
       </div>

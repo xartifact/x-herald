@@ -4,7 +4,7 @@ import { useState } from 'react'
 
 import { ChevronDown } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
-import { useLocation } from '@tanstack/react-router'
+
 
 import { cn } from '../../lib/utils'
 import {
@@ -26,7 +26,7 @@ function isItemActive(href: string, pathname: string): boolean {
 }
 
 export function NavDesktopDropdowns() {
-  const pathname = useLocation().pathname
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : ''
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
 
   return (
@@ -54,14 +54,14 @@ export function NavDesktopDropdowns() {
           <DropdownMenuContent align="start" className="w-48">
             {group.items.map((item) => (
               <DropdownMenuItem key={item.href} asChild>
-                <Link
+                <a
                   href={item.href}
                   className={cn('flex items-center cursor-pointer', isItemActive(item.href, pathname) && 'bg-primary/10 text-primary')}
                   onClick={() => setOpenDropdown(null)}
                 >
                   {item.icon && <span className="mr-2">{item.icon}</span>}
                   {item.label}
-                </Link>
+                </a>
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>

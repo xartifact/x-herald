@@ -1,8 +1,8 @@
 'use client'
 
 import { ChevronDown } from 'lucide-react'
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { Link } from '@tanstack/react-router'
+import { useLocation } from '@tanstack/react-router'
 
 import { cn } from '../../lib/utils'
 import {
@@ -24,7 +24,7 @@ function isItemActive(href: string, pathname: string): boolean {
 }
 
 export function NavMobileMenu() {
-  const pathname = usePathname()
+  const pathname = useLocation().pathname
 
   return (
     <div className="md:hidden ml-4 flex items-center">
@@ -59,7 +59,7 @@ export function NavMobileMenu() {
 }
 
 export function NavMobileSubnav() {
-  const pathname = usePathname()
+  const pathname = useLocation().pathname
 
   return (
     <div className="md:hidden border-t bg-gray-50">

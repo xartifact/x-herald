@@ -3,8 +3,8 @@
 import { useState } from 'react'
 
 import { ChevronDown } from 'lucide-react'
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { Link } from '@tanstack/react-router'
+import { useLocation } from '@tanstack/react-router'
 
 import { cn } from '../../lib/utils'
 import {
@@ -26,7 +26,7 @@ function isItemActive(href: string, pathname: string): boolean {
 }
 
 export function NavDesktopDropdowns() {
-  const pathname = usePathname()
+  const pathname = useLocation().pathname
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
 
   return (

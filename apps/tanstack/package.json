@@ -1,0 +1,34 @@
+{
+  "name": "@x-llm-gateway/tanstack",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@tanstack/react-router": "^1.170.6",
+    "@tanstack/react-query": "^5.90.20",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "@x-llm-gateway/shared": "workspace:*",
+    "@x-llm-gateway/engine": "workspace:*",
+    "@x-llm-gateway/ui": "workspace:*",
+    "lucide-react": "^0.563.0",
+    "sonner": "^2.0.0",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.2.0",
+    "class-variance-authority": "^0.7.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.3.3",
+    "vite": "^6.0.0",
+    "@vitejs/plugin-react": "^4.0.0",
+    "tailwindcss": "^4.0.0",
+    "@tailwindcss/vite": "^4.0.0"
+  }
+}

@@ -31,7 +31,7 @@ export function useProviderPage() {
   const instanceState = useProviderInstanceState()
 
   const form = useForm<ProviderFormData>({
-    resolver: zodResolver(providerSchema),
+    resolver: zodResolver(providerSchema as any),
     defaultValues: {
       name: '',
       apiKey: '',

@@ -9,7 +9,7 @@ export { modelGroups, modelInstances, modelInstancesRelations, modelGroupMembers
 export { virtualKeys, type VirtualKey, type NewVirtualKey } from "../features/keys/db";
 export { requestLogs, requestAttempts, clientRequestedModels, modelRequestStats, type LogMetadata, type FailoverReason, type StreamProgress, type StreamContent } from "../features/logs/db";
 export { healthTargets, healthRuns } from "../features/health/db";
-export { gatewayConfigs, type GatewayConfig, type NewGatewayConfig } from "../features/gateway-config/db";
+export { gatewayConfigs, type NewGatewayConfig } from "../features/gateway-config/db";
 export { circuitBreakerEvents } from "../features/circuit-breaker/db";
 export { modelRoutes, modelRoutesRelations, accessModels } from "../features/model-groups/db";
 

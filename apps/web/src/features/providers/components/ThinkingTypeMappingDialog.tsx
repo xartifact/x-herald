@@ -28,7 +28,7 @@ export function ThinkingTypeMappingDialog({ providerId, providerName, open, onOp
   const updateConfig = useUpdateProviderThinkingConfig()
 
   const form = useForm<MappingFormData>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchema as any),
     defaultValues: { mappings: [], syntheticThinking: 'strip' },
   })
 

@@ -45,7 +45,7 @@ export function useKeyPage() {
   const resetKey = useResetKey()
 
   const form = useForm<KeyFormSchema>({
-    resolver: zodResolver(keySchema),
+    resolver: zodResolver(keySchema as any),
     defaultValues: {
       name: '',
       allowedModels: '',

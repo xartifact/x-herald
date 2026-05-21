@@ -9,3 +9,6 @@ export {
   hasTransformer,
   registerDefaultTransformers,
 } from './gateway/transformer';
+
+// db (server-only exports)
+export { seedSystemData } from './db/seed';

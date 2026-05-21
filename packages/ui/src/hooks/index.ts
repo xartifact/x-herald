@@ -1,4 +1,5 @@
 'use client';
+'use client';
 export type { LogMetadata, LogListItem, Log, LogStats, LogStorage, LogsListResponse, LogResponse, LogStatsResponse, LogStorageResponse, CleanupResponse, ClientModelStat, ClientModelStatsResponse, ProviderStat, ProviderStatsResponse, KeyStat } from './log-types'
 export { logKeys } from './log-types'
 

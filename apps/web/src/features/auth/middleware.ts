@@ -1,8 +1,8 @@
 import type { Context, Next } from 'hono';
 import { verify } from 'hono/jwt';
 
-import { loadConfig } from '@/core/config';
-import rootLogger from '@/core/lib/logger';
+import { loadConfig } from '@x-llm-gateway/engine';
+import { rootLogger } from '@x-llm-gateway/engine';
 
 const logger = rootLogger.child({ module: 'auth' });
 

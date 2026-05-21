@@ -1,5 +1,5 @@
-import rootLogger from '@/core/lib/logger';
-import type { LogMetadata } from '@/features/logs/db';
+import { rootLogger } from '@x-llm-gateway/engine';
+import type { LogMetadata } from '@x-llm-gateway/engine';
 
 import { extractMessageSequence, extractToolCalls } from './message-extractor';
 import { extractConversationContext, extractContentTypes, extractRequestFeatures } from './content-extractor';

@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 
-import type { VirtualKey } from '@/features/keys/db';
+import type { VirtualKey } from '@x-llm-gateway/engine';
 
 import { fetchAccessibleModels } from '../services/model-list';
 

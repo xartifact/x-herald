@@ -1,6 +1,6 @@
 'use client'
 
-import { cn } from '@/core/lib/utils'
+import { cn } from '@x-llm-gateway/ui'
 
 export interface LatencyTimings {
   gatewayOverheadMs?: number | null

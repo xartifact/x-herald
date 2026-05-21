@@ -1,4 +1,4 @@
-import logger from '@/core/lib/logger';
+import { logger } from '@x-llm-gateway/engine';
 
 import { ensureMetricsTable } from './ensure-table';
 import { aggregateBucket, aggregateRecentBuckets, alignToBucket } from './services/snapshot-aggregator';

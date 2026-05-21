@@ -2,8 +2,8 @@ import crypto from 'crypto'
 
 import { desc, eq } from 'drizzle-orm'
 
-import { getDatabase } from '@/core/db/client'
-import rootLogger from '@/core/lib/logger'
+import { getDatabase } from '@x-llm-gateway/engine'
+import { rootLogger } from '@x-llm-gateway/engine'
 import { invalidateVirtualKeyCache } from '@/features/gateway/middleware/virtual-key'
 
 import { virtualKeys, type NewVirtualKey } from './db'

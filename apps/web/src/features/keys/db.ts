@@ -18,4 +18,4 @@ export type VirtualKey = typeof virtualKeys.$inferSelect;
 export type NewVirtualKey = typeof virtualKeys.$inferInsert;
 
 // Request Logs (从 logs feature 引用)
-export { requestLogs } from '@/features/logs/db';
+export { requestLogs } from '@x-llm-gateway/engine';

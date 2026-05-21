@@ -1,7 +1,7 @@
 import { Hono, type Context } from 'hono';
 
-import logger from '@/core/lib/logger';
-import type { VirtualKey } from '@/features/keys/db';
+import { logger } from '@x-llm-gateway/engine';
+import type { VirtualKey } from '@x-llm-gateway/engine';
 
 import { handleOpenAIChatCompletion } from '../handlers/openai/chat-completion-handler';
 import { handleResponsesAPI } from '../handlers/openai/responses-handler';

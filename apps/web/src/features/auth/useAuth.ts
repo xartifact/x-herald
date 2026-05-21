@@ -6,7 +6,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
-import { get, post } from '@/core/lib/api-client'
+import { get, post } from '@x-llm-gateway/ui'
 
 import type { AuthResponse, AuthMeResponse } from './types'
 

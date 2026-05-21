@@ -6,7 +6,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@x-llm-gateway/ui'
 import type { LogListItem } from '@/hooks/use-logs'
 
 import { LogTableRow } from './log-table-row'

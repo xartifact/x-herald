@@ -1,4 +1,4 @@
-import type { StreamProgress, StreamContent } from '@/features/logs/db';
+import type { StreamProgress, StreamContent } from '@x-llm-gateway/engine';
 
 import { estimateTokens } from '../token-estimator';
 

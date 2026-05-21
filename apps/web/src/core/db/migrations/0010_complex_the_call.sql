@@ -1,1 +1,0 @@
-ALTER TABLE "model_request_stats" ALTER COLUMN "last_request_at" SET DEFAULT now();

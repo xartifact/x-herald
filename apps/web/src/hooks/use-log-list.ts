@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
-import { get, del, post } from '@/core/lib/api-client'
+import { get, del, post } from '@x-llm-gateway/ui'
 
 import { logKeys } from './log-types'
 import type { CleanupResponse, LogsListResponse } from './log-types'

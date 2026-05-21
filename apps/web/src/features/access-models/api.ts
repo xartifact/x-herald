@@ -1,10 +1,10 @@
 import { eq, and } from 'drizzle-orm';
 import { Hono } from 'hono';
 
-import { getDatabase } from '@/core/db/client';
-import rootLogger from '@/core/lib/logger';
+import { getDatabase } from '@x-llm-gateway/engine';
+import { rootLogger } from '@x-llm-gateway/engine';
 import { authMiddleware } from '@/features/auth/middleware';
-import { accessModels } from '@/features/model-groups/db';
+import { accessModels } from '@x-llm-gateway/engine';
 
 import { CATCHALL_VM_NAME } from './constants';
 

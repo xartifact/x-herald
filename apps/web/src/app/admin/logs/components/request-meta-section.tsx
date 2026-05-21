@@ -1,6 +1,6 @@
 import { ChevronRight } from 'lucide-react'
 
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@x-llm-gateway/ui'
 import type { Log } from '@/hooks/use-logs'
 
 import { InfoRow, Section } from './log-info-row'

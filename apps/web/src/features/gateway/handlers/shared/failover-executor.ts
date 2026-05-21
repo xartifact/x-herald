@@ -1,6 +1,6 @@
 import type { Context } from 'hono';
 
-import type { FailoverReason } from '@/features/logs/db';
+import type { FailoverReason } from '@x-llm-gateway/engine';
 
 import type { AbortManager } from './abort-manager';
 import { CONNECT_TIMEOUT_MS, calculateTtfbTimeout } from './constants';

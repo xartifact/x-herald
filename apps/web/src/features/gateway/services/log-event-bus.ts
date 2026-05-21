@@ -1,6 +1,6 @@
 import EventEmitter from 'node:events';
 
-import logger from '@/core/lib/logger';
+import { logger } from '@x-llm-gateway/engine';
 
 export type LiveStreamEvent =
   | {

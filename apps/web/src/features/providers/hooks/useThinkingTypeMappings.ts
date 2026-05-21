@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { get, put } from '@/core/lib/api-client';
+import { get, put } from '@x-llm-gateway/ui';
 
 import type { SyntheticThinkingStrategy } from '../db';
 import type { ThinkingTypeMapping } from '../types';

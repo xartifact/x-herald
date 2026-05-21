@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import { IS_DEVELOPMENT } from '@/core/config/env';
+import { IS_DEVELOPMENT } from '@x-llm-gateway/engine';
 import { Button } from '@x-llm-gateway/ui';
 
 import RenderMonitor from './RenderMonitor';

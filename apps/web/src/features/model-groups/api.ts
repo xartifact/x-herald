@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 
-import rootLogger from '@/core/lib/logger';
+import { rootLogger } from '@x-llm-gateway/engine';
 import { authMiddleware } from '@/features/auth/middleware';
 import { modelGroupRouter } from '@/features/gateway/services/model-group-router';
 

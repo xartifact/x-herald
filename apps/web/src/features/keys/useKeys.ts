@@ -5,7 +5,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
-import { get, post, put, del } from '@/core/lib/api-client'
+import { get, post, put, del } from '@x-llm-gateway/ui'
 
 import type { VirtualKey } from './types'
 

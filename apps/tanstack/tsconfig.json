@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "jsx": "react-jsx",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "types": ["vinxi/types/client"],
+    "paths": {
+      "~/*": ["./app/*"],
+      "@x-llm-gateway/shared": ["../../packages/shared/src"],
+      "@x-llm-gateway/engine": ["../../packages/engine/src"],
+      "@x-llm-gateway/ui": ["../../packages/ui/src"]
+    }
+  },
+  "include": ["app", "app.config.ts"]
+}

@@ -1,18 +1,18 @@
 import { eq, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 
-import { getDatabase } from '@/core/db/client';
-import rootLogger from '@/core/lib/logger';
+import { getDatabase } from '@x-llm-gateway/engine';
+import { rootLogger } from '@x-llm-gateway/engine';
 import { authMiddleware } from '@/features/auth/middleware';
 import { CB_CONFIG_KEY, configureCircuitBreaker } from '@/features/gateway/services/circuit-breaker';
 import { getConfig, setConfig } from '@/features/gateway-config/service';
-import { modelGroups, modelGroupMemberships } from '@/features/model-groups/db';
+import { modelGroups, modelGroupMemberships } from '@x-llm-gateway/engine';
 
 const logger = rootLogger.child({ module: 'settings' });
 
 /** @deprecated 请使用 CONFIG_KEY_AI_MODEL */
 export const CONFIG_KEY_DEFAULT_ANALYSIS_MODEL = 'AI_MODEL_GROUP_ID';
-export { CONFIG_KEY_AI_MODEL } from '@/core/lib/ai-caller';
+export { CONFIG_KEY_AI_MODEL } from '@x-llm-gateway/engine';
 
 const DEFAULT_CB_CONFIG = {
   failureThreshold: 3,

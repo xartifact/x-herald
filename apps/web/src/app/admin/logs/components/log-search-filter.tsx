@@ -2,19 +2,19 @@
 
 import { Search, RefreshCw } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { Button } from '@x-llm-gateway/ui'
+import { Card, CardContent } from '@x-llm-gateway/ui'
+import { Input } from '@x-llm-gateway/ui'
+import { Label } from '@x-llm-gateway/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
-import { cn } from '@/core/lib/utils'
+} from '@x-llm-gateway/ui'
+import { Switch } from '@x-llm-gateway/ui'
+import { cn } from '@x-llm-gateway/ui'
 import { CLIENT_REGISTRY } from '@/features/gateway/services/client-identifier'
 
 interface LogSearchFilterProps {

@@ -1,9 +1,9 @@
 import { eq, and, ne, sql } from 'drizzle-orm';
 
-import { getDatabase } from '@/core/db/client';
+import { getDatabase } from '@x-llm-gateway/engine';
 import { CATCHALL_VM_NAME } from '@/features/access-models/constants';
-import type { VirtualKey } from '@/features/keys/db';
-import { modelGroups, accessModels, modelRoutes } from '@/features/model-groups/db';
+import type { VirtualKey } from '@x-llm-gateway/engine';
+import { modelGroups, accessModels, modelRoutes } from '@x-llm-gateway/engine';
 
 export interface ModelCapabilities {
   streaming: boolean;

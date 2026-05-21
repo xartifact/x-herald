@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
 import { sign, verify } from 'hono/jwt';
 
-import { loadConfig } from '@/core/config';
-import logger from '@/core/lib/logger';
+import { loadConfig } from '@x-llm-gateway/engine';
+import { logger } from '@x-llm-gateway/engine';
 
 const authRoutes = new Hono();
 const config = loadConfig();

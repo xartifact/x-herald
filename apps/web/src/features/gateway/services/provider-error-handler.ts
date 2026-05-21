@@ -1,6 +1,6 @@
 import type { Context } from 'hono';
 
-import type { VirtualKey } from '@/features/keys/db';
+import type { VirtualKey } from '@x-llm-gateway/engine';
 
 import { normalizeProviderErrorMessage, parseProviderError, extractProviderResponseHeaders } from './error-classifier';
 import { logRequest } from './log-service';

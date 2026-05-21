@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 
-import { Button } from '@/components/ui/button'
-import type { LogMetadata } from '@/features/logs/db'
+import { Button } from '@x-llm-gateway/ui'
+import type { LogMetadata } from '@x-llm-gateway/engine'
 
 import { TimelineMessageCard } from './timeline-message-card'
 

@@ -2,8 +2,8 @@
 
 import { BarChart3, Clock, Database, Zap } from 'lucide-react'
 
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@x-llm-gateway/ui'
+import { Card, CardContent, CardHeader, CardTitle } from '@x-llm-gateway/ui'
 import { CLIENT_REGISTRY } from '@/features/gateway/services/client-identifier'
 import type { LogStats } from '@/hooks/use-logs'
 import type { LogStorage } from '@/hooks/use-logs'

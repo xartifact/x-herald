@@ -1,4 +1,4 @@
-import logger from '@/core/lib/logger';
+import { logger } from '@x-llm-gateway/engine';
 
 export const CB_CONFIG_KEY = 'CIRCUIT_BREAKER_CONFIG';
 
@@ -33,7 +33,7 @@ export function refreshConfigIfStale(): void {
   if (now - configLoadedAt < CONFIG_CACHE_TTL) return;
   configLoadedAt = now;
 
-  import('@/features/gateway-config/service')
+  import('@x-llm-gateway/engine')
     .then(({ getConfig }) => getConfig<CircuitBreakerSettings | null>(CB_CONFIG_KEY, null))
     .then((stored) => { if (stored) runtimeConfig = stored; })
     .catch(() => {});
@@ -76,10 +76,10 @@ export function persistEvent(
   meta: CircuitBreakerMeta,
   tripCount?: number,
 ): void {
-  import('@/core/db/client')
+  import('@x-llm-gateway/engine')
     .then(({ getDatabase }) => {
       const db = getDatabase();
-      return import('@/features/circuit-breaker/db').then(({ circuitBreakerEvents }) =>
+      return import('@x-llm-gateway/engine').then(({ circuitBreakerEvents }) =>
         db.insert(circuitBreakerEvents).values({
           instanceId,
           instanceName: meta.instanceName,

@@ -1,8 +1,8 @@
 import { and, eq, gt, desc } from 'drizzle-orm';
 
-import { getDatabase } from '@/core/db/client';
-import logger from '@/core/lib/logger';
-import { circuitBreakerEvents } from '@/features/circuit-breaker/db';
+import { getDatabase } from '@x-llm-gateway/engine';
+import { logger } from '@x-llm-gateway/engine';
+import { circuitBreakerEvents } from '@x-llm-gateway/engine';
 
 import {
   runtimeConfig,

@@ -4,8 +4,8 @@ import { useState } from 'react'
 
 import { Copy, Check } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
-import { cn } from '@/core/lib/utils'
+import { Button } from '@x-llm-gateway/ui'
+import { cn } from '@x-llm-gateway/ui'
 
 interface InfoRowProps {
   label: string

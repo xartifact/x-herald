@@ -1,8 +1,8 @@
 'use client'
 
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ScrollArea } from '@x-llm-gateway/ui'
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@x-llm-gateway/ui'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@x-llm-gateway/ui'
 import type { Log } from '@/hooks/use-logs'
 
 import { LogSheetStatusBar } from './LogSheetStatusBar'

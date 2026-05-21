@@ -1,4 +1,4 @@
-import logger from '@/core/lib/logger';
+import { logger } from '@x-llm-gateway/engine';
 
 export interface RetryConfig {
   maxRetries: number;

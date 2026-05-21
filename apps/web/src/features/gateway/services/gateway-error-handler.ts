@@ -1,6 +1,6 @@
 import type { Context } from 'hono';
 
-import type { VirtualKey } from '@/features/keys/db';
+import type { VirtualKey } from '@x-llm-gateway/engine';
 
 import { logRequest } from './log-service';
 import {

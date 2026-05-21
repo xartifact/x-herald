@@ -1,4 +1,4 @@
-import type { LogMetadata } from '@/features/logs/db';
+import type { LogMetadata } from '@x-llm-gateway/engine';
 
 export function extractMessageSequence(
   requestBody?: unknown,

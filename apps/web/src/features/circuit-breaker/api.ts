@@ -1,7 +1,7 @@
 import { desc, eq, gte, sql, and, count, max } from 'drizzle-orm';
 import { Hono } from 'hono';
 
-import { getDatabase } from '@/core/db/client';
+import { getDatabase } from '@x-llm-gateway/engine';
 import { authMiddleware } from '@/features/auth/middleware';
 import { circuitBreakerRegistry } from '@/features/gateway/services/circuit-breaker';
 

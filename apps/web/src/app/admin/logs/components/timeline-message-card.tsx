@@ -2,11 +2,11 @@ import { useState } from 'react'
 
 import { ChevronDown, ChevronRight } from 'lucide-react'
 
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
-import type { LogMetadata } from '@/features/logs/db'
+import { Badge } from '@x-llm-gateway/ui'
+import { Button } from '@x-llm-gateway/ui'
+import { Card, CardContent, CardHeader } from '@x-llm-gateway/ui'
+import { Checkbox } from '@x-llm-gateway/ui'
+import type { LogMetadata } from '@x-llm-gateway/engine'
 
 import { borderColor, extractMessageText, roleConfig } from './timeline-message-card-utils'
 

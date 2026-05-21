@@ -3,8 +3,8 @@
  * 解析并执行 InstanceConfig 中定义的 parameterTransforms 规则
  */
 
-import logger from '@/core/lib/logger';
-import type { InstanceConfig } from '@/features/model-groups/db';
+import { logger } from '@x-llm-gateway/engine';
+import type { InstanceConfig } from '@x-llm-gateway/engine';
 import type { StandardRequest, TransformerContext } from '@/types';
 
 /**

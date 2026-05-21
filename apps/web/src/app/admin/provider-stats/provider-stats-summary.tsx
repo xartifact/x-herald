@@ -1,4 +1,4 @@
-import { cn } from '@/core/lib/utils'
+import { cn } from '@x-llm-gateway/ui'
 import { Card, CardContent } from '@x-llm-gateway/ui'
 
 import { formatMs, responseTimeColor, successRateColor } from './provider-stats-utils'

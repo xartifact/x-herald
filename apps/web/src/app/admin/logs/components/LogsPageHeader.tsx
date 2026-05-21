@@ -2,7 +2,7 @@
 
 import { Trash2 } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@x-llm-gateway/ui'
 
 interface LogsPageHeaderProps {
   onCleanup: () => void

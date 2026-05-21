@@ -1,4 +1,4 @@
-import logger from '@/core/lib/logger';
+import { logger } from '@x-llm-gateway/engine';
 import type { TransformerContext, StandardRequest } from '@/types';
 
 import { convertToAnthropicMessages } from './converters/message-converter';

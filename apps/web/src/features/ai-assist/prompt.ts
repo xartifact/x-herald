@@ -1,4 +1,4 @@
-import type { InstanceConfig } from '@/features/model-groups/db';
+import type { InstanceConfig } from '@x-llm-gateway/engine';
 
 export interface InstanceContext {
   instanceId: string;

@@ -1,4 +1,4 @@
-import { cn } from '@/core/lib/utils'
+import { cn } from '@x-llm-gateway/ui'
 import type { ClientModelStat } from '@/hooks/use-logs'
 import { Badge } from '@x-llm-gateway/ui'
 

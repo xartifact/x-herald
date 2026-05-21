@@ -2,7 +2,7 @@
 
 import { Suspense } from 'react'
 
-import { Skeleton } from '@/components/ui/skeleton'
+import { Skeleton } from '@x-llm-gateway/ui'
 
 import {
   LogSearchFilter, LogTable, LogPagination, LogDetailSheet,

@@ -1,6 +1,6 @@
 'use client'
 
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@x-llm-gateway/ui'
 import { CLIENT_REGISTRY } from '@/features/gateway/services/client-identifier'
 import type { Log } from '@/hooks/use-logs'
 

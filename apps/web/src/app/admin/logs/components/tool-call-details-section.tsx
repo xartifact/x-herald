@@ -5,10 +5,10 @@ import { useState } from 'react'
 import { ChevronDown, ChevronUp, Wrench } from 'lucide-react'
 
 import { JsonViewer } from '@/components/admin/JsonViewer'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import type { LogMetadata } from '@/features/logs/db'
+import { Badge } from '@x-llm-gateway/ui'
+import { Button } from '@x-llm-gateway/ui'
+import { Card, CardContent, CardHeader } from '@x-llm-gateway/ui'
+import type { LogMetadata } from '@x-llm-gateway/engine'
 
 type ToolCallDetail = NonNullable<NonNullable<LogMetadata['toolCalls']>['details']>[number]
 

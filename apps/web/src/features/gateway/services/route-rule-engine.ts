@@ -5,10 +5,10 @@
 
 import { eq, and, asc, sql } from 'drizzle-orm';
 
-import { getDatabase } from '@/core/db/client';
-import logger from '@/core/lib/logger';
-import { modelRoutes } from '@/features/model-groups/db';
-import type { RouteCondition, ModelRoute } from '@/features/model-groups/db';
+import { getDatabase } from '@x-llm-gateway/engine';
+import { logger } from '@x-llm-gateway/engine';
+import { modelRoutes } from '@x-llm-gateway/engine';
+import type { RouteCondition, ModelRoute } from '@x-llm-gateway/engine';
 
 // 性能上下文：聚合目标路由规则所有实例的最差健康状态
 export interface PerfContext {

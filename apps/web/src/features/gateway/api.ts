@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 
-import logger from '@/core/lib/logger';
-import type { VirtualKey } from '@/features/keys/db';
+import { logger } from '@x-llm-gateway/engine';
+import type { VirtualKey } from '@x-llm-gateway/engine';
 
 import { virtualKeyMiddleware } from './middleware/virtual-key';
 import actuatorRoutes from './routes/actuator';

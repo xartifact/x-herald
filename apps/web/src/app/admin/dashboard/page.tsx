@@ -7,14 +7,14 @@ import { RefreshCw } from 'lucide-react'
 import Link from 'next/link'
 
 import { LogStatsCards } from '@/components/log-stats-cards'
-import { Button } from '@/components/ui/button'
+import { Button } from '@x-llm-gateway/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from '@x-llm-gateway/ui'
 import { useLogStats, useLogStorage, logKeys } from '@/hooks/use-logs'
 
 function getTimeRange(range: string): Record<string, string> {

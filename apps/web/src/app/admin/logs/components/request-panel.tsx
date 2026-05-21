@@ -5,8 +5,8 @@ import { useState } from 'react'
 import { z } from 'zod'
 
 import { HeadersViewer } from '@/components/admin/JsonViewer'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { cn } from '@/core/lib/utils'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@x-llm-gateway/ui'
+import { cn } from '@x-llm-gateway/ui'
 import type { Log } from '@/hooks/use-logs'
 
 import { BodySubTabs } from './body-sub-tabs'

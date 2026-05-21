@@ -5,15 +5,15 @@ import { useState } from 'react'
 import { ArrowLeftRight, Columns2, Filter, Rows2 } from 'lucide-react'
 
 import { JsonViewer, JsonDiffViewer } from '@/components/admin/JsonViewer'
-import { Button } from '@/components/ui/button'
+import { Button } from '@x-llm-gateway/ui'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Separator } from '@/components/ui/separator'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+} from '@x-llm-gateway/ui'
+import { Separator } from '@x-llm-gateway/ui'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@x-llm-gateway/ui'
 /**
  * Body 子 Tab 切换（客户端 / Provider / 标准格式）+ Diff 模式
  */

@@ -1,6 +1,6 @@
 'use client'
 
-import { cn } from '@/core/lib/utils'
+import { cn } from '@x-llm-gateway/ui'
 import type { Log } from '@/hooks/use-logs'
 
 import { LatencyBreakdown } from './latency-breakdown'

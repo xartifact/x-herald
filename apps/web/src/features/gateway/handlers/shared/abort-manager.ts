@@ -1,4 +1,4 @@
-import logger from '@/core/lib/logger';
+import { logger } from '@x-llm-gateway/engine';
 import { logEventBus } from '@/features/gateway/services/log-event-bus';
 
 export interface AbortManagerResult {

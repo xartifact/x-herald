@@ -1,9 +1,9 @@
 import { FileText, Trash2, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react'
 
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { TableCell, TableRow } from '@/components/ui/table'
-import { cn } from '@/core/lib/utils'
+import { Badge } from '@x-llm-gateway/ui'
+import { Button } from '@x-llm-gateway/ui'
+import { TableCell, TableRow } from '@x-llm-gateway/ui'
+import { cn } from '@x-llm-gateway/ui'
 import { CLIENT_REGISTRY } from '@/features/gateway/services/client-identifier'
 import type { LogListItem } from '@/hooks/use-logs'
 

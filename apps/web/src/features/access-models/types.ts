@@ -1,4 +1,4 @@
-import type { ModelCapabilities } from '@/features/model-groups/db'
+import type { ModelCapabilities } from '@x-llm-gateway/engine'
 
 export type { ModelCapabilities }
 

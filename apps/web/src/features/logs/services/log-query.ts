@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, gte, inArray, isNotNull, lt, lte, ne, or, sql } from 'drizzle-orm'
 
-import { getDatabase } from '@/core/db/client'
+import { getDatabase } from '@x-llm-gateway/engine'
 
 import { requestLogs, requestAttempts } from '../db'
 

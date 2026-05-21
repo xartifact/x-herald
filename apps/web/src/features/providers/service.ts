@@ -1,9 +1,9 @@
 import { desc, eq } from 'drizzle-orm'
 import { z } from 'zod'
 
-import { getDatabase } from '@/core/db/client'
-import rootLogger from '@/core/lib/logger'
-import { modelInstances } from '@/features/model-groups/db'
+import { getDatabase } from '@x-llm-gateway/engine'
+import { rootLogger } from '@x-llm-gateway/engine'
+import { modelInstances } from '@x-llm-gateway/engine'
 
 import { providers, type ProtocolsConfig } from './db'
 
@@ -203,7 +203,7 @@ export async function syncModels(id: string, data: SyncModelsCommand): Promise<S
   const db = getDatabase()
 
   if (data.groupId) {
-    const { modelGroups } = await import('@/features/model-groups/db')
+    const { modelGroups } = await import('@x-llm-gateway/engine')
     const group = await db.select().from(modelGroups).where(eq(modelGroups.id, data.groupId)).limit(1)
     if (group.length === 0) return { ok: false, code: 'GROUP_NOT_FOUND' }
   }
@@ -219,7 +219,7 @@ export async function syncModels(id: string, data: SyncModelsCommand): Promise<S
     ).returning({ id: modelInstances.id })
 
     if (data.groupId && inserted.length > 0) {
-      const { modelGroupMemberships } = await import('@/features/model-groups/db')
+      const { modelGroupMemberships } = await import('@x-llm-gateway/engine')
       await db.insert(modelGroupMemberships).values(inserted.map((i) => ({ groupId: data.groupId as string, instanceId: i.id })))
     }
   }

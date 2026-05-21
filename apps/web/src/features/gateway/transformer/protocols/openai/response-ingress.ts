@@ -1,4 +1,4 @@
-import logger from '@/core/lib/logger';
+import { logger } from '@x-llm-gateway/engine';
 import type { TransformerContext, StandardResponse, StandardMessage } from '@/types';
 
 import type { OpenAIChoice } from './types';

@@ -5,8 +5,8 @@
 
 import { eq } from 'drizzle-orm';
 
-import { getDatabase } from '@/core/db/client';
-import logger from '@/core/lib/logger';
+import { getDatabase } from '@x-llm-gateway/engine';
+import { logger } from '@x-llm-gateway/engine';
 
 import { gatewayConfigs } from './db';
 

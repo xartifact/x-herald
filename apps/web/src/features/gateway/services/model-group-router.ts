@@ -1,11 +1,11 @@
 import { eq, and, asc } from 'drizzle-orm';
 
-import { getDatabase } from '@/core/db/client';
-import logger from '@/core/lib/logger';
+import { getDatabase } from '@x-llm-gateway/engine';
+import { logger } from '@x-llm-gateway/engine';
 import { fetchGroupInstancesPerf } from '@/features/metrics/services/instance-perf-cache';
-import { modelGroups, modelInstances, modelGroupMemberships } from '@/features/model-groups/db';
+import { modelGroups, modelInstances, modelGroupMemberships } from '@x-llm-gateway/engine';
 import type { ModelGroup, ModelInstance } from '@/features/model-groups/types';
-import { providers } from '@/features/providers/db';
+import { providers } from '@x-llm-gateway/engine';
 
 import { selectByStrategy, filterCandidates } from './router-selector';
 import type { RouteResult, RoutingContext } from './router-selector';

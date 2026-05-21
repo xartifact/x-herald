@@ -1,8 +1,8 @@
 import { asc, desc, eq, inArray } from 'drizzle-orm'
 
-import { getDatabase } from '@/core/db/client'
-import rootLogger from '@/core/lib/logger'
-import { providers } from '@/features/providers/db'
+import { getDatabase } from '@x-llm-gateway/engine'
+import { rootLogger } from '@x-llm-gateway/engine'
+import { providers } from '@x-llm-gateway/engine'
 
 import {
   modelGroupMemberships,

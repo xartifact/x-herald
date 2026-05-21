@@ -5,12 +5,12 @@
 
 import { eq, and, sql } from 'drizzle-orm';
 
-import { getDatabase } from '@/core/db/client';
-import logger from '@/core/lib/logger';
+import { getDatabase } from '@x-llm-gateway/engine';
+import { logger } from '@x-llm-gateway/engine';
 import { CATCHALL_VM_NAME } from '@/features/access-models/constants';
 import { fetchPerfContext } from '@/features/metrics/services/perf-context-fetcher';
-import { accessModels, modelInstances, modelGroups, modelGroupMemberships, modelRoutes } from '@/features/model-groups/db';
-import { providers } from '@/features/providers/db';
+import { accessModels, modelInstances, modelGroups, modelGroupMemberships, modelRoutes } from '@x-llm-gateway/engine';
+import { providers } from '@x-llm-gateway/engine';
 
 
 import { modelGroupRouter, RequestRejectedError, type RouteResult, type RoutingContext } from './model-group-router';

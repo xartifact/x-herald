@@ -1,7 +1,7 @@
 import { relations } from 'drizzle-orm';
 import { pgTable, varchar, boolean, timestamp, jsonb, uuid, text, integer, primaryKey } from 'drizzle-orm/pg-core';
 
-import { providers } from '@/features/providers/db';
+import { providers } from '@x-llm-gateway/engine';
 
 /**
  * 模型组 (Model Group)

@@ -1,4 +1,4 @@
-import { cn } from '@/core/lib/utils'
+import { cn } from '@x-llm-gateway/ui'
 import { Badge } from '@x-llm-gateway/ui'
 import { Card, CardContent, CardHeader, CardTitle } from '@x-llm-gateway/ui'
 import { ScrollArea } from '@x-llm-gateway/ui'

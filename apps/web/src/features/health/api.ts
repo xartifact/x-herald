@@ -1,8 +1,8 @@
 import { sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 
-import { APP_VERSION } from '@/core/config/env';
-import { getDatabase } from '@/core/db/client';
+import { APP_VERSION } from '@x-llm-gateway/engine';
+import { getDatabase } from '@x-llm-gateway/engine';
 
 const health = new Hono();
 

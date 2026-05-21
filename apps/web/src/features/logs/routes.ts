@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
 import { stream, streamSSE } from 'hono/streaming';
 
-import { CRON_SECRET } from '@/core/config/env';
-import rootLogger from '@/core/lib/logger';
+import { CRON_SECRET } from '@x-llm-gateway/engine';
+import { rootLogger } from '@x-llm-gateway/engine';
 import { logEventBus } from '@/features/gateway/services/log-event-bus';
 import type { LiveStreamEvent } from '@/features/gateway/services/log-event-bus';
 

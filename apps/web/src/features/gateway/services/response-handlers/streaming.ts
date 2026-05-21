@@ -1,4 +1,4 @@
-import logger from '@/core/lib/logger';
+import { logger } from '@x-llm-gateway/engine';
 
 import { getTransformer } from '../../transformer';
 import { logEventBus } from '../log-event-bus';

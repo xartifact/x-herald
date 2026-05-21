@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { CRON_SECRET } from '@/core/config';
+import { CRON_SECRET } from '@x-llm-gateway/engine';
 import { cleanupStaleStreams } from '@/features/gateway/services/stream-cleanup';
 
 /**

@@ -1,4 +1,4 @@
-import logger from '@/core/lib/logger';
+import { logger } from '@x-llm-gateway/engine';
 import type { StandardMessage, ToolCall, ToolResult } from '@/types';
 
 import type { AnthropicMessage } from '../types';

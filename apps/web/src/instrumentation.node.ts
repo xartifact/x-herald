@@ -1,10 +1,10 @@
 import fs from 'fs';
 import path from 'path';
 
-import { loadConfig } from '@/core/config';
-import { createDatabase } from '@/core/db/client';
-import { seedSystemData } from '@/core/db/seed';
-import logger from '@/core/lib/logger';
+import { loadConfig } from '@x-llm-gateway/engine';
+import { createDatabase } from '@x-llm-gateway/engine';
+import { seedSystemData } from '@x-llm-gateway/engine';
+import { logger } from '@x-llm-gateway/engine';
 import { registerDefaultTransformers } from '@/features/gateway';
 
 logger.info('[Instrumentation] 开始应用初始化...');

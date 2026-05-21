@@ -1,7 +1,7 @@
 'use client'
 
-import { Separator } from '@/components/ui/separator'
-import { cn } from '@/core/lib/utils'
+import { Separator } from '@x-llm-gateway/ui'
+import { cn } from '@x-llm-gateway/ui'
 import type { Log } from '@/hooks/use-logs'
 
 interface LogSheetStatusBarProps {

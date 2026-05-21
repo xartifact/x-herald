@@ -1,7 +1,7 @@
 import { and, desc, gte, lte, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 
-import { getDatabase } from '@/core/db/client';
+import { getDatabase } from '@x-llm-gateway/engine';
 
 import { instancePerfSnapshots } from './db';
 

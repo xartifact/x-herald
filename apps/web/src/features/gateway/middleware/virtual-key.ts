@@ -1,9 +1,9 @@
 import { eq } from 'drizzle-orm';
 import type { Context, Next } from 'hono';
 
-import { getDatabase } from '@/core/db/client';
-import rootLogger from '@/core/lib/logger';
-import { virtualKeys, type VirtualKey } from '@/features/keys/db';
+import { getDatabase } from '@x-llm-gateway/engine';
+import { rootLogger } from '@x-llm-gateway/engine';
+import { virtualKeys, type VirtualKey } from '@x-llm-gateway/engine';
 
 const logger = rootLogger.child({ module: 'gateway.auth' });
 

@@ -1,11 +1,11 @@
 import { eq } from 'drizzle-orm';
 
-import { IS_PRODUCTION } from '@/core/config/env';
-import { getDatabase } from '@/core/db/client';
-import logger from '@/core/lib/logger';
-import type { VirtualKey } from '@/features/keys/db';
-import { requestLogs, requestAttempts } from '@/features/logs/db';
-import type { StreamProgress, StreamContent, LogMetadata, FailoverReason } from '@/features/logs/db';
+import { IS_PRODUCTION } from '@x-llm-gateway/engine';
+import { getDatabase } from '@x-llm-gateway/engine';
+import { logger } from '@x-llm-gateway/engine';
+import type { VirtualKey } from '@x-llm-gateway/engine';
+import { requestLogs, requestAttempts } from '@x-llm-gateway/engine';
+import type { StreamProgress, StreamContent, LogMetadata, FailoverReason } from '@x-llm-gateway/engine';
 
 export interface StreamLogParams {
   virtualKey: VirtualKey;
@@ -142,7 +142,7 @@ async function createStreamLog(params: StreamLogParams & { isStream: boolean }):
 
 export async function logStreamStart(params: StreamLogParams): Promise<LogStartResult> {
   const result = await createStreamLog({ ...params, isStream: true });
-  const { recordClientRequestedModel } = await import('@/features/logs/services/client-model-recorder');
+  const { recordClientRequestedModel } = await import('@x-llm-gateway/engine');
   await recordClientRequestedModel(params.originalModelName || params.modelName);
   return result;
 }

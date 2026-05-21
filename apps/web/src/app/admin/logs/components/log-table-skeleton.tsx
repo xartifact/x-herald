@@ -1,6 +1,6 @@
 'use client'
 
-import { Skeleton } from '@/components/ui/skeleton'
+import { Skeleton } from '@x-llm-gateway/ui'
 import {
   Table,
   TableBody,
@@ -8,7 +8,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@x-llm-gateway/ui'
 
 export function LogTableSkeleton() {
   return (

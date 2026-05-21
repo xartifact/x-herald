@@ -1,10 +1,10 @@
-import logger from '@/core/lib/logger';
+import { logger } from '@x-llm-gateway/engine';
 import {
   fetchGroupInstancesPerf,
   type InstancePerfData,
 } from '@/features/metrics/services/instance-perf-cache';
 import type { ModelGroup, ModelInstance } from '@/features/model-groups/types';
-import { providers } from '@/features/providers/db';
+import { providers } from '@x-llm-gateway/engine';
 
 import { circuitBreakerRegistry } from './circuit-breaker';
 import type { ModelMappingResult } from './model-mapping';

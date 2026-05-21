@@ -1,11 +1,11 @@
 import { eq } from 'drizzle-orm';
 
-import { IS_PRODUCTION } from '@/core/config/env';
-import { getDatabase } from '@/core/db/client';
-import logger from '@/core/lib/logger';
-import type { VirtualKey } from '@/features/keys/db';
-import { requestLogs, requestAttempts } from '@/features/logs/db';
-import type { FailoverReason } from '@/features/logs/db';
+import { IS_PRODUCTION } from '@x-llm-gateway/engine';
+import { getDatabase } from '@x-llm-gateway/engine';
+import { logger } from '@x-llm-gateway/engine';
+import type { VirtualKey } from '@x-llm-gateway/engine';
+import { requestLogs, requestAttempts } from '@x-llm-gateway/engine';
+import type { FailoverReason } from '@x-llm-gateway/engine';
 
 import { extractMetadata } from './metadata-extractor';
 import { estimateUsageFromContent } from './token-estimator';
@@ -206,7 +206,7 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
       createdAt: new Date(),
     });
 
-    const { recordClientRequestedModel } = await import('@/features/logs/services/client-model-recorder');
+    const { recordClientRequestedModel } = await import('@x-llm-gateway/engine');
     await recordClientRequestedModel(params.originalModelName || params.modelName);
     logger.debug({ modelName: params.modelName, status: params.status }, 'Request logged successfully');
   } catch (error) {

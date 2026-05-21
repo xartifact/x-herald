@@ -1,6 +1,6 @@
 import { Activity, ArrowUpDown, BarChart3, Clock, Hash, RefreshCw } from 'lucide-react'
 
-import { cn } from '@/core/lib/utils'
+import { cn } from '@x-llm-gateway/ui'
 import { Button } from '@x-llm-gateway/ui'
 import { Card, CardContent } from '@x-llm-gateway/ui'
 import { Input } from '@x-llm-gateway/ui'

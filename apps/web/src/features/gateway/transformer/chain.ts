@@ -3,7 +3,7 @@
  * 按顺序执行多个 Transformer，处理请求和响应的转换
  */
 
-import logger from '@/core/lib/logger';
+import { logger } from '@x-llm-gateway/engine';
 import type {
   StandardRequest,
   StandardResponse,

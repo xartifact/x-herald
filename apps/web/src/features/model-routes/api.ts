@@ -1,12 +1,12 @@
 import { eq, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 
-import { getDatabase } from '@/core/db/client';
-import rootLogger from '@/core/lib/logger';
+import { getDatabase } from '@x-llm-gateway/engine';
+import { rootLogger } from '@x-llm-gateway/engine';
 
 const logger = rootLogger.child({ module: 'model-routes' });
 import { authMiddleware } from '@/features/auth/middleware';
-import { modelRoutes, accessModels } from '@/features/model-groups/db';
+import { modelRoutes, accessModels } from '@x-llm-gateway/engine';
 
 const modelRoutesApi = new Hono();
 

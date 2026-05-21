@@ -1,4 +1,4 @@
-import logger from '@/core/lib/logger';
+import { logger } from '@x-llm-gateway/engine';
 
 export const CONNECT_TIMEOUT_MS = 30_000;
 export const TTFB_TIMEOUT_MS_STREAMING = 600_000;

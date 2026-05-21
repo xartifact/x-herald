@@ -1,5 +1,5 @@
-import { AiNotConfiguredError, getAiModel } from '@/core/lib/ai-caller';
-import rootLogger from '@/core/lib/logger';
+import { AiNotConfiguredError, getAiModel } from '@x-llm-gateway/engine';
+import { rootLogger } from '@x-llm-gateway/engine';
 
 import { getLogDetail } from './log-query';
 

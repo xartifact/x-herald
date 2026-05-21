@@ -1,4 +1,4 @@
-import logger from '@/core/lib/logger';
+import { logger } from '@x-llm-gateway/engine';
 import type { ToolCall } from '@/types';
 
 import { parseToolArguments } from '../../../shared/tool-arguments-parser';

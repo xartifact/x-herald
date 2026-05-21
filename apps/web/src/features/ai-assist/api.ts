@@ -2,13 +2,13 @@ import { eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { jsonrepair } from 'jsonrepair';
 
-import { getDatabase } from '@/core/db/client';
-import { callAI, AiNotConfiguredError } from '@/core/lib/ai-caller';
-import rootLogger from '@/core/lib/logger';
+import { getDatabase } from '@x-llm-gateway/engine';
+import { callAI, AiNotConfiguredError } from '@x-llm-gateway/engine';
+import { rootLogger } from '@x-llm-gateway/engine';
 import { authMiddleware } from '@/features/auth/middleware';
-import { modelInstances } from '@/features/model-groups/db';
-import type { InstanceConfig } from '@/features/model-groups/db';
-import { providers } from '@/features/providers/db';
+import { modelInstances } from '@x-llm-gateway/engine';
+import type { InstanceConfig } from '@x-llm-gateway/engine';
+import { providers } from '@x-llm-gateway/engine';
 
 import { buildSystemPrompt } from './prompt';
 

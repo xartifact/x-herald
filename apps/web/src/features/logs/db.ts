@@ -135,8 +135,8 @@ export interface StreamContent {
   contentChunks: string[];
   allChunks: unknown[];
 }
-import { virtualKeys } from '@/features/keys/db';
-import { providers } from '@/features/providers/db';
+import { virtualKeys } from '@x-llm-gateway/engine';
+import { providers } from '@x-llm-gateway/engine';
 
 export const requestLogs = pgTable('request_logs', {
   id: uuid('id').primaryKey().defaultRandom(),

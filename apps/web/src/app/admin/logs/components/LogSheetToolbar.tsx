@@ -2,9 +2,9 @@
 
 import { ChevronRight, X } from 'lucide-react'
 
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { cn } from '@/core/lib/utils'
+import { Badge } from '@x-llm-gateway/ui'
+import { Button } from '@x-llm-gateway/ui'
+import { cn } from '@x-llm-gateway/ui'
 import type { Log } from '@/hooks/use-logs'
 
 interface LogSheetToolbarProps {

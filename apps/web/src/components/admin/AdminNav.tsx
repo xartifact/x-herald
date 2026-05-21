@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 
 import { APP_VERSION } from '@/core/config/env'
 import { useLogout } from '@/features/auth/useAuth'
-import { Button } from '@/ui/button'
+import { Button } from '@x-llm-gateway/ui'
 
 import { allNavItems } from './admin-nav-config'
 import { NavDesktopDropdowns } from './nav-desktop-dropdowns'

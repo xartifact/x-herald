@@ -3,9 +3,9 @@
 import { Pencil, Trash2, RefreshCw, BarChart2 } from 'lucide-react'
 
 import type { KeyStat } from '@/hooks/use-logs'
-import { Badge } from '@/ui/badge'
-import { Button } from '@/ui/button'
-import { TableCell, TableRow } from '@/ui/table'
+import { Badge } from '@x-llm-gateway/ui'
+import { Button } from '@x-llm-gateway/ui'
+import { TableCell, TableRow } from '@x-llm-gateway/ui'
 
 import { KeyDisplay } from './key-display'
 import type { VirtualKey } from '../types'

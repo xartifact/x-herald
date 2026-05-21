@@ -1,14 +1,14 @@
 import { UseFormReturn } from 'react-hook-form'
 
-import { Checkbox } from '@/ui/checkbox'
+import { Checkbox } from '@x-llm-gateway/ui'
 import {
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/ui/form'
-import { Input } from '@/ui/input'
+} from '@x-llm-gateway/ui'
+import { Input } from '@x-llm-gateway/ui'
 
 import type { ProtocolOption, ProviderFormData } from './provider-form-types'
 

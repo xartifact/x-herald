@@ -7,8 +7,8 @@ import { Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 
 import type { InstanceConfig } from '@/features/model-groups/types'
-import { Button } from '@/ui/button'
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/ui/sheet'
+import { Button } from '@x-llm-gateway/ui'
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@x-llm-gateway/ui'
 
 import { ChatInput } from './chat-input'
 import { ChatMessageList } from './chat-message-list'

@@ -4,9 +4,9 @@ import { useRef, useState } from 'react'
 
 import { AlertTriangle, Download, RefreshCw, Upload } from 'lucide-react'
 
-import { Alert, AlertDescription, AlertTitle } from '@/ui/alert'
-import { Button } from '@/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card'
+import { Alert, AlertDescription, AlertTitle } from '@x-llm-gateway/ui'
+import { Button } from '@x-llm-gateway/ui'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@x-llm-gateway/ui'
 
 import type { ImportResult } from '../config-io/types'
 import { useExportConfig, useImportConfig } from '../config-io/useConfigIO'

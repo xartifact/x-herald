@@ -2,9 +2,9 @@
 
 import { Plus, Search } from 'lucide-react'
 
-import { Button } from '@/ui/button'
-import { Card, CardContent } from '@/ui/card'
-import { Input } from '@/ui/input'
+import { Button } from '@x-llm-gateway/ui'
+import { Card, CardContent } from '@x-llm-gateway/ui'
+import { Input } from '@x-llm-gateway/ui'
 
 import { ProviderCard } from './components'
 import { ProviderPageDialogs } from './ProviderPageDialogs'

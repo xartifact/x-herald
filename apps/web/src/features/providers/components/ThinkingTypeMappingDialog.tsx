@@ -7,9 +7,9 @@ import { Brain, Plus } from 'lucide-react'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { toast } from 'sonner'
 
-import { Button } from '@/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/ui/dialog'
-import { Label } from '@/ui/label'
+import { Button } from '@x-llm-gateway/ui'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@x-llm-gateway/ui'
+import { Label } from '@x-llm-gateway/ui'
 
 import { MappingRuleRow } from './mapping-rule-row'
 import { SyntheticThinkingSelector } from './synthetic-thinking-selector'

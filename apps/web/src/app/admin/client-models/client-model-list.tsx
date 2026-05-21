@@ -1,7 +1,7 @@
 import { cn } from '@/core/lib/utils'
-import { Badge } from '@/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card'
-import { ScrollArea } from '@/ui/scroll-area'
+import { Badge } from '@x-llm-gateway/ui'
+import { Card, CardContent, CardHeader, CardTitle } from '@x-llm-gateway/ui'
+import { ScrollArea } from '@x-llm-gateway/ui'
 
 interface ModelStat {
   originalModelName: string

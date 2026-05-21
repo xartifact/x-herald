@@ -12,7 +12,12 @@
     "allowSyntheticDefaultImports": true,
     "isolatedModules": true,
     "noEmit": true,
-    "types": ["bun-types"]
+    "types": ["bun-types"],
+    "paths": {
+      "@x-llm-gateway/shared": ["./packages/shared/src"],
+      "@x-llm-gateway/engine": ["./packages/engine/src"],
+      "@x-llm-gateway/ui": ["./packages/ui/src"]
+    }
   },
   "exclude": ["node_modules", "dist", "build"]
 }

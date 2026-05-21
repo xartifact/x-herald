@@ -1,6 +1,6 @@
 import { AlertTriangle, CheckCircle, Octagon, RotateCcw, ShieldOff, Timer } from 'lucide-react'
 
-import { Badge } from '@/ui/badge'
+import { Badge } from '@x-llm-gateway/ui'
 
 import type { CBEvent, RealtimeState } from './circuit-breaker-types'
 

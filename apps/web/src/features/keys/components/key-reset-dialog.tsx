@@ -2,7 +2,7 @@
 
 import { Copy, Check } from 'lucide-react'
 
-import { Button } from '@/ui/button'
+import { Button } from '@x-llm-gateway/ui'
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/ui/dialog'
+} from '@x-llm-gateway/ui'
 
 interface KeyResetDialogProps {
   open: boolean

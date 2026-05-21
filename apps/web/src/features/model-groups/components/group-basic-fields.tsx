@@ -7,15 +7,15 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/ui/form'
-import { Input } from '@/ui/input'
+} from '@x-llm-gateway/ui'
+import { Input } from '@x-llm-gateway/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/ui/select'
+} from '@x-llm-gateway/ui'
 
 import type { GroupFormData } from '../form-types'
 

@@ -1,9 +1,9 @@
 import { RefreshCw, Loader2 } from 'lucide-react'
 
-import { Badge } from '@/ui/badge'
-import { Button } from '@/ui/button'
-import { Checkbox } from '@/ui/checkbox'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/ui/table'
+import { Badge } from '@x-llm-gateway/ui'
+import { Button } from '@x-llm-gateway/ui'
+import { Checkbox } from '@x-llm-gateway/ui'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@x-llm-gateway/ui'
 
 interface ProviderModel {
   id: string

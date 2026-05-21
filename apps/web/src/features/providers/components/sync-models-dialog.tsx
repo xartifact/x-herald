@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 import { Loader2 } from 'lucide-react'
 
 import { useModelGroups } from '@/features/model-groups/useModelGroups'
-import { Button } from '@/ui/button'
+import { Button } from '@x-llm-gateway/ui'
 import {
   Dialog,
   DialogContent,
@@ -13,8 +13,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/ui/dialog'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select'
+} from '@x-llm-gateway/ui'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@x-llm-gateway/ui'
 
 import { useProviderModels, useSyncProviderModels } from '../useProviders'
 import { SyncModelList } from './sync-model-list'

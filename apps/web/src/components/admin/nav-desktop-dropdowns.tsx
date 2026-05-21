@@ -12,7 +12,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/ui/dropdown-menu'
+} from '@x-llm-gateway/ui'
 
 import { navGroups } from './admin-nav-config'
 import type { NavGroup } from './admin-nav-config'

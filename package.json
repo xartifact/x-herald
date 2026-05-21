@@ -4,7 +4,7 @@
   "private": true,
   "description": "Modern LLM Gateway with protocol conversion, smart routing, and high availability",
   "workspaces": [
-    "apps/*"
+    "apps/*", "packages/*"
   ],
   "scripts": {
     "dev": "cd apps/web && bun run dev",

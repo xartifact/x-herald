@@ -1,9 +1,9 @@
 import { Trash2 } from 'lucide-react'
 
-import { Button } from '@/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card'
-import { Input } from '@/ui/input'
-import { Label } from '@/ui/label'
+import { Button } from '@x-llm-gateway/ui'
+import { Card, CardContent, CardHeader, CardTitle } from '@x-llm-gateway/ui'
+import { Input } from '@x-llm-gateway/ui'
+import { Label } from '@x-llm-gateway/ui'
 
 import type { InstanceFormData } from '../form-types'
 

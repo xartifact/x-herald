@@ -5,8 +5,8 @@ import { useEffect, useState } from 'react';
 import { X, RefreshCw, Printer } from 'lucide-react';
 
 import { getRenderStats, printRenderStats, resetRenderStats } from '@/hooks/use-render-count';
-import { Button } from '@/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card';
+import { Button } from '@x-llm-gateway/ui';
+import { Card, CardContent, CardHeader, CardTitle } from '@x-llm-gateway/ui';
 
 interface RenderMonitorProps {
   onClose?: () => void;

@@ -2,10 +2,10 @@
 
 import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, Layers } from 'lucide-react'
 
-import { Badge } from '@/ui/badge'
-import { Button } from '@/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card'
-import { Separator } from '@/ui/separator'
+import { Badge } from '@x-llm-gateway/ui'
+import { Button } from '@x-llm-gateway/ui'
+import { Card, CardContent, CardHeader, CardTitle } from '@x-llm-gateway/ui'
+import { Separator } from '@x-llm-gateway/ui'
 
 import { ModelInstanceTable } from './model-instance-table'
 import type { ModelGroup, ModelInstance } from '../types'

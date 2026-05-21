@@ -2,11 +2,11 @@
 
 import { Pencil, Trash2, Lock } from 'lucide-react'
 
-import { Badge } from '@/ui/badge'
-import { Button } from '@/ui/button'
-import { Card, CardContent } from '@/ui/card'
-import { Switch } from '@/ui/switch'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/ui/table'
+import { Badge } from '@x-llm-gateway/ui'
+import { Button } from '@x-llm-gateway/ui'
+import { Card, CardContent } from '@x-llm-gateway/ui'
+import { Switch } from '@x-llm-gateway/ui'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@x-llm-gateway/ui'
 
 import { CATCHALL_VM_NAME } from '../constants'
 import type { AccessModel } from '../types'

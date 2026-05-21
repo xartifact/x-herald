@@ -1,5 +1,5 @@
-import { Button } from '@/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/ui/dialog'
+import { Button } from '@x-llm-gateway/ui'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@x-llm-gateway/ui'
 
 import type { NodeTemplate } from './flow-editor-constants'
 import { NODE_TEMPLATES } from './flow-editor-constants'

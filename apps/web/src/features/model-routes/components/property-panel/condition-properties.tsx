@@ -5,9 +5,9 @@ import { useEffect, useState } from 'react'
 import type { Node } from '@xyflow/react'
 import { GitBranch } from 'lucide-react'
 
-import { Input } from '@/ui/input'
-import { Label } from '@/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select'
+import { Input } from '@x-llm-gateway/ui'
+import { Label } from '@x-llm-gateway/ui'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@x-llm-gateway/ui'
 
 import { FIELDS, NUMERIC_OPERATORS, STRING_OPERATORS, isNumericField } from './condition-fields'
 

@@ -4,9 +4,9 @@ import { useState } from 'react';
 
 import { ChevronDown, ChevronRight, RefreshCw } from 'lucide-react';
 
-import { Button } from '@/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/ui/table';
+import { Button } from '@x-llm-gateway/ui';
+import { Card, CardContent, CardHeader, CardTitle } from '@x-llm-gateway/ui';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@x-llm-gateway/ui';
 
 import { AnomalyBadge } from './AnomalyBadge';
 import { InstancePerfChart } from './InstancePerfChart';

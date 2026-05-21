@@ -12,9 +12,9 @@ import {
 
 import { StatusToggle } from '@/components/status-toggle'
 import type { ModelInstance } from '@/features/model-groups/types'
-import { Badge } from '@/ui/badge'
-import { Button } from '@/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card'
+import { Badge } from '@x-llm-gateway/ui'
+import { Button } from '@x-llm-gateway/ui'
+import { Card, CardContent, CardHeader, CardTitle } from '@x-llm-gateway/ui'
 
 import { ProviderCardBody } from './provider-card-body'
 import type { Provider, ProtocolsConfig } from '../types'

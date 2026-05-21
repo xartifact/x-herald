@@ -1,7 +1,7 @@
 import { Plus, Trash2 } from 'lucide-react'
 
-import { Button } from '@/ui/button'
-import { Input } from '@/ui/input'
+import { Button } from '@x-llm-gateway/ui'
+import { Input } from '@x-llm-gateway/ui'
 
 interface HeadersTabProps {
   headers: Record<string, string>

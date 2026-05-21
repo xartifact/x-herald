@@ -3,7 +3,7 @@
 import { UseFormReturn } from 'react-hook-form'
 
 import type { Provider } from '@/features/providers/types'
-import { Button } from '@/ui/button'
+import { Button } from '@x-llm-gateway/ui'
 import {
   Dialog,
   DialogContent,
@@ -11,9 +11,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/ui/dialog'
-import { Form, FormControl, FormField, FormItem, FormMessage } from '@/ui/form'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/tabs'
+} from '@x-llm-gateway/ui'
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@x-llm-gateway/ui'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@x-llm-gateway/ui'
 
 import type { InstanceFormData } from '../form-types'
 import { InstanceBasicFields } from './instance-basic-fields'

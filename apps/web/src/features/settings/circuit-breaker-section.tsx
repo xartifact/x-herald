@@ -4,10 +4,10 @@ import { useState } from 'react'
 
 import { RefreshCw, ShieldAlert } from 'lucide-react'
 
-import { Button } from '@/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card'
-import { Input } from '@/ui/input'
-import { Label } from '@/ui/label'
+import { Button } from '@x-llm-gateway/ui'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@x-llm-gateway/ui'
+import { Input } from '@x-llm-gateway/ui'
+import { Label } from '@x-llm-gateway/ui'
 
 import type { SettingsData } from './types'
 import { useUpdateSettings } from './useSettings'

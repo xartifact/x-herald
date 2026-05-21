@@ -3,7 +3,7 @@
 import type { Node } from '@xyflow/react'
 import { MousePointerClick, X } from 'lucide-react'
 
-import { Button } from '@/ui/button'
+import { Button } from '@x-llm-gateway/ui'
 
 import { ConditionProperties } from './condition-properties'
 import { RejectProperties } from './reject-properties'

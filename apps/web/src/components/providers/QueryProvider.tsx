@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
 import DevTools from '@/components/dev/DevTools';
-import { Toaster } from '@/ui/sonner';
+import { Toaster } from '@x-llm-gateway/ui';
 
 interface QueryProviderProps {
   children: React.ReactNode;

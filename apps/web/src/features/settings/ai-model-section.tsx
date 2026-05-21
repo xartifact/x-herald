@@ -4,9 +4,9 @@ import { useState } from 'react'
 
 import { Bot, RefreshCw } from 'lucide-react'
 
-import { Button } from '@/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select'
+import { Button } from '@x-llm-gateway/ui'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@x-llm-gateway/ui'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@x-llm-gateway/ui'
 
 import type { SettingsData } from './types'
 import { useUpdateSettings } from './useSettings'

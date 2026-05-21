@@ -1,7 +1,7 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card'
-import { Label } from '@/ui/label'
-import { Switch } from '@/ui/switch'
-import { Textarea } from '@/ui/textarea'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@x-llm-gateway/ui'
+import { Label } from '@x-llm-gateway/ui'
+import { Switch } from '@x-llm-gateway/ui'
+import { Textarea } from '@x-llm-gateway/ui'
 
 import type { InstanceFormData } from '../form-types'
 

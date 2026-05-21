@@ -6,8 +6,8 @@ import { LogIn } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 
-import { Alert, AlertDescription } from "@/ui/alert"
-import { Button } from "@/ui/button"
+import { Alert, AlertDescription } from "@x-llm-gateway/ui"
+import { Button } from "@x-llm-gateway/ui"
 import {
   Card,
   CardContent,
@@ -15,9 +15,9 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/ui/card"
-import { Input } from "@/ui/input"
-import { Label } from "@/ui/label"
+} from "@x-llm-gateway/ui"
+import { Input } from "@x-llm-gateway/ui"
+import { Label } from "@x-llm-gateway/ui"
 
 import { useLogin } from "./useAuth"
 

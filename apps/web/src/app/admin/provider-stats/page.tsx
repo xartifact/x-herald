@@ -5,8 +5,8 @@ import { useMemo, useState } from 'react'
 import { Wifi } from 'lucide-react'
 
 import { useProviderStats } from '@/hooks/use-logs'
-import { Badge } from '@/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card'
+import { Badge } from '@x-llm-gateway/ui'
+import { Card, CardContent, CardHeader, CardTitle } from '@x-llm-gateway/ui'
 
 import { ProviderCard } from './provider-card'
 import { ProviderStatsSummary } from './provider-stats-summary'

@@ -2,10 +2,10 @@ import { Trash2 } from 'lucide-react'
 import { UseFormReturn } from 'react-hook-form'
 
 
-import { Button } from '@/ui/button'
-import { Card, CardContent } from '@/ui/card'
-import { Input } from '@/ui/input'
-import { Label } from '@/ui/label'
+import { Button } from '@x-llm-gateway/ui'
+import { Card, CardContent } from '@x-llm-gateway/ui'
+import { Input } from '@x-llm-gateway/ui'
+import { Label } from '@x-llm-gateway/ui'
 
 import type { MappingFormData } from './thinking-mapping-types'
 

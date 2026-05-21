@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/tabs'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@x-llm-gateway/ui'
 
 import type { InstanceFormData } from '../form-types'
 import { HeadersTab } from './headers-tab'

@@ -1,10 +1,10 @@
 import { Activity, ArrowUpDown, BarChart3, Clock, Hash, RefreshCw } from 'lucide-react'
 
 import { cn } from '@/core/lib/utils'
-import { Button } from '@/ui/button'
-import { Card, CardContent } from '@/ui/card'
-import { Input } from '@/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select'
+import { Button } from '@x-llm-gateway/ui'
+import { Card, CardContent } from '@x-llm-gateway/ui'
+import { Input } from '@x-llm-gateway/ui'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@x-llm-gateway/ui'
 
 export type SortField = 'requestCount' | 'lastRequestAt' | 'totalTokens' | 'avgResponseTime' | 'successRate'
 export type SortOrder = 'desc' | 'asc'

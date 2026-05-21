@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 import { RefreshCw } from 'lucide-react';
 
-import { Button } from '@/ui/button';
+import { Button } from '@x-llm-gateway/ui';
 
 import { useInstanceTimeseries, useMetricsSummary } from '../hooks/use-metrics';
 import { PerfLineChart } from './PerfLineChart';

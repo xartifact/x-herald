@@ -1,7 +1,7 @@
 import { UseFormReturn } from 'react-hook-form'
 
-import { FormControl, FormField, FormItem, FormLabel } from '@/ui/form'
-import { Switch } from '@/ui/switch'
+import { FormControl, FormField, FormItem, FormLabel } from '@x-llm-gateway/ui'
+import { Switch } from '@x-llm-gateway/ui'
 
 import type { GroupFormData } from '../form-types'
 

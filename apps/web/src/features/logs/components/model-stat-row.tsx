@@ -1,6 +1,6 @@
 import { cn } from '@/core/lib/utils'
 import type { ClientModelStat } from '@/hooks/use-logs'
-import { Badge } from '@/ui/badge'
+import { Badge } from '@x-llm-gateway/ui'
 
 interface ModelStatRowProps {
   stat: ClientModelStat

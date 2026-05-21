@@ -4,7 +4,7 @@ import { Pencil, Trash2, ArrowUp, ArrowDown } from 'lucide-react'
 
 import { StatusToggle } from '@/components/status-toggle'
 import { InstanceAiChat } from '@/features/ai-assist/components/instance-ai-chat'
-import { Button } from '@/ui/button'
+import { Button } from '@x-llm-gateway/ui'
 import {
   Table,
   TableBody,
@@ -12,7 +12,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/ui/table'
+} from '@x-llm-gateway/ui'
 
 import type { ModelInstance } from '../types'
 

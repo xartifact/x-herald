@@ -7,9 +7,9 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 import { useLiveLogs, type LiveStreamItem } from '@/hooks/use-live-logs';
-import { Badge } from '@/ui/badge';
-import { Button } from '@/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card';
+import { Badge } from '@x-llm-gateway/ui';
+import { Button } from '@x-llm-gateway/ui';
+import { Card, CardContent, CardHeader, CardTitle } from '@x-llm-gateway/ui';
 
 const API_BASE = '/api';
 

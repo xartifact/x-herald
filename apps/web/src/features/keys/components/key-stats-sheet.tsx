@@ -1,10 +1,10 @@
 'use client'
 
 import type { KeyStat } from '@/hooks/use-logs'
-import { Card, CardContent } from '@/ui/card'
-import { Separator } from '@/ui/separator'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/ui/sheet'
-import { Tabs, TabsList, TabsTrigger } from '@/ui/tabs'
+import { Card, CardContent } from '@x-llm-gateway/ui'
+import { Separator } from '@x-llm-gateway/ui'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@x-llm-gateway/ui'
+import { Tabs, TabsList, TabsTrigger } from '@x-llm-gateway/ui'
 
 import type { VirtualKey } from '../types'
 

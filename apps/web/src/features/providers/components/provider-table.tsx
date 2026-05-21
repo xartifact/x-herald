@@ -3,9 +3,9 @@
 import { Pencil, Trash2, Eye, EyeOff, BrainCircuit, RefreshCw } from 'lucide-react'
 
 import { StatusToggle } from '@/components/status-toggle'
-import { Badge } from '@/ui/badge'
-import { Button } from '@/ui/button'
-import { Card, CardContent } from '@/ui/card'
+import { Badge } from '@x-llm-gateway/ui'
+import { Button } from '@x-llm-gateway/ui'
+import { Card, CardContent } from '@x-llm-gateway/ui'
 import {
   Table,
   TableBody,
@@ -13,7 +13,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/ui/table'
+} from '@x-llm-gateway/ui'
 
 import type { Provider, ProtocolsConfig } from '../types'
 

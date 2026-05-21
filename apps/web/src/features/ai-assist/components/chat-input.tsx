@@ -1,7 +1,7 @@
 import { AlertCircle, Loader2, Send } from 'lucide-react'
 
-import { Button } from '@/ui/button'
-import { Textarea } from '@/ui/textarea'
+import { Button } from '@x-llm-gateway/ui'
+import { Textarea } from '@x-llm-gateway/ui'
 
 import { QUICK_TEMPLATES } from './chat-types'
 

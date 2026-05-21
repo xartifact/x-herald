@@ -6,7 +6,7 @@ import Editor, { loader } from "@monaco-editor/react"
 import { Copy, Check } from "lucide-react"
 import * as monaco from "monaco-editor"
 
-import { Button } from "@/ui/button"
+import { Button } from "@x-llm-gateway/ui"
 
 loader.config({ monaco })
 

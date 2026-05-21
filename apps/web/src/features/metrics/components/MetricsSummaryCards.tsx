@@ -1,6 +1,6 @@
 import { Activity, AlertTriangle, Clock, Zap } from 'lucide-react';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@x-llm-gateway/ui';
 
 import type { MetricsSummary } from '../hooks/use-metrics';
 

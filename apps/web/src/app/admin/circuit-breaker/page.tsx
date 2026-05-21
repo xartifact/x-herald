@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { RefreshCw } from 'lucide-react'
 
-import { Button } from '@/ui/button'
+import { Button } from '@x-llm-gateway/ui'
 
 import { CircuitBreakerEventHistory } from './circuit-breaker-event-history'
 import { useCircuitBreakerEvents, useCircuitBreakerStats, useManualAction, useRealtimeStates } from './circuit-breaker-hooks'

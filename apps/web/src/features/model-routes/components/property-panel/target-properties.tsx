@@ -7,8 +7,8 @@ import { Layers } from 'lucide-react'
 
 import { useAccessModels } from '@/features/access-models/useAccessModels'
 import { useModelGroups, useModelInstances } from '@/features/model-groups/useModelGroups'
-import { Label } from '@/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select'
+import { Label } from '@x-llm-gateway/ui'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@x-llm-gateway/ui'
 
 const ACTION_TYPES = [
   { value: 'route_to_group', label: '路由到模型组' },

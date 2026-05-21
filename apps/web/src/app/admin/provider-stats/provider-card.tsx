@@ -2,7 +2,7 @@ import { Server } from 'lucide-react'
 
 import { cn } from '@/core/lib/utils'
 import type { ProviderStat } from '@/hooks/use-logs'
-import { Badge } from '@/ui/badge'
+import { Badge } from '@x-llm-gateway/ui'
 
 import { formatMs, responseTimeColor, responseTimeQuality, successRateColor } from './provider-stats-utils'
 

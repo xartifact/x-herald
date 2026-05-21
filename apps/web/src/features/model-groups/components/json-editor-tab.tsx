@@ -1,8 +1,8 @@
 import { AlertCircle } from 'lucide-react'
 
-import { Badge } from '@/ui/badge'
-import { Label } from '@/ui/label'
-import { Textarea } from '@/ui/textarea'
+import { Badge } from '@x-llm-gateway/ui'
+import { Label } from '@x-llm-gateway/ui'
+import { Textarea } from '@x-llm-gateway/ui'
 
 interface JsonEditorTabProps {
   json: string

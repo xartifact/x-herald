@@ -5,16 +5,16 @@ import { useState } from 'react'
 import { FolderOpen, MoveRight } from 'lucide-react'
 
 import { StatusToggle } from '@/components/status-toggle'
-import { Badge } from '@/ui/badge'
-import { Button } from '@/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card'
+import { Badge } from '@x-llm-gateway/ui'
+import { Button } from '@x-llm-gateway/ui'
+import { Card, CardContent, CardHeader, CardTitle } from '@x-llm-gateway/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/ui/select'
+} from '@x-llm-gateway/ui'
 import {
   Table,
   TableBody,
@@ -22,7 +22,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/ui/table'
+} from '@x-llm-gateway/ui'
 
 import type { ModelInstance, ModelGroup } from '../types'
 import { useSetInstanceGroups, useToggleModelInstance } from '../useModelGroups'

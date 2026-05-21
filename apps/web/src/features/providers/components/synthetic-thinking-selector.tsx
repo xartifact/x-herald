@@ -1,4 +1,4 @@
-import { Label } from '@/ui/label'
+import { Label } from '@x-llm-gateway/ui'
 
 interface SyntheticThinkingSelectorProps {
   value: 'strip' | 'inject'

@@ -1,0 +1,5 @@
+import type { TransformerContext, StandardRequest } from '@x-llm-gateway/shared';
+
+export function normalizeGeminiRequest(request: unknown, ctx: TransformerContext): StandardRequest {
+  throw new Error('Gemini normalizeRequest not yet implemented');
+}

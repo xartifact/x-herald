@@ -1,4 +1,4 @@
-import { Badge } from '@/ui/badge';
+import { Badge } from '@x-llm-gateway/ui';
 
 interface Props {
   level: 'normal' | 'warning' | 'critical';

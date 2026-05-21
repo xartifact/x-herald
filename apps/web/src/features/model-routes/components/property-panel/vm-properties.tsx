@@ -3,7 +3,7 @@
 import type { Node } from '@xyflow/react'
 import { Network } from 'lucide-react'
 
-import { Badge } from '@/ui/badge'
+import { Badge } from '@x-llm-gateway/ui'
 
 interface VmNodeData {
   modelName?: string;

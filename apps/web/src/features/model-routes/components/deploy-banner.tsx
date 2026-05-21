@@ -2,7 +2,7 @@
 
 import { CheckCircle2, Loader2, TriangleAlert } from 'lucide-react'
 
-import { Button } from '@/ui/button'
+import { Button } from '@x-llm-gateway/ui'
 
 interface DeployBannerProps {
   isDirty: boolean

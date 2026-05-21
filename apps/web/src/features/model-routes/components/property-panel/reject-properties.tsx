@@ -5,8 +5,8 @@ import { useEffect, useState } from 'react'
 import type { Node } from '@xyflow/react'
 import { Ban } from 'lucide-react'
 
-import { Label } from '@/ui/label'
-import { Textarea } from '@/ui/textarea'
+import { Label } from '@x-llm-gateway/ui'
+import { Textarea } from '@x-llm-gateway/ui'
 
 interface RejectNodeData {
   reason?: string;

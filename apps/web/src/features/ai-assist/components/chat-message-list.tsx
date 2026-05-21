@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 
 import { Bot, Loader2, Sparkles } from 'lucide-react'
 
-import { ScrollArea } from '@/ui/scroll-area'
+import { ScrollArea } from '@x-llm-gateway/ui'
 
 import type { ChatMessage } from './chat-types'
 import { QUICK_TEMPLATES } from './chat-types'

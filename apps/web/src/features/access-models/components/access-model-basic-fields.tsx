@@ -7,9 +7,9 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/ui/form'
-import { Input } from '@/ui/input'
-import { Switch } from '@/ui/switch'
+} from '@x-llm-gateway/ui'
+import { Input } from '@x-llm-gateway/ui'
+import { Switch } from '@x-llm-gateway/ui'
 
 import type { AccessModelFormData } from '../useAccessModelPage'
 

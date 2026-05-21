@@ -1,8 +1,8 @@
 import { ShieldAlert, ShieldCheck, Zap } from 'lucide-react'
 
-import { Badge } from '@/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/ui/table'
+import { Badge } from '@x-llm-gateway/ui'
+import { Card, CardContent, CardHeader, CardTitle } from '@x-llm-gateway/ui'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@x-llm-gateway/ui'
 
 import type { Stats } from './circuit-breaker-types'
 import { relativeTime, tripCountBadge } from './circuit-breaker-utils'

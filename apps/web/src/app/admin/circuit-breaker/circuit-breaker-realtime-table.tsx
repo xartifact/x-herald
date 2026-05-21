@@ -1,9 +1,9 @@
 import { Octagon, RotateCcw } from 'lucide-react'
 
-import { Badge } from '@/ui/badge'
-import { Button } from '@/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/ui/table'
+import { Badge } from '@x-llm-gateway/ui'
+import { Button } from '@x-llm-gateway/ui'
+import { Card, CardContent, CardHeader, CardTitle } from '@x-llm-gateway/ui'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@x-llm-gateway/ui'
 
 import type { RealtimeState } from './circuit-breaker-types'
 import { formatDuration, stateBadgeColor, stateLabel, tripCountBadge } from './circuit-breaker-utils'

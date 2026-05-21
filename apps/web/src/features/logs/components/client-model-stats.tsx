@@ -6,10 +6,10 @@ import { BarChart3, Clock, Hash, Activity, ArrowUpDown } from 'lucide-react'
 
 import { cn } from '@/core/lib/utils'
 import type { ClientModelStat } from '@/hooks/use-logs'
-import { Badge } from '@/ui/badge'
-import { Button } from '@/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card'
-import { ScrollArea } from '@/ui/scroll-area'
+import { Badge } from '@x-llm-gateway/ui'
+import { Button } from '@x-llm-gateway/ui'
+import { Card, CardContent, CardHeader, CardTitle } from '@x-llm-gateway/ui'
+import { ScrollArea } from '@x-llm-gateway/ui'
 
 import { ModelStatRow } from './model-stat-row'
 

@@ -2,7 +2,7 @@
 
 import { UseFormReturn } from 'react-hook-form'
 
-import { Button } from '@/ui/button'
+import { Button } from '@x-llm-gateway/ui'
 import {
   Dialog,
   DialogContent,
@@ -10,8 +10,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/ui/dialog'
-import { Form } from '@/ui/form'
+} from '@x-llm-gateway/ui'
+import { Form } from '@x-llm-gateway/ui'
 
 import { KeyBasicFields } from './key-basic-fields'
 import { KeyAlert } from './key-display'

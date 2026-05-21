@@ -3,9 +3,9 @@
 import { Plus, Search } from 'lucide-react'
 
 import { useProviders } from '@/features/providers/useProviders'
-import { Button } from '@/ui/button'
-import { Card, CardContent } from '@/ui/card'
-import { Input } from '@/ui/input'
+import { Button } from '@x-llm-gateway/ui'
+import { Card, CardContent } from '@x-llm-gateway/ui'
+import { Input } from '@x-llm-gateway/ui'
 
 import { ModelGroupCard, ModelGroupForm, ModelInstanceForm, UngroupedInstancesSection } from './components'
 import { useModelGroupPage } from './useModelGroupPage'

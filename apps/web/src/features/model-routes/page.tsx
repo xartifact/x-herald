@@ -4,7 +4,7 @@ import { useMemo } from 'react'
 
 import { useAccessModels } from '@/features/access-models/useAccessModels'
 import { useModelGroups, useModelInstances } from '@/features/model-groups/useModelGroups'
-import { Card, CardContent } from '@/ui/card'
+import { Card, CardContent } from '@x-llm-gateway/ui'
 
 import { DeployBanner } from './components/deploy-banner'
 import { FlowEditor } from './components/flow-editor'

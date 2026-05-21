@@ -1,5 +1,5 @@
 import { cn } from '@/core/lib/utils'
-import { Card, CardContent } from '@/ui/card'
+import { Card, CardContent } from '@x-llm-gateway/ui'
 
 interface SummaryData {
   totalModels: number

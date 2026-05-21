@@ -3,9 +3,9 @@
 import Link from "next/link"
 import { toast } from "sonner"
 
-import { Alert, AlertDescription, AlertTitle } from "@/ui/alert"
-import { Badge } from "@/ui/badge"
-import { Button } from "@/ui/button"
+import { Alert, AlertDescription, AlertTitle } from "@x-llm-gateway/ui"
+import { Badge } from "@x-llm-gateway/ui"
+import { Button } from "@x-llm-gateway/ui"
 import {
   Card,
   CardContent,
@@ -13,8 +13,8 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/ui/card"
-import { Checkbox } from "@/ui/checkbox"
+} from "@x-llm-gateway/ui"
+import { Checkbox } from "@x-llm-gateway/ui"
 import {
   Dialog,
   DialogContent,
@@ -23,18 +23,18 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/ui/dialog"
-import { Input } from "@/ui/input"
-import { Label } from "@/ui/label"
+} from "@x-llm-gateway/ui"
+import { Input } from "@x-llm-gateway/ui"
+import { Label } from "@x-llm-gateway/ui"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/ui/select"
-import { Separator } from "@/ui/separator"
-import { Switch } from "@/ui/switch"
+} from "@x-llm-gateway/ui"
+import { Separator } from "@x-llm-gateway/ui"
+import { Switch } from "@x-llm-gateway/ui"
 import {
   Table,
   TableBody,
@@ -43,9 +43,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/ui/table"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/tabs"
-import { Textarea } from "@/ui/textarea"
+} from "@x-llm-gateway/ui"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@x-llm-gateway/ui"
+import { Textarea } from "@x-llm-gateway/ui"
 
 
 export default function ComponentsShowcasePage() {

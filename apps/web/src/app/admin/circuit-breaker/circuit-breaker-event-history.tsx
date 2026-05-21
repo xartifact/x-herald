@@ -1,6 +1,6 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/ui/table'
+import { Card, CardContent, CardHeader, CardTitle } from '@x-llm-gateway/ui'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@x-llm-gateway/ui'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@x-llm-gateway/ui'
 
 import type { CBEvent } from './circuit-breaker-types'
 import { EventBadge, relativeTime } from './circuit-breaker-utils'

@@ -1,7 +1,7 @@
 import { Undo2 } from 'lucide-react'
 
-import { Badge } from '@/ui/badge'
-import { Button } from '@/ui/button'
+import { Badge } from '@x-llm-gateway/ui'
+import { Button } from '@x-llm-gateway/ui'
 
 import type { ActionRecord } from './chat-types'
 

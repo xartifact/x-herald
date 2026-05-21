@@ -4,8 +4,8 @@ import { Pencil, Trash2 } from 'lucide-react'
 
 import { StatusToggle } from '@/components/status-toggle'
 import type { ModelInstance } from '@/features/model-groups/types'
-import { Badge } from '@/ui/badge'
-import { Button } from '@/ui/button'
+import { Badge } from '@x-llm-gateway/ui'
+import { Button } from '@x-llm-gateway/ui'
 import {
   Table,
   TableBody,
@@ -13,7 +13,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/ui/table'
+} from '@x-llm-gateway/ui'
 
 interface ProviderInstanceTableProps {
   instances: ModelInstance[]

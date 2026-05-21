@@ -7,9 +7,12 @@ FROM base AS builder
 ARG GIT_HASH=unknown
 ENV GIT_HASH=${GIT_HASH}
 
-# 复制所有 package.json 文件
+# 复制所有 package.json 文件（workspace 需要全部 package.json 来解析依赖）
 COPY package.json bun.lock* bun.lockb* ./
 COPY apps/web/package.json ./apps/web/
+COPY packages/shared/package.json ./packages/shared/
+COPY packages/engine/package.json ./packages/engine/
+COPY packages/ui/package.json ./packages/ui/
 
 # 安装所有依赖（包括 workspace）
 RUN bun install --frozen-lockfile

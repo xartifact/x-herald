@@ -2,7 +2,7 @@
 
 import { Eye, EyeOff, Copy, Check } from 'lucide-react'
 
-import { Button } from '@/ui/button'
+import { Button } from '@x-llm-gateway/ui'
 
 interface KeyDisplayProps {
   keyValue: string

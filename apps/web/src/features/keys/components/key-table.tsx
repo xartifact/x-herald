@@ -1,14 +1,14 @@
 'use client'
 
 import type { KeyStat } from '@/hooks/use-logs'
-import { Card, CardContent } from '@/ui/card'
+import { Card, CardContent } from '@x-llm-gateway/ui'
 import {
   Table,
   TableBody,
   TableHead,
   TableHeader,
   TableRow,
-} from '@/ui/table'
+} from '@x-llm-gateway/ui'
 
 import type { KeyRowActions, KeyRowDisplay } from './key-table-row'
 import { KeyTableRow } from './key-table-row'

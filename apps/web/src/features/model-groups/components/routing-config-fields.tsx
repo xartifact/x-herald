@@ -1,14 +1,14 @@
 import { UseFormReturn } from 'react-hook-form'
 
-import { FormControl, FormDescription, FormField, FormItem, FormLabel } from '@/ui/form'
+import { FormControl, FormDescription, FormField, FormItem, FormLabel } from '@x-llm-gateway/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/ui/select'
-import { Switch } from '@/ui/switch'
+} from '@x-llm-gateway/ui'
+import { Switch } from '@x-llm-gateway/ui'
 
 import type { GroupFormData } from '../form-types'
 

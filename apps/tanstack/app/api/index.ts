@@ -1,9 +1,10 @@
 import app from './server'
 
 const port = parseInt(process.env.PORT || '3001')
-console.log(`API server running on http://localhost:${port}`)
 
-export default {
+Bun.serve({
   port,
   fetch: app.fetch,
-}
+})
+
+console.log(`API server running on http://localhost:${port}`)

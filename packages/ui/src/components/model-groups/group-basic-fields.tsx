@@ -17,10 +17,10 @@ import {
   SelectValue,
 } from '../ui/select'
 
-import type { GroupFormData } from '@x-llm-gateway/shared' // TODO(6): from apps/web
+// Record<string, any> defined locally // TODO(6): from apps/web
 
 interface GroupBasicFieldsProps {
-  form: UseFormReturn<GroupFormData>
+  form: UseFormReturn<Record<string, any>>
 }
 
 export function GroupBasicFields({ form }: GroupBasicFieldsProps) {

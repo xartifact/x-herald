@@ -15,18 +15,18 @@ import {
 import { Form, FormControl, FormField, FormItem, FormMessage } from '../ui/form'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
 
-import type { InstanceFormData } from '@x-llm-gateway/shared' // TODO(6): from apps/web
+// Record<string, any> defined locally // TODO(6): from apps/web
 import { InstanceBasicFields } from './instance-basic-fields'
 import { InstanceConfigEditor } from './instance-config-editor'
 
 interface ModelInstanceFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  form: UseFormReturn<InstanceFormData>
+  form: UseFormReturn<Record<string, any>>
   editingId: string | null
   isPending: boolean
   providers: Provider[]
-  onSubmit: (data: InstanceFormData) => void
+  onSubmit: (data: Record<string, any>) => void
 }
 
 export function ModelInstanceForm({ open, onOpenChange, form, editingId, isPending, providers, onSubmit }: ModelInstanceFormProps) {

@@ -10,7 +10,7 @@ import {
 } from '../ui/select'
 import { Switch } from '../ui/switch'
 
-import type { GroupFormData } from '@x-llm-gateway/shared' // TODO(6): from apps/web
+// Record<string, any> defined locally // TODO(6): from apps/web
 
 const ROUTING_STRATEGIES = [
   { value: 'priority', label: '优先级', description: '按实例优先级数值从小到大依次路由，优先级相同时按创建时间排。适合主备场景。' },
@@ -22,7 +22,7 @@ const ROUTING_STRATEGIES = [
 ] as const
 
 interface RoutingConfigFieldsProps {
-  form: UseFormReturn<GroupFormData>
+  form: UseFormReturn<Record<string, any>>
 }
 
 export function RoutingConfigFields({ form }: RoutingConfigFieldsProps) {

@@ -13,17 +13,17 @@ import {
 } from '../ui/dialog'
 import { Form } from '../ui/form'
 
-import type { AccessModelFormData } from '@x-llm-gateway/shared'
+// Record<string, any> defined locally
 import { AccessModelBasicFields } from './access-model-basic-fields'
 import { AccessModelCapabilitiesFields } from './access-model-capabilities-fields'
 
 interface AccessModelFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  form: UseFormReturn<AccessModelFormData>
+  form: UseFormReturn<Record<string, any>>
   editingId: string | null
   isPending: boolean
-  onSubmit: (data: AccessModelFormData) => void
+  onSubmit: (data: Record<string, any>) => void
 }
 
 export function AccessModelFormDialog({ open, onOpenChange, form, editingId, isPending, onSubmit }: AccessModelFormDialogProps) {

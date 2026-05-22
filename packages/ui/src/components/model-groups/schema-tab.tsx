@@ -3,9 +3,9 @@ import { Label } from '../ui/label'
 import { Switch } from '../ui/switch'
 import { Textarea } from '../ui/textarea'
 
-import type { InstanceFormData } from '@x-llm-gateway/shared' // TODO(6): from apps/web
+// Record<string, any> defined locally // TODO(6): from apps/web
 
-type SchemaConfig = NonNullable<NonNullable<InstanceFormData['config']>['schemaConfig']>
+type SchemaConfig = NonNullable<NonNullable<Record<string, any>['config']>['schemaConfig']>
 
 interface SchemaTabProps {
   schemaConfig: SchemaConfig | undefined

@@ -3,10 +3,10 @@ import { UseFormReturn } from 'react-hook-form'
 import { FormControl, FormField, FormItem, FormLabel } from '../ui/form'
 import { Switch } from '../ui/switch'
 
-import type { GroupFormData } from '@x-llm-gateway/shared' // TODO(6): from apps/web
+// Record<string, any> defined locally // TODO(6): from apps/web
 
 interface CapabilitiesFieldsProps {
-  form: UseFormReturn<GroupFormData>
+  form: UseFormReturn<Record<string, any>>
 }
 
 const CAPABILITY_FIELDS = [

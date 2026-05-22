@@ -4,19 +4,19 @@ import { useState } from 'react'
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
 
-import type { InstanceFormData } from '@x-llm-gateway/shared' // TODO(6): from apps/web
+// Record<string, any> defined locally // TODO(6): from apps/web
 import { HeadersTab } from './headers-tab'
 import { JsonEditorTab } from './json-editor-tab'
 import { SchemaTab } from './schema-tab'
 import { TransformsTab } from './transforms-tab'
 
-type InstanceConfig = NonNullable<InstanceFormData['config']>
+type InstanceConfig = NonNullable<Record<string, any>['config']>
 type TransformRule = NonNullable<InstanceConfig['parameterTransforms']>[0]
 type SchemaConfig = NonNullable<InstanceConfig['schemaConfig']>
 
 interface InstanceConfigEditorProps {
-  value: InstanceFormData['config']
-  onChange: (config: InstanceFormData['config']) => void
+  value: Record<string, any>['config']
+  onChange: (config: Record<string, any>['config']) => void
 }
 
 export function InstanceConfigEditor({ value, onChange }: InstanceConfigEditorProps) {

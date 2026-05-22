@@ -11,10 +11,10 @@ import {
 import { Input } from '../ui/input'
 import { Switch } from '../ui/switch'
 
-import type { AccessModelFormData } from '@x-llm-gateway/shared'
+// Record<string, any> defined locally
 
 interface AccessModelBasicFieldsProps {
-  form: UseFormReturn<AccessModelFormData>
+  form: UseFormReturn<Record<string, any>>
 }
 
 export function AccessModelBasicFields({ form }: AccessModelBasicFieldsProps) {

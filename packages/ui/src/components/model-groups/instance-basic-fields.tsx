@@ -12,10 +12,10 @@ import {
 import { Input } from '../ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 
-import type { InstanceFormData } from '@x-llm-gateway/shared' // TODO(6): from apps/web
+// Record<string, any> defined locally // TODO(6): from apps/web
 
 interface InstanceBasicFieldsProps {
-  form: UseFormReturn<InstanceFormData>
+  form: UseFormReturn<Record<string, any>>
   providers: Provider[]
 }
 

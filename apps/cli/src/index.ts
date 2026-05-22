@@ -18,15 +18,15 @@ providers.command('list')
   .description('List all providers')
   .action(async () => {
     const client = new GatewayClient({ baseUrl: program.opts().url, apiKey: program.opts().apiKey });
-    const { data } = await client.listProviders();
-    console.table(data.map((p) => ({ ID: p.id, Name: p.name, Protocol: p.protocol, Enabled: p.enabled })));
+    const data = await client.listProviders();
+    console.table(data.map((p) => ({ ID: p.id, Name: p.name, Protocol: Object.keys(p.protocols).join(", "), Enabled: p.enabled })));
   });
 
 providers.command('get <id>')
   .description('Get provider details')
   .action(async (id: string) => {
     const client = new GatewayClient({ baseUrl: program.opts().url, apiKey: program.opts().apiKey });
-    const { data } = await client.getProvider(id);
+    const data = await client.getProvider(id);
     console.log(JSON.stringify(data, null, 2));
   });
 
@@ -44,7 +44,7 @@ models.command('list')
   .description('List all model groups')
   .action(async () => {
     const client = new GatewayClient({ baseUrl: program.opts().url, apiKey: program.opts().apiKey });
-    const { data } = await client.listModelGroups();
+    const data = await client.listModelGroups();
     console.table(data.map((g) => ({ ID: g.id, Name: g.name, Enabled: g.enabled })));
   });
 
@@ -55,7 +55,7 @@ keys.command('list')
   .description('List all keys')
   .action(async () => {
     const client = new GatewayClient({ baseUrl: program.opts().url, apiKey: program.opts().apiKey });
-    const { data } = await client.listKeys();
+    const data = await client.listKeys();
     console.table(data.map((k) => ({ ID: k.id, Name: k.name, Enabled: k.enabled })));
   });
 
@@ -63,7 +63,7 @@ keys.command('create <name>')
   .description('Create a new key')
   .action(async (name: string) => {
     const client = new GatewayClient({ baseUrl: program.opts().url, apiKey: program.opts().apiKey });
-    const { data } = await client.createKey({ name });
+    const data = await client.createKey({ name });
     console.log(`Key created: ${data.id}`);
     console.log(`Key value: ${data.key}`);
   });
@@ -83,8 +83,8 @@ program.command('health')
     const client = new GatewayClient({ baseUrl: program.opts().url, apiKey: program.opts().apiKey });
     const status = await client.getHealth();
     console.log(`Status: ${status.status}`);
-    if (status.checks) {
-      console.table(status.checks.map((c) => ({ Name: c.name, Status: c.status, Message: c.message || '' })));
+    if (status.status) {
+      console.table(status.status.map((c) => ({ Name: c.name, Status: c.status, Message: c.message || '' })));
     }
   });
 

@@ -13,7 +13,7 @@ import {
 } from '../ui/dialog'
 import { Form } from '../ui/form'
 
-import type { GroupFormData } from '@x-llm-gateway/shared' // TODO(6): from apps/web
+// Record<string, any> defined locally // TODO(6): from apps/web
 import { CapabilitiesFields } from './capabilities-fields'
 import { GroupBasicFields } from './group-basic-fields'
 import { RoutingConfigFields } from './routing-config-fields'
@@ -21,10 +21,10 @@ import { RoutingConfigFields } from './routing-config-fields'
 interface ModelGroupFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  form: UseFormReturn<GroupFormData>
+  form: UseFormReturn<Record<string, any>>
   editingId: string | null
   isPending: boolean
-  onSubmit: (data: GroupFormData) => void
+  onSubmit: (data: Record<string, any>) => void
 }
 
 export function ModelGroupForm({ open, onOpenChange, form, editingId, isPending, onSubmit }: ModelGroupFormProps) {

@@ -10,10 +10,10 @@ import {
 import { Input } from '../ui/input'
 import { Switch } from '../ui/switch'
 
-import type { AccessModelFormData } from '@x-llm-gateway/shared'
+// Record<string, any> defined locally
 
 interface AccessModelCapabilitiesFieldsProps {
-  form: UseFormReturn<AccessModelFormData>
+  form: UseFormReturn<Record<string, any>>
 }
 
 const SWITCH_CAPABILITIES = [

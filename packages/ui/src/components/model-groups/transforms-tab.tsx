@@ -2,10 +2,10 @@ import { Plus } from 'lucide-react'
 
 import { Button } from '../ui/button'
 
-import type { InstanceFormData } from '@x-llm-gateway/shared' // TODO(6): from apps/web
+// Record<string, any> defined locally // TODO(6): from apps/web
 import { TransformRuleCard } from './transform-rule-card'
 
-type TransformRule = NonNullable<NonNullable<InstanceFormData['config']>['parameterTransforms']>[0]
+type TransformRule = NonNullable<NonNullable<Record<string, any>['config']>['parameterTransforms']>[0]
 
 interface TransformsTabProps {
   transforms: TransformRule[]

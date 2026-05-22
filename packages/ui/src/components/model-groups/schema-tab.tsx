@@ -3,7 +3,7 @@ import { Label } from '../ui/label'
 import { Switch } from '../ui/switch'
 import { Textarea } from '../ui/textarea'
 
-import type { InstanceFormData } from '../form-types' // TODO(6): from apps/web
+import type { InstanceFormData } from '@x-llm-gateway/shared' // TODO(6): from apps/web
 
 type SchemaConfig = NonNullable<NonNullable<InstanceFormData['config']>['schemaConfig']>
 

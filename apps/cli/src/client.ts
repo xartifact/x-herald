@@ -6,9 +6,8 @@ export interface GatewayClientOptions {
 export interface Provider {
   id: string;
   name: string;
-  baseUrl: string;
-  protocol: string;
-  models: string[];
+  protocols: Record<string, { baseUrl: string; enabled: boolean }>;
+  apiKey: string;
   enabled: boolean;
 }
 
@@ -27,8 +26,10 @@ export interface VirtualKey {
 }
 
 export interface HealthStatus {
-  status: 'healthy' | 'degraded' | 'unhealthy';
-  checks: Array<{ name: string; status: string; message?: string }>;
+  status: string;
+  version: string;
+  uptime: number;
+  database: string;
 }
 
 export class GatewayClient {
@@ -45,54 +46,31 @@ export class GatewayClient {
       'Content-Type': 'application/json',
       ...(options.headers as Record<string, string> || {}),
     };
-    if (this.apiKey) {
-      headers['Authorization'] = `Bearer ${this.apiKey}`;
-    }
+    if (this.apiKey) headers['Authorization'] = `Bearer ${this.apiKey}`;
     const res = await fetch(`${this.baseUrl}${path}`, { ...options, headers });
     if (!res.ok) {
       const body = await res.text();
       throw new Error(`API error ${res.status}: ${body}`);
     }
-    return res.json() as Promise<T>;
+    const json = await res.json();
+    // Handle { success: true, data: ... } wrapper
+    if (json && typeof json === 'object' && 'success' in json && 'data' in json) {
+      return json.data;
+    }
+    return json;
   }
 
-  // Providers
-  async listProviders(): Promise<{ data: Provider[] }> {
-    return this.request('/api/providers');
-  }
-
-  async getProvider(id: string): Promise<{ data: Provider }> {
-    return this.request(`/api/providers/${id}`);
-  }
-
-  async createProvider(data: Partial<Provider>): Promise<{ data: Provider }> {
+  async listProviders(): Promise<Provider[]> { return this.request('/api/providers'); }
+  async getProvider(id: string): Promise<Provider> { return this.request(`/api/providers/${id}`); }
+  async createProvider(data: Partial<Provider>): Promise<Provider> {
     return this.request('/api/providers', { method: 'POST', body: JSON.stringify(data) });
   }
-
-  async deleteProvider(id: string): Promise<void> {
-    await this.request(`/api/providers/${id}`, { method: 'DELETE' });
-  }
-
-  // Model Groups
-  async listModelGroups(): Promise<{ data: ModelGroup[] }> {
-    return this.request('/api/model-groups');
-  }
-
-  // Keys
-  async listKeys(): Promise<{ data: VirtualKey[] }> {
-    return this.request('/api/keys');
-  }
-
-  async createKey(data: Partial<VirtualKey>): Promise<{ data: VirtualKey }> {
+  async deleteProvider(id: string): Promise<void> { await this.request(`/api/providers/${id}`, { method: 'DELETE' }); }
+  async listModelGroups(): Promise<ModelGroup[]> { return this.request('/api/model-groups'); }
+  async listKeys(): Promise<VirtualKey[]> { return this.request('/api/keys'); }
+  async createKey(data: Partial<VirtualKey>): Promise<VirtualKey> {
     return this.request('/api/keys', { method: 'POST', body: JSON.stringify(data) });
   }
-
-  async deleteKey(id: string): Promise<void> {
-    await this.request(`/api/keys/${id}`, { method: 'DELETE' });
-  }
-
-  // Health
-  async getHealth(): Promise<HealthStatus> {
-    return this.request('/api/health');
-  }
+  async deleteKey(id: string): Promise<void> { await this.request(`/api/keys/${id}`, { method: 'DELETE' }); }
+  async getHealth(): Promise<HealthStatus> { return this.request('/api/health'); }
 }

@@ -14,7 +14,7 @@ import {
   TableRow,
 } from '../ui/table'
 
-import type { ModelInstance } from '../types' // TODO(6): from apps/web
+import type { ModelInstance } from '@x-llm-gateway/shared' // TODO(6): from apps/web
 
 interface ModelInstanceTableProps {
   instances: ModelInstance[]

@@ -15,7 +15,7 @@ import {
 import { Form, FormControl, FormField, FormItem, FormMessage } from '../ui/form'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
 
-import type { InstanceFormData } from '../form-types' // TODO(6): from apps/web
+import type { InstanceFormData } from '@x-llm-gateway/shared' // TODO(6): from apps/web
 import { InstanceBasicFields } from './instance-basic-fields'
 import { InstanceConfigEditor } from './instance-config-editor'
 

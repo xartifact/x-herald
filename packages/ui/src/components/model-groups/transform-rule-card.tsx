@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Input } from '../ui/input'
 import { Label } from '../ui/label'
 
-import type { InstanceFormData } from '../form-types' // TODO(6): from apps/web
+import type { InstanceFormData } from '@x-llm-gateway/shared' // TODO(6): from apps/web
 
 type TransformRule = NonNullable<NonNullable<InstanceFormData['config']>['parameterTransforms']>[0]
 

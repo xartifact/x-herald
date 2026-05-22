@@ -3,7 +3,7 @@ import { UseFormReturn } from 'react-hook-form'
 import { FormControl, FormField, FormItem, FormLabel } from '../ui/form'
 import { Switch } from '../ui/switch'
 
-import type { GroupFormData } from '../form-types' // TODO(6): from apps/web
+import type { GroupFormData } from '@x-llm-gateway/shared' // TODO(6): from apps/web
 
 interface CapabilitiesFieldsProps {
   form: UseFormReturn<GroupFormData>

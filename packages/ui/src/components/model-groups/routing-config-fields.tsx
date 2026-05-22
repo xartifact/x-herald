@@ -10,7 +10,7 @@ import {
 } from '../ui/select'
 import { Switch } from '../ui/switch'
 
-import type { GroupFormData } from '../form-types' // TODO(6): from apps/web
+import type { GroupFormData } from '@x-llm-gateway/shared' // TODO(6): from apps/web
 
 const ROUTING_STRATEGIES = [
   { value: 'priority', label: '优先级', description: '按实例优先级数值从小到大依次路由，优先级相同时按创建时间排。适合主备场景。' },

@@ -12,7 +12,7 @@ import {
 import { Input } from '../ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 
-import type { InstanceFormData } from '../form-types' // TODO(6): from apps/web
+import type { InstanceFormData } from '@x-llm-gateway/shared' // TODO(6): from apps/web
 
 interface InstanceBasicFieldsProps {
   form: UseFormReturn<InstanceFormData>

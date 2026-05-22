@@ -7,7 +7,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../ui/sheet'
 import { Tabs, TabsList, TabsTrigger } from '../ui/tabs'
 
 // TODO(6): from apps/web
-import type { VirtualKey } from '../types'
+import type { VirtualKey } from '@x-llm-gateway/shared'
 
 interface KeyStatsSheetProps {
   open: boolean

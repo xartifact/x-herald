@@ -13,7 +13,7 @@ import {
 } from '../ui/dialog'
 import { Form } from '../ui/form'
 
-import type { AccessModelFormData } import type { AccessModelFormData } from '../../useAccessModelPage'
+import type { AccessModelFormData } from '@x-llm-gateway/shared'
 import { AccessModelBasicFields } from './access-model-basic-fields'
 import { AccessModelCapabilitiesFields } from './access-model-capabilities-fields'
 

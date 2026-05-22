@@ -3,7 +3,7 @@
 import { Pencil, Trash2 } from 'lucide-react'
 
 import { StatusToggle } from '../status-toggle'
-import type { ModelInstance } from '@x-llm-gateway/shared'
+import type { ModelInstance } from '@x-llm-gateway/engine'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import {

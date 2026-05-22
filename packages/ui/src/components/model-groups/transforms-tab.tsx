@@ -2,7 +2,7 @@ import { Plus } from 'lucide-react'
 
 import { Button } from '../ui/button'
 
-import type { InstanceFormData } from '../form-types' // TODO(6): from apps/web
+import type { InstanceFormData } from '@x-llm-gateway/shared' // TODO(6): from apps/web
 import { TransformRuleCard } from './transform-rule-card'
 
 type TransformRule = NonNullable<NonNullable<InstanceFormData['config']>['parameterTransforms']>[0]

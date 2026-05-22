@@ -16,7 +16,7 @@ import {
 } from '../ui/table'
 
 // TODO(6): from apps/web
-import type { Provider, ProtocolsConfig } from '../types'
+import type { Provider, ProtocolsConfig } from '@x-llm-gateway/shared'
 
 interface ProviderTableProps {
   providers: Provider[]

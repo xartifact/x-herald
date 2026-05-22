@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from '../ui/select'
 
-import type { GroupFormData } from '../form-types' // TODO(6): from apps/web
+import type { GroupFormData } from '@x-llm-gateway/shared' // TODO(6): from apps/web
 
 interface GroupBasicFieldsProps {
   form: UseFormReturn<GroupFormData>

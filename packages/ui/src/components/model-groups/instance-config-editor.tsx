@@ -4,7 +4,7 @@ import { useState } from 'react'
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
 
-import type { InstanceFormData } from '../form-types' // TODO(6): from apps/web
+import type { InstanceFormData } from '@x-llm-gateway/shared' // TODO(6): from apps/web
 import { HeadersTab } from './headers-tab'
 import { JsonEditorTab } from './json-editor-tab'
 import { SchemaTab } from './schema-tab'

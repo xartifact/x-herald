@@ -13,7 +13,7 @@ import {
 } from '../ui/dialog'
 import { Form } from '../ui/form'
 
-import type { GroupFormData } from '../form-types' // TODO(6): from apps/web
+import type { GroupFormData } from '@x-llm-gateway/shared' // TODO(6): from apps/web
 import { CapabilitiesFields } from './capabilities-fields'
 import { GroupBasicFields } from './group-basic-fields'
 import { RoutingConfigFields } from './routing-config-fields'

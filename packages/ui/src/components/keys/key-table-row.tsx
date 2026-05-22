@@ -9,7 +9,7 @@ import { TableCell, TableRow } from '../ui/table'
 
 import { KeyDisplay } from './key-display'
 // TODO(6): from apps/web
-import type { VirtualKey } from '../types'
+import type { VirtualKey } from '@x-llm-gateway/shared'
 
 function formatRelativeTime(dateStr: string | null): string {
   if (!dateStr) return '从未使用'

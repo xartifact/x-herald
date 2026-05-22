@@ -42,7 +42,7 @@ COPY --from=builder /app/apps/web/.next/standalone ./
 # 静态资源（standalone 不自动包含）
 COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
 # 迁移文件（复制到固定路径）
-COPY --from=builder /app/apps/web/src/core/db/migrations /app/migrations
+COPY --from=builder /app/packages/engine/src/db/migrations /app/migrations
 
 EXPOSE 3000
 ENV PORT=3000

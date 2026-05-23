@@ -63,7 +63,7 @@ export function MessageTimelineSection({ messageSequence, messages, selectedIndi
         <TimelineMessageCard
           key={idx}
           roleInfo={roleInfo}
-          message={messages?.[roleInfo.index]}
+          message={messages?.[roleInfo.index - 1]}
           displayState={{ isExpanded: expandedIndices.has(roleInfo.index), isSelected: selectedIndices.includes(roleInfo.index) }}
           onSelect={() => toggleSelected(roleInfo.index)}
           onToggleExpand={() => toggleExpanded(roleInfo.index)}

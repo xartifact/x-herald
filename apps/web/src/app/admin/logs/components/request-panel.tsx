@@ -20,7 +20,7 @@ interface RequestPanelProps {
 
 const RequestBodySchema = z.object({
   messages: z.array(z.object({ role: z.string(), content: z.unknown() })).optional(),
-}).catch({ messages: [] })
+}).catch({ messages: undefined })
 
 export function RequestPanel({ log, className }: RequestPanelProps) {
   const hasMessageAnalysis = !!log.metadata?.messageSequence

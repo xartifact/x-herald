@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import type { LogMetadata } from '@/features/logs/db'
 
-import { borderColor, extractText, roleConfig } from './timeline-message-card-utils'
+import { borderColor, extractMessageText, roleConfig } from './timeline-message-card-utils'
 
 type RoleInfo = NonNullable<LogMetadata['messageSequence']>['roles'][0]
 
@@ -33,7 +33,7 @@ export function TimelineMessageCard({ roleInfo, message, displayState, onSelect,
 
   const config = roleConfig[roleInfo.role] ?? roleConfig.user
   const Icon = config.icon
-  const rawText = message ? extractText(message.content) : ''
+  const rawText = extractMessageText(message)
   const hasContent = rawText.length > 0
   const needsTruncation = rawText.length > PREVIEW_LENGTH
   const displayText = hasContent && needsTruncation && !isFullText ? rawText.slice(0, PREVIEW_LENGTH) + '…' : rawText

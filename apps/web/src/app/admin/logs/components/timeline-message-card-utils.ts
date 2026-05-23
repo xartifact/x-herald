@@ -25,3 +25,22 @@ export function extractText(content: unknown): string {
   if (content !== null && content !== undefined) return JSON.stringify(content, null, 2)
   return ''
 }
+
+export function extractMessageText(message: { role: string; content: unknown } | undefined): string {
+  if (!message) return ''
+  const contentText = extractText(message.content)
+  if (contentText) return contentText
+
+  // assistant 发起工具调用时 content 为空，实际内容在 tool_calls
+  const toolCalls = (message as Record<string, unknown>).tool_calls
+  if (!Array.isArray(toolCalls) || toolCalls.length === 0) return ''
+
+  return toolCalls.map((tc) => {
+    if (typeof tc !== 'object' || tc === null) return ''
+    const t = tc as Record<string, unknown>
+    const fn = t.function as Record<string, unknown> | undefined
+    if (!fn?.name) return JSON.stringify(tc, null, 2)
+    const args = typeof fn.arguments === 'string' ? fn.arguments : JSON.stringify(fn.arguments, null, 2)
+    return `🔧 ${String(fn.name)}\n${args ?? ''}`
+  }).filter(Boolean).join('\n\n')
+}

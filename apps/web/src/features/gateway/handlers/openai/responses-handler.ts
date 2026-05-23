@@ -11,7 +11,7 @@ import { virtualModelRouter } from '../../services/access-model-router';
 import { identifyClient } from '../../services/client-identifier';
 import { handleGatewayError, handleProviderError, handleProviderErrorPassthrough } from '../../services/error-handler';
 import { shouldFilterHeader } from '../../services/headers';
-import { logRequestStart } from '../../services/log-service';
+import { logStartAsync } from '../../services/log-service';
 import type { ModelMappingResult } from '../../services/model-mapping';
 import { ModelNotFoundError } from '../../services/model-group-router';
 import { getProviderProtocol, getProviderUrl, getEndpoint } from '../../services/protocol-detector';
@@ -199,9 +199,7 @@ export async function handleResponsesAPI(
 
     logger.debug({ requestId, targetUrl: providerReq.targetUrl, targetProtocol, model: standardReq.model, isPassthrough: isPassthroughEnabled }, 'Forwarding to provider');
 
-    const logStartResult = await logRequestStart({ ...buildLogParams({ candidate, clientRequestHeaders, responsesBody, standardRequestBody, providerRequestHeaders, transformedBody, clientIp, userAgent, clientType, requestPath, requestMethod, incomingProtocol, targetProtocol, conversationId, virtualKey }), requestGroupId, candidateIndex: 0 });
-    logId = logStartResult.logId;
-    attemptId = logStartResult.attemptId;
+    ({ logId, attemptId } = logStartAsync({ ...buildLogParams({ candidate, clientRequestHeaders, responsesBody, standardRequestBody, providerRequestHeaders, transformedBody, clientIp, userAgent, clientType, requestPath, requestMethod, incomingProtocol, targetProtocol, conversationId, virtualKey }), requestGroupId, candidateIndex: 0 }));
     const preprocessEndTime = Date.now();
 
     const retryConfig: RetryConfig = {

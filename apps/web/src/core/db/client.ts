@@ -162,11 +162,21 @@ async function createPgliteDatabase(dataDir: string): Promise<PostgresDb> {
       logger.trace({ file }, '[DB] 正在执行迁移');
       try {
         // exec() 支持多条 SQL 语句，但整体是事务：任一语句失败则全部回滚
-        await pgliteClient.exec(content);
-        await pgliteClient.query(
-          'INSERT INTO "__drizzle_migrations" (hash, created_at) VALUES ($1, $2)',
-          [hash, Date.now()]
-        );
+        await Promise.race([
+          pgliteClient.exec(content),
+          new Promise<never>((_, rej) =>
+            setTimeout(() => rej(new Error(`[DB] 迁移执行超时 30s: ${file}`)), 30_000)
+          ),
+        ]);
+        await Promise.race([
+          pgliteClient.query(
+            'INSERT INTO "__drizzle_migrations" (hash, created_at) VALUES ($1, $2)',
+            [hash, Date.now()]
+          ),
+          new Promise<never>((_, rej) =>
+            setTimeout(() => rej(new Error(`[DB] 迁移记录超时 5s: ${file}`)), 5_000)
+          ),
+        ]);
         logger.trace({ file }, '[DB] 已应用迁移');
         applied++;
         appliedHashes.add(hash);
@@ -344,9 +354,10 @@ async function initializePostgresDatabase(options: DatabaseOptions): Promise<voi
 async function createPostgresDatabase(options: DatabaseOptions): Promise<PostgresDb> {
   const connectionString = buildConnectionString(options);
   const pgClient = postgres(connectionString, {
-    max: 10,
+    max: 25,
     idle_timeout: 20,
     connect_timeout: 10,
+    max_lifetime: 3600,
   });
   setPostgresClient(pgClient);
 

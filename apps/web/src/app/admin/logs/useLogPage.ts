@@ -47,7 +47,7 @@ export function useLogPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [clientTypeFilter, setClientTypeFilter] = useState<string>('all')
   const [timeRange, setTimeRange] = useState<string>('all')
-  const [currentPage, setCurrentPage] = useState(1)
+  const [cursorStack, setCursorStack] = useState<string[]>([])
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [cleanupDialogOpen, setCleanupDialogOpen] = useState(false)
   const [retentionDays, setRetentionDays] = useState('30')
@@ -62,24 +62,21 @@ export function useLogPage() {
   // 计算时间范围参数（使用 useMemo 避免每次渲染都创建新对象）
   const timeParams = useMemo(() => getTimeRange(timeRange), [timeRange])
 
+  const currentCursor = cursorStack.length > 0 ? cursorStack[cursorStack.length - 1] : undefined
+
   // 构建查询参数（使用 useMemo 避免每次渲染都创建新对象）
   const queryParams = useMemo(() => {
     const params: Record<string, string> = {
-      page: String(currentPage),
       pageSize: String(pageSize),
       ...timeParams,
     }
 
-    if (statusFilter !== 'all') {
-      params.status = statusFilter
-    }
-
-    if (clientTypeFilter !== 'all') {
-      params.clientType = clientTypeFilter
-    }
+    if (currentCursor) params.cursor = currentCursor
+    if (statusFilter !== 'all') params.status = statusFilter
+    if (clientTypeFilter !== 'all') params.clientType = clientTypeFilter
 
     return params
-  }, [currentPage, pageSize, timeParams, statusFilter, clientTypeFilter])
+  }, [currentCursor, pageSize, timeParams, statusFilter, clientTypeFilter])
 
   const { data: logsData, isLoading: loading, isFetching } = useLogs(queryParams)
   const { data: logDetailData } = useLog(selectedLogId || '')
@@ -88,7 +85,8 @@ export function useLogPage() {
   const cleanupLogs = useCleanupLogs()
 
   const logs: LogListItem[] = logsData?.data || []
-  const pagination = logsData?.pagination
+  const hasMore = logsData?.hasMore ?? false
+  const hasPrev = cursorStack.length > 0
   const storage = storageData?.data
 
   // 完整日志详情（从详情接口获取）
@@ -131,23 +129,32 @@ export function useLogPage() {
 
   const handleStatusChange = (value: string) => {
     setStatusFilter(value)
-    setCurrentPage(1)
+    setCursorStack([])
   }
 
   const handleClientTypeChange = (value: string) => {
     setClientTypeFilter(value)
-    setCurrentPage(1)
+    setCursorStack([])
   }
 
   const handleTimeRangeChange = (value: string) => {
     setTimeRange(value)
-    setCurrentPage(1)
+    setCursorStack([])
   }
 
   const handlePageSizeChange = (size: number) => {
     setPageSize(size)
-    setCurrentPage(1)
+    setCursorStack([])
   }
+
+  const handleNext = useCallback(() => {
+    const nextCursor = logsData?.nextCursor
+    if (nextCursor) setCursorStack(prev => [...prev, nextCursor])
+  }, [logsData?.nextCursor])
+
+  const handlePrev = useCallback(() => {
+    setCursorStack(prev => prev.slice(0, -1))
+  }, [])
 
   const handleRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['logs'] })
@@ -178,13 +185,13 @@ export function useLogPage() {
   return {
     loading,
     logs: filteredLogs,
-    pagination,
+    hasMore,
+    hasPrev,
     storage,
     searchQuery,
     statusFilter,
     clientTypeFilter,
     timeRange,
-    currentPage,
     pageSize,
     pageSizeOptions: PAGE_SIZE_OPTIONS,
     selectedLog,
@@ -205,7 +212,8 @@ export function useLogPage() {
     handleClientTypeChange,
     handleTimeRangeChange,
     handleRefresh,
-    setCurrentPage,
+    handleNext,
+    handlePrev,
     handlePageSizeChange,
     handleDelete,
     handleCleanup,

@@ -15,7 +15,7 @@ import {
 } from '../../services/error-handler';
 import { shouldFilterHeader } from '../../services/headers';
 import { logEventBus } from '../../services/log-event-bus';
-import { logRequestStart, markLogAsFailed } from '../../services/log-service';
+import { logStartAsync, markLogAsFailed } from '../../services/log-service';
 import type { ModelMappingResult } from '../../services/model-mapping';
 import { getEndpoint } from '../../services/protocol-detector';
 import { getTransformer } from '../../transformer';
@@ -97,9 +97,9 @@ export class AnthropicMessagesExecutor {
 
     logger.debug({ requestId, targetUrl, targetProtocol, model: standardReq.model, isPassthrough: isPassthroughEnabled }, 'Forwarding to provider');
 
-    const logResult = await logRequestStart(this.buildLogStartParams(transformedBody, pHeaders));
-    this.logId = logResult.logId;
-    this.attemptId = logResult.attemptId;
+    const { logId, attemptId } = logStartAsync(this.buildLogStartParams(transformedBody, pHeaders));
+    this.logId = logId;
+    this.attemptId = attemptId;
     this.transformedBody = transformedBody;
     this.providerRequestHeaders = pHeaders;
     this.preprocessEndTime = Date.now();

@@ -12,6 +12,7 @@ import {
   cleanupLogs,
   deleteLog,
   getClientModelStats,
+  getConversationTrace,
   getKeyStats,
   getLogDetail,
   getLogsPage,
@@ -86,8 +87,8 @@ logsRoutes.get('/', async (c) => {
   try {
     const q = c.req.query();
     const result = await getLogsPage({
-      page: parseInt(q.page || '1'),
-      pageSize: parseInt(q.pageSize || '20'),
+      cursor: q.cursor,
+      pageSize: parseInt(q.pageSize || '50'),
       virtualKeyId: q.virtualKeyId,
       modelName: q.modelName,
       status: q.status,
@@ -98,7 +99,8 @@ logsRoutes.get('/', async (c) => {
     return c.json({
       success: true,
       data: result.logs,
-      pagination: { page: parseInt(q.page || '1'), pageSize: parseInt(q.pageSize || '20'), total: result.total, totalPages: result.totalPages },
+      nextCursor: result.nextCursor,
+      hasMore: result.hasMore,
     });
   } catch (error) {
     logger.warn({ err: error }, 'Failed to list logs');
@@ -114,6 +116,16 @@ logsRoutes.get('/client-models', async (c) => {
   } catch (error) {
     logger.warn({ err: error }, 'Failed to get client model stats');
     return c.json({ error: 'Failed to get client model stats', code: 'CLIENT_MODEL_STATS_ERROR' }, 500);
+  }
+});
+
+logsRoutes.get('/conversation/:conversationId', async (c) => {
+  try {
+    const data = await getConversationTrace(c.req.param('conversationId'));
+    return c.json({ success: true, data });
+  } catch (error) {
+    logger.warn({ err: error }, 'Failed to get conversation trace');
+    return c.json({ error: 'Failed to get conversation trace', code: 'CONVERSATION_TRACE_ERROR' }, 500);
   }
 });
 
@@ -194,9 +206,12 @@ logsRoutes.get('/stats/providers', async (c) => {
 });
 
 logsRoutes.post('/:id/analyze', async (c) => {
-  const body = await c.req.json().catch(() => ({})) as { indices?: number[] };
+  const body = await c.req.json().catch(() => ({})) as { indices?: number[]; mode?: string };
   try {
-    const analysisStream = await buildAnalysisStream(c.req.param('id'), body.indices);
+    const analysisStream = await buildAnalysisStream(c.req.param('id'), {
+      indices: body.indices,
+      mode: body.mode as 'full' | 'system' | 'user' | undefined,
+    });
     return stream(c, async (s) => {
       try {
         const reader = analysisStream.getReader();

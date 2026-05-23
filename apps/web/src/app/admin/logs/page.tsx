@@ -18,12 +18,12 @@ export default function LogsPage() {
 
 function LogsPageContent() {
   const {
-    loading, logs, pagination, storage, searchQuery, statusFilter, clientTypeFilter,
-    timeRange, currentPage, pageSize, pageSizeOptions, selectedLog, detailDialogOpen,
+    loading, logs, hasMore, hasPrev, storage, searchQuery, statusFilter, clientTypeFilter,
+    timeRange, pageSize, pageSizeOptions, selectedLog, detailDialogOpen,
     cleanupDialogOpen, retentionDays, isCleanupPending, isRefreshing, autoRefresh,
     autoRefreshInterval, setAutoRefresh, setAutoRefreshInterval, setDetailDialogOpen,
     setCleanupDialogOpen, setRetentionDays, handleSearchChange, handleStatusChange,
-    handleClientTypeChange, handleTimeRangeChange, handleRefresh, setCurrentPage,
+    handleClientTypeChange, handleTimeRangeChange, handleRefresh, handleNext, handlePrev,
     handlePageSizeChange, handleDelete, handleCleanup, handleViewDetail, formatDuration, formatTokens,
   } = useLogPage()
 
@@ -47,11 +47,6 @@ function LogsPageContent() {
 
       <div className="flex items-center justify-between pt-2 border-t">
         <h3 className="text-sm font-medium tracking-wide uppercase text-muted-foreground">历史记录</h3>
-        {!loading && pagination && pagination.total > 0 && (
-          <span className="text-xs text-muted-foreground">
-            第 {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, pagination.total)} 条 / 共 {pagination.total} 条
-          </span>
-        )}
       </div>
 
       <div className="min-h-[400px]">
@@ -62,7 +57,7 @@ function LogsPageContent() {
 
       {!loading && logs.length > 0 && (
         <div className="flex justify-center">
-          <LogPagination currentPage={currentPage} totalPages={pagination?.totalPages || 1} pageSize={pageSize} pageSizeOptions={pageSizeOptions} onPageChange={setCurrentPage} onPageSizeChange={handlePageSizeChange} />
+          <LogPagination hasMore={hasMore} hasPrev={hasPrev} pageSize={pageSize} pageSizeOptions={pageSizeOptions} onNext={handleNext} onPrev={handlePrev} onPageSizeChange={handlePageSizeChange} />
         </div>
       )}
 

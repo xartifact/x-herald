@@ -14,6 +14,7 @@ export type { StreamLogParams, LogStartResult, FinalizeStreamParams } from './lo
 export {
   logStreamStart,
   logRequestStart,
+  logStartAsync,
   upgradeToStreamLog,
   updateStreamProgress,
   finalizeStreamLog,

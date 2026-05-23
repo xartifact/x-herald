@@ -1,8 +1,8 @@
-import { and, desc, eq, gte, isNotNull, lt, lte, ne, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, inArray, isNotNull, lt, lte, ne, or, sql } from 'drizzle-orm'
 
 import { getDatabase } from '@/core/db/client'
 
-import { requestLogs } from '../db'
+import { requestLogs, requestAttempts } from '../db'
 
 interface DateRange {
   startDate?: string
@@ -10,7 +10,7 @@ interface DateRange {
 }
 
 interface LogsPageParams extends DateRange {
-  page: number
+  cursor?: string   // base64-encoded { createdAt: ISO, id: string }
   pageSize: number
   virtualKeyId?: string
   modelName?: string
@@ -52,8 +52,7 @@ function buildDateConditions(range: DateRange) {
 
 export async function getLogsPage(params: LogsPageParams) {
   const db = getDatabase()
-  const { page, pageSize, virtualKeyId, modelName, status, clientType } = params
-  const offset = (page - 1) * pageSize
+  const { cursor, pageSize, virtualKeyId, modelName, status, clientType } = params
   const conditions = [...buildDateConditions(params)]
 
   if (virtualKeyId) conditions.push(eq(requestLogs.virtualKeyId, virtualKeyId))
@@ -65,21 +64,60 @@ export async function getLogsPage(params: LogsPageParams) {
   }
   if (clientType) conditions.push(eq(requestLogs.clientType, clientType))
 
-  const where = conditions.length > 0 ? and(...conditions) : undefined
-  const [countResult, logs] = await Promise.all([
-    db.select({ count: sql<number>`count(*)` }).from(requestLogs).where(where),
-    db.select(LIST_SELECT).from(requestLogs).where(where)
-      .orderBy(desc(requestLogs.lastUpdatedAt)).limit(pageSize).offset(offset),
-  ])
+  if (cursor) {
+    try {
+      const { createdAt, id } = JSON.parse(Buffer.from(cursor, 'base64').toString()) as { createdAt: string; id: string }
+      conditions.push(
+        or(
+          lt(requestLogs.createdAt, new Date(createdAt)),
+          and(eq(requestLogs.createdAt, new Date(createdAt)), lt(requestLogs.id, id))!
+        )!
+      )
+    } catch { /* invalid cursor, ignore */ }
+  }
 
-  const total = Number(countResult[0]?.count ?? 0)
-  return { logs, total, totalPages: Math.ceil(total / pageSize) }
+  const where = conditions.length > 0 ? and(...conditions) : undefined
+  const rows = await db.select(LIST_SELECT).from(requestLogs).where(where)
+    .orderBy(desc(requestLogs.createdAt), desc(requestLogs.id))
+    .limit(pageSize + 1)
+
+  const hasMore = rows.length > pageSize
+  const logs = hasMore ? rows.slice(0, pageSize) : rows
+
+  let nextCursor: string | null = null
+  if (hasMore && logs.length > 0) {
+    const last = logs[logs.length - 1]
+    nextCursor = Buffer.from(JSON.stringify({
+      createdAt: last.createdAt.toISOString(),
+      id: last.id,
+    })).toString('base64')
+  }
+
+  return { logs, nextCursor, hasMore }
 }
 
 export async function getLogDetail(id: string) {
   const db = getDatabase()
-  const rows = await db.select().from(requestLogs).where(eq(requestLogs.id, id)).limit(1)
-  return rows[0] ?? null
+  const [log, attempts] = await Promise.all([
+    db.select().from(requestLogs).where(eq(requestLogs.id, id)).limit(1),
+    db.select({
+      transformedRequestBody: requestAttempts.transformedRequestBody,
+      providerRequestHeaders: requestAttempts.providerRequestHeaders,
+      providerResponseBody: requestAttempts.providerResponseBody,
+      providerResponseHeaders: requestAttempts.providerResponseHeaders,
+    }).from(requestAttempts)
+      .where(and(eq(requestAttempts.requestLogId, id), eq(requestAttempts.candidateIndex, 0)))
+      .limit(1),
+  ])
+  if (!log[0]) return null
+  const attempt = attempts[0]
+  return {
+    ...log[0],
+    transformedRequestBody: attempt?.transformedRequestBody ?? null,
+    providerRequestHeaders: attempt?.providerRequestHeaders ?? null,
+    providerResponseBody: attempt?.providerResponseBody ?? null,
+    providerResponseHeaders: attempt?.providerResponseHeaders ?? null,
+  }
 }
 
 export async function deleteLog(id: string): Promise<boolean> {
@@ -255,6 +293,67 @@ export async function getKeyStats(period: string) {
     totalTokens: Number(r.totalTokens),
     avgResponseTimeMs: Number(r.avgResponseTimeMs),
     lastUsedAt: r.lastUsedAt ?? null,
+  }))
+}
+
+export async function getConversationTrace(conversationId: string) {
+  const db = getDatabase()
+  const logs = await db.select({
+    id: requestLogs.id,
+    createdAt: requestLogs.createdAt,
+    status: requestLogs.status,
+    modelName: requestLogs.modelName,
+    inputTokens: requestLogs.inputTokens,
+    outputTokens: requestLogs.outputTokens,
+    responseTimeMs: requestLogs.responseTimeMs,
+    errorMessage: requestLogs.errorMessage,
+  }).from(requestLogs)
+    .where(eq(requestLogs.conversationId, conversationId))
+    .orderBy(asc(requestLogs.createdAt))
+
+  if (logs.length === 0) return []
+
+  const logIds = logs.map((l) => l.id)
+  const allAttempts = await db.select({
+    id: requestAttempts.id,
+    requestLogId: requestAttempts.requestLogId,
+    candidateIndex: requestAttempts.candidateIndex,
+    providerName: requestAttempts.providerName,
+    status: requestAttempts.status,
+    failoverReason: requestAttempts.failoverReason,
+    ttfbMs: requestAttempts.ttfbMs,
+    durationMs: requestAttempts.durationMs,
+    statusCode: requestAttempts.statusCode,
+  }).from(requestAttempts)
+    .where(inArray(requestAttempts.requestLogId, logIds))
+    .orderBy(asc(requestAttempts.candidateIndex))
+
+  const attemptsByLogId = new Map<string, typeof allAttempts>()
+  for (const attempt of allAttempts) {
+    const list = attemptsByLogId.get(attempt.requestLogId) ?? []
+    list.push(attempt)
+    attemptsByLogId.set(attempt.requestLogId, list)
+  }
+
+  return logs.map((log) => ({
+    id: log.id,
+    createdAt: log.createdAt.toISOString(),
+    status: log.status,
+    modelName: log.modelName,
+    inputTokens: log.inputTokens,
+    outputTokens: log.outputTokens,
+    responseTimeMs: log.responseTimeMs,
+    errorMessage: log.errorMessage,
+    attempts: (attemptsByLogId.get(log.id) ?? []).map((a) => ({
+      id: a.id,
+      candidateIndex: a.candidateIndex,
+      providerName: a.providerName,
+      status: a.status,
+      failoverReason: a.failoverReason,
+      ttfbMs: a.ttfbMs,
+      durationMs: a.durationMs,
+      statusCode: a.statusCode,
+    })),
   }))
 }
 

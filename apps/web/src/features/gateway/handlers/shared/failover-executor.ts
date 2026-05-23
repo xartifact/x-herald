@@ -151,7 +151,10 @@ export async function executeFailoverIteration(params: FailoverExecutorParams): 
   const shouldFailover = !params.isLastCandidate && FAILOVER_STATUS_CODES.has(response.status);
   if (shouldFailover) {
     params.onRecordFailure();
-    const failoverRespBody = await response.json().catch(() => null);
+    const failoverRespBody = await Promise.race([
+      response.json(),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 3_000)),
+    ]).catch(() => null);
     const ttfbDuration = Date.now() - preprocessEndTime;
     await params.onMarkLogAsFailed({ logId: logId || '', attemptId: attemptId || '', statusCode: response.status, errorMessage: `Failover: HTTP ${response.status}`, failoverReason: deriveFailoverReason(response.status), retryCount: retryResult.retryCount, responseTimeMs: ttfbDuration, providerResponseBody: failoverRespBody });
     if (logId) params.onLogEventBusEmitAborted(logId);

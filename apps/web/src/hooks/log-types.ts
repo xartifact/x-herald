@@ -82,6 +82,35 @@ export const logKeys = {
   detail: (id: string) => [...logKeys.details(), id] as const,
   stats: () => [...logKeys.all, 'stats'] as const,
   storage: () => [...logKeys.all, 'storage'] as const,
+  conversation: (conversationId: string) => [...logKeys.all, 'conversation', conversationId] as const,
+}
+
+export interface ConversationAttempt {
+  id: string
+  candidateIndex: number
+  providerName: string | null
+  status: 'success' | 'failure' | 'pending'
+  failoverReason: string | null
+  ttfbMs: number | null
+  durationMs: number | null
+  statusCode: number | null
+}
+
+export interface ConversationRound {
+  id: string
+  createdAt: string
+  status: 'success' | 'failure' | 'pending'
+  modelName: string
+  inputTokens: number
+  outputTokens: number
+  responseTimeMs: number
+  errorMessage: string | null
+  attempts: ConversationAttempt[]
+}
+
+export interface ConversationTraceResponse {
+  success: boolean
+  data: ConversationRound[]
 }
 
 export interface LogListItem {
@@ -115,12 +144,12 @@ export interface Log extends LogListItem {
   requestBody: Record<string, unknown> | null
   clientResponseHeaders: Record<string, string> | null
   responseBody: Record<string, unknown> | null
-  // 以下字段已迁移至 requestAttempts 表，仅旧记录可能存在
+  // 从 requestAttempts 表合并（candidateIndex=0 的 attempt）
   providerRequestHeaders?: Record<string, string> | null
-  standardRequestBody?: Record<string, unknown> | null
   transformedRequestBody?: Record<string, unknown> | null
   providerResponseHeaders?: Record<string, string> | null
   providerResponseBody?: Record<string, unknown> | null
+  standardRequestBody?: Record<string, unknown> | null
   standardResponseBody?: Record<string, unknown> | null
   clientIp: string | null
   userAgent: string | null
@@ -174,12 +203,8 @@ export interface LogStorage {
 export interface LogsListResponse {
   success: boolean
   data: LogListItem[]
-  pagination: {
-    page: number
-    pageSize: number
-    total: number
-    totalPages: number
-  }
+  nextCursor: string | null
+  hasMore: boolean
 }
 
 export interface LogResponse {

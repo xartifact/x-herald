@@ -1,6 +1,11 @@
 'use client'
 
+import { GitBranch } from 'lucide-react'
+import { useState } from 'react'
+
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { ConversationTraceSheet } from '@/features/logs/components/conversation-trace-sheet'
 import type { Log } from '@/hooks/use-logs'
 
 import { ContentAnalysisSection } from './content-analysis-section'
@@ -17,9 +22,18 @@ interface MetadataBasicSectionsProps {
 }
 
 export function MetadataBasicSections({ log, isPending, isSuccess, contentFeatures }: MetadataBasicSectionsProps) {
+  const [traceOpen, setTraceOpen] = useState(false)
+
   return (
     <>
       <RequestMetaSection log={log} isPending={isPending} isSuccess={isSuccess} />
+      {log.conversationId && (
+        <ConversationTraceSheet
+          conversationId={log.conversationId}
+          open={traceOpen}
+          onOpenChange={setTraceOpen}
+        />
+      )}
 
       {log.metadata?.routing && (
         <Section title="路由追踪">
@@ -63,7 +77,15 @@ export function MetadataBasicSections({ log, isPending, isSuccess, contentFeatur
       )}
 
       {(log.conversationId || log.metadata?.messageSequence) && (
-        <Section title="对话上下文">
+        <Section
+          title="对话上下文"
+          action={log.conversationId ? (
+            <Button variant="outline" size="sm" className="h-6 text-xs gap-1 px-2" onClick={() => setTraceOpen(true)}>
+              <GitBranch className="h-3 w-3" />
+              查看完整对话
+            </Button>
+          ) : undefined}
+        >
           {log.conversationId && (
             <InfoRow label="对话ID" value={String(log.conversationId)} copyable mono />
           )}

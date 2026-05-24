@@ -51,7 +51,9 @@ export type ExportedVirtualModel = ExportedAccessModel;
 export interface ExportedModelRoute {
   name: string;
   description: string | null;
-  /** 用于导入时解析 virtualModelId */
+  /** 用于导入时解析 accessModelIds（完整列表） */
+  virtualModelNames: string[];
+  /** @deprecated use virtualModelNames */
   virtualModelName: string | null;
   conditions: unknown[];
   action: {

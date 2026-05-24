@@ -114,12 +114,14 @@ export async function exportConfig(): Promise<ExportFormat> {
             targetRef = instanceIdToRef.get(action.targetId);
           }
         }
+        const virtualModelNames = (r.accessModelIds ?? [])
+          .map((id) => virtualModelIdToName.get(id))
+          .filter((name): name is string => name != null);
         return {
           name: r.name,
           description: r.description,
-          virtualModelName: (r.accessModelIds && r.accessModelIds.length > 0)
-            ? (virtualModelIdToName.get(r.accessModelIds[0]) ?? null)
-            : null,
+          virtualModelNames,
+          virtualModelName: virtualModelNames[0] ?? null,
           conditions: (r.conditions as unknown[]) ?? [],
           action: { type: action.type, targetRef, reason: action.reason },
           priority: r.priority,

@@ -224,7 +224,12 @@ export async function importConfig(data: ExportFormat['data']): Promise<ImportRe
   // ── 7. modelRoutes ───────────────────────────────────────────────────────
   for (const r of data.modelRoutes) {
     try {
-      const virtualModelId = r.virtualModelName ? (virtualModelNameToId.get(r.virtualModelName) ?? null) : null;
+      const names = r.virtualModelNames && r.virtualModelNames.length > 0
+        ? r.virtualModelNames
+        : (r.virtualModelName ? [r.virtualModelName] : []);
+      const accessModelIds = names
+        .map((name) => virtualModelNameToId.get(name))
+        .filter((id): id is string => id != null);
 
       let targetId: string | undefined;
       if (r.action.targetRef) {
@@ -238,10 +243,11 @@ export async function importConfig(data: ExportFormat['data']): Promise<ImportRe
       }
 
       const action = { type: r.action.type, targetId, reason: r.action.reason };
+      const firstId = accessModelIds[0] ?? null;
       const existing = await db.select({ id: modelRoutes.id }).from(modelRoutes).where(
         and(
-          virtualModelId
-            ? sql`${modelRoutes.accessModelIds} @> ARRAY[${virtualModelId}]::text[]`
+          firstId
+            ? sql`${modelRoutes.accessModelIds} @> ARRAY[${firstId}]::text[]`
             : eq(modelRoutes.name, r.name),
           eq(modelRoutes.name, r.name),
         ),
@@ -249,7 +255,7 @@ export async function importConfig(data: ExportFormat['data']): Promise<ImportRe
 
       if (existing.length > 0) {
         await db.update(modelRoutes).set({
-          description: r.description, accessModelIds: virtualModelId ? [virtualModelId] : [],
+          description: r.description, accessModelIds,
           conditions: r.conditions as never, action: action as never,
           priority: r.priority, enabled: r.enabled, flowData: r.flowData as never, updatedAt: new Date(),
         }).where(eq(modelRoutes.id, existing[0].id));
@@ -257,7 +263,7 @@ export async function importConfig(data: ExportFormat['data']): Promise<ImportRe
       } else {
         await db.insert(modelRoutes).values({
           name: r.name, description: r.description,
-          accessModelIds: virtualModelId ? [virtualModelId] : [],
+          accessModelIds,
           conditions: r.conditions as never, action: action as never,
           priority: r.priority, enabled: r.enabled, flowData: r.flowData as never,
         });

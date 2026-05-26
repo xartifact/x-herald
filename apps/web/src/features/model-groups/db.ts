@@ -110,6 +110,10 @@ export interface InstanceConfig {
   // 是否支持 thinking/extended thinking（Claude 3.7+/4+）
   supportsThinking?: boolean;
 
+  // 当目标模型 thinking 模式开启时，自动为缺少 reasoning_content 的
+  // assistant 消息注入空值（兼容 Kimi 等要求 reasoning_content 必须存在的模型）
+  patchMissingReasoningContent?: boolean;
+
   // 重试配置
   retryConfig?: {
     maxRetries: number;

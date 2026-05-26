@@ -81,6 +81,17 @@ export async function adaptOpenAIRequest(
     }
   }
 
+  // Kimi 等 thinking 模型要求 history 中每条 assistant 消息必须有 reasoning_content。
+  // 客户端（OpenAI SDK）不识别该字段会在多轮对话中丢弃，这里补回空字符串以通过校验。
+  if (ctx.instanceConfig?.patchMissingReasoningContent) {
+    openaiReq.messages = openaiReq.messages.map((msg) => {
+      if (msg.role === 'assistant' && !msg.reasoning_content) {
+        return { ...msg, reasoning_content: '' };
+      }
+      return msg;
+    });
+  }
+
   return {
     body: openaiReq,
     headers: {

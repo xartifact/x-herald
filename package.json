@@ -7,14 +7,18 @@
     "apps/*", "packages/*"
   ],
   "scripts": {
-    "dev": "cd apps/web && bun run dev",
+    "dev": "bun run dev:engine & bun run dev:tanstack",
+    "dev:engine": "cd packages/engine && bun run dev",
+    "dev:tanstack": "cd apps/tanstack && bun run dev",
     "dev:web": "cd apps/web && bun run dev",
-    "build": "bun run build:web",
+    "start": "cd packages/engine && bun run start",
+    "build": "bun run build:tanstack",
+    "build:tanstack": "cd apps/tanstack && bun run build",
     "build:web": "cd apps/web && bun run build",
-    "typecheck": "bun run --filter './apps/*' typecheck",
+    "typecheck": "cd packages/engine && bun run typecheck && cd apps/tanstack && npx tsc --noEmit",
     "lint": "bun run --filter './apps/*' lint",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules apps/*/.turbo packages/*/.turbo"
+    "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules"
   },
   "devDependencies": {
     "@tanstack/react-query-devtools": "^5.91.2",

@@ -3,7 +3,7 @@
 import { Pencil, Trash2 } from 'lucide-react'
 
 import { StatusToggle } from '../status-toggle'
-import type { ModelInstance } from '@x-llm-gateway/engine'
+import type { ModelInstance as BaseModelInstance } from '@x-llm-gateway/engine'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import {
@@ -14,6 +14,10 @@ import {
   TableHeader,
   TableRow,
 } from '../ui/table'
+
+interface ModelInstance extends BaseModelInstance {
+  groupIds?: string[];
+}
 
 interface ProviderInstanceTableProps {
   instances: ModelInstance[]
@@ -67,7 +71,7 @@ export function ProviderInstanceTable({
             <TableCell>
               {(instance.groupIds?.length ?? 0) > 0 ? (
                 <div className="flex flex-wrap gap-1">
-                  {(instance.groupIds ?? []).map((gid) => (
+                  {(instance.groupIds ?? []).map((gid: string) => (
                     <Badge key={gid} variant="outline" className="text-xs">
                       {getGroupName(gid)}
                     </Badge>

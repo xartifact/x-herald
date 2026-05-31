@@ -8,7 +8,7 @@ import { Button } from '@x-llm-gateway/ui'
 import { TableCell, TableRow } from '@x-llm-gateway/ui'
 
 import { KeyDisplay } from './key-display'
-import type { VirtualKey } from '../types'
+import type { VirtualKey } from '@x-llm-gateway/engine'
 
 function formatRelativeTime(dateStr: string | null): string {
   if (!dateStr) return '从未使用'
@@ -78,7 +78,7 @@ export function KeyTableRow({ virtualKey: key, stat, display, actions, formatDat
       <TableCell><Badge variant={key.enabled ? 'default' : 'destructive'}>{key.enabled ? '启用' : '禁用'}</Badge></TableCell>
       <TableCell>
         <span className={`text-sm ${key.expiresAt && new Date(key.expiresAt) < new Date() ? 'text-destructive' : 'text-muted-foreground'}`}>
-          {formatDate(key.expiresAt)}
+          {formatDate(key.expiresAt instanceof Date ? key.expiresAt.toISOString() : key.expiresAt)}
         </span>
       </TableCell>
       <TableCell className="text-right">

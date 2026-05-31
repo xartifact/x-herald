@@ -8,7 +8,7 @@ import { Card, CardContent } from '@x-llm-gateway/ui'
 import { Switch } from '@x-llm-gateway/ui'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@x-llm-gateway/ui'
 
-import { CATCHALL_VM_NAME } from '../constants'
+import { CATCHALL_VM_NAME } from '@x-llm-gateway/engine'
 import type { AccessModel } from '../types'
 
 interface AccessModelTableProps {

@@ -3,7 +3,7 @@
 import { LogOut } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 
-import { APP_VERSION } from '@x-llm-gateway/engine'
+import { APP_VERSION } from '@x-llm-gateway/shared'
 import { useLogout } from '@/features/auth/useAuth'
 import { Button } from '@x-llm-gateway/ui'
 

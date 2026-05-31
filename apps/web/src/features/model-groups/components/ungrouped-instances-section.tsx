@@ -24,7 +24,7 @@ import {
   TableRow,
 } from '@x-llm-gateway/ui'
 
-import type { ModelInstance, ModelGroup } from '../types'
+import type { ModelInstance, ModelGroup } from '@x-llm-gateway/engine'
 import { useSetInstanceGroups, useToggleModelInstance } from '../useModelGroups'
 
 interface UngroupedInstancesSectionProps {

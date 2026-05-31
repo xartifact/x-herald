@@ -8,7 +8,7 @@ import * as z from 'zod'
 
 import { useKeysStats } from '@/hooks/use-logs'
 
-import type { KeyFormData } from './types'
+import type { KeyFormData } from '@x-llm-gateway/engine'
 import { useKeys, useCreateKey, useUpdateKey, useDeleteKey, useResetKey } from './useKeys'
 
 const keySchema = z.object({

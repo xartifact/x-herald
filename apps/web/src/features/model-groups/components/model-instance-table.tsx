@@ -3,7 +3,7 @@
 import { Pencil, Trash2, ArrowUp, ArrowDown } from 'lucide-react'
 
 import { StatusToggle } from '@/components/status-toggle'
-import { InstanceAiChat } from '@/features/ai-assist/components/instance-ai-chat'
+import { InstanceAiChat } from '@x-llm-gateway/ui'
 import { Button } from '@x-llm-gateway/ui'
 import {
   Table,
@@ -14,7 +14,7 @@ import {
   TableRow,
 } from '@x-llm-gateway/ui'
 
-import type { ModelInstance } from '../types'
+import type { ModelInstance } from '@x-llm-gateway/engine'
 
 interface ModelInstanceTableProps {
   instances: ModelInstance[]

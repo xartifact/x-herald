@@ -5,7 +5,7 @@ import { useState, useMemo, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 
 import type { InstanceFormData } from '@/features/model-groups/form-types'
-import type { ModelInstance } from '@/features/model-groups/types'
+import type { ModelInstance } from '@x-llm-gateway/engine'
 import {
   useModelInstances,
   useModelGroups,

@@ -1,11 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-import { loadConfig } from '@x-llm-gateway/engine';
-import { createDatabase } from '@x-llm-gateway/engine';
-import { seedSystemData } from '@x-llm-gateway/engine';
-import { logger } from '@x-llm-gateway/engine';
-import { registerDefaultTransformers } from '@/features/gateway';
+import { loadConfig, createDatabase, seedSystemData, logger, registerDefaultTransformers, recoverCircuitBreakerState } from '@x-llm-gateway/engine';
 
 logger.info('[Instrumentation] 开始应用初始化...');
 
@@ -64,10 +60,7 @@ try {
 
   logger.info('[Instrumentation] 应用初始化完成');
 
-  // Recover circuit breaker states from DB (non-blocking)
-  import('@/features/gateway/services/circuit-breaker')
-    .then(({ recoverCircuitBreakerState }) => recoverCircuitBreakerState())
-    .catch(() => {});
+  recoverCircuitBreakerState().catch(() => {});
 } catch (error) {
   logger.error({ err: error }, '[Instrumentation] 应用初始化失败');
   process.exit(1);

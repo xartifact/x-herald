@@ -3,7 +3,7 @@
 import { Pencil, Trash2 } from 'lucide-react'
 
 import { StatusToggle } from '@/components/status-toggle'
-import type { ModelInstance } from '@/features/model-groups/types'
+import type { ModelInstance } from '@x-llm-gateway/engine'
 import { Badge } from '@x-llm-gateway/ui'
 import { Button } from '@x-llm-gateway/ui'
 import {
@@ -15,8 +15,12 @@ import {
   TableRow,
 } from '@x-llm-gateway/ui'
 
+interface ExtendedModelInstance extends ModelInstance {
+  groupIds?: string[]
+}
+
 interface ProviderInstanceTableProps {
-  instances: ModelInstance[]
+  instances: ExtendedModelInstance[]
   getGroupName: (groupId: string | null) => string
   onEdit: (instance: ModelInstance) => void
   onDelete: (instance: ModelInstance) => void

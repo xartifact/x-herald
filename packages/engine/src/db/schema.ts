@@ -6,3 +6,4 @@ export { requestLogs, requestAttempts, clientRequestedModels, modelRequestStats 
 export { healthTargets, healthRuns } from '../features/health/db';
 export { gatewayConfigs } from '../features/gateway-config/db';
 export { circuitBreakerEvents } from '../features/circuit-breaker/db';
+export { instancePerfSnapshots } from '../features/metrics/db';

@@ -11,6 +11,9 @@ export type { TransformerConstructor, TransformerChainConfig, ProtocolDetector }
 // llm.ts - primary source for all types
 export * from './llm';
 
+export * from './circuit-breaker';
+export * from './log';
+
 // Live stream event type (for real-time log streaming)
 export type LiveStreamEvent =
   | {

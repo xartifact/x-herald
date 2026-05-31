@@ -1,5 +1,5 @@
 'use client';
-import { cn } from "@x-llm-gateway/ui"
+import { cn } from "../../lib/utils"
 
 function Skeleton({ className, ...props }: React.ComponentProps<"div">) {
   return (

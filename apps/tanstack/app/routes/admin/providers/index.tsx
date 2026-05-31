@@ -1,110 +1,132 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
+import { useForm } from 'react-hook-form'
+
 import {
-  Card, CardContent, CardHeader, CardTitle,
-  Badge, Button, Input, Label, Switch, Dialog, DialogContent,
-  DialogHeader, DialogTitle, DialogTrigger,
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Card, CardContent, Button, Input,
+  useProviders, useCreateProvider, useUpdateProvider, useDeleteProvider, useToggleProvider,
+  useModelGroups, useModelInstances,
+  ProviderCard, ProviderFormDialog,
 } from '@x-llm-gateway/ui'
-import { Plus, Server, Pencil, Trash2 } from 'lucide-react'
+import type { Provider } from '@x-llm-gateway/shared'
+import type { ProviderFormData } from '@x-llm-gateway/ui'
+import { Plus, Search } from 'lucide-react'
 
-export const Route = createFileRoute('/admin/providers/')({ component: ProvidersPage })
+const PROTOCOL_OPTIONS = [
+  { value: 'openai', label: 'OpenAI', defaultUrl: 'https://api.openai.com/v1' },
+  { value: 'anthropic', label: 'Anthropic', defaultUrl: 'https://api.anthropic.com' },
+  { value: 'gemini', label: 'Gemini', defaultUrl: 'https://generativelanguage.googleapis.com/v1beta' },
+] as const
 
-function ProvidersPage() {
-  const qc = useQueryClient()
-  const [open, setOpen] = useState(false)
+const defaultValues: ProviderFormData = {
+  name: '', apiKey: '', enabled: true,
+  protocols: { openai: { enabled: true, baseUrl: 'https://api.openai.com/v1' } },
+}
+
+function providerToForm(p: Provider): ProviderFormData {
+  return { name: p.name, apiKey: '', enabled: p.enabled, protocols: { ...p.protocols } }
+}
+
+export function ProvidersPage() {
+  const [dialogOpen, setDialogOpen] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
-  const [form, setForm] = useState({ name: '', baseUrl: '', apiKey: '', protocol: 'openai' })
+  const [searchQuery, setSearchQuery] = useState('')
+  const [expandedProvider, setExpandedProvider] = useState<string | null>(null)
+  const [showApiKey, setShowApiKey] = useState<Record<string, boolean>>({})
+  const [showApiKeyForm, setShowApiKeyForm] = useState(false)
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['providers'],
-    queryFn: () => fetch('/api/providers').then(r => r.json()),
-  })
+  const form = useForm<ProviderFormData>({ defaultValues })
 
-  const saveMutation = useMutation({
-    mutationFn: () => {
-      const url = editId ? `/api/providers/${editId}` : '/api/providers'
-      return fetch(url, {
-        method: editId ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      }).then(r => r.json())
-    },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['providers'] }); setOpen(false); setEditId(null) },
-  })
+  const { data: providers = [], isLoading } = useProviders()
+  const { data: groups = [] } = useModelGroups()
+  const { data: allInstances = [] } = useModelInstances()
+  const createMut = useCreateProvider()
+  const updateMut = useUpdateProvider()
+  const deleteMut = useDeleteProvider()
+  const toggleMut = useToggleProvider()
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => fetch(`/api/providers/${id}`, { method: 'DELETE' }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['providers'] }),
-  })
+  const filtered = searchQuery
+    ? providers.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    : providers
 
-  const openEdit = (p: any) => {
-    setForm({ name: p.name, baseUrl: p.baseUrl, apiKey: '', protocol: p.protocol })
-    setEditId(p.id); setOpen(true)
+  const instancesByProvider = new Map<string, typeof allInstances>()
+  for (const inst of allInstances as any[]) {
+    const pid = inst.providerId
+    if (!instancesByProvider.has(pid)) instancesByProvider.set(pid, [])
+    instancesByProvider.get(pid)!.push(inst)
   }
+  const getGroupName = (gid: string | null) => (groups as any[]).find(g => g.id === gid)?.name ?? gid ?? ''
+
+  const handleAddNew = useCallback(() => { setEditId(null); form.reset(defaultValues); setShowApiKeyForm(false); setDialogOpen(true) }, [form])
+  const handleEdit = useCallback((id: string) => {
+    const p = providers.find(pr => pr.id === id)
+    if (p) { setEditId(id); form.reset(providerToForm(p)); setShowApiKeyForm(false); setDialogOpen(true) }
+  }, [providers, form])
+  const handleSubmit = useCallback((data: ProviderFormData) => {
+    const payload = { name: data.name, apiKey: data.apiKey || undefined, protocols: data.protocols, enabled: data.enabled }
+    if (editId) updateMut.mutate({ id: editId, data: payload as Partial<Provider> }, { onSuccess: () => setDialogOpen(false) })
+    else createMut.mutate(payload as any, { onSuccess: () => setDialogOpen(false) })
+  }, [editId, createMut, updateMut])
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">提供商管理</h1>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => { setEditId(null); setForm({ name: '', baseUrl: '', apiKey: '', protocol: 'openai' }) }}>
-              <Plus className="mr-2 h-4 w-4" /> 添加提供商
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>{editId ? '编辑' : '添加'}提供商</DialogTitle></DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div><Label>名称</Label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
-              <div><Label>地址</Label><Input value={form.baseUrl} onChange={e => setForm({ ...form, baseUrl: e.target.value })} /></div>
-              <div><Label>API Key</Label><Input type="password" value={form.apiKey} onChange={e => setForm({ ...form, apiKey: e.target.value })} /></div>
-              <div>
-                <Label>协议</Label>
-                <Select value={form.protocol} onValueChange={v => setForm({ ...form, protocol: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="openai">OpenAI</SelectItem>
-                    <SelectItem value="anthropic">Anthropic</SelectItem>
-                    <SelectItem value="gemini">Gemini</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
-                {saveMutation.isPending ? '保存中...' : '保存'}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">供应商管理</h2>
+          <p className="text-muted-foreground">管理所有 LLM 供应商配置</p>
+        </div>
+        <Button onClick={handleAddNew}><Plus className="mr-2 h-4 w-4" />添加供应商</Button>
       </div>
 
-      {isLoading ? <p>加载中...</p> : (
-        <div className="grid gap-4">
-          {data?.data?.map((p: any) => (
-            <Card key={p.id}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Server className="h-5 w-5" />
-                    <CardTitle>{p.name}</CardTitle>
-                    <Badge variant={p.enabled ? 'default' : 'secondary'}>{p.enabled ? '启用' : '禁用'}</Badge>
-                    <Badge variant="outline">{p.protocol}</Badge>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => openEdit(p)}><Pencil className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="sm" onClick={() => deleteMutation.mutate(p.id)}><Trash2 className="h-4 w-4" /></Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">{p.baseUrl}</p>
-                <p className="text-sm">模型数: {p.models?.length || 0}</p>
-              </CardContent>
-            </Card>
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="搜索供应商..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-8" />
+        </div>
+      </div>
+
+      {isLoading ? (
+        <Card><CardContent className="py-12"><div className="text-center text-muted-foreground">加载中...</div></CardContent></Card>
+      ) : filtered.length === 0 ? (
+        <Card><CardContent className="py-12"><div className="text-center space-y-4">
+          <p className="text-muted-foreground">{searchQuery ? '没有找到匹配的供应商' : '还没有供应商'}</p>
+          {!searchQuery && <Button onClick={handleAddNew} variant="outline"><Plus className="mr-2 h-4 w-4" />添加第一个供应商</Button>}
+        </div></CardContent></Card>
+      ) : (
+        <div className="space-y-4">
+          {filtered.map(provider => (
+            <ProviderCard
+              key={provider.id} provider={provider as any}
+              instances={instancesByProvider.get(provider.id) || []}
+              isExpanded={expandedProvider === provider.id}
+              showApiKey={!!showApiKey[provider.id]}
+              onToggleExpand={() => setExpandedProvider(expandedProvider === provider.id ? null : provider.id)}
+              onToggleShowApiKey={() => setShowApiKey(prev => ({ ...prev, [provider.id]: !prev[provider.id] }))}
+              onToggle={() => toggleMut.mutate(provider.id)}
+              onEdit={() => handleEdit(provider.id)}
+              onDelete={() => deleteMut.mutate(provider.id)}
+              onSyncModels={() => {}}
+              onConfigureThinking={() => {}}
+              onAddInstance={() => {}}
+              onEditInstance={() => {}}
+              onDeleteInstance={() => {}}
+              onToggleInstance={() => {}}
+              getGroupName={getGroupName}
+            />
           ))}
         </div>
       )}
+
+      <ProviderFormDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        form={form}
+        editingId={editId}
+        isPending={createMut.isPending || updateMut.isPending}
+        showApiKey={showApiKeyForm}
+        onToggleShowApiKey={() => setShowApiKeyForm(!showApiKeyForm)}
+        onSubmit={handleSubmit}
+        protocolOptions={PROTOCOL_OPTIONS as any}
+      />
     </div>
   )
 }

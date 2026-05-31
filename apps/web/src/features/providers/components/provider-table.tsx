@@ -15,7 +15,7 @@ import {
   TableRow,
 } from '@x-llm-gateway/ui'
 
-import type { Provider, ProtocolsConfig } from '../types'
+import type { Provider, ProtocolsConfig } from '@x-llm-gateway/engine'
 
 interface ProviderTableProps {
   providers: Provider[]

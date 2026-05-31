@@ -6,7 +6,7 @@ import type { Node, Edge } from '@xyflow/react'
 import { toast } from 'sonner'
 
 import type { FlowEditorHandle } from './components/flow-editor'
-import { compileFlowToRoutes, validateFlow } from './core/compile-flow'
+import { compileFlowToRoutes, validateFlow } from '@x-llm-gateway/engine'
 import type { ModelRoute } from './types'
 import {
   useCreateModelRoute,

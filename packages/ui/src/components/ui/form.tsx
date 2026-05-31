@@ -14,7 +14,7 @@ import {
   type FieldValues,
 } from "react-hook-form"
 
-import { cn } from "@x-llm-gateway/ui"
+import { cn } from "../../lib/utils"
 import { Label } from "../ui/label"
 
 const Form = FormProvider

@@ -23,6 +23,7 @@ const nextConfig = {
   logging: {
     incomingRequests: false,
   },
+  turbopack: {},
   // Use webpack instead of Turbopack for better Node.js built-in module support
   webpack: (config, { isServer }) => {
     if (!isServer) {

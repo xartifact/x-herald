@@ -1,18 +1,60 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { Card, CardContent, CardHeader, CardTitle } from '@x-llm-gateway/ui'
+import {
+  useSettings,
+  AiModelSection,
+  CircuitBreakerSection,
+  ConfigIOSection,
+  Card, CardContent,
+  Alert, AlertTitle, AlertDescription,
+} from '@x-llm-gateway/ui'
+import { AlertCircle } from 'lucide-react'
 
-export const Route = createFileRoute('/admin/settings/')({
-  component: SettingsPage,
-})
+export function SettingsPage() {
+  const { data: settings, isLoading, error } = useSettings()
 
-function SettingsPage() {
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">系统设置</h1>
+          <p className="text-muted-foreground">管理全局配置与熔断器参数</p>
+        </div>
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-sm text-muted-foreground text-center">加载中...</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">系统设置</h1>
+          <p className="text-muted-foreground">管理全局配置与熔断器参数</p>
+        </div>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>加载失败</AlertTitle>
+          <AlertDescription>
+            {error instanceof Error ? error.message : '未知错误'}
+          </AlertDescription>
+        </Alert>
+      </div>
+    )
+  }
+
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">settings</h1>
-      <Card>
-        <CardHeader><CardTitle>settings</CardTitle></CardHeader>
-        <CardContent>敬请期待</CardContent>
-      </Card>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">系统设置</h1>
+        <p className="text-muted-foreground">管理全局配置与熔断器参数</p>
+      </div>
+
+      <AiModelSection settings={settings} isLoading={isLoading} />
+      <CircuitBreakerSection settings={settings} isLoading={isLoading} />
+      <ConfigIOSection />
     </div>
   )
 }

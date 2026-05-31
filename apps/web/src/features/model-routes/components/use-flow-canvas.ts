@@ -17,7 +17,7 @@ import {
 import { generateId } from '@/lib/shared-utils'
 
 import type { NodeTemplate } from './flow-editor-constants'
-import { getLayoutedElements } from '../core/layout-flow'
+import { getLayoutedElements } from '@x-llm-gateway/engine'
 
 interface UseFlowCanvasOptions {
   initialNodes: Node[]

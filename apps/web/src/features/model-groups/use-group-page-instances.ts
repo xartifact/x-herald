@@ -5,7 +5,7 @@ import { useState, useMemo, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 
 import type { InstanceFormData } from './form-types'
-import type { ModelInstance } from './types'
+import type { ModelInstance } from '@x-llm-gateway/engine'
 import {
   useModelInstances,
   useCreateModelInstance,
@@ -15,11 +15,16 @@ import {
   useReorderInstances,
 } from './use-model-group-instances'
 
+interface ExtendedModelInstance extends ModelInstance {
+  groupIds?: string[]
+}
+
 export function useGroupPageInstances() {
   const [editingInstanceId, setEditingInstanceId] = useState<string | null>(null)
   const [instanceDialogOpen, setInstanceDialogOpen] = useState(false)
 
-  const { data: instances = [], isLoading: instancesLoading } = useModelInstances()
+  const { data: rawInstances = [], isLoading: instancesLoading } = useModelInstances()
+  const instances = rawInstances as ExtendedModelInstance[]
   const createInstance = useCreateModelInstance()
   const updateInstance = useUpdateModelInstance()
   const deleteInstance = useDeleteModelInstance()

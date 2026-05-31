@@ -5,7 +5,7 @@ import { useState, useMemo } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 
-import type { ProtocolsConfig } from './types'
+import type { ProtocolsConfig } from '@x-llm-gateway/engine'
 import { useProviderInstanceState } from './use-provider-instance-state'
 import { useProviders, useCreateProvider, useUpdateProvider, useDeleteProvider, useToggleProvider } from './useProviders'
 import { PROTOCOL_OPTIONS, providerSchema, type ProviderFormData } from './provider-form-schema'

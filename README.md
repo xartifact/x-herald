@@ -39,9 +39,13 @@ x-llm-gateway 是一个透明代理网关，统一管理对 LLM 服务商的访�
 - 日志: Pino
 
 **前端**
-- React 19 + Next.js App Router
+- ~~Next.js App Router~~ (deprecated) → **TanStack Router SPA** (`apps/tanstack`)
 - shadcn/ui (new-york) + TailwindCSS v4
-- React Query v5 + react-hook-form + zod
+- TanStack Query v5 + react-hook-form + zod
+
+**工程化**
+- Monorepo — Bun workspaces + TypeScript project references
+- 共享包: `@x-llm-gateway/shared` (类型/常量), `@x-llm-gateway/engine` (核心层), `@x-llm-gateway/ui` (组件)
 
 ---
 
@@ -50,15 +54,23 @@ x-llm-gateway 是一个透明代理网关，统一管理对 LLM 服务商的访�
 ```
 x-llm-gateway/
 ├── apps/
-│   └── web/                    # Next.js + Hono 全栈应用
-│       ├── src/
-│       │   ├── app/            # Next.js App Router（页面 + API 入口）
-│       │   │   └── admin/      # 管理界面
-│       │   ├── core/           # 核心基础设施（DB / Config / Middleware）
-│       │   ├── features/       # 功能模块（按领域划分）
-│       │   └── types/          # TypeScript 类型
-│       └── drizzle/            # DB schema & migrations
-└── docs/                       # 文档
+│   ├── web/                    # Next.js + Hono 全栈应用（⚠️ 管理界面已弃用）
+│   │   ├── src/
+│   │   │   ├── app/            # Next.js App Router（页面 + API 入口）
+│   │   │   │   └── admin/      # 管理界面（迁移中 → apps/tanstack）
+│   │   │   ├── api/            # Hono API 路由
+│   │   │   └── features/       # 功能模块（按领域划分）
+│   │   └── drizzle/            # DB schema & migrations
+│   ├── tanstack/               # ✅ TanStack Router SPA 管理界面（推荐）
+│   │   └── app/
+│   │       └── routes/         # 代码路由（admin, login, __root）
+│   └── cli/                    # CLI 工具
+├── packages/
+│   ├── shared/                 # @x-llm-gateway/shared — 类型/schema/常量
+│   ├── engine/                 # @x-llm-gateway/engine — 网关内核（config/db/middleware）
+│   └── ui/                    # @x-llm-gateway/ui — shadcn 组件 + admin 组件库
+├── docs/                       # 文档
+└── docker-compose.yml          # Docker 部署
 ```
 
 ---
@@ -154,17 +166,31 @@ bun run dev
 
 ## 管理界面
 
-访问 `http://localhost:3000/admin`，包含以下页面：
+> ⚠️ `apps/web` 中的管理界面已弃用，所有 admin 功能正逐步迁移至 `apps/tanstack` (TanStack Router SPA)。
+> 新的管理界面开发请使用 `apps/tanstack`。
 
-- **Dashboard** — 概览统计
-- **Providers** — 服务商管理（API Key、Base URL）
-- **Model Groups** — 模型组 + 模型实例管理
-- **Virtual Models** — 虚拟模型管理
-- **Model Routes** — 路由规则配置
-- **Keys** — 虚拟密钥管理（速率限制、Token 额度）
-- **Logs** — 请求日志查询
-- **Client Models** — 客户端模型统计
-- **Settings** — 配置导入 / 导出
+### TanStack SPA (`apps/tanstack`)
+
+访问 `http://localhost:3000`（开发服务器），包含以下完整页面：
+
+| 页面 | 状态 |
+|------|------|
+| **Dashboard** — 概览统计（接入 3 个实时 API） | ✅ |
+| **Providers** — 服务商管理 | ✅ |
+| **Model Groups** — 模型组 + 模型实例 CRUD | ✅（Dialog 创建/编辑/删除/启用切换） |
+| **Virtual Models + Model Routes** — 虚拟模型 + 路由规则 | ✅ |
+| **Keys** — 虚拟密钥管理 | ✅ |
+| **Logs** — 请求日志查询 | ✅ |
+| **Client Models** — 客户端模型统计 | ✅ |
+| **Settings** — 配置导入 / 导出 | ✅ |
+| **Circuit Breaker** — 熔断器状态监控 | ✅ |
+| **Access Models** — 访问模型白名单/黑名单 | ✅ |
+| **Provider Stats** — 服务商统计面板 | ✅ |
+| **Metrics** — 网关性能指标 | ✅ |
+
+### apps/web (已弃用)
+
+旧版管理界面仍可通过 `http://localhost:3000/admin` 访问，但不再接受新功能开发。
 
 ---
 

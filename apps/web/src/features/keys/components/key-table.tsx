@@ -12,7 +12,7 @@ import {
 
 import type { KeyRowActions, KeyRowDisplay } from './key-table-row'
 import { KeyTableRow } from './key-table-row'
-import type { VirtualKey } from '../types'
+import type { VirtualKey } from '@x-llm-gateway/engine'
 
 interface KeyTableProps {
   keys: VirtualKey[]

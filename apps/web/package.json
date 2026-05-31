@@ -2,6 +2,7 @@
   "name": "@x-llm-gateway/web",
   "version": "0.0.0",
   "private": true,
+  "deprecated": "apps/web 即将弃用，所有 admin 功能已迁移到 apps/tanstack SPA。新的开发请使用 apps/tanstack。",
   "type": "module",
   "scripts": {
     "dev": "next dev",

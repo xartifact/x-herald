@@ -8,7 +8,7 @@ import { Input } from '@x-llm-gateway/ui'
 
 import { AccessModelFormDialog } from './components/access-model-form-dialog'
 import { AccessModelTable } from './components/AccessModelTable'
-import { CATCHALL_VM_NAME } from './constants'
+import { CATCHALL_VM_NAME } from '@x-llm-gateway/engine'
 import { useAccessModelPage } from './useAccessModelPage'
 
 export default function AccessModelsPage() {

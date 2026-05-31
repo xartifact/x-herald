@@ -1,1 +1,1 @@
-export { default as logsRoutes } from './routes';
+export {}

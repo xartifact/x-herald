@@ -1,18 +1,21 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { Card, CardContent, CardHeader, CardTitle } from '@x-llm-gateway/ui'
+import { MetricsSummaryCards, InstancePerfTable, ProviderQualityTable } from '@x-llm-gateway/ui'
+import { useMetricsSummary } from '@x-llm-gateway/ui'
 
-export const Route = createFileRoute('/admin/metrics/')({
-  component: MetricsPage,
-})
+export function MetricsPage() {
+  const { data: summary, isLoading } = useMetricsSummary()
 
-function MetricsPage() {
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">metrics</h1>
-      <Card>
-        <CardHeader><CardTitle>metrics</CardTitle></CardHeader>
-        <CardContent>敬请期待</CardContent>
-      </Card>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">性能指标</h1>
+        <p className="text-muted-foreground text-sm mt-1">
+          实例级 TTFB / 总耗时 / TPS 时序追踪，每5分钟聚合，自动基线对比
+        </p>
+      </div>
+
+      <MetricsSummaryCards summary={summary} isLoading={isLoading} />
+      <InstancePerfTable />
+      <ProviderQualityTable />
     </div>
   )
 }

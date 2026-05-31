@@ -15,7 +15,7 @@ import {
 } from '@x-llm-gateway/ui'
 import { Switch } from '@x-llm-gateway/ui'
 import { cn } from '@x-llm-gateway/ui'
-import { CLIENT_REGISTRY } from '@/features/gateway/services/client-identifier'
+import { CLIENT_REGISTRY } from '@x-llm-gateway/engine'
 
 interface LogSearchFilterProps {
   searchQuery: string

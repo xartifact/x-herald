@@ -6,7 +6,7 @@ import { Separator } from '@x-llm-gateway/ui'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@x-llm-gateway/ui'
 import { Tabs, TabsList, TabsTrigger } from '@x-llm-gateway/ui'
 
-import type { VirtualKey } from '../types'
+import type { VirtualKey } from '@x-llm-gateway/engine'
 
 interface KeyStatsSheetProps {
   open: boolean

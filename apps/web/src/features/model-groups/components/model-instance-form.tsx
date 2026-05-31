@@ -2,7 +2,7 @@
 
 import { UseFormReturn } from 'react-hook-form'
 
-import type { Provider } from '@/features/providers/types'
+import type { Provider } from '@x-llm-gateway/engine'
 import { Button } from '@x-llm-gateway/ui'
 import {
   Dialog,

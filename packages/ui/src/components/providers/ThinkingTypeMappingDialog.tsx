@@ -14,8 +14,7 @@ import { Label } from '../ui/label'
 import { MappingRuleRow } from './mapping-rule-row'
 import { SyntheticThinkingSelector } from './synthetic-thinking-selector'
 import { formSchema, type MappingFormData } from './thinking-mapping-types'
-// TODO(6): from apps/web
-import { useProviderThinkingConfig, useUpdateProviderThinkingConfig } from '../hooks/useThinkingTypeMappings'
+import { useProviderThinkingConfig, useUpdateProviderThinkingConfig } from '../../hooks/useThinkingTypeMappings'
 
 interface ThinkingTypeMappingDialogProps {
   providerId: string

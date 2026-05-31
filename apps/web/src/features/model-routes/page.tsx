@@ -8,7 +8,7 @@ import { Card, CardContent } from '@x-llm-gateway/ui'
 
 import { DeployBanner } from './components/deploy-banner'
 import { FlowEditor } from './components/flow-editor'
-import { buildFlowFromData } from './core/build-flow'
+import { buildFlowFromData } from '@x-llm-gateway/engine'
 import { useModelRoutePage } from './useModelRoutePage'
 import { useModelRoutes } from './useModelRoutes'
 

@@ -21,6 +21,8 @@ export interface CreateEngineOptions {
   }>;
   /** Skip config validation (default: false) */
   skipConfigValidation?: boolean;
+  /** Mount management API routes (default: false) */
+  mountAdminAPI?: boolean;
 }
 
 export interface EngineInstance {
@@ -61,14 +63,56 @@ export async function createEngine(options: CreateEngineOptions = {}): Promise<E
   const { default: gatewayRoutes } = await import('./gateway/api');
   app.route('/api/v1', gatewayRoutes);
 
-  // 7. Mount extra routes from the consumer app
+  // 7. Mount management API routes (if enabled)
+  if (options.mountAdminAPI) {
+    const { default: healthRoutes } = await import('./features/health/api');
+    app.route('/api/health', healthRoutes);
+
+    const { default: authRoutes } = await import('./features/auth/api');
+    app.route('/api/auth', authRoutes);
+
+    const { default: providersRoutes } = await import('./features/providers/api');
+    app.route('/api/providers', providersRoutes);
+
+    const { default: modelGroupRoutes } = await import('./features/model-groups/api');
+    app.route('/api/model-groups', modelGroupRoutes);
+
+    const { default: keysRoutes } = await import('./features/keys/api');
+    app.route('/api/keys', keysRoutes);
+
+    const { default: logsRoutes } = await import('./features/logs/api');
+    app.route('/api/logs', logsRoutes);
+
+    const { default: settingsRoutes } = await import('./features/settings/api');
+    app.route('/api/settings', settingsRoutes);
+
+    const { default: accessModelRoutes } = await import('./features/access-models/api');
+    app.route('/api/access-models', accessModelRoutes);
+
+    const { default: modelRoutesApi } = await import('./features/model-routes/api');
+    app.route('/api/model-routes', modelRoutesApi);
+
+    const { default: configIORoutes } = await import('./features/config-io/api');
+    app.route('/api/config', configIORoutes);
+
+    const { default: circuitBreakerRoutes } = await import('./features/circuit-breaker/api');
+    app.route('/api/circuit-breaker', circuitBreakerRoutes);
+
+    const { metricsRoutes } = await import('./features/metrics/api');
+    app.route('/api/metrics', metricsRoutes);
+
+    const { aiRoutes } = await import('./features/ai-assist/api');
+    app.route('/api/ai', aiRoutes);
+  }
+
+  // 9. Mount extra routes from the consumer app
   if (options.extraRoutes) {
     for (const { path, routes } of options.extraRoutes) {
       app.route(path, routes);
     }
   }
 
-  // 8. API Root route
+  // 10. API Root route
   app.get('/api', (c) => {
     return c.json({
       name: 'x-llm-gateway API',
@@ -78,7 +122,7 @@ export async function createEngine(options: CreateEngineOptions = {}): Promise<E
     });
   });
 
-  // 9. 404 handler
+  // 11. 404 handler
   app.notFound((c) => {
     return c.json(
       {

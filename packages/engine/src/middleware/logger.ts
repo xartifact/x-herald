@@ -1,10 +1,10 @@
-import type { Context, Next } from 'hono';
+import type { MiddlewareHandler } from 'hono';
 
 import rootLogger, { isRequestLogEnabled } from '../lib/logger';
 
 const logger = rootLogger.child({ module: 'http' });
 
-export async function requestLogger(c: Context, next: Next): Promise<void> {
+export const requestLogger: MiddlewareHandler = async (c, next) => {
   const start = Date.now();
   const method = c.req.method;
   const path = c.req.path;
@@ -26,4 +26,4 @@ export async function requestLogger(c: Context, next: Next): Promise<void> {
     { requestId, method, path, status, duration },
     `${method} ${path} ${status} ${duration}ms`
   );
-}
+};

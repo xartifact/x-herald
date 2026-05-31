@@ -5,7 +5,7 @@
 
 import { useEffect, useRef } from 'react';
 
-import { IS_DEVELOPMENT } from '@x-llm-gateway/engine';
+import { IS_DEVELOPMENT } from '@x-llm-gateway/shared';
 
 interface RenderInfo {
   componentName: string;

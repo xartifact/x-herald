@@ -17,7 +17,6 @@ import { Button } from '../ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 
 import { ProviderCardBody } from './provider-card-body'
-// TODO(6): from apps/web
 import type { Provider, ProtocolsConfig } from '@x-llm-gateway/engine'
 
 interface ProviderCardProps {

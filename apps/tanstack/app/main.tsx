@@ -1,48 +1,55 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { RouterProvider, createRouter, createRoute } from '@tanstack/react-router'
-import { Route as RootRoute } from './routes/__root'
-import { Route as LoginRoute } from './routes/login'
-import { Route as AdminRoute } from './routes/admin'
+import { RouterProvider, createRouter, createRoute, createRootRoute } from '@tanstack/react-router'
+import { RootLayout } from './routes/__root'
+import { LoginPage } from './routes/login'
+import { AdminLayout } from './routes/admin'
 
 // Admin sub-pages
-import { Route as DashboardRoute } from './routes/admin/index'
-import { Route as ProvidersRoute } from './routes/admin/providers/index'
-import { Route as KeysRoute } from './routes/admin/keys/index'
-import { Route as ModelGroupsRoute } from './routes/admin/model-groups/index'
-import { Route as SettingsRoute } from './routes/admin/settings/index'
-import { Route as AccessModelsRoute } from './routes/admin/access-models/index'
-import { Route as CircuitBreakerRoute } from './routes/admin/circuit-breaker/index'
-import { Route as LogsRoute } from './routes/admin/logs/index'
-import { Route as MetricsRoute } from './routes/admin/metrics/index'
-import { Route as ClientModelsRoute } from './routes/admin/client-models/index'
-import { Route as ProviderStatsRoute } from './routes/admin/provider-stats/index'
+import { DashboardPage } from './routes/admin/index'
+import { ProvidersPage } from './routes/admin/providers/index'
+import { KeysPage } from './routes/admin/keys/index'
+import { ModelGroupsPage } from './routes/admin/model-groups/index'
+import { SettingsPage } from './routes/admin/settings/index'
+import { AccessModelsPage } from './routes/admin/access-models/index'
+import { CircuitBreakerPage } from './routes/admin/circuit-breaker/index'
+import { LogsPage } from './routes/admin/logs/index'
+import { MetricsPage } from './routes/admin/metrics/index'
+import { ClientModelsPage } from './routes/admin/client-models/index'
+import { ProviderStatsPage } from './routes/admin/provider-stats/index'
+import { ModelRoutesPage } from './routes/admin/model-routes/index'
 
 import './styles/app.css'
 
-const rootRoute = RootRoute
+const rootRoute = createRootRoute({ component: RootLayout })
 
-const loginRoute = createRoute({ getParentRoute: () => rootRoute, path: '/login', component: LoginRoute.component })
-const indexRoute = createRoute({ getParentRoute: () => rootRoute, path: '/',
-  component: () => { React.useEffect(() => { window.location.href = '/login' }, []); return null } })
+const loginRoute = createRoute({ getParentRoute: () => rootRoute, path: '/login', component: LoginPage })
+const indexRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/',
+  component: () => { React.useEffect(() => { window.location.href = '/login' }, []); return null },
+})
 
-const adminRoute = createRoute({ getParentRoute: () => rootRoute, path: '/admin', component: AdminRoute.component })
-const dashboardRoute = createRoute({ getParentRoute: () => adminRoute, path: '/', component: DashboardRoute.component })
-const providersRoute = createRoute({ getParentRoute: () => adminRoute, path: '/providers', component: ProvidersRoute.component })
-const keysRoute = createRoute({ getParentRoute: () => adminRoute, path: '/keys', component: KeysRoute.component })
-const modelGroupsRoute = createRoute({ getParentRoute: () => adminRoute, path: '/model-groups', component: ModelGroupsRoute.component })
-const settingsRoute = createRoute({ getParentRoute: () => adminRoute, path: '/settings', component: SettingsRoute.component })
-const accessModelsRoute = createRoute({ getParentRoute: () => adminRoute, path: '/access-models', component: AccessModelsRoute.component })
-const circuitBreakerRoute = createRoute({ getParentRoute: () => adminRoute, path: '/circuit-breaker', component: CircuitBreakerRoute.component })
-const logsRoute = createRoute({ getParentRoute: () => adminRoute, path: '/logs', component: LogsRoute.component })
-const metricsRoute = createRoute({ getParentRoute: () => adminRoute, path: '/metrics', component: MetricsRoute.component })
-const clientModelsRoute = createRoute({ getParentRoute: () => adminRoute, path: '/client-models', component: ClientModelsRoute.component })
-const providerStatsRoute = createRoute({ getParentRoute: () => adminRoute, path: '/provider-stats', component: ProviderStatsRoute.component })
+const adminRoute = createRoute({ getParentRoute: () => rootRoute, path: '/admin', component: AdminLayout })
+const dashboardRoute = createRoute({ getParentRoute: () => adminRoute, path: '/dashboard', component: DashboardPage })
+const indexRoute2 = createRoute({ getParentRoute: () => adminRoute, path: '/', component: DashboardPage })
+const providersRoute = createRoute({ getParentRoute: () => adminRoute, path: '/providers', component: ProvidersPage })
+const keysRoute = createRoute({ getParentRoute: () => adminRoute, path: '/keys', component: KeysPage })
+const modelGroupsRoute = createRoute({ getParentRoute: () => adminRoute, path: '/model-groups', component: ModelGroupsPage })
+const settingsRoute = createRoute({ getParentRoute: () => adminRoute, path: '/settings', component: SettingsPage })
+const accessModelsRoute = createRoute({ getParentRoute: () => adminRoute, path: '/access-models', component: AccessModelsPage })
+const circuitBreakerRoute = createRoute({ getParentRoute: () => adminRoute, path: '/circuit-breaker', component: CircuitBreakerPage })
+const logsRoute = createRoute({ getParentRoute: () => adminRoute, path: '/logs', component: LogsPage })
+const metricsRoute = createRoute({ getParentRoute: () => adminRoute, path: '/metrics', component: MetricsPage })
+const clientModelsRoute = createRoute({ getParentRoute: () => adminRoute, path: '/client-models', component: ClientModelsPage })
+const providerStatsRoute = createRoute({ getParentRoute: () => adminRoute, path: '/provider-stats', component: ProviderStatsPage })
+const modelRoutesRoute = createRoute({ getParentRoute: () => adminRoute, path: '/model-routes', component: ModelRoutesPage })
 
 adminRoute.addChildren([
-  dashboardRoute, providersRoute, keysRoute, modelGroupsRoute,
+  dashboardRoute, indexRoute2, providersRoute, keysRoute, modelGroupsRoute,
   settingsRoute, accessModelsRoute, circuitBreakerRoute,
   logsRoute, metricsRoute, clientModelsRoute, providerStatsRoute,
+  modelRoutesRoute,
 ])
 
 const routeTree = rootRoute.addChildren([loginRoute, indexRoute, adminRoute])

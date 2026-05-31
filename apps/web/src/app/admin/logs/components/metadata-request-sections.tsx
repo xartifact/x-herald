@@ -1,7 +1,7 @@
 'use client'
 
 import { Badge } from '@x-llm-gateway/ui'
-import { CLIENT_REGISTRY } from '@/features/gateway/services/client-identifier'
+import { CLIENT_REGISTRY } from '@x-llm-gateway/engine'
 import type { Log } from '@/hooks/use-logs'
 
 import { InfoRow, Section } from './log-info-row'

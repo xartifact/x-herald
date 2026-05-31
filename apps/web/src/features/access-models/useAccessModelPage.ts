@@ -4,7 +4,7 @@ import { useState } from 'react'
 
 import { useForm } from 'react-hook-form'
 
-import type { AccessModel } from './types'
+import type { AccessModel } from '@x-llm-gateway/shared'
 import {
   useAccessModels,
   useCreateAccessModel,

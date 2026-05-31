@@ -1,9 +1,6 @@
 'use client'
 
-import { AiModelSection } from './ai-model-section'
-import { CircuitBreakerSection } from './circuit-breaker-section'
-import { ConfigIOSection } from './config-io-section'
-import { useSettings } from './useSettings'
+import { AiModelSection, CircuitBreakerSection, ConfigIOSection, useSettings } from '@x-llm-gateway/ui'
 
 export default function SettingsPage() {
   const { data: settings, isLoading } = useSettings()

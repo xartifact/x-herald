@@ -1,12 +1,22 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { createEngine } from '@x-llm-gateway/engine'
+import { createEngine, createDatabase, loadConfig, seedSystemData } from '@x-llm-gateway/engine'
 
 let engine: Awaited<ReturnType<typeof createEngine>> | null = null
+let initialized = false
+
+async function initialize() {
+  if (initialized) return
+  const config = loadConfig()
+  await createDatabase(config.database)
+  await seedSystemData()
+  initialized = true
+}
 
 async function getEngine() {
   if (!engine) {
-    engine = await createEngine({ skipConfigValidation: true })
+    await initialize()
+    engine = await createEngine({ mountAdminAPI: true, skipConfigValidation: true })
   }
   return engine
 }

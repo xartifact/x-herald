@@ -11,13 +11,13 @@ import {
 } from 'lucide-react'
 
 import { StatusToggle } from '@/components/status-toggle'
-import type { ModelInstance } from '@/features/model-groups/types'
+import type { ModelInstance } from '@x-llm-gateway/engine'
 import { Badge } from '@x-llm-gateway/ui'
 import { Button } from '@x-llm-gateway/ui'
 import { Card, CardContent, CardHeader, CardTitle } from '@x-llm-gateway/ui'
 
 import { ProviderCardBody } from './provider-card-body'
-import type { Provider, ProtocolsConfig } from '../types'
+import type { Provider, ProtocolsConfig } from '@x-llm-gateway/engine'
 
 interface ProviderCardProps {
   provider: Provider

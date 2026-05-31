@@ -1,11 +1,11 @@
 import { Eye, EyeOff, Plus } from 'lucide-react'
 
-import type { ModelInstance } from '@/features/model-groups/types'
+import type { ModelInstance } from '@x-llm-gateway/engine'
 import { Button } from '@x-llm-gateway/ui'
 import { Separator } from '@x-llm-gateway/ui'
 
 import { ProviderInstanceTable } from './provider-instance-table'
-import type { Provider } from '../types'
+import type { Provider } from '@x-llm-gateway/engine'
 
 interface InstanceHandlers {
   onAdd: () => void

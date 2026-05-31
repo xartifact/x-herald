@@ -1,13 +1,9 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Button, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, Input, Label } from '@x-llm-gateway/ui'
 import { LogIn } from 'lucide-react'
 
-export const Route = createFileRoute('/login')({
-  component: LoginPage,
-})
-
-function LoginPage() {
+export function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const navigate = useNavigate()
@@ -16,7 +12,7 @@ function LoginPage() {
     e.preventDefault()
     setError('')
     try {
-      const res = await fetch('/api/auth', {
+      const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password }),

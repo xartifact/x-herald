@@ -1,1 +1,1 @@
-export { default as settingsRoutes } from './api';
+export { default as SettingsPage } from './page'

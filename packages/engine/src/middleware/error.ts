@@ -1,4 +1,4 @@
-import type { Context, Next } from 'hono';
+import type { MiddlewareHandler } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 
 import rootLogger from '../lib/logger';
@@ -16,7 +16,7 @@ export class AppError extends Error {
   }
 }
 
-export async function errorHandler(c: Context, next: Next): Promise<void | Response> {
+export const errorHandler: MiddlewareHandler = async (c, next) => {
   try {
     await next();
   } catch (error) {
@@ -60,4 +60,4 @@ export async function errorHandler(c: Context, next: Next): Promise<void | Respo
       500
     );
   }
-}
+};

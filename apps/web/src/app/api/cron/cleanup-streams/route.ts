@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { CRON_SECRET } from '@x-llm-gateway/engine';
-import { cleanupStaleStreams } from '@/features/gateway/services/stream-cleanup';
+import { CRON_SECRET, cleanupStaleStreams } from '@x-llm-gateway/engine';
 
 /**
  * Cron job endpoint for cleaning up stale streams

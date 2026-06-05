@@ -15,7 +15,7 @@ export function SettingsPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">系统设置</h1>
+          <h1 className="text-3xl font-bold tracking-tight">系统设置</h1>
           <p className="text-muted-foreground">管理全局配置与熔断器参数</p>
         </div>
         <Card>
@@ -31,7 +31,7 @@ export function SettingsPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">系统设置</h1>
+          <h1 className="text-3xl font-bold tracking-tight">系统设置</h1>
           <p className="text-muted-foreground">管理全局配置与熔断器参数</p>
         </div>
         <Alert variant="destructive">
@@ -48,7 +48,7 @@ export function SettingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">系统设置</h1>
+        <h1 className="text-3xl font-bold tracking-tight">系统设置</h1>
         <p className="text-muted-foreground">管理全局配置与熔断器参数</p>
       </div>
 

@@ -6,7 +6,7 @@ import {
   useModelRoutes, useAccessModels, useModelGroups, useModelInstances,
   useModelRoutePage,
 } from '@x-llm-gateway/ui'
-import { buildFlowFromData } from '@x-llm-gateway/engine'
+import { buildFlowFromData } from '@x-llm-gateway/ui'
 
 export function ModelRoutesPage() {
   const { data: routes = [], isLoading: routesLoading } = useModelRoutes()

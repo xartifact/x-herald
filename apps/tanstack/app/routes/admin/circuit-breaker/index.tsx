@@ -50,7 +50,7 @@ export function CircuitBreakerPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">熔断记录</h1>
+          <h1 className="text-3xl font-bold tracking-tight">熔断记录</h1>
           <p className="text-muted-foreground">模型实例熔断状态与事件历史</p>
         </div>
         <Button variant="outline" size="sm" onClick={() => { statsQuery.refetch(); eventsQuery.refetch(); realtimeQuery.refetch(); }}>

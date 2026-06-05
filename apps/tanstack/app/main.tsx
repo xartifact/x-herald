@@ -14,6 +14,7 @@ import { SettingsPage } from './routes/admin/settings/index'
 import { AccessModelsPage } from './routes/admin/access-models/index'
 import { CircuitBreakerPage } from './routes/admin/circuit-breaker/index'
 import { LogsPage } from './routes/admin/logs/index'
+import { LogDetailPage } from './routes/admin/logs/log-detail'
 import { MetricsPage } from './routes/admin/metrics/index'
 import { ClientModelsPage } from './routes/admin/client-models/index'
 import { ProviderStatsPage } from './routes/admin/provider-stats/index'
@@ -40,19 +41,22 @@ const settingsRoute = createRoute({ getParentRoute: () => adminRoute, path: '/se
 const accessModelsRoute = createRoute({ getParentRoute: () => adminRoute, path: '/access-models', component: AccessModelsPage })
 const circuitBreakerRoute = createRoute({ getParentRoute: () => adminRoute, path: '/circuit-breaker', component: CircuitBreakerPage })
 const logsRoute = createRoute({ getParentRoute: () => adminRoute, path: '/logs', component: LogsPage })
+const logDetailRoute = createRoute({ getParentRoute: () => adminRoute, path: '/logs/$logId', component: LogDetailPage })
 const metricsRoute = createRoute({ getParentRoute: () => adminRoute, path: '/metrics', component: MetricsPage })
 const clientModelsRoute = createRoute({ getParentRoute: () => adminRoute, path: '/client-models', component: ClientModelsPage })
 const providerStatsRoute = createRoute({ getParentRoute: () => adminRoute, path: '/provider-stats', component: ProviderStatsPage })
 const modelRoutesRoute = createRoute({ getParentRoute: () => adminRoute, path: '/model-routes', component: ModelRoutesPage })
 
-adminRoute.addChildren([
-  dashboardRoute, indexRoute2, providersRoute, keysRoute, modelGroupsRoute,
-  settingsRoute, accessModelsRoute, circuitBreakerRoute,
-  logsRoute, metricsRoute, clientModelsRoute, providerStatsRoute,
-  modelRoutesRoute,
+const routeTree = rootRoute.addChildren([
+  loginRoute,
+  indexRoute,
+  adminRoute.addChildren([
+    dashboardRoute, indexRoute2, providersRoute, keysRoute, modelGroupsRoute,
+    settingsRoute, accessModelsRoute, circuitBreakerRoute,
+    logsRoute, logDetailRoute, metricsRoute, clientModelsRoute, providerStatsRoute,
+    modelRoutesRoute,
+  ]),
 ])
-
-const routeTree = rootRoute.addChildren([loginRoute, indexRoute, adminRoute])
 const router = createRouter({ routeTree })
 
 declare module '@tanstack/react-router' {

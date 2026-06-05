@@ -1,21 +1,18 @@
 import { useState, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 
 import {
   Card, CardContent, Button, Input,
   useProviders, useCreateProvider, useUpdateProvider, useDeleteProvider, useToggleProvider,
-  useModelGroups, useModelInstances,
-  ProviderCard, ProviderFormDialog,
+  useProviderInstanceState, useProviderDialogState,
+  ProviderCard, ProviderFormDialog, ModelInstanceForm,
+  SyncModelsDialog, ThinkingTypeMappingDialog,
+  PROTOCOL_OPTIONS, providerSchema,
 } from '@x-llm-gateway/ui'
 import type { Provider } from '@x-llm-gateway/shared'
 import type { ProviderFormData } from '@x-llm-gateway/ui'
 import { Plus, Search } from 'lucide-react'
-
-const PROTOCOL_OPTIONS = [
-  { value: 'openai', label: 'OpenAI', defaultUrl: 'https://api.openai.com/v1' },
-  { value: 'anthropic', label: 'Anthropic', defaultUrl: 'https://api.anthropic.com' },
-  { value: 'gemini', label: 'Gemini', defaultUrl: 'https://generativelanguage.googleapis.com/v1beta' },
-] as const
 
 const defaultValues: ProviderFormData = {
   name: '', apiKey: '', enabled: true,
@@ -34,27 +31,43 @@ export function ProvidersPage() {
   const [showApiKey, setShowApiKey] = useState<Record<string, boolean>>({})
   const [showApiKeyForm, setShowApiKeyForm] = useState(false)
 
-  const form = useForm<ProviderFormData>({ defaultValues })
+  const form = useForm<ProviderFormData>({
+    defaultValues,
+    resolver: zodResolver(providerSchema),
+  })
 
   const { data: providers = [], isLoading } = useProviders()
-  const { data: groups = [] } = useModelGroups()
-  const { data: allInstances = [] } = useModelInstances()
   const createMut = useCreateProvider()
   const updateMut = useUpdateProvider()
   const deleteMut = useDeleteProvider()
   const toggleMut = useToggleProvider()
 
+  const {
+    instanceDialogOpen,
+    setInstanceDialogOpen,
+    editingInstanceId,
+    instanceForm,
+    instanceSubmitPending,
+    instancesByProvider,
+    getGroupName,
+    handleAddInstance,
+    handleEditInstance,
+    handleDeleteInstance,
+    handleToggleInstance,
+    onInstanceSubmit,
+  } = useProviderInstanceState()
+
+  const {
+    thinkingMappingOpen, setThinkingMappingOpen,
+    syncModelsOpen, setSyncModelsOpen,
+    selectedProvider,
+    handleConfigureThinkingMapping,
+    handleSyncModels: openSyncModels,
+  } = useProviderDialogState()
+
   const filtered = searchQuery
     ? providers.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
     : providers
-
-  const instancesByProvider = new Map<string, typeof allInstances>()
-  for (const inst of allInstances as any[]) {
-    const pid = inst.providerId
-    if (!instancesByProvider.has(pid)) instancesByProvider.set(pid, [])
-    instancesByProvider.get(pid)!.push(inst)
-  }
-  const getGroupName = (gid: string | null) => (groups as any[]).find(g => g.id === gid)?.name ?? gid ?? ''
 
   const handleAddNew = useCallback(() => { setEditId(null); form.reset(defaultValues); setShowApiKeyForm(false); setDialogOpen(true) }, [form])
   const handleEdit = useCallback((id: string) => {
@@ -66,6 +79,13 @@ export function ProvidersPage() {
     if (editId) updateMut.mutate({ id: editId, data: payload as Partial<Provider> }, { onSuccess: () => setDialogOpen(false) })
     else createMut.mutate(payload as any, { onSuccess: () => setDialogOpen(false) })
   }, [editId, createMut, updateMut])
+
+  const handleDeleteProvider = useCallback((id: string) => {
+    const provider = providers.find(p => p.id === id)
+    if (!provider) return
+    if (!confirm(`确定要删除供应商 "${provider.name}" 吗？\n\n此操作不可撤销。`)) return
+    deleteMut.mutate(id)
+  }, [providers, deleteMut])
 
   return (
     <div className="space-y-6">
@@ -103,13 +123,13 @@ export function ProvidersPage() {
               onToggleShowApiKey={() => setShowApiKey(prev => ({ ...prev, [provider.id]: !prev[provider.id] }))}
               onToggle={() => toggleMut.mutate(provider.id)}
               onEdit={() => handleEdit(provider.id)}
-              onDelete={() => deleteMut.mutate(provider.id)}
-              onSyncModels={() => {}}
-              onConfigureThinking={() => {}}
-              onAddInstance={() => {}}
-              onEditInstance={() => {}}
-              onDeleteInstance={() => {}}
-              onToggleInstance={() => {}}
+              onDelete={() => handleDeleteProvider(provider.id)}
+              onSyncModels={() => openSyncModels(provider.id, provider.name)}
+              onConfigureThinking={() => handleConfigureThinkingMapping(provider.id, provider.name)}
+              onAddInstance={() => handleAddInstance(provider.id)}
+              onEditInstance={handleEditInstance}
+              onDeleteInstance={handleDeleteInstance}
+              onToggleInstance={handleToggleInstance}
               getGroupName={getGroupName}
             />
           ))}
@@ -127,6 +147,33 @@ export function ProvidersPage() {
         onSubmit={handleSubmit}
         protocolOptions={PROTOCOL_OPTIONS as any}
       />
+
+      <ModelInstanceForm
+        open={instanceDialogOpen}
+        onOpenChange={setInstanceDialogOpen}
+        form={instanceForm as any}
+        editingId={editingInstanceId}
+        isPending={instanceSubmitPending}
+        providers={providers as any}
+        onSubmit={onInstanceSubmit as any}
+      />
+
+      {selectedProvider && (
+        <>
+          <SyncModelsDialog
+            providerId={selectedProvider.id}
+            providerName={selectedProvider.name}
+            open={syncModelsOpen}
+            onOpenChange={setSyncModelsOpen}
+          />
+          <ThinkingTypeMappingDialog
+            providerId={selectedProvider.id}
+            providerName={selectedProvider.name}
+            open={thinkingMappingOpen}
+            onOpenChange={setThinkingMappingOpen}
+          />
+        </>
+      )}
     </div>
   )
 }

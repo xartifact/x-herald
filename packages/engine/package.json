@@ -6,8 +6,8 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "scripts": {
-    "dev": "bun run --watch src/server.ts",
-    "start": "bun run src/server.ts",
+    "dev": "bun run --watch --env-file=../../.env.local --env-file=../../.env src/server.ts",
+    "start": "bun run --env-file=../../.env.local --env-file=../../.env src/server.ts",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
     "db:migrate": "drizzle-kit push"

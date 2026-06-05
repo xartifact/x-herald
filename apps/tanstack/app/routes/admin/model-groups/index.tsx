@@ -21,6 +21,7 @@ import {
   ModelGroupCard,
   ModelGroupForm,
   ModelInstanceForm,
+  UngroupedInstancesSection,
 } from '@x-llm-gateway/ui'
 
 import type { ModelGroup, ModelInstance } from '@x-llm-gateway/engine'
@@ -75,6 +76,18 @@ export function ModelGroupsPage() {
     }
     return map
   }, [instances])
+  const allGroupedIds = useMemo(() => {
+    const ids = new Set<string>()
+    for (const [, list] of instancesByGroup) {
+      for (const inst of list) ids.add(inst.id)
+    }
+    return ids
+  }, [instancesByGroup])
+
+  const ungroupedInstances = useMemo(
+    () => (instances as any[]).filter((inst) => !allGroupedIds.has(inst.id)),
+    [instances, allGroupedIds],
+  )
 
   const groupForm = useForm({
     defaultValues: {
@@ -313,6 +326,7 @@ export function ModelGroupsPage() {
               getProviderName={getProviderName}
             />
           ))}
+          <UngroupedInstancesSection instances={ungroupedInstances} groups={groups} getProviderName={getProviderName} />
         </div>
       )}
 

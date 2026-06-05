@@ -10,6 +10,8 @@
     "api": "bun run ./app/api/index.ts"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.4.0",
+    "@monaco-editor/react": "^4.7.0",
     "@tanstack/react-query": "^5.90.20",
     "@tanstack/react-router": "^1.170.6",
     "@x-llm-gateway/engine": "workspace:*",
@@ -19,11 +21,13 @@
     "clsx": "^2.1.1",
     "hono": "^4.12.21",
     "lucide-react": "^0.563.0",
+    "monaco-editor": "^0.55.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.55.0",
     "sonner": "^2.0.0",
-    "tailwind-merge": "^3.2.0"
+    "tailwind-merge": "^3.2.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.0",

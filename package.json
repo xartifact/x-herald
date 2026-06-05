@@ -10,12 +10,10 @@
     "dev": "bun run dev:engine & bun run dev:tanstack",
     "dev:engine": "cd packages/engine && bun run dev",
     "dev:tanstack": "cd apps/tanstack && bun run dev",
-    "dev:web": "cd apps/web && bun run dev",
     "start": "cd packages/engine && bun run start",
     "build": "bun run build:tanstack",
     "build:tanstack": "cd apps/tanstack && bun run build",
-    "build:web": "cd apps/web && bun run build",
-    "typecheck": "cd packages/engine && bun run typecheck && cd apps/tanstack && npx tsc --noEmit",
+    "typecheck": "(cd packages/engine && bun run typecheck) && (cd packages/ui && npx tsc --noEmit) && (cd apps/tanstack && npx tsc --noEmit)",
     "lint": "bun run --filter './apps/*' lint",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules"

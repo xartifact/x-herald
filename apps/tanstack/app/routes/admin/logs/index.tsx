@@ -1,22 +1,41 @@
 import { useState, useMemo, useCallback } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 
 import {
-  Card,
-  Button,
   LogTable,
   LogSearchFilter,
-  LogDetailSheet,
   LogCleanupDialog,
   LogTableSkeleton,
   ListPagination,
+  LiveLogsPanel,
+  LogsEmptyState,
+  LogsPageHeader,
   useLogs,
-  useLog,
   useDeleteLog,
   useCleanupLogs,
   useLogStorage,
 } from '@x-llm-gateway/ui'
 import type { LogListItem } from '@x-llm-gateway/shared'
-import { Trash2 } from 'lucide-react'
+
+const CLIENT_REGISTRY: Record<string, string> = {
+  'claude-code': 'Claude Code',
+  'cherry-studio': 'CherryStudio',
+  'opencode': 'OpenCode',
+  'openclaw': 'OpenClaw',
+  'cursor': 'Cursor',
+  'cline': 'Cline',
+  'aider': 'Aider',
+  'continue': 'Continue.dev',
+  'litellm': 'LiteLLM',
+  'langchain': 'LangChain',
+  'openai-python': 'OpenAI Python SDK',
+  'openai-node': 'OpenAI Node.js SDK',
+  'anthropic-python': 'Anthropic Python SDK',
+  'curl': 'cURL',
+  'python-httpx': 'Python (httpx)',
+  'python-requests': 'Python (requests)',
+  'unknown': '未知客户端',
+}
 
 const PAGE_SIZE_OPTIONS = [20, 50, 100]
 
@@ -34,18 +53,24 @@ function getTimeRange(range: string): Record<string, string> {
   return { startDate: start.toISOString() }
 }
 
-const formatDuration = (ms: number) => ms < 1000 ? `${Math.round(ms)}ms` : `${(ms / 1000).toFixed(1)}s`
-const formatTokens = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n)
+const formatDuration = (ms: number) => {
+  if (ms < 1000) return `${ms.toFixed(2).replace(/\.00$/, '')}ms`
+  return `${(ms / 1000).toFixed(2).replace(/\.00$/, '')}s`
+}
+const formatTokens = (tokens: number) => {
+  if (tokens >= 1000000) return `${(tokens / 1000000).toFixed(1)}M`
+  if (tokens >= 1000) return `${(tokens / 1000).toFixed(1)}K`
+  return tokens.toLocaleString()
+}
 
 export function LogsPage() {
+  const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [clientTypeFilter, setClientTypeFilter] = useState('all')
   const [timeRange, setTimeRange] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(50)
-  const [selectedLogId, setSelectedLogId] = useState<string | null>(null)
-  const [detailOpen, setDetailOpen] = useState(false)
   const [cleanupOpen, setCleanupOpen] = useState(false)
   const [retentionDays, setRetentionDays] = useState('30')
   const [autoRefresh, setAutoRefresh] = useState(false)
@@ -61,7 +86,6 @@ export function LogsPage() {
   }, [searchQuery, statusFilter, clientTypeFilter, timeRange, currentPage, pageSize])
 
   const { data: logsData, isLoading, refetch, isFetching } = useLogs(filters)
-  const { data: selectedLogData } = useLog(selectedLogId ?? '')
   const { data: storageData } = useLogStorage()
   const deleteMutation = useDeleteLog()
   const cleanupMutation = useCleanupLogs()
@@ -69,13 +93,11 @@ export function LogsPage() {
   const logsRes = logsData as { data?: LogListItem[]; pagination?: { total: number; totalPages: number } } | undefined
   const logs = logsRes?.data ?? []
   const pagination = logsRes?.pagination
-  const selectedLog = (selectedLogData as { data?: unknown } | undefined)?.data ?? null
   const storage = (storageData as { data?: unknown } | undefined)?.data ?? undefined
 
   const handleViewDetail = useCallback((logId: string) => {
-    setSelectedLogId(logId)
-    setDetailOpen(true)
-  }, [])
+    navigate({ to: '/admin/logs/$logId', params: { logId } })
+  }, [navigate])
 
   const handleDelete = useCallback((id: string) => {
     deleteMutation.mutate(id)
@@ -98,15 +120,7 @@ export function LogsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">请求日志</h1>
-          <p className="text-sm text-muted-foreground">查看和管理 Gateway API 请求记录</p>
-        </div>
-        <Button variant="outline" size="sm" onClick={() => setCleanupOpen(true)}>
-          <Trash2 className="h-4 w-4 mr-1" /> 清理
-        </Button>
-      </div>
+      <LogsPageHeader onCleanup={() => setCleanupOpen(true)} />
 
       <LogSearchFilter
         searchQuery={searchQuery}
@@ -115,6 +129,7 @@ export function LogsPage() {
         onStatusChange={handleStatusChange}
         clientTypeFilter={clientTypeFilter}
         onClientTypeChange={handleClientTypeChange}
+        clientTypeOptions={CLIENT_REGISTRY}
         timeRange={timeRange}
         onTimeRangeChange={handleTimeRangeChange}
         onRefresh={() => refetch()}
@@ -124,6 +139,8 @@ export function LogsPage() {
         onAutoRefreshChange={setAutoRefresh}
         onAutoRefreshIntervalChange={setAutoRefreshInterval}
       />
+
+      <LiveLogsPanel onViewDetail={handleViewDetail} />
 
       <div className="flex items-center justify-between pt-2 border-t">
         <h3 className="text-sm font-medium tracking-wide uppercase text-muted-foreground">历史记录</h3>
@@ -138,11 +155,7 @@ export function LogsPage() {
         {isLoading ? (
           <LogTableSkeleton />
         ) : logs.length === 0 ? (
-          <Card className="p-8 text-center text-muted-foreground">
-            {searchQuery || statusFilter !== 'all' || clientTypeFilter !== 'all' || timeRange !== 'all'
-              ? '没有匹配的日志记录，请调整筛选条件'
-              : '暂无日志记录'}
-          </Card>
+          <LogsEmptyState hasFilters={!!searchQuery || statusFilter !== 'all' || clientTypeFilter !== 'all' || timeRange !== 'all'} />
         ) : (
           <LogTable
             logs={logs}
@@ -150,6 +163,7 @@ export function LogsPage() {
             onDelete={handleDelete}
             formatDuration={formatDuration}
             formatTokens={formatTokens}
+            clientTypeLabels={CLIENT_REGISTRY}
           />
         )}
       </div>
@@ -166,14 +180,6 @@ export function LogsPage() {
           />
         </div>
       )}
-
-      <LogDetailSheet
-        log={selectedLog as any}
-        open={detailOpen}
-        onOpenChange={setDetailOpen}
-        formatDuration={formatDuration}
-        formatTokens={formatTokens}
-      />
 
       <LogCleanupDialog
         open={cleanupOpen}

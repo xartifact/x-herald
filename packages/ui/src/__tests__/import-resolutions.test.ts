@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { cn } from '../lib/utils'
+import { cn } from '../shared/lib/utils'
 import type { ModelGroup, ModelInstance, ProtocolsConfig } from '@x-llm-gateway/engine'
 import type { VirtualKey } from '@x-llm-gateway/shared'
 

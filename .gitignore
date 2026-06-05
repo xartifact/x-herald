@@ -73,6 +73,8 @@ packages/llms
 
 
 # AI
+.codegraph
+.omo
 .opencode
 .swarm
 SWARM_PLAN.*

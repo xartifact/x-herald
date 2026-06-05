@@ -50,6 +50,16 @@ export interface LogStartResult {
   attemptId: string;
 }
 
+const DB_WRITE_TIMEOUT_MS = 5_000;
+function withDbTimeout<T>(p: Promise<T>): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<never>((_, rej) =>
+      setTimeout(() => rej(new Error(`DB write timed out after ${DB_WRITE_TIMEOUT_MS}ms`)), DB_WRITE_TIMEOUT_MS)
+    ),
+  ]);
+}
+
 function buildLogInsertValues(params: StreamLogParams & { isStream: boolean }) {
   const streamStatus: 'streaming' | 'pending' = params.isStream ? 'streaming' : 'pending';
   const streaming: 'true' | 'false' = params.isStream ? 'true' : 'false';
@@ -100,10 +110,10 @@ function buildLogInsertValues(params: StreamLogParams & { isStream: boolean }) {
 async function createStreamLog(params: StreamLogParams & { isStream: boolean }): Promise<LogStartResult> {
   try {
     const db = getDatabase();
-    const logResult = await db.insert(requestLogs).values(buildLogInsertValues(params)).returning({ id: requestLogs.id });
+    const logResult = await withDbTimeout(db.insert(requestLogs).values(buildLogInsertValues(params)).returning({ id: requestLogs.id }));
     const logId = logResult[0].id;
 
-    const attemptResult = await db.insert(requestAttempts).values({
+    const attemptResult = await withDbTimeout(db.insert(requestAttempts).values({
       requestLogId: logId,
       requestGroupId: params.requestGroupId,
       candidateIndex: params.candidateIndex,
@@ -118,7 +128,7 @@ async function createStreamLog(params: StreamLogParams & { isStream: boolean }):
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       providerRequestHeaders: params.providerRequestHeaders as any,
       createdAt: new Date(),
-    }).returning({ id: requestAttempts.id });
+    }).returning({ id: requestAttempts.id }));
     const attemptId = attemptResult[0].id;
 
     logger.debug({ logId, attemptId }, 'Stream log and attempt created');
@@ -141,11 +151,58 @@ export async function logRequestStart(params: StreamLogParams): Promise<LogStart
   return createStreamLog({ ...params, isStream: false });
 }
 
+async function createStreamLogById(
+  params: StreamLogParams & { isStream: boolean },
+  logId: string,
+  attemptId: string,
+): Promise<void> {
+  const db = getDatabase();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await withDbTimeout(db.insert(requestLogs).values({ id: logId, ...buildLogInsertValues(params) } as any));
+  await withDbTimeout(
+    db.insert(requestAttempts).values({
+      id: attemptId,
+      requestLogId: logId,
+      requestGroupId: params.requestGroupId,
+      candidateIndex: params.candidateIndex,
+      instanceId: params.instanceId ?? params.routingTrace?.instanceId,
+      providerId: params.providerId,
+      providerName: params.providerName,
+      targetProtocol: params.targetProtocol,
+      status: 'pending',
+      retryCount: 0,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      transformedRequestBody: params.transformedRequestBody as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      providerRequestHeaders: params.providerRequestHeaders as any,
+      createdAt: new Date(),
+    })
+  );
+  logger.debug({ logId, attemptId }, 'Stream log and attempt created');
+}
+
+// 预生成 ID 并在后台异步写入 DB，从关键路径移除日志写入延迟
+export function logStartAsync(params: StreamLogParams): LogStartResult {
+  const logId = crypto.randomUUID();
+  const attemptId = crypto.randomUUID();
+
+  createStreamLogById({ ...params, isStream: false }, logId, attemptId)
+    .catch(err => logger.error({ err, logId }, '[Log] 异步初始日志写入失败'));
+
+  import('../../features/logs/services/client-model-recorder')
+    .then(({ recordClientRequestedModel }) =>
+      recordClientRequestedModel(params.originalModelName || params.modelName)
+    )
+    .catch(() => {});
+
+  return { logId, attemptId };
+}
+
 export async function upgradeToStreamLog(logId: string): Promise<void> {
   if (!logId || logId.startsWith('temp-')) return;
   try {
     const db = getDatabase();
-    await db.update(requestLogs).set({ streaming: 'true', streamStatus: 'streaming', streamStartedAt: new Date(), lastUpdatedAt: new Date() }).where(eq(requestLogs.id, logId));
+    await withDbTimeout(db.update(requestLogs).set({ streaming: 'true', streamStatus: 'streaming', streamStartedAt: new Date(), lastUpdatedAt: new Date() }).where(eq(requestLogs.id, logId)));
     logger.debug({ logId }, 'Log upgraded to streaming');
   } catch (error) {
     logger.warn({ error, logId }, 'Failed to upgrade log to streaming');
@@ -160,7 +217,7 @@ export async function updateStreamProgress(logId: string, progress: StreamProgre
   try {
     const db = getDatabase();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await db.update(requestLogs).set({ streamProgress: progress as any, streamContent: partialContent as any, lastUpdatedAt: new Date() }).where(eq(requestLogs.id, logId));
+    await withDbTimeout(db.update(requestLogs).set({ streamProgress: progress as any, streamContent: partialContent as any, lastUpdatedAt: new Date() }).where(eq(requestLogs.id, logId)));
     logger.debug({ logId, chunksProcessed: progress.chunksProcessed }, 'Stream progress updated');
   } catch (error) {
     logger.warn({ error, logId }, 'Failed to update stream progress');
@@ -238,10 +295,10 @@ export async function finalizeStreamLog(logId: string, params: FinalizeStreamPar
   try {
     const responseTimeMs = Date.now() - params.startTime;
     const db = getDatabase();
-    await db.update(requestLogs).set(buildFinalizeValues(params, responseTimeMs)).where(eq(requestLogs.id, logId));
+    await withDbTimeout(db.update(requestLogs).set(buildFinalizeValues(params, responseTimeMs)).where(eq(requestLogs.id, logId)));
 
     if (params.attemptId && !params.attemptId.startsWith('temp-')) {
-      await db.update(requestAttempts).set({
+      await withDbTimeout(db.update(requestAttempts).set({
         status: params.status,
         statusCode: params.statusCode,
         durationMs: responseTimeMs,
@@ -251,7 +308,7 @@ export async function finalizeStreamLog(logId: string, params: FinalizeStreamPar
         providerResponseBody: params.providerResponseBody as any,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         providerResponseHeaders: params.providerResponseHeaders as any,
-      }).where(eq(requestAttempts.id, params.attemptId));
+      }).where(eq(requestAttempts.id, params.attemptId)));
     }
 
     logger.debug({ logId, attemptId: params.attemptId, responseTimeMs, tokens: params.inputTokens + params.outputTokens }, 'Stream log finalized');
@@ -268,9 +325,9 @@ export async function markStreamFailed(logId: string, attemptId: string, error: 
   }
   try {
     const db = getDatabase();
-    await db.update(requestLogs).set({ status: 'failure', streamStatus: 'failed', isComplete: true, errorMessage: error.message, errorType: error.type, statusCode: error.statusCode, lastUpdatedAt: new Date() }).where(eq(requestLogs.id, logId));
+    await withDbTimeout(db.update(requestLogs).set({ status: 'failure', streamStatus: 'failed', isComplete: true, errorMessage: error.message, errorType: error.type, statusCode: error.statusCode, lastUpdatedAt: new Date() }).where(eq(requestLogs.id, logId)));
     if (attemptId && !attemptId.startsWith('temp-')) {
-      await db.update(requestAttempts).set({ status: 'failure', statusCode: error.statusCode }).where(eq(requestAttempts.id, attemptId));
+      await withDbTimeout(db.update(requestAttempts).set({ status: 'failure', statusCode: error.statusCode }).where(eq(requestAttempts.id, attemptId)));
     }
     logger.debug({ logId, error }, 'Stream marked as failed');
   } catch (err) {
@@ -285,9 +342,9 @@ export async function markStreamAborted(logId: string, attemptId: string): Promi
   }
   try {
     const db = getDatabase();
-    await db.update(requestLogs).set({ status: 'failure', streamStatus: 'aborted', isComplete: true, errorMessage: 'Client disconnected', errorType: 'client_disconnect', lastUpdatedAt: new Date() }).where(eq(requestLogs.id, logId));
+    await withDbTimeout(db.update(requestLogs).set({ status: 'failure', streamStatus: 'aborted', isComplete: true, errorMessage: 'Client disconnected', errorType: 'client_disconnect', lastUpdatedAt: new Date() }).where(eq(requestLogs.id, logId)));
     if (attemptId && !attemptId.startsWith('temp-')) {
-      await db.update(requestAttempts).set({ status: 'failure' }).where(eq(requestAttempts.id, attemptId));
+      await withDbTimeout(db.update(requestAttempts).set({ status: 'failure' }).where(eq(requestAttempts.id, attemptId)));
     }
     logger.debug({ logId }, 'Stream marked as aborted');
   } catch (error) {
@@ -310,7 +367,7 @@ export async function markAttemptFailed(params: {
   if (!logId || logId.startsWith('temp-')) return;
   try {
     const db = getDatabase();
-    await db.update(requestLogs).set({
+    await withDbTimeout(db.update(requestLogs).set({
       status: 'failure',
       statusCode: params.statusCode,
       errorMessage: params.errorMessage,
@@ -320,10 +377,10 @@ export async function markAttemptFailed(params: {
       lastUpdatedAt: new Date(),
       ...(params.retryCount !== undefined && { retryCount: params.retryCount }),
       ...(params.responseTimeMs !== undefined && { responseTimeMs: params.responseTimeMs }),
-    }).where(eq(requestLogs.id, logId));
+    }).where(eq(requestLogs.id, logId)));
 
     if (attemptId && !attemptId.startsWith('temp-')) {
-      await db.update(requestAttempts).set({
+      await withDbTimeout(db.update(requestAttempts).set({
         status: 'failure',
         statusCode: params.statusCode,
         failoverReason: params.failoverReason,
@@ -332,7 +389,7 @@ export async function markAttemptFailed(params: {
         ...(params.providerTtfbMs !== undefined && { ttfbMs: params.providerTtfbMs }),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ...(params.providerResponseBody !== undefined && { providerResponseBody: params.providerResponseBody as any }),
-      }).where(eq(requestAttempts.id, attemptId));
+      }).where(eq(requestAttempts.id, attemptId)));
     }
 
     logger.debug({ logId, attemptId, statusCode: params.statusCode, failoverReason: params.failoverReason }, 'Attempt marked as failed');

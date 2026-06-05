@@ -60,8 +60,9 @@ export async function executeWithRetry(params: RetryExecuteParams): Promise<Retr
 
       const retryAfterHeader = lastRetryableResponse?.headers.get('Retry-After');
       const retryAfterSec = retryAfterHeader ? parseInt(retryAfterHeader, 10) : NaN;
+      const MAX_RETRY_AFTER_MS = 30_000;
       const delay = !isNaN(retryAfterSec)
-        ? retryAfterSec * 1000
+        ? Math.min(retryAfterSec * 1000, MAX_RETRY_AFTER_MS)
         : Math.min(baseDelay * Math.pow(2, attempt - 1), maxDelay) + Math.round(Math.random() * 200);
 
       onRetry?.(attempt, delay, lastRetryableResponse);

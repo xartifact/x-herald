@@ -1,4 +1,7 @@
 import { Hono } from 'hono';
+import { serveStatic } from 'hono/bun';
+import { existsSync } from 'fs';
+import { join } from 'path';
 
 import { loadConfig, validateConfig, APP_VERSION } from './config';
 import { getDatabase } from './db/client';
@@ -122,7 +125,14 @@ export async function createEngine(options: CreateEngineOptions = {}): Promise<E
     });
   });
 
-  // 11. 404 handler
+  // 11. Serve SPA static files (TanStack Router build output)
+  const spaDistPath = join(process.cwd(), 'apps/tanstack/dist');
+  if (existsSync(spaDistPath)) {
+    app.use('/*', serveStatic({ root: './apps/tanstack/dist' }));
+    app.use('/*', serveStatic({ root: './apps/tanstack/dist', path: 'index.html' }));
+  }
+
+  // 12. 404 handler
   app.notFound((c) => {
     return c.json(
       {

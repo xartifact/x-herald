@@ -1,0 +1,1 @@
+// Empty — browser barrel at @x-llm-gateway/engine avoids pulling pino

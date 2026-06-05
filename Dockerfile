@@ -7,25 +7,26 @@ FROM base AS builder
 ARG GIT_HASH=unknown
 ENV GIT_HASH=${GIT_HASH}
 
-# 复制所有 package.json 文件（workspace 需要全部 package.json 来解析依赖）
+# 复制 workspace 根配置
 COPY package.json bun.lock* bun.lockb* ./
-COPY apps/web/package.json ./apps/web/
+
+# 复制所有 workspace 包的 package.json（bun 需要全部来解析依赖）
+COPY apps/tanstack/package.json ./apps/tanstack/
 COPY packages/shared/package.json ./packages/shared/
 COPY packages/engine/package.json ./packages/engine/
 COPY packages/ui/package.json ./packages/ui/
 
 # 安装所有依赖（包括 workspace）
-RUN bun install --frozen-lockfile
+RUN bun install --registry=https://registry.npmjs.org
 
 # 复制源代码
 COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
-# 设置环境变量以支持构建
 ENV NODE_ENV=production
 
-# 构建应用
-RUN cd apps/web && bun run build
+# 构建 tanstack SPA（Vite → dist/）
+RUN cd apps/tanstack && bun run build
 
 # ---- 生产运行 ----
 FROM oven/bun:1 AS runner
@@ -37,16 +38,30 @@ RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# standalone 输出（含最小 node_modules）
-COPY --from=builder /app/apps/web/.next/standalone ./
-# 静态资源（standalone 不自动包含）
-COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
-# 迁移文件（复制到固定路径）
-COPY --from=builder /app/packages/engine/src/db/migrations /app/migrations
+# 复制 workspace 根配置（bun runtime 需要）
+COPY package.json ./package.json
+COPY packages/shared/package.json ./packages/shared/
+COPY packages/engine/package.json ./packages/engine/
+COPY packages/ui/package.json ./packages/ui/
+COPY apps/tanstack/package.json ./apps/tanstack/
+
+# 安装生产依赖
+RUN bun install --production --no-save --registry=https://registry.npmjs.org
+
+# 复制 engine 源码（Bun 直接运行 TS）
+COPY packages/engine/src ./packages/engine/src
+COPY packages/shared/src ./packages/shared/src
+COPY packages/ui/src ./packages/ui/src
+
+# 复制 tanstack SPA 构建产物
+COPY --from=builder /app/apps/tanstack/dist ./apps/tanstack/dist
+
+# 复制迁移文件
+COPY packages/engine/src/db/migrations /app/migrations
 
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 ENV DB_MIGRATIONS_FOLDER=/app/migrations
 
-CMD ["bun", "apps/web/server.js"]
+CMD ["bun", "packages/engine/src/server.ts"]

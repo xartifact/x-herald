@@ -1,9 +1,287 @@
-@CLAUDE.md
+# AGENTS.md
+
+This file provides guidance to Coding Agent (eg: ClaudeCode, OpenCode) when working with code in this repository.
+
+## 项目简介
+
+x-llm-gateway 是现代化的 LLM Gateway 项目，支持协议转换、智能路由和高可用性。基于 Bun + Hono + TanStack Router 的 Monorepo 架构。
+
+第一原则： 这是一个透明代理
+
+## 核心命令
+
+### 开发
+```bash
+bun install              # 安装所有依赖
+bun run dev             # 启动开发服务器 (engine + tanstack SPA)
+bun run dev:engine      # 仅启动 engine 后端
+bun run dev:tanstack    # 仅启动 tanstack SPA 前端
+```
+
+### 构建和类型检查
+```bash
+bun run build           # 构建 tanstack SPA (Vite)
+bun run typecheck       # 运行 TypeScript 类型检查
+bun run lint            # 运行 ESLint
+bun run format          # 格式化代码 (Prettier)
+```
+
+### 数据库
+```bash
+cd packages/engine
+bun run db:migrate      # 推送 schema 更改（开发用）
+```
+
+## 项目架构
+
+### Monorepo 结构
+```
+x-llm-gateway/
+├── apps/
+│   ├── tanstack/               # TanStack Router SPA 管理界面（推荐）
+│   │   └── app/
+│   │       └── routes/         # 代码路由（admin, login, __root）
+│   └── cli/                    # CLI 工具
+├── packages/
+│   ├── engine/                 # @x-llm-gateway/engine — 网关内核（Hono + Bun.serve）
+│   │   └── src/
+│   │       ├── server.ts       # 入口文件
+│   │       ├── createEngine.ts # 引擎工厂
+│   │       ├── gateway/        # 网关核心逻辑
+│   │       ├── features/       # 功能模块（auth, providers, keys, logs...）
+│   │       ├── db/             # 数据库连接、schema、迁移
+│   │       └── middleware/     # Hono 中间件
+│   ├── shared/                 # @x-llm-gateway/shared — 类型/常量
+│   └── ui/                     # @x-llm-gateway/ui — shadcn 组件库
+└── docs/                       # 项目文档
+```
+
+### 技术栈
+
+**后端**
+- Runtime: Bun 1.3.6+
+- 框架: Hono 4.0+ (轻量级 API 框架)
+- 服务器: Bun.serve() (直接运行 TypeScript)
+- 数据库: PostgreSQL 16 / PGlite（嵌入式）
+- ORM: Drizzle ORM 0.45+
+- 认证: JWT
+- 日志: Pino
+
+**前端**
+- 框架: TanStack Router (文件路由)
+- UI: React 19
+- 构建: Vite 6.0+
+- 组件库: shadcn/ui (new-york 风格)
+- 样式: TailwindCSS v4
+- 数据获取: TanStack Query v5
+- 表单: react-hook-form + zod
+- 图标: lucide-react
+- Toast: sonner
+
+### 架构特点
+
+1. **引擎 + SPA 分离**：engine 是纯 API 服务器，tanstack SPA 是独立的前端应用
+2. **Bun 直接运行 TS**：无需编译步骤，Bun 直接执行 TypeScript
+3. **功能驱动开发**：按功能模块组织代码，每个功能同时完成前后端
+4. **Clean Architecture**：业务逻辑与框架解耦
+
+## 代码组织
+
+### 后端代码结构（packages/engine/src）
+
+```
+src/
+├── server.ts                 # 入口文件（Bun.serve）
+├── createEngine.ts           # 引擎工厂（Hono app 创建）
+├── config/                   # 配置管理
+├── db/                       # 数据库连接、schema、迁移
+│   ├── client.ts             # 数据库客户端
+│   ├── schema/               # Drizzle schema 定义
+│   └── migrations/           # SQL 迁移文件
+├── gateway/                  # 网关核心
+│   ├── api/                  # Gateway API 路由（/api/v1/*）
+│   ├── handlers/             # 请求处理器
+│   ├── transformer/          # 协议转换器
+│   └── services/             # 网关服务（熔断器、流清理等）
+├── features/                 # 功能模块
+│   ├── auth/                 # 认证
+│   ├── providers/            # 服务商管理
+│   ├── model-groups/         # 模型组管理
+│   ├── keys/                 # 虚拟密钥
+│   ├── logs/                 # 请求日志
+│   ├── settings/             # 系统设置
+│   ├── access-models/        # 访问模型
+│   ├── model-routes/         # 路由规则
+│   ├── config-io/            # 配置导入导出
+│   ├── circuit-breaker/      # 熔断器
+│   ├── metrics/              # 性能指标
+│   └── ai-assist/            # AI 辅助
+└── middleware/                # Hono 中间件
+    ├── cors.ts               # CORS
+    ├── error.ts              # 错误处理
+    └── logger.ts             # 请求日志
+```
+
+### 前端代码结构（apps/tanstack）
+
+```
+app/
+├── routes/                   # TanStack Router 文件路由
+│   ├── __root.tsx            # 根布局
+│   ├── admin.tsx             # 管理界面布局
+│   └── admin/                # 管理页面
+│       ├── index.tsx         # Dashboard
+│       ├── providers.tsx     # 服务商管理
+│       ├── model-groups.tsx  # 模型组管理
+│       ├── model-routes.tsx  # 路由规则
+│       ├── keys.tsx          # 密钥管理
+│       └── ...
+└── api/                      # API 客户端
+```
+
+### 共享包
+
+- **@x-llm-gateway/shared**：类型定义、常量、Zod schema
+- **@x-llm-gateway/ui**：shadcn/ui 组件库、admin 组件
+
+## 开发规范
+
+### 代码风格
+- 单组件不超过 300 行，超过需要拆分
+- 单函数不超过 150 行，超过需要拆分
+- TypeScript 严格模式
+- 优先使用 const/let，避免 var
+- 命名规范：
+  - 变量/函数：camelCase
+  - 常量：UPPER_SNAKE_CASE
+  - 类型/接口：PascalCase
+  - 文件名：kebab-case
+
+### UI 开发
+- 所有 UI 组件使用 shadcn/ui (new-york 风格)
+- 使用 lucide-react 图标库
+- 表单必须使用 react-hook-form + zod 验证
+- Toast 通知统一使用 sonner
+- 数据获取使用 TanStack Query v5
+
+已安装的 shadcn/ui 组件：
+- 基础：button, input, label, badge, separator
+- 表单：form, checkbox, switch, select, textarea
+- 布局：card, table, tabs, dialog, dropdown-menu
+- 反馈：alert, sonner
+
+添加新组件：
+```bash
+bunx shadcn@latest add [component-name]
+```
+
+### API 设计
+- 遵循 RESTful 规范
+- 统一错误处理和响应格式
+- 路由按功能模块划分
+
+### Git 提交规范
+```
+feat: 新功能
+fix: Bug 修复
+refactor: 代码重构
+docs: 文档更新
+chore: 构建/工具/其他
+```
+
+## 开发流程
+
+### 功能驱动的全栈同步开发
+
+**核心原则**：
+- 每个功能同时完成前端和后端
+- 完成一个功能后再开始下一个
+- 快速迭代，边开发边测试
+
+详见：`docs/DEVELOPMENT-ROADMAP.md`
+
+## 关键文档
+
+- `README.md` - 项目概览和快速开始
+- `docs/DEVELOPMENT-ROADMAP.md` - 详细开发路线图
+- `docs/unified-port-architecture.md` - 统一端口架构
+- `.claude/rules/*.md` - 详细开发规范
+
+## 环境变量
+
+开发环境需要配置：
+```bash
+cp .env.example .env
+# 编辑 .env 文件，配置数据库连接等
+```
+
+关键环境变量：
+- `DATABASE_URL` - PostgreSQL 连接字符串
+- `JWT_SECRET` - JWT 签名密钥
+
+## 特殊说明
+
+- 不要创建总结文档（已在规范中明确）
+- 所有命令使用 Bun，不使用 npm/yarn/pnpm
+- 模型系统使用新的 model_groups + model_instances（旧的 models + model_routes 已废弃）
+- 参考资料链接：
+  - Hono: https://hono.dev/llms.txt
+  - TanStack Router: https://tanstack.com/router
+  - Shadcn/UI: https://ui.shadcn.com/llms.txt
+  - Bun: https://bun.sh/llms.txt
+
+## 严禁操作
+
+### 禁止直接修改数据库结构
+
+**规则：数据库结构（表、列、索引、约束等）只允许通过 Drizzle 迁移文件修改，禁止直接在数据库中执行 DDL 操作。**
+
+所有数据库 schema 变更必须遵循以下流程：
+1. 在 `packages/engine/src/db/migrations/` 目录下创建新的 SQL 迁移文件
+2. 使用 `IF EXISTS` / `IF NOT EXISTS` 等守卫语句确保迁移可重复执行
+3. 更新 `packages/engine/src/db/migrations/meta/_journal.json` 中的迁移记录
+4. 同步更新对应功能目录下的 Drizzle schema 定义
+
+**禁止行为：**
+- ❌ 直接使用 `psql`、`pgAdmin` 等工具执行 `ALTER TABLE`、`CREATE TABLE`、`DROP COLUMN` 等 DDL 语句
+- ❌ 在生产/测试环境中手动修改数据库结构而不创建迁移文件
+- ❌ 在应用代码中执行原始 SQL 来修改 schema（如 `client.unsafe('ALTER TABLE ...')` 用于结构变更）
+
+**允许行为：**
+- ✅ 通过 Drizzle 迁移文件修改数据库结构
+- ✅ 使用 `client.unsafe()` 执行 DML 语句（INSERT/UPDATE/DELETE/SELECT）
+- ✅ 临时查询排查问题（SELECT 语句）
+
+**违规后果：** 直接修改数据库会导致代码与 schema 不一致，迁移系统失效，生产环境出现严重错误（如 `column does not exist`）。
+
+## 测试工程师 Agent
+
+当需要编写测试时，参考 `.claude/agents/test-engineer.md` 中的完整定义。
+
+### 核心规则
+- 后端测试用 `bun:test`，React 组件测试用 `vitest`（仅 `*.ui.test.tsx`）
+- 测试文件与源文件同目录：`foo.ts` → `foo.test.ts`
+- Mock 优先级：真实代码 > Hono test client > `mock.module()` > `vi.mock()` > MSW
+- 使用工厂函数（`packages/engine/src/test/factories.ts`），不用 JSON fixture
+- 不要运行全量测试，只运行目标文件
+
+### 测试命令
+- 后端测试: `cd packages/engine && bun test src/features/gateway/failover/failover-executor.test.ts`
+- 类型检查: `bun run typecheck`
+
+### 测试基础设施
+| 文件 | 用途 |
+|------|------|
+| `packages/engine/src/test/factories.ts` | Mock 数据工厂函数 |
+| `packages/engine/src/test/hono-helper.ts` | Hono 测试请求辅助 |
+| `packages/engine/src/test/setup.ts` | bun:test 全局 setup |
+| `.claude/skills/writing-tests/SKILL.md` | 测试编写规范 |
+| `.claude/skills/engineering-conventions/SKILL.md` | 工程编码规范 |
 
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **x-llm-gateway** (4520 symbols, 9376 relationships, 281 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **x-llm-gateway** (5222 symbols, 10200 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

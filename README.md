@@ -33,14 +33,17 @@ x-llm-gateway 是一个透明代理网关，统一管理对 LLM 服务商的访�
 
 **后端**
 - Runtime: Bun
-- 框架: Next.js (App Router) + Hono
+- 框架: Hono 4.0+ (轻量级 API 框架)
+- 服务器: Bun.serve() (直接运行 TypeScript)
 - 数据库: PostgreSQL 16 / PGlite（嵌入式）
 - ORM: Drizzle ORM
 - 日志: Pino
 
 **前端**
-- ~~Next.js App Router~~ (deprecated) → **TanStack Router SPA** (`apps/tanstack`)
-- shadcn/ui (new-york) + TailwindCSS v4
+- 框架: TanStack Router (文件路由)
+- UI: React 19
+- 构建: Vite 6.0+
+- 组件库: shadcn/ui (new-york) + TailwindCSS v4
 - TanStack Query v5 + react-hook-form + zod
 
 **工程化**
@@ -54,21 +57,14 @@ x-llm-gateway 是一个透明代理网关，统一管理对 LLM 服务商的访�
 ```
 x-llm-gateway/
 ├── apps/
-│   ├── web/                    # Next.js + Hono 全栈应用（⚠️ 管理界面已弃用）
-│   │   ├── src/
-│   │   │   ├── app/            # Next.js App Router（页面 + API 入口）
-│   │   │   │   └── admin/      # 管理界面（迁移中 → apps/tanstack）
-│   │   │   ├── api/            # Hono API 路由
-│   │   │   └── features/       # 功能模块（按领域划分）
-│   │   └── drizzle/            # DB schema & migrations
-│   ├── tanstack/               # ✅ TanStack Router SPA 管理界面（推荐）
+│   ├── tanstack/               # TanStack Router SPA 管理界面
 │   │   └── app/
 │   │       └── routes/         # 代码路由（admin, login, __root）
 │   └── cli/                    # CLI 工具
 ├── packages/
+│   ├── engine/                 # @x-llm-gateway/engine — 网关内核（Hono + Bun.serve）
 │   ├── shared/                 # @x-llm-gateway/shared — 类型/schema/常量
-│   ├── engine/                 # @x-llm-gateway/engine — 网关内核（config/db/middleware）
-│   └── ui/                    # @x-llm-gateway/ui — shadcn 组件 + admin 组件库
+│   └── ui/                    # @x-llm-gateway/ui — shadcn 组件库
 ├── docs/                       # 文档
 └── docker-compose.yml          # Docker 部署
 ```
@@ -80,7 +76,7 @@ x-llm-gateway/
 ### 前置要求
 
 - Bun >= 1.3.6
-- PostgreSQL 16（或使用内置 PGlite，无需额外安装）
+- PostgreSQL 16
 
 ### 本地开发
 
@@ -93,7 +89,7 @@ cp .env.example .env
 # 编辑 .env，至少配置 DATABASE_URL 和 JWT_SECRET
 
 # 运行数据库迁移（首次启动前）
-cd apps/web && bunx drizzle-kit migrate
+cd packages/engine && bun run db:migrate
 
 # 启动开发服务器
 bun run dev
@@ -166,9 +162,6 @@ bun run dev
 
 ## 管理界面
 
-> ⚠️ `apps/web` 中的管理界面已弃用，所有 admin 功能正逐步迁移至 `apps/tanstack` (TanStack Router SPA)。
-> 新的管理界面开发请使用 `apps/tanstack`。
-
 ### TanStack SPA (`apps/tanstack`)
 
 访问 `http://localhost:3000`（开发服务器），包含以下完整页面：
@@ -187,10 +180,6 @@ bun run dev
 | **Access Models** — 访问模型白名单/黑名单 | ✅ |
 | **Provider Stats** — 服务商统计面板 | ✅ |
 | **Metrics** — 网关性能指标 | ✅ |
-
-### apps/web (已弃用)
-
-旧版管理界面仍可通过 `http://localhost:3000/admin` 访问，但不再接受新功能开发。
 
 ---
 

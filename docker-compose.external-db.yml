@@ -5,13 +5,13 @@ services:
       dockerfile: Dockerfile
     container_name: x-llm-gateway
     env_file:
-      - .env.local
+      - .env
     environment:
       NODE_ENV: production
       PORT: ${PORT:-3000}
       HOST: 0.0.0.0
       DB_MIGRATIONS_FOLDER: /app/migrations
-      PROVIDER_SKIP_TLS_VERIFY: true
+      PROVIDER_SKIP_TLS_VERIFY: ${PROVIDER_SKIP_TLS_VERIFY:-true}
     ports:
       - "${PORT:-3000}:3000"
     healthcheck:

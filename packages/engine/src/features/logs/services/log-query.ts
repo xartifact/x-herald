@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, gte, inArray, isNotNull, lt, lte, ne, or, sql } from 'drizzle-orm'
 
 import { getDatabase } from '../../../db/client'
+import { virtualKeys } from '../../keys/db'
 
 import { requestLogs, requestAttempts } from '../db'
 
@@ -254,20 +255,42 @@ export async function cleanupLogs(retentionDays: number) {
 
 export async function getKeyStats(period: string) {
   const db = getDatabase()
+
+  if (period === 'all') {
+    const keys = await db.select({
+      id: virtualKeys.id,
+      name: virtualKeys.name,
+      lastUsedAt: virtualKeys.lastUsedAt,
+      totalRequests: virtualKeys.totalRequests,
+      totalTokens: virtualKeys.totalTokens,
+    }).from(virtualKeys)
+
+    return keys.map((k) => ({
+      virtualKeyId: k.id,
+      virtualKeyName: k.name,
+      requestCount: Number(k.totalRequests ?? 0),
+      successCount: 0,
+      failureCount: 0,
+      totalInputTokens: 0,
+      totalOutputTokens: 0,
+      totalTokens: Number(k.totalTokens ?? 0),
+      avgResponseTimeMs: 0,
+      lastUsedAt: k.lastUsedAt ? k.lastUsedAt.toISOString() : null,
+    }))
+  }
+
   const conditions = [isNotNull(requestLogs.virtualKeyId)]
 
-  if (period !== 'all') {
-    const now = new Date()
-    let start: Date
-    if (period === 'today') {
-      start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    } else if (period === '7d') {
-      start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-    } else {
-      start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-    }
-    conditions.push(gte(requestLogs.createdAt, start))
+  const now = new Date()
+  let start: Date
+  if (period === 'today') {
+    start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  } else if (period === '7d') {
+    start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+  } else {
+    start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
   }
+  conditions.push(gte(requestLogs.createdAt, start))
 
   const rows = await db.select({
     virtualKeyId: requestLogs.virtualKeyId,

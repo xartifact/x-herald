@@ -4,6 +4,7 @@ import { IS_PRODUCTION } from '../../config/env';
 import { getDatabase } from '../../db/client';
 import logger from '../../lib/logger';
 import type { VirtualKey } from '../../features/keys/db';
+import { trackKeyUsage } from '../../features/keys/usage-tracker';
 import { requestLogs, requestAttempts } from '../../features/logs/db';
 import type { FailoverReason } from '../../features/logs/db';
 import { costService } from '../../features/costs/service';
@@ -238,6 +239,15 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
 
     const { recordClientRequestedModel } = await import('../../features/logs/services/client-model-recorder');
     await recordClientRequestedModel(params.originalModelName || params.modelName);
+
+    if (params.virtualKey?.id && inputTokens > 0 && outputTokens > 0) {
+      trackKeyUsage({
+        keyId: params.virtualKey.id,
+        inputTokens,
+        outputTokens,
+      }).catch(() => {}); // fire-and-forget, non-blocking
+    }
+
     logger.debug({ modelName: params.modelName, status: params.status }, 'Request logged successfully');
   } catch (error) {
     const errorDetails = error instanceof Error ? { message: error.message, name: error.name, stack: error.stack } : error;

@@ -8,6 +8,7 @@ import { requestLogs, requestAttempts } from '../../features/logs/db';
 import type { FailoverReason } from '../../features/logs/db';
 
 import { extractMetadata } from './metadata-extractor';
+import { rateLimitEngine } from './rate-limit-engine';
 import { estimateUsageFromContent } from './token-estimator';
 
 export type { StreamLogParams, LogStartResult, FinalizeStreamParams } from './log-stream';
@@ -152,6 +153,10 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
   try {
     const logData = buildLogData(params);
     const { metadata, inputTokens, outputTokens, toolCallsCount } = logData;
+    const totalTokens = inputTokens + outputTokens;
+    if (params.virtualKey?.id && totalTokens > 0) {
+      rateLimitEngine.check(params.virtualKey.id, {}, totalTokens);
+    }
     const db = getDatabase();
 
     if (params.logId) {

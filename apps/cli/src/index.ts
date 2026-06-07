@@ -1,4 +1,7 @@
 #!/usr/bin/env bun
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { join } from 'path';
+import { homedir } from 'os';
 import { Command } from 'commander';
 import { GatewayClient } from './client';
 
@@ -86,6 +89,143 @@ program.command('health')
     if (status.status) {
       console.table(status.status.map((c) => ({ Name: c.name, Status: c.status, Message: c.message || '' })));
     }
+  });
+
+// Configure
+const configure = program.command('configure').description('Configure AI tools to use x-llm-gateway');
+
+configure.command('cursor')
+  .description('Generate Cursor configuration')
+  .option('-u, --url <url>', 'Gateway URL')
+  .option('-k, --api-key <key>', 'Virtual API key')
+  .action((opts: { url?: string; apiKey?: string }) => {
+    const url = opts.url || program.opts().url;
+    const key = opts.apiKey || program.opts().apiKey;
+    console.log('=== Cursor Configuration ===');
+    console.log('');
+    console.log('Add these environment variables to your shell profile (~/.zshrc, ~/.bashrc):');
+    console.log('');
+    console.log(`export OPENAI_BASE_URL="${url}/api/v1"`);
+    if (key) console.log(`export OPENAI_API_KEY="${key}"`);
+    console.log('');
+    console.log('Or set them in Cursor Settings > Models > OpenAI API Key and Base URL.');
+  });
+
+configure.command('claude-desktop')
+  .description('Generate Claude Desktop configuration')
+  .option('-u, --url <url>', 'Gateway URL')
+  .option('-k, --api-key <key>', 'Virtual API key')
+  .option('--apply', 'Automatically write to Claude Desktop config file')
+  .action((opts: { url?: string; apiKey?: string; apply?: boolean }) => {
+    const url = opts.url || program.opts().url;
+    const key = opts.apiKey || program.opts().apiKey;
+
+    if (opts.apply) {
+      const configDir = join(homedir(), 'Library', 'Application Support', 'Claude');
+      const configPath = join(configDir, 'claude_desktop_config.json');
+      let config: Record<string, unknown> = {};
+      if (existsSync(configPath)) {
+        config = JSON.parse(readFileSync(configPath, 'utf-8'));
+      }
+      config.env = {
+        ...((config.env as Record<string, string>) || {}),
+        ANTHROPIC_BASE_URL: url,
+        ...(key ? { ANTHROPIC_API_KEY: key } : {}),
+      };
+      mkdirSync(configDir, { recursive: true });
+      writeFileSync(configPath, JSON.stringify(config, null, 2));
+      console.log(`Configuration written to ${configPath}`);
+      return;
+    }
+
+    console.log('=== Claude Desktop Configuration ===');
+    console.log('');
+    console.log('Add these to your Claude Desktop config file');
+    console.log(`(${join(homedir(), 'Library', 'Application Support', 'Claude', 'claude_desktop_config.json')}):`);
+    console.log('');
+    console.log(JSON.stringify({
+      env: {
+        ANTHROPIC_BASE_URL: url,
+        ...(key ? { ANTHROPIC_API_KEY: key } : {}),
+      },
+    }, null, 2));
+  });
+
+configure.command('cline')
+  .description('Generate Cline (VS Code extension) configuration')
+  .option('-u, --url <url>', 'Gateway URL')
+  .option('-k, --api-key <key>', 'Virtual API key')
+  .action((opts: { url?: string; apiKey?: string }) => {
+    const url = opts.url || program.opts().url;
+    const key = opts.apiKey || program.opts().apiKey;
+    console.log('=== Cline Configuration ===');
+    console.log('');
+    console.log('Add these environment variables to your shell profile (~/.zshrc, ~/.bashrc):');
+    console.log('');
+    console.log(`export OPENAI_BASE_URL="${url}/api/v1"`);
+    if (key) console.log(`export OPENAI_API_KEY="${key}"`);
+    console.log('');
+    console.log('Or configure in VS Code Settings > Extensions > Cline > API Configuration.');
+  });
+
+configure.command('all')
+  .description('Show configuration for all supported tools')
+  .option('-u, --url <url>', 'Gateway URL')
+  .option('-k, --api-key <key>', 'Virtual API key')
+  .option('--apply', 'Automatically write Claude Desktop config (only for claude-desktop)')
+  .action((opts: { url?: string; apiKey?: string; apply?: boolean }) => {
+    const url = opts.url || program.opts().url;
+    const key = opts.apiKey || program.opts().apiKey;
+
+    // Cursor
+    console.log('=== Cursor Configuration ===');
+    console.log('');
+    console.log('Add these environment variables to your shell profile (~/.zshrc, ~/.bashrc):');
+    console.log('');
+    console.log(`export OPENAI_BASE_URL="${url}/api/v1"`);
+    if (key) console.log(`export OPENAI_API_KEY="${key}"`);
+    console.log('');
+
+    // Claude Desktop
+    console.log('=== Claude Desktop Configuration ===');
+    console.log('');
+    if (opts.apply) {
+      const configDir = join(homedir(), 'Library', 'Application Support', 'Claude');
+      const configPath = join(configDir, 'claude_desktop_config.json');
+      let config: Record<string, unknown> = {};
+      if (existsSync(configPath)) {
+        config = JSON.parse(readFileSync(configPath, 'utf-8'));
+      }
+      config.env = {
+        ...((config.env as Record<string, string>) || {}),
+        ANTHROPIC_BASE_URL: url,
+        ...(key ? { ANTHROPIC_API_KEY: key } : {}),
+      };
+      mkdirSync(configDir, { recursive: true });
+      writeFileSync(configPath, JSON.stringify(config, null, 2));
+      console.log(`Configuration written to ${configPath}`);
+      console.log('');
+    } else {
+      console.log(`Add these to your Claude Desktop config file (${join(homedir(), 'Library', 'Application Support', 'Claude', 'claude_desktop_config.json')}):`);
+      console.log('');
+      console.log(JSON.stringify({
+        env: {
+          ANTHROPIC_BASE_URL: url,
+          ...(key ? { ANTHROPIC_API_KEY: key } : {}),
+        },
+      }, null, 2));
+      console.log('');
+    }
+
+    // Cline
+    console.log('=== Cline Configuration ===');
+    console.log('');
+    console.log('Add these environment variables to your shell profile (~/.zshrc, ~/.bashrc):');
+    console.log('');
+    console.log(`export OPENAI_BASE_URL="${url}/api/v1"`);
+    if (key) console.log(`export OPENAI_API_KEY="${key}"`);
+    console.log('');
+    console.log('Or configure in VS Code Settings > Extensions > Cline > API Configuration.');
   });
 
 program.parse();

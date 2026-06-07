@@ -3,6 +3,8 @@ import { Hono } from 'hono';
 import { rootLogger } from '../../lib';
 import { authMiddleware } from '../auth/middleware';
 
+import { rateLimitEngine } from '../../gateway/services/rate-limit-engine';
+
 import { createKey, deleteKey, getKey, listKeys, resetKey, updateKey } from './service';
 
 const logger = rootLogger.child({ module: 'keys' });
@@ -74,6 +76,41 @@ keysRoutes.post('/:id/reset', async (c) => {
   } catch (error) {
     logger.warn({ err: error }, 'Failed to reset virtual key');
     return c.json({ error: 'Failed to reset virtual key', code: 'KEY_RESET_ERROR' }, 500);
+  }
+});
+
+keysRoutes.get('/:id/usage', async (c) => {
+  try {
+    const key = await getKey(c.req.param('id'));
+    if (!key) return c.json({ error: 'Virtual key not found', code: 'KEY_NOT_FOUND' }, 404);
+
+    const status = rateLimitEngine.getStatus(key.id, {
+      rpm: key.rateLimitRpm,
+      rpd: key.rateLimitRpd,
+      tokenLimitDaily: key.tokenLimitDaily != null ? Number(key.tokenLimitDaily) : null,
+    });
+
+    return c.json({ success: true, data: { keyId: key.id, ...status } });
+  } catch (error) {
+    logger.warn({ err: error }, 'Failed to get key usage');
+    return c.json({ error: 'Failed to get key usage', code: 'KEY_USAGE_ERROR' }, 500);
+  }
+});
+
+keysRoutes.post('/:id/reset-usage', async (c) => {
+  try {
+    const key = await getKey(c.req.param('id'));
+    if (!key) return c.json({ error: 'Virtual key not found', code: 'KEY_NOT_FOUND' }, 404);
+
+    const body = await c.req.json().catch(() => ({}));
+    const window = body.window || 'all';
+
+    rateLimitEngine.resetKey(key.id, window);
+
+    return c.json({ success: true, message: `Rate limit counters reset for window: ${window}` });
+  } catch (error) {
+    logger.warn({ err: error }, 'Failed to reset key usage');
+    return c.json({ error: 'Failed to reset key usage', code: 'KEY_USAGE_RESET_ERROR' }, 500);
   }
 });
 

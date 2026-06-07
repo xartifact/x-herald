@@ -1,7 +1,51 @@
 'use client';
+
 import { useEffect, useRef, useState, useCallback } from 'react';
 
-import type { LiveStreamEvent } from '@x-llm-gateway/shared';
+import { useQueryClient } from '@tanstack/react-query';
+
+import { logKeys } from './log-types';
+
+// Backend event type (packages/engine/src/gateway/services/log-event-bus.ts)
+type LiveStreamEvent =
+  | {
+      event: 'waiting';
+      logId: string;
+      modelName: string;
+      originalModelName?: string;
+      providerName: string;
+      virtualKeyName?: string;
+      startTime: number;
+      incomingProtocol: string;
+    }
+  | {
+      event: 'started';
+      logId: string;
+      modelName: string;
+      originalModelName?: string;
+      providerName: string;
+      virtualKeyName?: string;
+      startTime: number;
+      incomingProtocol: string;
+    }
+  | {
+      event: 'chunk';
+      logId: string;
+      outputTokens: number;
+      totalChunks: number;
+      hasThinking: boolean;
+      elapsedMs: number;
+    }
+  | {
+      event: 'completed';
+      logId: string;
+      status: 'success' | 'failure';
+      inputTokens: number;
+      outputTokens: number;
+      responseTimeMs: number;
+      thinkingDurationMs?: number;
+    }
+  | { event: 'aborted'; logId: string; reason?: 'client_disconnect' | 'timeout' | 'cancelled' | 'stale_cleanup' };
 
 export interface LiveStreamItem {
   logId: string;
@@ -11,113 +55,145 @@ export interface LiveStreamItem {
   virtualKeyName?: string;
   startTime: number;
   incomingProtocol: string;
-  status: 'waiting' | 'streaming' | 'completed' | 'aborted';
   outputTokens: number;
   totalChunks: number;
   hasThinking: boolean;
   elapsedMs: number;
-}
-
-function createInitialItem(ev: LiveStreamEvent & { event: 'waiting' | 'started' }): LiveStreamItem {
-  return {
-    logId: ev.logId,
-    modelName: ev.modelName,
-    originalModelName: ev.originalModelName,
-    providerName: ev.providerName,
-    virtualKeyName: ev.virtualKeyName,
-    startTime: ev.startTime,
-    incomingProtocol: ev.incomingProtocol,
-    status: 'waiting',
-    outputTokens: 0,
-    totalChunks: 0,
-    hasThinking: false,
-    elapsedMs: 0,
-  };
+  status: 'waiting' | 'streaming';
 }
 
 export function useLiveLogs(enabled = true) {
   const [streams, setStreams] = useState<Map<string, LiveStreamItem>>(new Map());
-  const wsRef = useRef<WebSocket | null>(null);
-
-  const updateStream = useCallback((logId: string, updater: (prev: LiveStreamItem) => LiveStreamItem) => {
-    setStreams((prev) => {
-      const next = new Map(prev);
-      const existing = next.get(logId);
-      if (!existing) return prev;
-      next.set(logId, updater(existing));
-      return next;
-    });
-  }, []);
-
-  const removeStream = useCallback((logId: string) => {
-    setStreams((prev) => {
-      const next = new Map(prev);
-      next.delete(logId);
-      return next;
-    });
-  }, []);
+  const queryClient = useQueryClient();
+  const readerRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const connect = useCallback(() => {
     if (!enabled) return;
 
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const ws = new WebSocket(`${protocol}//${window.location.host}/api/logs/live`);
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
 
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data) as LiveStreamEvent;
-        const now = Date.now();
+    const token = localStorage.getItem('admin_token');
+    fetch('/api/logs/live', {
+      signal: controller.signal,
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+      .then((res) => {
+        if (!res.body) return;
+        const reader = res.body.getReader();
+        readerRef.current = reader;
+        const decoder = new TextDecoder();
+        let buffer = '';
 
-        switch (data.event) {
-          case 'waiting':
-          case 'started': {
-            setStreams((prev) => {
-              const next = new Map(prev);
-              if (!next.has(data.logId)) {
-                next.set(data.logId, {
-                  ...createInitialItem(data),
-                  status: data.event === 'started' ? 'streaming' : 'waiting',
-                });
+        const pump = (): Promise<void> =>
+          reader.read().then(({ done, value }) => {
+            if (done) return;
+            buffer += decoder.decode(value, { stream: true });
+            const parts = buffer.split('\n\n');
+            buffer = parts.pop() ?? '';
+
+            for (const part of parts) {
+              const line = part.trim();
+              if (!line.startsWith('data:')) continue;
+              const data = line.slice(5).trim();
+              try {
+                const event = JSON.parse(data) as LiveStreamEvent;
+                handleEvent(event);
+              } catch {
+                // 解析失败跳过
               }
-              return next;
-            });
-            break;
-          }
-          case 'chunk':
-            updateStream(data.logId, (prev) => ({
-              ...prev,
-              outputTokens: data.usage?.completionTokens ?? prev.outputTokens,
-              totalChunks: prev.totalChunks + 1,
-              hasThinking: prev.hasThinking || !!data.reasoningContent,
-              elapsedMs: now - prev.startTime,
-            }));
-            break;
-          case 'completed':
-            updateStream(data.logId, (prev) => ({
-              ...prev,
-              status: 'completed',
-              outputTokens: data.totalTokens,
-              elapsedMs: data.durationMs,
-            }));
-            setTimeout(() => removeStream(data.logId), 3000);
-            break;
-          case 'aborted':
-            removeStream(data.logId);
-            break;
+            }
+            return pump();
+          });
+
+        return pump();
+      })
+      .catch(() => {
+        // 断连后 3s 重连
+        if (!controller.signal.aborted) {
+          setTimeout(connect, 3000);
         }
-      } catch { /* ignore parse errors */ }
-    };
+      });
+  }, [enabled]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    ws.onclose = () => {
-      setTimeout(() => connect(), 3000);
-    };
-
-    wsRef.current = ws;
-  }, [enabled, updateStream, removeStream]);
+  const handleEvent = useCallback(
+    (event: LiveStreamEvent) => {
+      if (event.event === 'waiting') {
+        setStreams((prev) => {
+          const next = new Map(prev);
+          next.set(event.logId, {
+            logId: event.logId,
+            modelName: event.modelName,
+            originalModelName: event.originalModelName,
+            providerName: event.providerName,
+            virtualKeyName: event.virtualKeyName,
+            startTime: event.startTime,
+            incomingProtocol: event.incomingProtocol,
+            outputTokens: 0,
+            totalChunks: 0,
+            hasThinking: false,
+            elapsedMs: 0,
+            status: 'waiting',
+          });
+          return next;
+        });
+      } else if (event.event === 'started') {
+        setStreams((prev) => {
+          const next = new Map(prev);
+          const existing = prev.get(event.logId);
+          next.set(event.logId, {
+            ...(existing ?? {
+              outputTokens: 0,
+              totalChunks: 0,
+              hasThinking: false,
+              elapsedMs: 0,
+            }),
+            logId: event.logId,
+            modelName: event.modelName,
+            originalModelName: event.originalModelName,
+            providerName: event.providerName,
+            virtualKeyName: event.virtualKeyName,
+            startTime: event.startTime,
+            incomingProtocol: event.incomingProtocol,
+            status: 'streaming',
+          });
+          return next;
+        });
+      } else if (event.event === 'chunk') {
+        setStreams((prev) => {
+          const item = prev.get(event.logId);
+          if (!item) return prev;
+          const next = new Map(prev);
+          next.set(event.logId, {
+            ...item,
+            outputTokens: event.outputTokens,
+            totalChunks: event.totalChunks,
+            hasThinking: event.hasThinking,
+            elapsedMs: event.elapsedMs,
+          });
+          return next;
+        });
+      } else if (event.event === 'completed' || event.event === 'aborted') {
+        setStreams((prev) => {
+          const next = new Map(prev);
+          next.delete(event.logId);
+          return next;
+        });
+        // 刷新历史日志列表
+        queryClient.invalidateQueries({ queryKey: logKeys.lists() });
+      }
+    },
+    [queryClient]
+  );
 
   useEffect(() => {
     connect();
-    return () => { wsRef.current?.close(); };
+    return () => {
+      abortRef.current?.abort();
+      readerRef.current?.cancel().catch(() => {});
+    };
   }, [connect]);
 
   return streams;

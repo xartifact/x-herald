@@ -135,3 +135,51 @@ export function useResetKey() {
     },
   })
 }
+
+interface RateLimitWindowStatus {
+  current: number
+  limit: number
+  remaining: number
+  resetAt: number
+}
+
+interface KeyUsageResponse {
+  keyId: string
+  allowed: boolean
+  reason?: string
+  rpm?: RateLimitWindowStatus
+  rpd?: RateLimitWindowStatus
+  token?: RateLimitWindowStatus
+}
+
+/**
+ * 获取密钥实时速率限制用量
+ */
+export function useKeyUsage(id: string) {
+  return useQuery({
+    queryKey: [...keyKeys.detail(id), 'usage'],
+    queryFn: () => get<KeyUsageResponse>(`/api/keys/${id}/usage`),
+    enabled: !!id,
+    refetchInterval: 5000,
+  })
+}
+
+/**
+ * 重置密钥速率限制计数器
+ */
+export function useResetKeyUsage() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, window }: { id: string; window?: string }) =>
+      post(`/api/keys/${id}/reset-usage`, { window }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: [...keyKeys.detail(variables.id), 'usage'] })
+      toast.success('速率限制计数器已重置')
+    },
+    onError: (error: unknown) => {
+      const apiError = error as { data?: { error?: string } }
+      toast.error(apiError.data?.error || '重置失败')
+    },
+  })
+}

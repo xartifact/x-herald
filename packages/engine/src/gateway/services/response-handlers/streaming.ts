@@ -1,6 +1,7 @@
 import logger from '../../../lib/logger';
 
 import { getTransformer } from '../../transformer';
+import { rateLimitEngine } from '../rate-limit-engine';
 import { logEventBus } from '../log-event-bus';
 import {
   upgradeToStreamLog,
@@ -53,6 +54,10 @@ interface FinalizeContext {
 async function finalizeStreamWithLog(ctx: FinalizeContext, status: 'success' | 'failure'): Promise<void> {
   const { logId, attemptId, clientCollector, providerCollector, standardCollector, needsTransformation, startTime, preprocessEndTime, providerTtfbTime, mergedHeaders, providerResponseHeaders, params, targetProtocol, incomingProtocol } = ctx;
   const usage = clientCollector.getUsage();
+  const totalTokens = usage.inputTokens + usage.outputTokens;
+  if (params.virtualKey?.id && totalTokens > 0) {
+    rateLimitEngine.check(params.virtualKey.id, {}, totalTokens);
+  }
   const fullContent = clientCollector.getFullContent();
   const providerProgress = providerCollector.getProgress();
   const progress = { ...clientCollector.getProgress(), lastChunkAt: providerProgress.lastChunkAt };

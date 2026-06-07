@@ -15,9 +15,9 @@ export interface VirtualKey {
 export interface KeyFormData {
   name: string
   allowedModels: string
-  rateLimitRpm: number | undefined
-  rateLimitRpd: number | undefined
-  tokenLimitDaily: number | undefined
+  rateLimitRpm?: number | null
+  rateLimitRpd?: number | null
+  tokenLimitDaily?: number | null
   enabled: boolean
   expiresAt: string
 }

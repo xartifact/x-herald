@@ -1,4 +1,4 @@
-import { LayoutDashboard, Server, Brain, Key, FileText, BarChart3, Settings, Layers, Cog, Network, GitBranch, ShieldAlert, Gauge } from 'lucide-react'
+import { LayoutDashboard, Server, Brain, Key, FileText, BarChart3, Settings, Layers, Cog, Network, GitBranch, ShieldAlert, Gauge, Lock } from 'lucide-react'
 
 export interface NavItem {
   href: string
@@ -41,6 +41,13 @@ export const navGroups: NavGroup[] = [
       { href: '/admin/provider-stats', label: '供应商统计', icon: <BarChart3 className="h-4 w-4" /> },
       { href: '/admin/circuit-breaker', label: '熔断记录', icon: <ShieldAlert className="h-4 w-4" /> },
       { href: '/admin/metrics', label: '性能指标', icon: <Gauge className="h-4 w-4" /> },
+    ],
+  },
+  {
+    label: '高级',
+    icon: <Lock className="h-4 w-4" />,
+    items: [
+      { href: '/admin/mitm', label: 'MITM 代理', icon: <Lock className="h-4 w-4" /> },
     ],
   },
 ]

@@ -169,6 +169,13 @@
       "when": 1747353600000,
       "tag": "0023_model_group_memberships",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1750000000000,
+      "tag": "0026_cost_records",
+      "breakpoints": true
     }
   ]
 }

@@ -107,6 +107,9 @@ export async function createEngine(options: CreateEngineOptions = {}): Promise<E
     const { aiRoutes } = await import('./features/ai-assist/api');
     app.route('/api/ai', aiRoutes);
 
+    const { default: costRoutes } = await import('./features/costs/api');
+    app.route('/api/costs', costRoutes);
+
     const { default: mitmRoutes } = await import('./mitm/routes');
     app.route('/api/mitm', mitmRoutes);
   }

@@ -6,6 +6,7 @@ import logger from '../../lib/logger';
 import type { VirtualKey } from '../../features/keys/db';
 import { requestLogs, requestAttempts } from '../../features/logs/db';
 import type { FailoverReason } from '../../features/logs/db';
+import { costService } from '../../features/costs/service';
 
 import { extractMetadata } from './metadata-extractor';
 import { rateLimitEngine } from './rate-limit-engine';
@@ -183,6 +184,18 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
         }).where(eq(requestAttempts.id, params.attemptId));
       }
 
+      if (params.providerName && inputTokens + outputTokens > 0) {
+        await costService.recordCost({
+          requestLogId: params.logId,
+          keyId: params.virtualKey.id,
+          keyName: params.virtualKey.name,
+          modelName: params.modelName,
+          providerName: params.providerName,
+          inputTokens,
+          outputTokens,
+        });
+      }
+
       logger.debug({ logId: params.logId, modelName: params.modelName, status: params.status }, 'Request log updated');
       return;
     }
@@ -210,6 +223,18 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
       providerResponseHeaders: params.providerResponseHeaders as AnyRecord,
       createdAt: new Date(),
     });
+
+    if (params.providerName && inputTokens + outputTokens > 0) {
+      await costService.recordCost({
+        requestLogId: logId,
+        keyId: params.virtualKey.id,
+        keyName: params.virtualKey.name,
+        modelName: params.modelName,
+        providerName: params.providerName,
+        inputTokens,
+        outputTokens,
+      });
+    }
 
     const { recordClientRequestedModel } = await import('../../features/logs/services/client-model-recorder');
     await recordClientRequestedModel(params.originalModelName || params.modelName);

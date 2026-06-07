@@ -3,6 +3,7 @@ import logger from '../../../lib/logger';
 import { getTransformer } from '../../transformer';
 import { rateLimitEngine } from '../rate-limit-engine';
 import { logEventBus } from '../log-event-bus';
+import { costService } from '../../../features/costs/service';
 import {
   upgradeToStreamLog,
   finalizeStreamLog as finalizeStreamLogRecord,
@@ -107,6 +108,18 @@ async function finalizeStreamWithLog(ctx: FinalizeContext, status: 'success' | '
   });
 
   logEventBus.emitLog({ event: 'completed', logId, status, inputTokens: usage.inputTokens, outputTokens: usage.outputTokens, responseTimeMs: now - startTime, thinkingDurationMs: timings.thinkingDurationMs });
+
+  if (params.virtualKey?.id && params.provider.name && usage.inputTokens + usage.outputTokens > 0) {
+    await costService.recordCost({
+      requestLogId: logId,
+      keyId: params.virtualKey.id,
+      keyName: params.virtualKey.name,
+      modelName: params.resolvedModelName || params.originalModelName,
+      providerName: params.provider.name,
+      inputTokens: usage.inputTokens,
+      outputTokens: usage.outputTokens,
+    });
+  }
 }
 
 export async function handleStreamingResponse(params: ResponseHandlerParams): Promise<Response> {

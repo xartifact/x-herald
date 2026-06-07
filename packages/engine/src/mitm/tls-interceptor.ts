@@ -8,6 +8,7 @@ const logger = rootLogger.child({ module: 'mitm-tls' })
 
 const MITM_DEFAULT_PORT = 8443
 const UPSTREAM_TIMEOUT_MS = 30_000
+const MAX_CONNECTIONS = 100
 
 interface InterceptedConnection {
   clientSocket: TLSSocket
@@ -166,6 +167,13 @@ export class TLSInterceptor {
 
   private async startTLSServerForClient(clientSocket: Socket, hostname: string, port: number): Promise<void> {
     const connId = `conn-${++this.connectionIdCounter}`
+
+    if (this.connections.size >= MAX_CONNECTIONS) {
+      logger.warn({ hostname }, 'Max connections reached, rejecting new connection')
+      clientSocket.write('HTTP/1.1 503 Service Unavailable\r\n\r\n')
+      clientSocket.end()
+      return
+    }
 
     try {
       // Generate server certificate for this domain

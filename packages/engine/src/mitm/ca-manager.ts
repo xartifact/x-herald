@@ -405,7 +405,7 @@ export class CAManager {
     const { privateKey, publicKey } = generateKeyPairSync('rsa', {
       modulusLength: 2048,
       publicKeyEncoding: { type: 'pkcs1', format: 'pem' },
-      privateKeyEncoding: { type: 'pkcs1', format: 'pem' },
+      privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
     })
 
     this.caKeyPem = privateKey
@@ -459,7 +459,7 @@ export class CAManager {
     const { privateKey, publicKey } = generateKeyPairSync('rsa', {
       modulusLength: 2048,
       publicKeyEncoding: { type: 'pkcs1', format: 'pem' },
-      privateKeyEncoding: { type: 'pkcs1', format: 'pem' },
+      privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
     })
 
     const pubKeyDer = Buffer.from(publicKey.split('\n').slice(1, -2).join(''), 'base64')

@@ -1,14 +1,14 @@
 import { Hono } from 'hono'
+import { join } from 'path'
 
 import { rootLogger } from '../lib'
+import { authMiddleware } from '../features/auth/middleware'
 import { CAManager } from './ca-manager'
 import { TLSInterceptor } from './tls-interceptor'
 
 const logger = rootLogger.child({ module: 'mitm-routes' })
 
 const MITM_DATA_DIR = process.env.MITM_DATA_DIR || join(process.cwd(), 'data', 'mitm')
-
-import { join } from 'path'
 
 // Singleton instances
 let caManager: CAManager | null = null
@@ -31,6 +31,8 @@ async function getInterceptor(): Promise<TLSInterceptor> {
 }
 
 const mitmRoutes = new Hono()
+
+mitmRoutes.use('*', authMiddleware)
 
 // GET /api/mitm/ca-cert - Download CA certificate
 mitmRoutes.get('/ca-cert', async (c) => {

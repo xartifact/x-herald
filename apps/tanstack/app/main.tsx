@@ -17,8 +17,10 @@ import { LogsPage } from './routes/admin/logs/index'
 import { LogDetailPage } from './routes/admin/logs/log-detail'
 import { MetricsPage } from './routes/admin/metrics/index'
 import { ClientModelsPage } from './routes/admin/client-models/index'
+import { CostsPage } from './routes/admin/costs/index'
 import { ProviderStatsPage } from './routes/admin/provider-stats/index'
 import { ModelRoutesPage } from './routes/admin/model-routes/index'
+import { MitmPage } from './routes/admin/mitm/index'
 
 import './styles/app.css'
 
@@ -44,8 +46,10 @@ const logsRoute = createRoute({ getParentRoute: () => adminRoute, path: '/logs',
 const logDetailRoute = createRoute({ getParentRoute: () => adminRoute, path: '/logs/$logId', component: LogDetailPage })
 const metricsRoute = createRoute({ getParentRoute: () => adminRoute, path: '/metrics', component: MetricsPage })
 const clientModelsRoute = createRoute({ getParentRoute: () => adminRoute, path: '/client-models', component: ClientModelsPage })
+const costsRoute = createRoute({ getParentRoute: () => adminRoute, path: '/costs', component: CostsPage })
 const providerStatsRoute = createRoute({ getParentRoute: () => adminRoute, path: '/provider-stats', component: ProviderStatsPage })
 const modelRoutesRoute = createRoute({ getParentRoute: () => adminRoute, path: '/model-routes', component: ModelRoutesPage })
+const mitmRoute = createRoute({ getParentRoute: () => adminRoute, path: '/mitm', component: MitmPage })
 
 const routeTree = rootRoute.addChildren([
   loginRoute,
@@ -53,8 +57,8 @@ const routeTree = rootRoute.addChildren([
   adminRoute.addChildren([
     dashboardRoute, indexRoute2, providersRoute, keysRoute, modelGroupsRoute,
     settingsRoute, accessModelsRoute, circuitBreakerRoute,
-    logsRoute, logDetailRoute, metricsRoute, clientModelsRoute, providerStatsRoute,
-    modelRoutesRoute,
+    logsRoute, logDetailRoute, metricsRoute, clientModelsRoute, costsRoute, providerStatsRoute,
+    modelRoutesRoute, mitmRoute,
   ]),
 ])
 const router = createRouter({ routeTree })

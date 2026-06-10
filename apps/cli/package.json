@@ -8,6 +8,7 @@
     "xgate": "./src/index.ts"
   },
   "dependencies": {
+    "@clack/prompts": "^1.5.1",
     "commander": "^12.0.0"
   },
   "devDependencies": {

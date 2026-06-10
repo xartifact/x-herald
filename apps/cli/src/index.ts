@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 import { Command } from 'commander';
+import * as p from '@clack/prompts';
 import { GatewayClient } from './client';
 
 const program = new Command();
@@ -42,8 +43,8 @@ providers.command('delete <id>')
   });
 
 // Models
-const models = program.command('models').description('List models');
-models.command('list')
+const modelsCmd = program.command('models').description('List models');
+modelsCmd.command('list')
   .description('List all model groups')
   .action(async () => {
     const client = new GatewayClient({ baseUrl: program.opts().url, apiKey: program.opts().apiKey });
@@ -92,140 +93,181 @@ program.command('health')
   });
 
 // Configure
-const configure = program.command('configure').description('Configure AI tools to use x-llm-gateway');
+const configure = program.command('configure').description('配置 AI 工具使用 x-llm-gateway');
 
-configure.command('cursor')
-  .description('Generate Cursor configuration')
-  .option('-u, --url <url>', 'Gateway URL')
-  .option('-k, --api-key <key>', 'Virtual API key')
-  .action((opts: { url?: string; apiKey?: string }) => {
-    const url = opts.url || program.opts().url;
-    const key = opts.apiKey || program.opts().apiKey;
-    console.log('=== Cursor Configuration ===');
-    console.log('');
-    console.log('Add these environment variables to your shell profile (~/.zshrc, ~/.bashrc):');
-    console.log('');
-    console.log(`export OPENAI_BASE_URL="${url}/api/v1"`);
-    if (key) console.log(`export OPENAI_API_KEY="${key}"`);
-    console.log('');
-    console.log('Or set them in Cursor Settings > Models > OpenAI API Key and Base URL.');
+configure.action(async () => {
+  p.intro('x-llm-gateway 配置向导');
+
+  // 选择工具
+  const tool = await p.select({
+    message: '选择要配置的工具:',
+    options: [
+      { value: 'opencode', label: 'OpenCode', hint: '生成 opencode.json' },
+      { value: 'claude-code', label: 'Claude Code', hint: '生成 ~/.claude/settings.json' },
+      { value: 'pi', label: 'Pi', hint: '生成 ~/.pi/agent/models.json' },
+      { value: 'codex', label: 'Codex', hint: '生成环境变量配置' },
+      { value: 'all', label: '全部', hint: '配置所有工具' },
+    ],
   });
+  if (p.isCancel(tool)) return p.cancel('已取消');
 
-configure.command('claude-desktop')
-  .description('Generate Claude Desktop configuration')
-  .option('-u, --url <url>', 'Gateway URL')
-  .option('-k, --api-key <key>', 'Virtual API key')
-  .option('--apply', 'Automatically write to Claude Desktop config file')
-  .action((opts: { url?: string; apiKey?: string; apply?: boolean }) => {
-    const url = opts.url || program.opts().url;
-    const key = opts.apiKey || program.opts().apiKey;
+  // 获取网关地址
+  const url = await p.text({
+    message: '网关地址:',
+    defaultValue: program.opts().url || 'http://localhost:3000',
+  });
+  if (p.isCancel(url)) return p.cancel('已取消');
 
-    if (opts.apply) {
-      const configDir = join(homedir(), 'Library', 'Application Support', 'Claude');
-      const configPath = join(configDir, 'claude_desktop_config.json');
-      let config: Record<string, unknown> = {};
-      if (existsSync(configPath)) {
-        config = JSON.parse(readFileSync(configPath, 'utf-8'));
-      }
-      config.env = {
-        ...((config.env as Record<string, string>) || {}),
-        ANTHROPIC_BASE_URL: url,
-        ...(key ? { ANTHROPIC_API_KEY: key } : {}),
-      };
-      mkdirSync(configDir, { recursive: true });
-      writeFileSync(configPath, JSON.stringify(config, null, 2));
-      console.log(`Configuration written to ${configPath}`);
+  // 获取 API Key
+  const apiKey = await p.password({
+    message: '虚拟密钥 (留空跳过):',
+    mask: '*',
+  });
+  if (p.isCancel(apiKey)) return p.cancel('已取消');
+
+  // 获取模型列表
+  const s = p.spinner();
+  s.start('获取网关模型列表...');
+  let models: string[] = [];
+  try {
+    const res = await fetch(`${url}/api/v1/models`, {
+      headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {},
+    });
+    const data = await res.json() as { data?: Array<{ id?: string; name?: string }>; id?: string; name?: string } | Array<{ id?: string; name?: string }>;
+    const list = (data && typeof data === 'object' && 'data' in data && Array.isArray(data.data)) ? data.data : Array.isArray(data) ? data : [];
+    models = list.map((m: { id?: string; name?: string }) => m.id || m.name || String(m)).filter(Boolean);
+    s.stop(`获取到 ${models.length} 个模型`);
+  } catch {
+    s.stop('无法获取模型列表，将使用空模型列表');
+  }
+
+  // 执行配置
+  const tools = tool === 'all' ? ['opencode', 'claude-code', 'pi', 'codex'] : [tool as string];
+
+  for (const t of tools) {
+    await configureTool(t, url as string, apiKey as string, models);
+  }
+
+  p.outro('配置完成!');
+});
+
+async function configureTool(tool: string, url: string, apiKey: string, models: string[]) {
+  switch (tool) {
+    case 'opencode':
+      await configureOpenCode(url, apiKey, models);
+      break;
+    case 'claude-code':
+      await configureClaudeCode(url, apiKey);
+      break;
+    case 'pi':
+      await configurePi(url, apiKey, models);
+      break;
+    case 'codex':
+      await configureCodex(url, apiKey);
+      break;
+  }
+}
+
+async function configureOpenCode(url: string, apiKey: string, models: string[]) {
+  const config = {
+    $schema: 'https://opencode.ai/config.json',
+    provider: {
+      'x-llm-gateway': {
+        npm: '@ai-sdk/openai-compatible',
+        name: 'x-llm-gateway',
+        options: {
+          baseURL: `${url}/api/v1`,
+          ...(apiKey ? { apiKey } : {}),
+        },
+        models: Object.fromEntries(
+          models.map((m) => [m, { name: m }])
+        ),
+      },
+    },
+  };
+
+  const configPath = join(process.cwd(), 'opencode.json');
+  if (existsSync(configPath)) {
+    const overwrite = await p.confirm({ message: 'opencode.json 已存在，是否覆盖?' });
+    if (!overwrite) {
+      p.log.info('跳过 opencode.json');
       return;
     }
+  }
 
-    console.log('=== Claude Desktop Configuration ===');
-    console.log('');
-    console.log('Add these to your Claude Desktop config file');
-    console.log(`(${join(homedir(), 'Library', 'Application Support', 'Claude', 'claude_desktop_config.json')}):`);
-    console.log('');
-    console.log(JSON.stringify({
-      env: {
-        ANTHROPIC_BASE_URL: url,
-        ...(key ? { ANTHROPIC_API_KEY: key } : {}),
-      },
-    }, null, 2));
-  });
+  writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
+  p.log.success('opencode.json 已生成');
+}
 
-configure.command('cline')
-  .description('Generate Cline (VS Code extension) configuration')
-  .option('-u, --url <url>', 'Gateway URL')
-  .option('-k, --api-key <key>', 'Virtual API key')
-  .action((opts: { url?: string; apiKey?: string }) => {
-    const url = opts.url || program.opts().url;
-    const key = opts.apiKey || program.opts().apiKey;
-    console.log('=== Cline Configuration ===');
-    console.log('');
-    console.log('Add these environment variables to your shell profile (~/.zshrc, ~/.bashrc):');
-    console.log('');
-    console.log(`export OPENAI_BASE_URL="${url}/api/v1"`);
-    if (key) console.log(`export OPENAI_API_KEY="${key}"`);
-    console.log('');
-    console.log('Or configure in VS Code Settings > Extensions > Cline > API Configuration.');
-  });
+async function configureClaudeCode(url: string, apiKey: string) {
+  const settingsDir = join(homedir(), '.claude');
+  const settingsPath = join(settingsDir, 'settings.json');
 
-configure.command('all')
-  .description('Show configuration for all supported tools')
-  .option('-u, --url <url>', 'Gateway URL')
-  .option('-k, --api-key <key>', 'Virtual API key')
-  .option('--apply', 'Automatically write Claude Desktop config (only for claude-desktop)')
-  .action((opts: { url?: string; apiKey?: string; apply?: boolean }) => {
-    const url = opts.url || program.opts().url;
-    const key = opts.apiKey || program.opts().apiKey;
-
-    // Cursor
-    console.log('=== Cursor Configuration ===');
-    console.log('');
-    console.log('Add these environment variables to your shell profile (~/.zshrc, ~/.bashrc):');
-    console.log('');
-    console.log(`export OPENAI_BASE_URL="${url}/api/v1"`);
-    if (key) console.log(`export OPENAI_API_KEY="${key}"`);
-    console.log('');
-
-    // Claude Desktop
-    console.log('=== Claude Desktop Configuration ===');
-    console.log('');
-    if (opts.apply) {
-      const configDir = join(homedir(), 'Library', 'Application Support', 'Claude');
-      const configPath = join(configDir, 'claude_desktop_config.json');
-      let config: Record<string, unknown> = {};
-      if (existsSync(configPath)) {
-        config = JSON.parse(readFileSync(configPath, 'utf-8'));
-      }
-      config.env = {
-        ...((config.env as Record<string, string>) || {}),
-        ANTHROPIC_BASE_URL: url,
-        ...(key ? { ANTHROPIC_API_KEY: key } : {}),
-      };
-      mkdirSync(configDir, { recursive: true });
-      writeFileSync(configPath, JSON.stringify(config, null, 2));
-      console.log(`Configuration written to ${configPath}`);
-      console.log('');
-    } else {
-      console.log(`Add these to your Claude Desktop config file (${join(homedir(), 'Library', 'Application Support', 'Claude', 'claude_desktop_config.json')}):`);
-      console.log('');
-      console.log(JSON.stringify({
-        env: {
-          ANTHROPIC_BASE_URL: url,
-          ...(key ? { ANTHROPIC_API_KEY: key } : {}),
-        },
-      }, null, 2));
-      console.log('');
+  let existing: Record<string, unknown> = {};
+  if (existsSync(settingsPath)) {
+    try {
+      existing = JSON.parse(readFileSync(settingsPath, 'utf-8'));
+    } catch {
+      // ignore parse errors
     }
+  }
 
-    // Cline
-    console.log('=== Cline Configuration ===');
-    console.log('');
-    console.log('Add these environment variables to your shell profile (~/.zshrc, ~/.bashrc):');
-    console.log('');
-    console.log(`export OPENAI_BASE_URL="${url}/api/v1"`);
-    if (key) console.log(`export OPENAI_API_KEY="${key}"`);
-    console.log('');
-    console.log('Or configure in VS Code Settings > Extensions > Cline > API Configuration.');
-  });
+  const merged = {
+    ...existing,
+    env: {
+      ...((existing.env as Record<string, string>) || {}),
+      ANTHROPIC_BASE_URL: url,
+      ...(apiKey ? { ANTHROPIC_API_KEY: apiKey } : {}),
+    },
+  };
+
+  if (!existsSync(settingsDir)) mkdirSync(settingsDir, { recursive: true });
+  writeFileSync(settingsPath, JSON.stringify(merged, null, 2) + '\n');
+  p.log.success(`~/.claude/settings.json 已${existsSync(settingsPath) ? '更新' : '生成'}`);
+}
+
+async function configurePi(url: string, apiKey: string, models: string[]) {
+  const configDir = join(homedir(), '.pi', 'agent');
+  const configPath = join(configDir, 'models.json');
+
+  let existing: Record<string, unknown> = { providers: {} };
+  if (existsSync(configPath)) {
+    try {
+      existing = JSON.parse(readFileSync(configPath, 'utf-8'));
+    } catch {
+      // ignore parse errors
+    }
+  }
+
+  const providersRecord = (existing.providers as Record<string, unknown>) || {};
+  providersRecord['x-llm-gateway'] = {
+    baseUrl: url,
+    api: 'anthropic-messages',
+    ...(apiKey ? { apiKey } : {}),
+    models: models.map((m) => ({ id: m, name: m })),
+  };
+  existing.providers = providersRecord;
+
+  if (!existsSync(configDir)) mkdirSync(configDir, { recursive: true });
+  writeFileSync(configPath, JSON.stringify(existing, null, 2) + '\n');
+  p.log.success(`~/.pi/agent/models.json 已${existsSync(configPath) ? '更新' : '生成'}`);
+}
+
+async function configureCodex(url: string, apiKey: string) {
+  const envContent = [
+    '# x-llm-gateway 配置 (添加到 ~/.zshrc 或 ~/.bashrc)',
+    `export OPENAI_API_BASE="${url}/api/v1"`,
+    apiKey ? `export OPENAI_API_KEY="${apiKey}"` : '# export OPENAI_API_KEY="sk-your-key"',
+    '',
+  ].join('\n');
+
+  p.log.info('Codex 配置（请添加到 shell profile）:');
+  console.log(envContent);
+
+  // 也写入一个 .env 文件
+  const envPath = join(process.cwd(), '.env.xgate');
+  writeFileSync(envPath, envContent);
+  p.log.success('.env.xgate 已生成');
+}
 
 program.parse();

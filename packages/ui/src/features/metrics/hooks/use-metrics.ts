@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { get } from '../../../shared/lib/api-client'
+import { get, patch, post } from '../../../shared/lib/api-client'
 
 const API_BASE = '/api/metrics'
 
@@ -123,5 +123,59 @@ export function useProviderQuality() {
     queryKey: ['metrics', 'providers', 'quality'],
     queryFn: () => get<{ data: ProviderQuality[] }>(`${API_BASE}/providers/quality`),
     refetchInterval: 60_000,
+  })
+}
+
+export interface AnomalyEvent {
+  id: string
+  type: string
+  severity: 'warning' | 'critical'
+  providerName: string | null
+  modelName: string | null
+  instanceId: string | null
+  description: string | null
+  details: Record<string, unknown> | null
+  resolved: boolean
+  resolvedAt: string | null
+  createdAt: string
+}
+
+export function useAnomalyEvents(unresolvedOnly = false) {
+  return useQuery<{ success: boolean; data: AnomalyEvent[] }>({
+    queryKey: ['metrics', 'anomalies', unresolvedOnly],
+    queryFn: () =>
+      get<{ success: boolean; data: AnomalyEvent[] }>(
+        `${API_BASE}/anomalies${unresolvedOnly ? '?unresolved=true' : ''}`,
+        { extractData: false }
+      ),
+    refetchInterval: 30_000,
+  })
+}
+
+export function useDetectAnomalies() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () =>
+      post<{ success: boolean; data: { newEvents: number } }>(
+        `${API_BASE}/anomalies/detect`,
+        undefined,
+        { extractData: false }
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['metrics', 'anomalies'] })
+    },
+  })
+}
+
+export function useResolveAnomaly() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) =>
+      patch<{ success: boolean }>(`${API_BASE}/anomalies/${id}/resolve`, undefined, {
+        extractData: false,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['metrics', 'anomalies'] })
+    },
   })
 }

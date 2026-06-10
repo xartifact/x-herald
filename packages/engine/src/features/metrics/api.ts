@@ -1,8 +1,10 @@
-import { and, desc, gte, lte, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, lte, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 
 import { getDatabase } from '../../db/client';
 
+import { AnomalyDetector } from './anomaly-detector';
+import { anomalyEvents } from './anomaly-db';
 import { instancePerfSnapshots } from './db';
 
 export const metricsRoutes = new Hono();
@@ -317,4 +319,40 @@ metricsRoutes.get('/summary', async (c) => {
     },
     anomalyCount: anomaly?.anomaly_count != null ? Number(anomaly.anomaly_count) : 0,
   });
+});
+
+// ─── GET /api/metrics/anomalies ──────────────────────────────────────────────
+// List anomaly events
+
+metricsRoutes.get('/anomalies', async (c) => {
+  const { unresolved } = c.req.query();
+  const db = getDatabase();
+  const detector = new AnomalyDetector();
+  const events =
+    unresolved === 'true'
+      ? await detector.getUnresolved()
+      : await db
+          .select()
+          .from(anomalyEvents)
+          .orderBy(desc(anomalyEvents.createdAt))
+          .limit(100);
+  return c.json({ success: true, data: events });
+});
+
+// ─── POST /api/metrics/anomalies/detect ──────────────────────────────────────
+// Run detection
+
+metricsRoutes.post('/anomalies/detect', async (c) => {
+  const detector = new AnomalyDetector();
+  const newEvents = await detector.detect();
+  return c.json({ success: true, data: { newEvents } });
+});
+
+// ─── PATCH /api/metrics/anomalies/:id/resolve ────────────────────────────────
+// Resolve anomaly
+
+metricsRoutes.patch('/anomalies/:id/resolve', async (c) => {
+  const detector = new AnomalyDetector();
+  await detector.resolve(c.req.param('id'));
+  return c.json({ success: true });
 });

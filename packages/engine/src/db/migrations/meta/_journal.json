@@ -183,6 +183,13 @@
       "when": 1754476800000,
       "tag": "0027_key_usage_stats",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1754476900000,
+      "tag": "0028_anomaly_events",
+      "breakpoints": true
     }
   ]
 }

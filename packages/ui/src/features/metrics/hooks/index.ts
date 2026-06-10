@@ -3,6 +3,9 @@ export {
   useInstancesSummary,
   useInstanceTimeseries,
   useProviderQuality,
+  useAnomalyEvents,
+  useDetectAnomalies,
+  useResolveAnomaly,
 } from './use-metrics'
 
 export type {
@@ -11,4 +14,5 @@ export type {
   TimeseriesBaseline,
   ProviderQuality,
   MetricsSummary,
+  AnomalyEvent,
 } from './use-metrics'

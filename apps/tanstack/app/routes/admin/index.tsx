@@ -18,6 +18,7 @@ import {
   useLogStats,
   useLogStorage,
   logKeys,
+  AnomalyAlertPanel,
 } from '@x-llm-gateway/ui'
 
 function getTimeRange(range: string): Record<string, string> {
@@ -131,6 +132,9 @@ export function DashboardPage() {
       </div>
 
       <LogStatsCards stats={stats} storage={storage} clientStats={clientStats} />
+
+      {/* 异常告警面板 */}
+      <AnomalyAlertPanel />
 
       {/* 快速导航 */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

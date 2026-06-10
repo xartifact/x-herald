@@ -7,4 +7,5 @@ export { healthTargets, healthRuns } from '../features/health/db';
 export { gatewayConfigs } from '../features/gateway-config/db';
 export { circuitBreakerEvents } from '../features/circuit-breaker/db';
 export { instancePerfSnapshots } from '../features/metrics/db';
+export { anomalyEvents } from '../features/metrics/anomaly-db';
 export { costRecords } from '../features/costs/db';

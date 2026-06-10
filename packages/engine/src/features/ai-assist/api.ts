@@ -14,6 +14,7 @@ import { providers } from '../providers/db';
 import { ErrorDiagnoser } from './error-diagnoser';
 import { ErrorPatternLearner } from './error-patterns';
 import { buildSystemPrompt } from './prompt';
+import { getAgent } from './agent-setup';
 
 const logger = rootLogger.child({ module: 'ai-assist' });
 
@@ -90,10 +91,11 @@ aiRoutes.post('/agent/instance/:id', async (c) => {
 
   let rawText: string;
   try {
-    rawText = await callAI([
+    const aiResponse = await callAI([
       { role: 'system', content: systemPrompt },
       ...body.messages,
     ]);
+    rawText = aiResponse.content;
   } catch (err) {
     if (err instanceof AiNotConfiguredError) {
       return c.json({ success: false, error: err.message, code: 'AI_NOT_CONFIGURED' }, 503);
@@ -158,6 +160,80 @@ aiRoutes.post('/agent/instance/:id/undo', async (c) => {
   logger.info({ instanceId }, 'AI config change undone');
 
   return c.json({ success: true });
+});
+
+// POST /api/ai/agent/run - General Agent execution
+aiRoutes.post('/agent/run', async (c) => {
+  const body = await c.req.json<{ prompt: string; skill?: string; tools?: string[]; maxTurns?: number }>();
+
+  if (!body.prompt) {
+    return c.json({ success: false, error: 'prompt is required' }, 400);
+  }
+
+  try {
+    const agent = getAgent();
+    const result = await agent.run({
+      prompt: body.prompt,
+      skill: body.skill,
+      tools: body.tools,
+      maxTurns: body.maxTurns,
+    });
+    return c.json({ success: true, data: result });
+  } catch (err) {
+    if (err instanceof AiNotConfiguredError) {
+      return c.json({ success: false, error: err.message, code: 'AI_NOT_CONFIGURED' }, 503);
+    }
+    logger.warn({ err }, 'Agent run failed');
+    return c.json({ success: false, error: 'Agent request failed' }, 500);
+  }
+});
+
+// POST /api/ai/agent/diagnose - Quick error diagnosis
+aiRoutes.post('/agent/diagnose', async (c) => {
+  const body = await c.req.json<{ logId: string }>();
+
+  if (!body.logId) {
+    return c.json({ success: false, error: 'logId is required' }, 400);
+  }
+
+  try {
+    const agent = getAgent();
+    const result = await agent.run({
+      prompt: `Diagnose this request error: logId=${body.logId}`,
+      skill: 'error-diagnosis',
+    });
+    return c.json({ success: true, data: result });
+  } catch (err) {
+    if (err instanceof AiNotConfiguredError) {
+      return c.json({ success: false, error: err.message, code: 'AI_NOT_CONFIGURED' }, 503);
+    }
+    logger.warn({ err }, 'Agent diagnosis failed');
+    return c.json({ success: false, error: 'Agent diagnosis request failed' }, 500);
+  }
+});
+
+// POST /api/ai/agent/generate-config - Quick config generation
+aiRoutes.post('/agent/generate-config', async (c) => {
+  const body = await c.req.json<{ instanceId: string; description: string }>();
+
+  if (!body.instanceId) {
+    return c.json({ success: false, error: 'instanceId is required' }, 400);
+  }
+
+  try {
+    const agent = getAgent();
+    const result = await agent.run({
+      prompt: `Generate configuration for instance ${body.instanceId}: ${body.description}`,
+      skill: 'config-generation',
+    });
+    return c.json({ success: true, data: result });
+  } catch (err) {
+    if (err instanceof AiNotConfiguredError) {
+      return c.json({ success: false, error: err.message, code: 'AI_NOT_CONFIGURED' }, 503);
+    }
+    logger.warn({ err }, 'Agent config generation failed');
+    return c.json({ success: false, error: 'Agent config generation request failed' }, 500);
+  }
 });
 
 // POST /api/ai/diagnose - AI 错误诊断

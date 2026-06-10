@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@dagrejs/dagre": "^3.0.0",
+    "@x-llm-gateway/ai-agent": "workspace:*",
     "@x-llm-gateway/shared": "workspace:*",
     "@xyflow/react": "^12.10.1",
     "drizzle-orm": "^0.45.1",

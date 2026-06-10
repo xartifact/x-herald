@@ -1,4 +1,5 @@
 import { eq, and } from 'drizzle-orm';
+import type { Message, ToolCall, ToolDefinition } from '@x-llm-gateway/ai-agent';
 
 import { getDatabase } from '../db/client';
 import rootLogger from '../lib/logger';
@@ -82,10 +83,21 @@ export async function getAiModel(): Promise<AiModel> {
 }
 
 export async function callAI(
-  messages: ChatMessage[],
-  opts?: { maxTokens?: number }
-): Promise<string> {
+  messages: Message[],
+  opts?: { tools?: ToolDefinition[]; maxTokens?: number }
+): Promise<{ content: string; tool_calls?: ToolCall[] }> {
   const model = await getAiModel();
+
+  const body: Record<string, unknown> = {
+    model: model.actualModelName,
+    messages,
+    stream: false,
+    max_tokens: opts?.maxTokens ?? 2048,
+  };
+
+  if (opts?.tools && opts.tools.length > 0) {
+    body.tools = opts.tools;
+  }
 
   const response = await fetch(`${model.baseUrl}/chat/completions`, {
     method: 'POST',
@@ -93,12 +105,7 @@ export async function callAI(
       'Content-Type': 'application/json',
       ...(model.apiKey ? { Authorization: `Bearer ${model.apiKey}` } : {}),
     },
-    body: JSON.stringify({
-      model: model.actualModelName,
-      messages,
-      stream: false,
-      max_tokens: opts?.maxTokens ?? 2048,
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
@@ -108,13 +115,23 @@ export async function callAI(
   }
 
   const data = await response.json() as {
-    choices?: Array<{ message?: { content?: string } }>;
+    choices?: Array<{
+      message?: {
+        content?: string | null;
+        tool_calls?: ToolCall[];
+      };
+    }>;
   };
 
-  const content = data.choices?.[0]?.message?.content;
-  if (!content) {
+  const message = data.choices?.[0]?.message;
+  const content = message?.content ?? '';
+
+  if (!content && !message?.tool_calls) {
     throw new Error('AI returned empty response');
   }
 
-  return content;
+  return {
+    content,
+    tool_calls: message?.tool_calls,
+  };
 }

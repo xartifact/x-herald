@@ -81,7 +81,8 @@ export class ErrorDiagnoser {
     };
 
     const prompt = this.buildDiagnosisPrompt(context);
-    const rawText = await callAI([{ role: 'user', content: prompt }]);
+    const aiResponse = await callAI([{ role: 'user', content: prompt }]);
+    const rawText = aiResponse.content;
 
     const parsed = this.parseDiagnosis(rawText);
     return { ...parsed, instanceId };

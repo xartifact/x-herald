@@ -1,8 +1,11 @@
-import { MetricsSummaryCards, InstancePerfTable, ProviderQualityTable } from '@x-llm-gateway/ui'
-import { useMetricsSummary } from '@x-llm-gateway/ui'
+import { MetricsSummaryCards, InstancePerfTable, ProviderQualityTable, InstancePerfChart } from '@x-llm-gateway/ui'
+import { useMetricsSummary, useInstancesSummary } from '@x-llm-gateway/ui'
 
 export function MetricsPage() {
   const { data: summary, isLoading } = useMetricsSummary()
+  const { data: instancesData } = useInstancesSummary()
+
+  const firstInstance = instancesData?.data?.[0]
 
   return (
     <div className="space-y-6">
@@ -14,6 +17,15 @@ export function MetricsPage() {
       </div>
 
       <MetricsSummaryCards summary={summary} isLoading={isLoading} />
+      
+      {/* 实例性能图表 - 默认显示第一个实例 */}
+      {firstInstance && (
+        <InstancePerfChart 
+          instanceId={firstInstance.instanceId}
+          instanceName={firstInstance.instanceName || firstInstance.instanceId}
+        />
+      )}
+      
       <InstancePerfTable />
       <ProviderQualityTable />
     </div>

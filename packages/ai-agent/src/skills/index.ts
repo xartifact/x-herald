@@ -29,7 +29,10 @@ export const configGenerationSkill: Skill = {
   systemPrompt: `你是一个 LLM API 配置专家。
 
 根据用户描述，生成合适的 InstanceConfig 配置：
-- requestInject: 注入到请求体的字段
+- requestInject: 注入到请求体的字段（如千问的 enable_search）
+- requestTransform: 请求体变换表达式
+- responseExtract: 从响应提取字段到标准位置（如 Kimi 的 reasoning_content）
+- responseTransform: 响应体变换表达式
 - parameterTransforms: 参数变换规则
 - customHeaders: 自定义请求头
 - patchMissingReasoningContent: 是否修补 reasoning_content

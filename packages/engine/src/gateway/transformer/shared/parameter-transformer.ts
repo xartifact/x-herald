@@ -69,7 +69,7 @@ function evaluateExpression(expression: string, request: StandardRequest): unkno
  * 根据路径获取对象值
  * 支持嵌套路径如 "reasoning.enabled"
  */
-function getValueByPath(obj: Record<string, unknown>, path: string): unknown {
+export function getValueByPath(obj: Record<string, unknown>, path: string): unknown {
   const parts = path.split('.');
   let current: unknown = obj;
 
@@ -236,7 +236,7 @@ export function applyParameterTransforms(
  * 根据路径设置对象值
  * 支持嵌套路径如 "reasoning.enabled"
  */
-function setValueByPath(obj: Record<string, unknown>, path: string, value: unknown): void {
+export function setValueByPath(obj: Record<string, unknown>, path: string, value: unknown): void {
   const parts = path.split('.');
   let current = obj;
 
@@ -301,4 +301,15 @@ export function buildHeaders(
   }
 
   return headers;
+}
+
+/**
+ * 应用请求注入，将 instanceConfig.requestInject 合并到请求体
+ */
+export function applyRequestInject(
+  body: Record<string, unknown>,
+  inject: Record<string, unknown> | undefined
+): Record<string, unknown> {
+  if (!inject) return body;
+  return { ...body, ...inject };
 }

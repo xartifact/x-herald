@@ -2,6 +2,7 @@ import logger from '../../../../lib/logger';
 import type { TransformerContext, StandardResponse, StandardMessage } from '@x-llm-gateway/shared';
 
 import type { OpenAIChoice } from './types';
+import { getValueByPath, setValueByPath } from '../../shared/parameter-transformer';
 
 /**
  * Map OpenAI finish reason to standard format
@@ -26,9 +27,9 @@ export async function normalizeOpenAIResponse(
     throw new Error('Provider returned empty response body');
   }
 
-  let data: any;
+  let data: Record<string, unknown>;
   try {
-    data = await response.json();
+    data = (await response.json()) as Record<string, unknown>;
   } catch {
     const text = await response.text();
     logger.error(
@@ -38,12 +39,36 @@ export async function normalizeOpenAIResponse(
     throw new Error(`Invalid JSON response from provider: ${text.slice(0, 100)}`);
   }
 
+  const responseExtract = ctx.instanceConfig?.responseExtract as Record<string, string> | undefined;
+  if (responseExtract) {
+    for (const [sourcePath, targetPath] of Object.entries(responseExtract)) {
+      const value = getValueByPath(data, sourcePath);
+      if (value !== undefined) {
+        setValueByPath(data, targetPath, value);
+      }
+    }
+  }
+
+  const rawData = data as {
+    id?: string;
+    object?: string;
+    created?: number;
+    model?: string;
+    choices?: OpenAIChoice[];
+    usage?: {
+      prompt_tokens?: number;
+      completion_tokens?: number;
+      total_tokens?: number;
+      prompt_tokens_details?: unknown;
+    };
+  };
+
   return {
-    id: data.id,
-    object: data.object || 'chat.completion',
-    created: data.created || Math.floor(Date.now() / 1000),
-    model: data.model,
-    choices: (data.choices as OpenAIChoice[])?.map((choice) => {
+    id: rawData.id as string,
+    object: (rawData.object as 'chat.completion' | 'chat.completion.chunk') || 'chat.completion',
+    created: rawData.created || Math.floor(Date.now() / 1000),
+    model: rawData.model as string,
+    choices: (rawData.choices as OpenAIChoice[])?.map((choice) => {
       let reasoning_content: string | undefined;
       if (choice.message?.reasoning_content) {
         reasoning_content = choice.message.reasoning_content;
@@ -62,12 +87,12 @@ export async function normalizeOpenAIResponse(
         finish_reason: mapFinishReason(choice.finish_reason),
       };
     }),
-    usage: data.usage
+    usage: rawData.usage
       ? {
-          prompt_tokens: data.usage.prompt_tokens || 0,
-          completion_tokens: data.usage.completion_tokens || 0,
-          total_tokens: data.usage.total_tokens || 0,
-          prompt_tokens_details: data.usage.prompt_tokens_details,
+          prompt_tokens: rawData.usage.prompt_tokens || 0,
+          completion_tokens: rawData.usage.completion_tokens || 0,
+          total_tokens: rawData.usage.total_tokens || 0,
+          prompt_tokens_details: rawData.usage.prompt_tokens_details as { cached_tokens?: number } | undefined,
         }
       : undefined,
   };

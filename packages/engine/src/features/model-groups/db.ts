@@ -151,6 +151,18 @@ export interface InstanceConfig {
     preserveFields?: string[];  // 保留的字段（覆盖默认清理）
     additionalBannedFields?: string[];  // 额外清理的字段
   };
+
+  // 请求增强：注入到请求体的字段
+  requestInject?: Record<string, unknown>;
+
+  // 请求增强：请求体变换表达式
+  requestTransform?: string;
+
+  // 响应增强：从响应提取字段到标准位置
+  responseExtract?: Record<string, string>;
+
+  // 响应增强：响应体变换表达式
+  responseTransform?: string;
 }
 
 export const modelInstances = pgTable('model_instances', {

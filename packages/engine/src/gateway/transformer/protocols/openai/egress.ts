@@ -3,7 +3,7 @@ import type { InstanceConfig } from '../../../../features/model-groups/db';
 
 import { convertToOpenAIMessages } from './converters/message-converter';
 import type { OpenAIRequest } from './types';
-import { applyParameterTransforms } from '../../shared/parameter-transformer';
+import { applyParameterTransforms, applyRequestInject } from '../../shared/parameter-transformer';
 import { cleanSchemaForOpenAI } from '../../shared/schema-cleaner';
 
 /**
@@ -95,8 +95,11 @@ export async function adaptOpenAIRequest(
     });
   }
 
+  const requestInject = ctx.instanceConfig?.requestInject as Record<string, unknown> | undefined;
+  const body = applyRequestInject(openaiReq as unknown as Record<string, unknown>, requestInject);
+
   return {
-    body: openaiReq,
+    body,
     headers: {
       'Content-Type': 'application/json',
     },

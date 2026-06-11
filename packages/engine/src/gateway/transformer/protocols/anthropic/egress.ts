@@ -4,6 +4,7 @@ import type { TransformerContext, StandardRequest } from '@x-llm-gateway/shared'
 import { convertToAnthropicMessages } from './converters/message-converter';
 import { convertToAnthropicTool, convertToAnthropicToolChoice } from './converters/tool-converter';
 import type { AnthropicMessage, AnthropicRequest } from './types';
+import { applyRequestInject } from '../../shared/parameter-transformer';
 
 /**
  * Apply thinking type mapping if configured on provider
@@ -100,5 +101,8 @@ export async function adaptAnthropicRequest(
 
   applyThinkingMapping(anthropicReq, ctx);
 
-  return { body: anthropicReq, headers: { 'anthropic-version': '2023-06-01' } };
+  const requestInject = ctx.instanceConfig?.requestInject as Record<string, unknown> | undefined;
+  const body = applyRequestInject(anthropicReq as unknown as Record<string, unknown>, requestInject);
+
+  return { body, headers: { 'anthropic-version': '2023-06-01' } };
 }

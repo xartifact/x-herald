@@ -6,6 +6,7 @@ import logger from '../../lib/logger';
 import type { VirtualKey } from '../../features/keys/db';
 import { requestLogs, requestAttempts } from '../../features/logs/db';
 import type { StreamProgress, StreamContent, LogMetadata, FailoverReason } from '../../features/logs/db';
+import { costService } from '../../features/costs/service';
 
 export interface StreamLogParams {
   virtualKey: VirtualKey;

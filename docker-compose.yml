@@ -35,7 +35,7 @@ services:
       DB_MIGRATIONS_FOLDER: /app/migrations
       PROVIDER_SKIP_TLS_VERIFY: ${PROVIDER_SKIP_TLS_VERIFY:-false}
     ports:
-      - "${PORT:-3000}:3000"
+      - "${HOST_PORT:-3000}:3000"
     depends_on:
       postgres:
         condition: service_healthy

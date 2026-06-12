@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** 定义 x-llm-gateway 的产品边界、核心功能和分阶段研发计划
+**Goal:** 构建面向开发者的 LLM 透明代理网关，支持协议转换、智能路由、异常检测和 AI-native 扩展
 
-**Architecture:** HTTP 代理 + MITM 拦截 + AI-native 插件扩展 + 自动异常检测与进化
+**Architecture:** HTTP 代理 + MITM 拦截 + AI-native Agent 框架 + 自动异常检测
 
 **Tech Stack:** Bun + Hono + TypeScript + Drizzle ORM + TanStack Router + PGlite/PostgreSQL
 
@@ -28,19 +28,17 @@
 
 ### 目标用户
 
-| 用户画像 | 需求 | 付费意愿 |
-|----------|------|----------|
-| **独立开发者** 使用 Cursor/Claude/Copilot | 多 Provider 故障转移、成本可见、模型切换 | ¥50-100/月 |
-| **小团队** (2-20人) | 集中密钥管理、使用量可视化、速率限制、审计日志 | ¥300-1000/月 |
-| **中型公司** (20-200人) | 合规审计、成本控制、BYOK、SSO 集成 | ¥3000-10000/月 |
+| 用户画像 | 需求 |
+|----------|------|
+| **独立开发者** 使用 Cursor/Claude/Copilot | 多 Provider 故障转移、成本可见、模型切换 |
 
 ---
 
 ## 二、业务边界定义
 
-### ✅ 在范围内（In Scope）
+### ✅ 在范围内
 
-#### Phase 1: 核心代理（MVP）
+#### Phase 1: 核心代理（MVP）— ✅ 大部分完成
 - HTTP 代理模式（客户端配置 base URL 或 HTTP_PROXY）
 - HTTPS MITM 模式（本地 CA 证书，拦截桌面应用流量）
 - 协议转换（OpenAI ↔ Anthropic 双向 + Gemini）
@@ -51,39 +49,32 @@
 - 熔断器 + 故障转移
 - 请求日志 + 性能快照
 - 管理 UI（TanStack Router SPA）
-- 客户端一键配置（Cursor/Cline/Claude Desktop Profile）
+- 客户端一键配置（opencode/claude-code/pi/codex）
 
-#### Phase 2: 智能分析
-- 实时流量看板（WebSocket 推送）
+#### Phase 2: 智能分析 — ✅ 完成
 - 成本追踪（按 Key/Model/Provider 统计 Token 单价和花费）
 - 异常检测（自动识别慢请求、高错误率、异常 Token 用量）
 - Provider 健康评分（基于成功率、延迟、TTFB 自动打分）
 - 请求/响应内容查看器（类似 Chrome DevTools Network tab）
+- 实时流量看板（SSE 推送）
 
-#### Phase 3: AI-native 扩展
-- TypeScript 插件系统（Plugin interface + 生命周期钩子）
-- AI 辅助插件开发（内置 Coding Agent 帮用户写插件）
-- Provider 自动发现与适配（AI 分析 Provider API 文档，自动生成 Transformer）
-- 插件市场（社区共享插件）
+#### Phase 3: AI-native 扩展 — ✅ 核心完成
+- packages/ai-agent 框架（Agent + Tool + Skill 定义，零依赖）
+- AI 错误诊断 + 自动修复
+- AI 配置生成器（支持 requestInject/responseExtract）
+- Provider 动态扩展能力（字段适配、参数映射）
 
-#### Phase 4: 企业级
-- 多租户隔离
-- SSO 集成（SAML/OIDC）
-- 审计日志 + 合规报告
-- Webhook 事件通知
-- OpenTelemetry 集成
-- 高可用部署（多实例 + 负载均衡）
-
-### ❌ 不在范围内（Out of Scope）
+### ❌ 不在范围内
 
 | 不做 | 原因 |
 |------|------|
 | 系统级 TUN 拦截 | 平台噩梦（Apple 签名 + App Store 审核），HTTP 代理已够用 |
-| 100+ Provider 预置配置 | 用 AI 自动发现替代手工维护 |
-| 语义缓存 | 复杂度高，收益不确定，Phase 4+ 再考虑 |
+| 100+ Provider 预置配置 | 用动态扩展能力替代手工维护 |
+| 语义缓存 | 复杂度高，收益不确定 |
 | 内容审核/Guardrails | 需要 ML 模型，超出网关核心能力边界 |
 | WASM 自修改代码 | 安全风险过高，TypeScript 插件系统已够用 |
 | 云托管版本 | 专注自托管，不分散精力 |
+| 企业级功能（多租户、SSO、审计日志、高可用） | 不在当前目标用户需求范围内 |
 
 ---
 
@@ -753,7 +744,7 @@ GET    /health/ready
 | W10 | Provider 健康评分 | 自动打分 + 趋势图 | ✅ 已有 ProviderQualityTable |
 | W10 | 性能指标 Dashboard | 延迟分布、吞吐量、错误率 | ✅ 已完成 `1f6c85c` |
 
-### Phase 3: AI-native 扩展（4-6 周）
+### Phase 3: AI-native 扩展
 
 **目标：** 让 AI 帮用户扩展产品
 
@@ -763,23 +754,6 @@ GET    /health/ready
 | W11 | engine 适配 | LLMAdapter + Tool 执行器 + Agent API | ✅ 已完成 `ffb2820` |
 | W11 | AI 错误诊断 + 自动修复 | 诊断 API + 模式学习 + 管理 UI | ✅ 已完成 `283041d` |
 | W12 | AI 配置生成器增强 | 支持 requestInject/responseExtract | ✅ 已完成 `6a6a412` |
-| W13 | Provider 文档自动分析 | AI 分析 API 文档，生成配置 | ⬜ 暂缓 |
-| W14 | 错误模式库 | 常见错误预置修复方案 | ⬜ 暂缓 |
-| W15 | TypeScript 插件系统 | Plugin interface + 生命周期钩子 | ⬜ 暂缓（仅在有需求时） |
-| W16 | 插件加载器 | `plugins/` 目录自动加载 | ⬜ 暂缓（仅在有需求时） |
-
-### Phase 4: 企业级（4-6 周）
-
-**目标：** 满足中型公司需求
-
-| 周次 | 任务 | 产出 | 状态 |
-|------|------|------|------|
-| W17-18 | 多租户隔离 | 租户级数据隔离 | ⬜ 待做 |
-| W18 | SSO 集成 | SAML/OIDC | ⬜ 待做 |
-| W19 | 审计日志 + 合规报告 | 操作审计 + 导出 | ⬜ 待做 |
-| W19 | Webhook 事件通知 | Slack/钉钉/飞书 | ⬜ 待做 |
-| W20 | OpenTelemetry 集成 | 分布式 Tracing | ⬜ 待做 |
-| W21-22 | 高可用部署 | 多实例 + 负载均衡 | ⬜ 待做 |
 
 ---
 
@@ -788,10 +762,7 @@ GET    /health/ready
 | 风险 | 影响 | 缓解措施 |
 |------|------|----------|
 | MITM 证书固定绕不过 | 部分客户端无法拦截 | 提供 HTTP 代理模式作为降级方案 |
-| WebSocket 高并发推送性能 | 实时看板卡顿 | 批量推送 + 虚拟滚动 |
-| 插件安全漏洞 | 网关被攻破 | 权限最小化 + 沙箱隔离 + 代码审查 |
 | Provider API 变更 | Transformer 失效 | AI 自动检测 + 适配 |
-| 多实例状态同步 | 熔断器状态不一致 | Redis 共享状态 或 DB 持久化 |
 
 ---
 
@@ -799,25 +770,25 @@ GET    /health/ready
 
 ### MVP（Phase 1 完成后）
 
-| 指标 | 目标 |
-|------|------|
-| Cursor 用户 5 分钟跑起来 | ✅ 一键配置 |
-| 支持 OpenAI + Anthropic | ✅ 协议转换 |
-| 故障自动转移 | ✅ 熔断器 + 重试 |
-| 管理 UI 可用 | ✅ Dashboard + Logs |
+| 指标 | 目标 | 状态 |
+|------|------|------|
+| opencode/claude-code/pi 用户 5 分钟跑起来 | 一键配置 | ✅ |
+| 支持 OpenAI + Anthropic | 协议转换 | ✅ |
+| 故障自动转移 | 熔断器 + 重试 | ✅ |
+| 管理 UI 可用 | Dashboard + Logs | ✅ |
 
 ### Phase 2 完成后
 
-| 指标 | 目标 |
-|------|------|
-| 成本可见 | 按 Key/Model/Provider 统计 |
-| 异常可发现 | 自动检测 + 告警 |
-| 流量可分析 | 实时看板 + 请求详情 |
+| 指标 | 目标 | 状态 |
+|------|------|------|
+| 成本可见 | 按 Key/Model/Provider 统计 | ✅ |
+| 异常可发现 | 自动检测 + 告警 | ✅ |
+| 流量可分析 | 实时看板 + 请求详情 | ✅ |
 
 ### Phase 3 完成后
 
-| 指标 | 目标 |
-|------|------|
-| 插件生态 | 10+ 社区插件 |
-| AI 适配 Provider | 5+ Provider 自动适配 |
-| 用户自扩展 | 用户可自行开发插件 |
+| 指标 | 目标 | 状态 |
+|------|------|------|
+| AI 辅助配置 | 生成 InstanceConfig | ✅ |
+| AI 错误诊断 | 自动分析错误 + 建议修复 | ✅ |
+| Provider 动态扩展 | requestInject/responseExtract | ✅ |

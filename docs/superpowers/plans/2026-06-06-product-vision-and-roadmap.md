@@ -4,7 +4,7 @@
 
 **Goal:** 构建面向开发者的 LLM 透明代理网关，支持协议转换、智能路由、异常检测和 AI-native 扩展
 
-**Architecture:** HTTP 代理 + MITM 拦截 + AI-native Agent 框架 + 自动异常检测
+**Architecture:** Base URL 直连 + MITM 拦截 + AI-native Agent 框架 + 自动异常检测
 
 **Tech Stack:** Bun + Hono + TypeScript + Drizzle ORM + TanStack Router + PGlite/PostgreSQL
 
@@ -39,8 +39,7 @@
 ### ✅ 在范围内
 
 #### Phase 1: 核心代理（MVP）— ✅ 大部分完成
-- HTTP 代理模式（客户端配置 base URL 或 HTTP_PROXY）
-- HTTPS MITM 模式（本地 CA 证书，拦截桌面应用流量）
+- Base URL 直连模式（客户端配置 base URL 指向网关）
 - 协议转换（OpenAI ↔ Anthropic 双向 + Gemini）
 - 虚拟模型路由（条件规则引擎）
 - 模型组 + 实例优先级负载均衡
@@ -68,7 +67,7 @@
 
 | 不做 | 原因 |
 |------|------|
-| 系统级 TUN 拦截 | 平台噩梦（Apple 签名 + App Store 审核），HTTP 代理已够用 |
+| 系统级 TUN 拦截 | 平台噩梦（Apple 签名 + App Store 审核），Base URL 直连已够用 |
 | 100+ Provider 预置配置 | 用动态扩展能力替代手工维护 |
 | 语义缓存 | 复杂度高，收益不确定 |
 | 内容审核/Guardrails | 需要 ML 模型，超出网关核心能力边界 |
@@ -82,41 +81,23 @@
 
 ### 3.1 代理层（Proxy Layer）
 
-#### 3.1.1 HTTP 代理模式
+#### 3.1.1 Base URL 直连模式
 
 ```
-客户端 ──HTTP──→ x-llm-gateway ──HTTP/HTTPS──→ Provider API
-                   │
-                   ├─ 协议检测（自动识别 OpenAI/Anthropic/Gemini）
-                   ├─ 协议转换（按需）
-                   ├─ 路由决策
-                   ├─ 熔断检查
-                   └─ 重试逻辑
+客户端（配置 base URL）──→ x-llm-gateway ──HTTP/HTTPS──→ Provider API
+                              │
+                              ├─ 协议检测（自动识别 OpenAI/Anthropic/Gemini）
+                              ├─ 协议转换（按需）
+                              ├─ 路由决策
+                              ├─ 熔断检查
+                              └─ 重试逻辑
 ```
 
 **实现要点：**
-- Hono 框架作为 HTTP 代理服务器
-- 支持 `HTTP_PROXY` / `HTTPS_PROXY` 环境变量
-- 支持 SOCKS5 代理协议
+- 客户端将 API base URL 指向网关地址（如 `http://localhost:3000/api/v1`）
+- Hono 框架作为 HTTP 反向代理接收请求
 - 透明转发：不修改原始请求头（除必要的路由头）
-
-#### 3.1.2 MITM 模式
-
-```
-桌面应用 ──HTTPS──→ 系统代理 ──→ x-llm-gateway (MITM)
-                                    │
-                                    ├─ TLS 终止（本地 CA 证书）
-                                    ├─ 明文 HTTP 分析
-                                    ├─ 协议检测 + 路由
-                                    ├─ 重新加密 → Provider
-                                    └─ 流量记录
-```
-
-**实现要点：**
-- 生成本地 CA 根证书（用户安装一次）
-- 动态签发服务器证书（按需生成，缓存复用）
-- 支持 HTTP/1.1 和 HTTP/2 MITM
-- 证书固定（SSL Pinning）绕过提示
+- 客户端通过虚拟密钥（`Authorization: Bearer <key>`）认证
 
 ### 3.2 分析层（Analysis Layer）
 
@@ -343,11 +324,10 @@ interface PluginContext {
                            │ HTTP/HTTPS
 ┌──────────────────────────▼──────────────────────────────────┐
 │                     Proxy Layer                             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
-│  │ HTTP Proxy  │  │ MITM Proxy  │  │ SOCKS5 Proxy        │ │
-│  └──────┬──────┘  └──────┬──────┘  └──────┬──────────────┘ │
-│         └────────────────┼────────────────┘                 │
-│                          ▼                                  │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │         Base URL 直连模式（唯一接入方式）              │   │
+│  └──────────────────────────┬───────────────────────────┘   │
+│                             ▼                               │
 │  ┌─────────────────────────────────────────────────────┐    │
 │  │              Protocol Detection                     │    │
 │  │  (detectProtocol: openai / anthropic / gemini)      │    │
@@ -715,9 +695,8 @@ GET    /health/ready
 
 | 周次 | 任务 | 产出 | 状态 |
 |------|------|------|------|
-| W1 | HTTP 代理模式实现 | 客户端可通过 base URL 访问 | ✅ 已有 |
+| W1 | Base URL 直连模式 | 客户端配置 base URL 指向网关 | ✅ 已有 |
 | W1 | 协议检测 + 透传 | 自动识别 OpenAI/Anthropic 请求 | ✅ 已有 |
-| W2 | MITM 代理实现 | 本地 CA 证书 + HTTPS 拦截 | ✅ 已完成 `dfc0950` |
 | W2 | 客户端一键配置脚本 | `xgate configure opencode/claude-code/pi/codex` | ✅ 已完成 `258f2da` |
 | W3 | 协议转换完善 | OpenAI ↔ Anthropic 双向转换 | ✅ 已有 |
 | W3 | 虚拟模型路由 | 条件规则引擎 | ✅ 已有 |
@@ -761,7 +740,6 @@ GET    /health/ready
 
 | 风险 | 影响 | 缓解措施 |
 |------|------|----------|
-| MITM 证书固定绕不过 | 部分客户端无法拦截 | 提供 HTTP 代理模式作为降级方案 |
 | Provider API 变更 | Transformer 失效 | AI 自动检测 + 适配 |
 
 ---

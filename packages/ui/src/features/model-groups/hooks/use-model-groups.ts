@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 
 import { get, post, put, del as deleteRequest, patch } from '../../../shared/lib/api-client'
 
-import type { ModelGroup, ModelGroupDetail, ApiResponse, RoutingConfig, ModelInstance } from '@x-llm-gateway/engine'
+import type { ModelGroup, ModelGroupDetail, ApiResponse, RoutingConfig, ModelInstance } from '@x-llm-gateway/shared'
 
 // ── Query key factory ──────────────────────────────────────────────
 

@@ -31,12 +31,18 @@ jobs:
           bun-version: latest
       - name: Install dependencies
         run: bun install
-      - name: Engine typecheck
-        run: cd packages/engine && bun run typecheck
-      - name: Engine tests
-        run: cd packages/engine && bun test
-      - name: TanStack SPA build
-        run: cd apps/tanstack && bun install && bun run build
+      - name: Gateway typecheck
+        run: cd apps/gateway && bun run typecheck
+      - name: Gateway tests
+        run: cd apps/gateway && bun test
+      - name: UI tests
+        run: bun run test:ui
+      - name: Install Playwright browsers
+        run: cd apps/web && bunx playwright install --with-deps chromium
+      - name: E2E tests
+        run: cd apps/web && bunx playwright test
+      - name: Web SPA build
+        run: cd apps/web && bun install && bun run build
 
   build:
     runs-on: ubuntu-latest

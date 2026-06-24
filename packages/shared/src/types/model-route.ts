@@ -15,3 +15,60 @@ export interface SyncResult {
   newRoutes?: string[]
   deletedRoutes?: string[]
 }
+
+export interface FlowNodeData {
+  id: string
+  type: string
+  position: { x: number; y: number }
+  data: Record<string, unknown>
+}
+
+export interface FlowEdgeData {
+  id: string
+  source: string
+  target: string
+  sourceHandle?: string
+  targetHandle?: string
+}
+
+export interface FlowData {
+  nodes: FlowNodeData[]
+  edges: FlowEdgeData[]
+}
+
+export interface ModelRoute {
+  id: string
+  name: string
+  description: string | null
+  accessModelIds: string[]
+  conditions: RouteCondition[]
+  action: RouteAction
+  priority: number
+  enabled: boolean
+  flowData: FlowData | null
+  createdAt: string
+  updatedAt: string
+  accessModel?: { name: string; displayName: string | null } | null
+}
+
+export interface CreateModelRoutePayload {
+  name: string
+  description?: string
+  accessModelIds?: string[]
+  conditions?: RouteCondition[]
+  action: RouteAction
+  priority?: number
+  enabled?: boolean
+  flowData?: FlowData
+}
+
+export interface UpdateModelRoutePayload {
+  name?: string
+  description?: string
+  accessModelIds?: string[] | null
+  conditions?: RouteCondition[]
+  action?: RouteAction
+  priority?: number
+  enabled?: boolean
+  flowData?: FlowData | null
+}

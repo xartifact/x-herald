@@ -530,31 +530,31 @@ POST /api/keys/:id/reset-usage
 
 | 任务 | 文件 | 产出 |
 |------|------|------|
-| 实现 SlidingWindowCounter | `packages/engine/src/gateway/services/rate-limit-engine.ts` | 滑动窗口计数器 |
+| 实现 SlidingWindowCounter | `apps/gateway/src/gateway/services/rate-limit-engine.ts` | 滑动窗口计数器 |
 | 实现 DailyAccumulator | 同上 | 日累计器 |
 | 实现 RateLimitEngine | 同上 | 速率限制引擎 |
-| 单元测试 | `packages/engine/src/gateway/services/rate-limit-engine.test.ts` | 测试覆盖 |
+| 单元测试 | `apps/gateway/src/gateway/services/rate-limit-engine.test.ts` | 测试覆盖 |
 
 ### Phase 2: 中间件集成（1-2 天）
 
 | 任务 | 文件 | 产出 |
 |------|------|------|
-| 修改 virtual-key.ts | `packages/engine/src/middleware/virtual-key.ts` | 添加速率限制检查 |
+| 修改 virtual-key.ts | `apps/gateway/src/middleware/virtual-key.ts` | 添加速率限制检查 |
 | 添加响应头 | 同上 | X-RateLimit-* 头 |
-| Token 消耗追踪 | `packages/engine/src/gateway/services/response-handlers/streaming.ts` | 完成后更新 token |
+| Token 消耗追踪 | `apps/gateway/src/gateway/services/response-handlers/streaming.ts` | 完成后更新 token |
 
 ### Phase 3: API 扩展（1 天）
 
 | 任务 | 文件 | 产出 |
 |------|------|------|
-| 添加使用量查询 API | `packages/engine/src/features/keys/api.ts` | GET /:id/usage |
+| 添加使用量查询 API | `apps/gateway/src/features/keys/api.ts` | GET /:id/usage |
 | 添加计数器重置 API | 同上 | POST /:id/reset-usage |
 
 ### Phase 4: 管理 UI（1-2 天）
 
 | 任务 | 文件 | 产出 |
 |------|------|------|
-| 密钥表单添加速率限制字段 | `apps/tanstack/app/routes/admin/keys/` | 表单更新 |
+| 密钥表单添加速率限制字段 | `apps/web/app/routes/admin/keys/` | 表单更新 |
 | 密钥详情页添加使用量展示 | 同上 | 使用量卡片 |
 | 实时使用量刷新 | 同上 | 轮询或 SSE |
 
@@ -563,8 +563,8 @@ POST /api/keys/:id/reset-usage
 | 任务 | 文件 | 产出 |
 |------|------|------|
 | 创建快照表 | 迁移文件 | rate_limit_snapshots 表 |
-| 定期快照 | `packages/engine/src/gateway/services/rate-limit-engine.ts` | 快照逻辑 |
-| 启动恢复 | `packages/engine/src/createEngine.ts` | 恢复逻辑 |
+| 定期快照 | `apps/gateway/src/gateway/services/rate-limit-engine.ts` | 快照逻辑 |
+| 启动恢复 | `apps/gateway/src/createEngine.ts` | 恢复逻辑 |
 
 ---
 

@@ -12,9 +12,9 @@ export const providerSchema = z.object({
   enabled: z.boolean(),
   protocols: z
     .object({
-      openai: z.object({ enabled: z.boolean(), baseUrl: z.string().url('请输入有效的 URL').optional() }).optional(),
-      anthropic: z.object({ enabled: z.boolean(), baseUrl: z.string().url('请输入有效的 URL').optional() }).optional(),
-      gemini: z.object({ enabled: z.boolean(), baseUrl: z.string().url('请输入有效的 URL').optional() }).optional(),
+      openai: z.object({ enabled: z.boolean(), baseUrl: z.string().url('请输入有效的 URL').or(z.literal('')).optional() }).optional(),
+      anthropic: z.object({ enabled: z.boolean(), baseUrl: z.string().url('请输入有效的 URL').or(z.literal('')).optional() }).optional(),
+      gemini: z.object({ enabled: z.boolean(), baseUrl: z.string().url('请输入有效的 URL').or(z.literal('')).optional() }).optional(),
     })
     .refine((protocols) => Object.values(protocols).some((p) => p?.enabled), { message: '至少需要启用一个协议' }),
 })

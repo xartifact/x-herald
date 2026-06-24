@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 
 import type { GroupFormData } from '../../../shared/lib/form-types'
-import type { ModelGroup } from '@x-llm-gateway/engine'
+import type { ModelGroup } from '@x-llm-gateway/shared'
 import { useModelGroups, useCreateModelGroup, useUpdateModelGroup, useDeleteModelGroup } from './use-model-groups'
 
 export function useGroupPageGroups() {

@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../..
 import { Input } from '../../../shared/components/ui/input'
 import { Label } from '../../../shared/components/ui/label'
 
-import type { SettingsData } from '@x-llm-gateway/engine'
+import type { SettingsData } from '@x-llm-gateway/shared'
 import { useUpdateSettings } from '../hooks/use-settings'
 
 interface CbFormState {

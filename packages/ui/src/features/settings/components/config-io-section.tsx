@@ -8,12 +8,12 @@ import { Alert, AlertDescription, AlertTitle } from '../../../shared/components/
 import { Button } from '../../../shared/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../shared/components/ui/card'
 
-import type { ImportResult } from '@x-llm-gateway/engine'
+import type { ImportResult } from '@x-llm-gateway/shared'
 import { useExportConfig, useImportConfig } from '../hooks/use-config-io'
 
 const IMPORT_LABELS = [
   ['供应商', 'providers'], ['模型组', 'modelGroups'], ['模型实例', 'modelInstances'],
-  ['虚拟模型', 'virtualModels'], ['路由规则', 'modelRoutes'], ['虚拟密钥', 'virtualKeys'],
+  ['访问模型', 'accessModels'], ['路由规则', 'modelRoutes'], ['虚拟密钥', 'virtualKeys'],
   ['网关配置', 'gatewayConfigs'],
 ] as const
 

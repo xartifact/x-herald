@@ -1,0 +1,8 @@
+[test]
+# Coverage thresholds — ramp-up per SKILL.md roadmap
+# Current phase: 10% line, 15% branch on new/modified files
+coverage = true
+coverageThreshold = { line = 0.10, branch = 0.15 }
+
+# Preload test setup (PGlite, env vars, BigInt polyfill)
+preload = ["./src/test/setup.ts"]

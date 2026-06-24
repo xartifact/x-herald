@@ -76,9 +76,9 @@ export function ProviderProtocolFields({ form, protocolOptions }: ProviderProtoc
         )
       })}
 
-      {form.formState.errors.protocols && (
+      {form.formState.errors.protocols?.message && (
         <p className="text-sm text-destructive">
-          {String(form.formState.errors.protocols.message)}
+          {form.formState.errors.protocols.message}
         </p>
       )}
     </div>

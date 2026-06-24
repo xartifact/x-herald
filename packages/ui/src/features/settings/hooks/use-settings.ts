@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
-import type { SettingsData, SettingsFormData } from '@x-llm-gateway/engine'
+import type { SettingsData, SettingsFormData } from '@x-llm-gateway/shared'
 import { get, put } from '../../../shared/lib/api-client'
 
 async function fetchSettings(): Promise<SettingsData> {

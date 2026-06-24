@@ -1,4 +1,4 @@
-import type { InstanceConfig } from '@x-llm-gateway/engine'
+import type { InstanceConfig } from '@x-llm-gateway/shared'
 
 export interface ChatMessage {
   role: 'user' | 'assistant'

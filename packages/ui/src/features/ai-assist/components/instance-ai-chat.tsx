@@ -6,7 +6,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 
-import type { InstanceConfig } from '@x-llm-gateway/engine'
+import type { InstanceConfig } from '@x-llm-gateway/shared'
 import { Button } from '../../../shared/components/ui/button'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '../../../shared/components/ui/sheet'
 

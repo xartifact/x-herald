@@ -33,6 +33,7 @@ export interface TransformerRegistry {
   get(name: string): import('./llm').Transformer | undefined;
   has(name: string): boolean;
   list(): string[];
+  clear(): void;
 }
 
 export interface ProtocolDetector {

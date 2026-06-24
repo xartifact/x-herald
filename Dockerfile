@@ -11,10 +11,11 @@ ENV GIT_HASH=${GIT_HASH}
 COPY package.json bun.lock* bun.lockb* ./
 
 # 复制所有 workspace 包的 package.json（bun 需要全部来解析依赖）
-COPY apps/tanstack/package.json ./apps/tanstack/
+COPY apps/web/package.json ./apps/web/
+COPY apps/gateway/package.json ./apps/gateway/
 COPY packages/shared/package.json ./packages/shared/
-COPY packages/engine/package.json ./packages/engine/
 COPY packages/ui/package.json ./packages/ui/
+COPY packages/ai-agent/package.json ./packages/ai-agent/
 
 # 安装所有依赖（包括 workspace）
 RUN bun install --registry=https://registry.npmjs.org
@@ -26,7 +27,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
 # 构建 tanstack SPA（Vite → dist/）
-RUN cd apps/tanstack && bun run build
+RUN cd apps/web && bun run build
 
 # ---- 生产运行 ----
 FROM oven/bun:1 AS runner
@@ -41,27 +42,31 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # 复制 workspace 根配置（bun runtime 需要）
 COPY package.json ./package.json
 COPY packages/shared/package.json ./packages/shared/
-COPY packages/engine/package.json ./packages/engine/
+COPY apps/gateway/package.json ./apps/gateway/
 COPY packages/ui/package.json ./packages/ui/
-COPY apps/tanstack/package.json ./apps/tanstack/
+COPY packages/ai-agent/package.json ./packages/ai-agent/
+COPY apps/web/package.json ./apps/web/
 
 # 安装生产依赖
 RUN bun install --production --no-save --registry=https://registry.npmjs.org
 
-# 复制 engine 源码（Bun 直接运行 TS）
-COPY packages/engine/src ./packages/engine/src
+# 复制 gateway 源码（Bun 直接运行 TS）
+COPY apps/gateway/src ./apps/gateway/src
+COPY apps/gateway/middleware ./apps/gateway/middleware
+COPY apps/gateway/services ./apps/gateway/services
 COPY packages/shared/src ./packages/shared/src
 COPY packages/ui/src ./packages/ui/src
+COPY packages/ai-agent/src ./packages/ai-agent/src
 
-# 复制 tanstack SPA 构建产物
-COPY --from=builder /app/apps/tanstack/dist ./apps/tanstack/dist
+# 复制 web SPA 构建产物
+COPY --from=builder /app/apps/web/dist ./apps/web/dist
 
 # 复制迁移文件
-COPY packages/engine/src/db/migrations /app/migrations
+COPY apps/gateway/src/db/migrations /app/migrations
 
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 ENV DB_MIGRATIONS_FOLDER=/app/migrations
 
-CMD ["bun", "packages/engine/src/server.ts"]
+CMD ["bun", "apps/gateway/src/server.ts"]

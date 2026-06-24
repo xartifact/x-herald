@@ -4,25 +4,36 @@
   "private": true,
   "description": "Modern LLM Gateway with protocol conversion, smart routing, and high availability",
   "workspaces": [
-    "apps/*", "packages/*"
+    "apps/*",
+    "packages/*"
   ],
   "scripts": {
-    "dev": "bun run dev:engine & bun run dev:tanstack",
-    "dev:engine": "cd packages/engine && bun run dev",
-    "dev:tanstack": "cd apps/tanstack && bun run dev",
-    "start": "cd packages/engine && bun run start",
-    "build": "bun run build:tanstack",
-    "build:tanstack": "cd apps/tanstack && bun run build",
-    "typecheck": "(cd packages/engine && bun run typecheck) && (cd packages/ui && npx tsc --noEmit) && (cd apps/tanstack && npx tsc --noEmit) && (cd packages/ai-agent && npx tsc --noEmit)",
+    "dev": "bun run dev:gateway & bun run dev:web",
+    "dev:gateway": "cd apps/gateway && bun run dev",
+    "dev:web": "cd apps/web && bun run dev",
+    "start": "cd apps/gateway && bun run start",
+    "build": "bun run build:web",
+    "build:web": "cd apps/web && bun run build",
+    "typecheck": "(cd packages/shared && npx tsc --noEmit) && (cd apps/gateway && bun run typecheck) && (cd packages/ui && npx tsc --noEmit) && (cd packages/ui && npx tsc --noEmit -p tsconfig.ui.json) && (cd apps/web && npx tsc --noEmit) && (cd packages/ai-agent && npx tsc --noEmit)",
     "lint": "bun run --filter './apps/*' lint",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "test": "cd apps/gateway && bun test",
+    "test:ui": "vitest run --config vitest.ui.ts",
+    "test:ui:watch": "vitest --config vitest.ui.ts",
+    "test:e2e:ui": "cd apps/web && bunx playwright test --ui",
     "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules"
   },
   "devDependencies": {
     "@tanstack/react-query-devtools": "^5.91.2",
+    "@tanstack/react-router": "^1.170.16",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/bun": "latest",
+    "jsdom": "^29.1.1",
     "prettier": "^3.2.4",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitest": "^4.1.9"
   },
   "engines": {
     "bun": ">=1.0.0"
@@ -30,7 +41,7 @@
   "packageManager": "bun@1.0.0",
   "dependencies": {
     "@radix-ui/react-scroll-area": "^1.2.10",
-    "@tanstack/react-query": "^5.90.20",
+    "@tanstack/react-query": "^5.101.1",
     "@xyflow/react": "^12.10.1"
   }
 }

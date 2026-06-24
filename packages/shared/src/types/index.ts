@@ -13,6 +13,7 @@ export * from './llm';
 
 export * from './circuit-breaker';
 export * from './log';
+export * from './config-io';
 
 // Live stream event type (for real-time log streaming)
 export type LiveStreamEvent =

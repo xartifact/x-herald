@@ -8,7 +8,7 @@ import { Button } from '../../../shared/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../shared/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../shared/components/ui/select'
 
-import type { SettingsData } from '@x-llm-gateway/engine'
+import type { SettingsData } from '@x-llm-gateway/shared'
 import { useUpdateSettings } from '../hooks/use-settings'
 
 const NONE_VALUE = '__none__'

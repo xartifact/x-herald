@@ -35,7 +35,7 @@ export function useAuthMe(options?: { enabled?: boolean }) {
     queryKey: ['auth', 'me'],
     queryFn: () => get<AuthMeResponse>('/api/auth/me'),
     retry: false,
-    staleTime: 5 * 60 * 1000, // 5 分钟内不重新验证
+    staleTime: 5 * 60 * 1000,
     ...options,
   })
 }

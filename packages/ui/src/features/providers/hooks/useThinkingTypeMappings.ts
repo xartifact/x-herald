@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { get, put } from '../../../shared/lib/api-client';
 
-import type { SyntheticThinkingStrategy, ThinkingTypeMapping } from '@x-llm-gateway/engine';
+import type { SyntheticThinkingStrategy, ThinkingTypeMapping } from '@x-llm-gateway/shared';
 
 const API_BASE = '/api/providers';
 

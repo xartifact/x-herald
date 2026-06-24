@@ -15,5 +15,6 @@
     "noEmit": true,
     "types": ["@types/bun"]
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["**/*.ui.test.tsx"]
 }

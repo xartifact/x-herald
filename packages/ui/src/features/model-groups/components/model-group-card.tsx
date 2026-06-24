@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/compon
 import { Separator } from '../../../shared/components/ui/separator'
 
 import { ModelInstanceTable } from './model-instance-table'
-import type { ModelGroup, ModelInstance } from '@x-llm-gateway/engine'
+import type { ModelGroup, ModelInstance } from '@x-llm-gateway/shared'
 
 interface ModelGroupCardProps {
   group: ModelGroup

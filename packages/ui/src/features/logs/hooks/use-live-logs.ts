@@ -6,7 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import { logKeys } from './log-types';
 
-// Backend event type (packages/engine/src/gateway/services/log-event-bus.ts)
+// Backend event type (apps/gateway/src/gateway/services/log-event-bus.ts)
 type LiveStreamEvent =
   | {
       event: 'waiting';

@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 
 import { get, post, put, del } from '../../../shared/lib/api-client'
 
-import type { VirtualKey } from '@x-llm-gateway/engine'
+import type { VirtualKey } from '@x-llm-gateway/shared'
 
 // Query Keys
 export const keyKeys = {

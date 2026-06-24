@@ -38,3 +38,5 @@ export interface ExtendedProtocolsConfig {
   anthropic?: ExtendedProtocolConfig
   gemini?: ExtendedProtocolConfig
 }
+
+export type SyntheticThinkingStrategy = 'strip' | 'inject';

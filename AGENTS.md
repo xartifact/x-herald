@@ -16,15 +16,15 @@ x-llm-gateway 是现代化的 LLM Gateway 项目，支持协议转换、智能�
 
 ```bash
 bun install              # 安装所有依赖
-bun run dev             # 启动开发服务器 (engine + tanstack SPA)
-bun run dev:engine      # 仅启动 engine 后端
-bun run dev:tanstack    # 仅启动 tanstack SPA 前端
+bun run dev             # 启动开发服务器 (gateway + web SPA)
+bun run dev:gateway      # 仅启动 gateway 后端
+bun run dev:web    # 仅启动 web SPA 前端
 ```
 
 ### 构建和类型检查
 
 ```bash
-bun run build           # 构建 tanstack SPA (Vite)
+bun run build           # 构建 web SPA (Vite)
 bun run typecheck       # 运行 TypeScript 类型检查
 bun run lint            # 运行 ESLint
 bun run format          # 格式化代码 (Prettier)
@@ -33,7 +33,7 @@ bun run format          # 格式化代码 (Prettier)
 ### 数据库
 
 ```bash
-cd packages/engine
+cd apps/gateway
 bun run db:migrate      # 推送 schema 更改（开发用）
 ```
 
@@ -44,12 +44,7 @@ bun run db:migrate      # 推送 schema 更改（开发用）
 ```
 x-llm-gateway/
 ├── apps/
-│   ├── tanstack/               # TanStack Router SPA 管理界面（推荐）
-│   │   └── app/
-│   │       └── routes/         # 代码路由（admin, login, __root）
-│   └── cli/                    # CLI 工具
-├── packages/
-│   ├── engine/                 # @x-llm-gateway/engine — 网关内核（Hono + Bun.serve）
+│   ├── gateway/                # @x-llm-gateway/gateway — 网关内核（Hono + Bun.serve）
 │   │   └── src/
 │   │       ├── server.ts       # 入口文件
 │   │       ├── createEngine.ts # 引擎工厂
@@ -57,6 +52,11 @@ x-llm-gateway/
 │   │       ├── features/       # 功能模块（auth, providers, keys, logs...）
 │   │       ├── db/             # 数据库连接、schema、迁移
 │   │       └── middleware/     # Hono 中间件
+│   ├── web/                    # 管理界面 SPA
+│   │   └── app/
+│   │       └── routes/         # 代码路由（admin, login, __root）
+│   └── cli/                    # CLI 工具
+├── packages/
 │   ├── shared/                 # @x-llm-gateway/shared — 类型/常量
 │   └── ui/                     # @x-llm-gateway/ui — shadcn 组件库
 └── docs/                       # 项目文档
@@ -88,14 +88,14 @@ x-llm-gateway/
 
 ### 架构特点
 
-1. **引擎 + SPA 分离**：engine 是纯 API 服务器，tanstack SPA 是独立的前端应用
+1. **引擎 + SPA 分离**：gateway 是纯 API 服务器，web SPA 是独立的前端应用
 2. **Bun 直接运行 TS**：无需编译步骤，Bun 直接执行 TypeScript
 3. **功能驱动开发**：按功能模块组织代码，每个功能同时完成前后端
 4. **Clean Architecture**：业务逻辑与框架解耦
 
 ## 代码组织
 
-### 后端代码结构（packages/engine/src）
+### 后端代码结构（apps/gateway/src）
 
 ```
 src/
@@ -130,7 +130,7 @@ src/
     └── logger.ts             # 请求日志
 ```
 
-### 前端代码结构（apps/tanstack）
+### 前端代码结构（apps/web）
 
 ```
 app/
@@ -255,9 +255,9 @@ cp .env.example .env
 
 所有数据库 schema 变更必须遵循以下流程：
 
-1. 在 `packages/engine/src/db/migrations/` 目录下创建新的 SQL 迁移文件
+1. 在 `apps/gateway/src/db/migrations/` 目录下创建新的 SQL 迁移文件
 2. 使用 `IF EXISTS` / `IF NOT EXISTS` 等守卫语句确保迁移可重复执行
-3. 更新 `packages/engine/src/db/migrations/meta/_journal.json` 中的迁移记录
+3. 更新 `apps/gateway/src/db/migrations/meta/_journal.json` 中的迁移记录
 4. 同步更新对应功能目录下的 Drizzle schema 定义
 
 **禁止行为：**
@@ -283,29 +283,28 @@ cp .env.example .env
 - 后端测试用 `bun:test`，React 组件测试用 `vitest`（仅 `*.ui.test.tsx`）
 - 测试文件与源文件同目录：`foo.ts` → `foo.test.ts`
 - Mock 优先级：真实代码 > Hono test client > `mock.module()` > `vi.mock()` > MSW
-- 使用工厂函数（`packages/engine/src/test/factories.ts`），不用 JSON fixture
+- 使用工厂函数（`apps/gateway/src/test/factories.ts`），不用 JSON fixture
 - 不要运行全量测试，只运行目标文件
 
 ### 测试命令
 
-- 后端测试: `cd packages/engine && bun test src/features/gateway/failover/failover-executor.test.ts`
+- 后端测试: `cd apps/gateway && bun test src/features/gateway/failover/failover-executor.test.ts`
 - 类型检查: `bun run typecheck`
 
 ### 测试基础设施
 
 | 文件                                              | 用途                |
 | ------------------------------------------------- | ------------------- |
-| `packages/engine/src/test/factories.ts`           | Mock 数据工厂函数   |
-| `packages/engine/src/test/hono-helper.ts`         | Hono 测试请求辅助   |
-| `packages/engine/src/test/setup.ts`               | bun:test 全局 setup |
+| `apps/gateway/src/test/factories.ts`              | Mock 数据工厂函数   |
+| `apps/gateway/src/test/hono-helper.ts`            | Hono 测试请求辅助   |
+| `apps/gateway/src/test/setup.ts`                  | bun:test 全局 setup |
 | `.claude/skills/writing-tests/SKILL.md`           | 测试编写规范        |
 | `.claude/skills/engineering-conventions/SKILL.md` | 工程编码规范        |
 
 <!-- gitnexus:start -->
-
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **x-llm-gateway** (4688 symbols, 9362 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **x-llm-gateway** (6520 symbols, 12842 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -326,23 +325,23 @@ This project is indexed by GitNexus as **x-llm-gateway** (4688 symbols, 9362 rel
 
 ## Resources
 
-| Resource                                       | Use for                                  |
-| ---------------------------------------------- | ---------------------------------------- |
-| `gitnexus://repo/x-llm-gateway/context`        | Codebase overview, check index freshness |
-| `gitnexus://repo/x-llm-gateway/clusters`       | All functional areas                     |
-| `gitnexus://repo/x-llm-gateway/processes`      | All execution flows                      |
-| `gitnexus://repo/x-llm-gateway/process/{name}` | Step-by-step execution trace             |
+| Resource | Use for |
+|----------|---------|
+| `gitnexus://repo/x-llm-gateway/context` | Codebase overview, check index freshness |
+| `gitnexus://repo/x-llm-gateway/clusters` | All functional areas |
+| `gitnexus://repo/x-llm-gateway/processes` | All execution flows |
+| `gitnexus://repo/x-llm-gateway/process/{name}` | Step-by-step execution trace |
 
 ## CLI
 
-| Task                                         | Read this skill file                                        |
-| -------------------------------------------- | ----------------------------------------------------------- |
-| Understand architecture / "How does X work?" | `.claude/skills/gitnexus/gitnexus-exploring/SKILL.md`       |
-| Blast radius / "What breaks if I change X?"  | `.claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md` |
-| Trace bugs / "Why is X failing?"             | `.claude/skills/gitnexus/gitnexus-debugging/SKILL.md`       |
-| Rename / extract / split / refactor          | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md`     |
-| Tools, resources, schema reference           | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md`           |
-| Index, status, clean, wiki CLI commands      | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md`             |
+| Task | Read this skill file |
+|------|---------------------|
+| Understand architecture / "How does X work?" | `.claude/skills/gitnexus/gitnexus-exploring/SKILL.md` |
+| Blast radius / "What breaks if I change X?" | `.claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md` |
+| Trace bugs / "Why is X failing?" | `.claude/skills/gitnexus/gitnexus-debugging/SKILL.md` |
+| Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
+| Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
+| Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
 
 <!-- gitnexus:end -->
 

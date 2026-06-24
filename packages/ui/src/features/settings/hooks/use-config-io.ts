@@ -3,7 +3,7 @@
 import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
-import type { ExportFormat, ImportResult } from '@x-llm-gateway/engine'
+import type { ExportFormat, ImportResult } from '@x-llm-gateway/shared'
 import { post } from '../../../shared/lib/api-client'
 
 async function exportConfigFn(): Promise<Blob> {

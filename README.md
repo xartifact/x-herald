@@ -48,7 +48,7 @@ x-llm-gateway 是一个透明代理网关，统一管理对 LLM 服务商的访�
 
 **工程化**
 - Monorepo — Bun workspaces + TypeScript project references
-- 共享包: `@x-llm-gateway/shared` (类型/常量), `@x-llm-gateway/engine` (核心层), `@x-llm-gateway/ui` (组件)
+- 共享包: `@x-llm-gateway/shared` (类型/常量), `@x-llm-gateway/gateway` (核心层), `@x-llm-gateway/ui` (组件)
 
 ---
 
@@ -57,12 +57,12 @@ x-llm-gateway 是一个透明代理网关，统一管理对 LLM 服务商的访�
 ```
 x-llm-gateway/
 ├── apps/
-│   ├── tanstack/               # TanStack Router SPA 管理界面
+│   ├── web/                    # 管理界面 SPA
 │   │   └── app/
 │   │       └── routes/         # 代码路由（admin, login, __root）
 │   └── cli/                    # CLI 工具
-├── packages/
-│   ├── engine/                 # @x-llm-gateway/engine — 网关内核（Hono + Bun.serve）
+├── apps/
+│   ├── gateway/                # @x-llm-gateway/gateway — 网关内核（Hono + Bun.serve）
 │   ├── shared/                 # @x-llm-gateway/shared — 类型/schema/常量
 │   └── ui/                    # @x-llm-gateway/ui — shadcn 组件库
 ├── docs/                       # 文档
@@ -89,7 +89,7 @@ cp .env.example .env
 # 编辑 .env，至少配置 DATABASE_URL 和 JWT_SECRET
 
 # 运行数据库迁移（首次启动前）
-cd packages/engine && bun run db:migrate
+cd apps/gateway && bun run db:migrate
 
 # 启动开发服务器
 bun run dev
@@ -162,7 +162,7 @@ bun run dev
 
 ## 管理界面
 
-### TanStack SPA (`apps/tanstack`)
+### Web SPA (`apps/web`)
 
 访问 `http://localhost:3000`（开发服务器），包含以下完整页面：
 

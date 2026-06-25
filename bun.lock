@@ -44,6 +44,8 @@
         "@dagrejs/dagre": "^3.0.0",
         "@x-llm-gateway/ai-agent": "workspace:*",
         "@x-llm-gateway/shared": "workspace:*",
+        "@x-tinker/sdk": "file:../../../x-tinker/packages/sdk",
+        "@x-tinker/shared": "file:../../../x-tinker/packages/shared",
         "@xyflow/react": "^12.10.1",
         "drizzle-orm": "^0.45.1",
         "hono": "^4.0.0",
@@ -1069,6 +1071,10 @@
 
     "@x-llm-gateway/gateway/@types/bun": ["@types/bun@1.3.14", "https://registry.npmmirror.com/@types/bun/-/bun-1.3.14.tgz", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],
 
+    "@x-llm-gateway/gateway/@x-tinker/sdk": ["@x-tinker/sdk@file:../x-tinker/packages/sdk", { "dependencies": { "@x-tinker/shared": "file:../shared" }, "devDependencies": { "@types/bun": "latest", "typescript": "^5.3.3" }, "peerDependencies": { "hono": "^4.12.27" } }],
+
+    "@x-llm-gateway/gateway/@x-tinker/shared": ["@x-tinker/shared@file:../x-tinker/packages/shared", { "devDependencies": { "@types/bun": "latest", "typescript": "^5.3.3" } }],
+
     "@x-llm-gateway/shared/@types/bun": ["@types/bun@1.3.14", "https://registry.npmmirror.com/@types/bun/-/bun-1.3.14.tgz", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],
 
     "bun-types/@types/node": ["@types/node@25.1.0", "https://registry.npmmirror.com/@types/node/-/node-25.1.0.tgz", { "dependencies": { "undici-types": "~7.16.0" } }, "sha512-t7frlewr6+cbx+9Ohpl0NOTKXZNV9xHRmNOvql47BFJKcEG1CxtxlPEEe+gR9uhVWM4DwhnvTF110mIL4yP9RA=="],
@@ -1138,6 +1144,8 @@
     "@x-llm-gateway/ai-agent/@types/bun/bun-types": ["bun-types@1.3.14", "https://registry.npmmirror.com/bun-types/-/bun-types-1.3.14.tgz", { "dependencies": { "@types/node": "*" } }, "sha512-4N0ig0fEomHt5R0KCFWjovxow98rIoRwKolrYdCcknNwMekCXRnWEUvgu5soYV8QXtVsrUD8B95MBOZGPvr6KQ=="],
 
     "@x-llm-gateway/gateway/@types/bun/bun-types": ["bun-types@1.3.14", "https://registry.npmmirror.com/bun-types/-/bun-types-1.3.14.tgz", { "dependencies": { "@types/node": "*" } }, "sha512-4N0ig0fEomHt5R0KCFWjovxow98rIoRwKolrYdCcknNwMekCXRnWEUvgu5soYV8QXtVsrUD8B95MBOZGPvr6KQ=="],
+
+    "@x-llm-gateway/gateway/@x-tinker/sdk/@x-tinker/shared": ["@x-tinker/shared@file:../x-tinker/packages/shared", {}],
 
     "@x-llm-gateway/shared/@types/bun/bun-types": ["bun-types@1.3.14", "https://registry.npmmirror.com/bun-types/-/bun-types-1.3.14.tgz", { "dependencies": { "@types/node": "*" } }, "sha512-4N0ig0fEomHt5R0KCFWjovxow98rIoRwKolrYdCcknNwMekCXRnWEUvgu5soYV8QXtVsrUD8B95MBOZGPvr6KQ=="],
 

@@ -4,6 +4,24 @@ import { IS_PRODUCTION } from '../../config/env';
 import type { DbClient } from '../../db/client';
 import { getDatabase } from '../../db/client';
 import logger from '../../lib/logger';
+
+// ─── x-tinker reporter (lazily initialized) ─────────────────
+let xTinkerReporter: import('@x-tinker/sdk').ErrorReporter | null = null;
+function getXTinkerReporter() {
+  if (xTinkerReporter) return xTinkerReporter;
+  const url = process.env.X_TINKER_URL;
+  if (!url) return null;
+  const { ErrorReporter } = require('@x-tinker/sdk') as typeof import('@x-tinker/sdk');
+  xTinkerReporter = new ErrorReporter({
+    serverUrl: url,
+    projectId: process.env.X_TINKER_PROJECT_ID || 'x-llm-gateway',
+  });
+  return xTinkerReporter;
+}
+
+function reportFailureToXTinker(error: Error, metadata?: Record<string, string>): void {
+  getXTinkerReporter()?.report(error, 'gateway/stream', metadata).catch(() => {});
+}
 import type { VirtualKey } from '../../features/keys/db';
 import { requestLogs, requestAttempts } from '../../features/logs/db';
 import type { StreamProgress, StreamContent, LogMetadata, FailoverReason } from '../../features/logs/db';
@@ -349,6 +367,18 @@ export async function markStreamFailed(logId: string, attemptId: string, error: 
       }
     });
     logger.debug({ logId, error }, 'Stream marked as failed');
+
+    // Report stream failure to x-tinker
+    const err = new Error(error.message || 'Stream failed');
+    err.name = error.type || 'stream_error';
+    reportFailureToXTinker(err, {
+      event: 'stream_failed',
+      requestId: logId,
+      attemptId,
+      statusCode: String(error.statusCode ?? ''),
+      errorType: error.type ?? 'stream_error',
+      errorMessage: error.message,
+    });
   } catch (err) {
     logger.warn({ error: err, logId }, 'Failed to mark stream as failed');
   }
@@ -368,6 +398,17 @@ export async function markStreamAborted(logId: string, attemptId: string): Promi
       }
     });
     logger.debug({ logId }, 'Stream marked as aborted');
+
+    // Report stream abort to x-tinker
+    const err = new Error('Client disconnected');
+    err.name = 'client_disconnect';
+    reportFailureToXTinker(err, {
+      event: 'stream_aborted',
+      requestId: logId,
+      attemptId,
+      errorType: 'client_disconnect',
+      errorMessage: 'Client disconnected',
+    });
   } catch (error) {
     logger.warn({ error, logId }, 'Failed to mark stream as aborted');
   }
@@ -416,6 +457,22 @@ export async function markAttemptFailed(params: {
     });
 
     logger.debug({ logId, attemptId, statusCode: params.statusCode, failoverReason: params.failoverReason }, 'Attempt marked as failed');
+
+    // Report attempt failure to x-tinker
+    const err = new Error(params.errorMessage || 'Attempt failed');
+    err.name = 'attempt_error';
+    reportFailureToXTinker(err, {
+      event: 'attempt_failed',
+      requestId: logId,
+      attemptId,
+      statusCode: String(params.statusCode),
+      errorType: 'attempt_error',
+      errorMessage: params.errorMessage,
+      failoverReason: params.failoverReason ?? '',
+      retryCount: String(params.retryCount ?? 0),
+      responseTimeMs: params.responseTimeMs != null ? String(params.responseTimeMs) : '',
+      providerTtfbMs: params.providerTtfbMs != null ? String(params.providerTtfbMs) : '',
+    });
   } catch (error) {
     logger.warn({ error, logId }, 'Failed to mark attempt as failed');
   }

@@ -6,6 +6,8 @@ BigInt.prototype.toJSON = function () {
   return this.toString();
 };
 
+import { captureUnhandledErrors, ErrorReporter } from '@x-tinker/sdk';
+import type { ErrorReporterConfig } from '@x-tinker/sdk';
 import { createEngine, createDatabase, getDatabase, loadConfig, seedSystemData, IS_PRODUCTION } from './index';
 import rootLogger from './lib/logger';
 import { startAutoCleanup } from './features/logs/log-cleanup';
@@ -14,6 +16,27 @@ import { startSnapshotJob } from './features/metrics/snapshot-job';
 const logger = rootLogger.child({ module: 'server' });
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
+
+// ─── x-tinker SDK Setup ──────────────────────────────────────
+const X_TINKER_URL = process.env.X_TINKER_URL || '';
+const X_TINKER_PROJECT_ID = process.env.X_TINKER_PROJECT_ID || 'x-llm-gateway';
+
+const sdkConfig: ErrorReporterConfig | null = X_TINKER_URL
+  ? {
+      serverUrl: X_TINKER_URL,
+      projectId: X_TINKER_PROJECT_ID,
+      environment: {
+        NODE_ENV: process.env.NODE_ENV || 'development',
+        APP_VERSION: process.env.APP_VERSION || 'dev',
+      },
+    }
+  : null;
+
+// Global uncaught exception / rejection handler
+if (sdkConfig) {
+  logger.info({ url: X_TINKER_URL, projectId: X_TINKER_PROJECT_ID }, 'x-tinker SDK enabled');
+  captureUnhandledErrors(sdkConfig);
+}
 
 async function main() {
   const config = loadConfig();
@@ -35,7 +58,6 @@ async function main() {
   Bun.serve({
     port: PORT,
     fetch: app.fetch,
-    // SSE 长连接需要禁用 idle timeout（默认 10s 会断开 SSE）
     idleTimeout: 0,
   });
 
@@ -44,5 +66,13 @@ async function main() {
 
 main().catch((err) => {
   logger.error({ err }, 'Failed to start engine server');
+  if (sdkConfig) {
+    const reporter = new ErrorReporter(sdkConfig);
+    reporter.report(
+      err instanceof Error ? err : new Error(String(err)),
+      undefined,
+      { stage: 'bootstrap', port: String(PORT) },
+    ).catch(() => {});
+  }
   process.exit(1);
 });

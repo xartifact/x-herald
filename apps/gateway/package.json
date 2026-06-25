@@ -16,6 +16,8 @@
     "@dagrejs/dagre": "^3.0.0",
     "@x-llm-gateway/ai-agent": "workspace:*",
     "@x-llm-gateway/shared": "workspace:*",
+    "@x-tinker/sdk": "file:../../../x-tinker/packages/sdk",
+    "@x-tinker/shared": "file:../../../x-tinker/packages/shared",
     "@xyflow/react": "^12.10.1",
     "drizzle-orm": "^0.45.1",
     "hono": "^4.0.0",

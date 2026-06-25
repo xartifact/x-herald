@@ -14,6 +14,24 @@ import { extractMetadata } from './metadata-extractor';
 import { rateLimitEngine } from './rate-limit-engine';
 import { estimateUsageFromContent } from './token-estimator';
 
+// ─── x-tinker reporter (lazily initialized) ─────────────────
+let xTinkerReporter: import('@x-tinker/sdk').ErrorReporter | null = null;
+function getXTinkerReporter() {
+  if (xTinkerReporter) return xTinkerReporter;
+  const url = process.env.X_TINKER_URL;
+  if (!url) return null;
+  const { ErrorReporter } = require('@x-tinker/sdk') as typeof import('@x-tinker/sdk');
+  xTinkerReporter = new ErrorReporter({
+    serverUrl: url,
+    projectId: process.env.X_TINKER_PROJECT_ID || 'x-llm-gateway',
+  });
+  return xTinkerReporter;
+}
+
+function reportFailureToXTinker(error: Error, metadata?: Record<string, string>): void {
+  getXTinkerReporter()?.report(error, 'gateway/request', metadata).catch(() => {});
+}
+
 export type { StreamLogParams, LogStartResult, FinalizeStreamParams } from './log-stream';
 export {
   logStreamStart,
@@ -213,6 +231,49 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
       });
 
       logger.debug({ logId: params.logId, modelName: params.modelName, status: params.status }, 'Request log updated');
+
+      // Report failure to x-tinker
+      if (params.status === 'failure') {
+        const err = new Error(params.errorMessage || 'Request failed');
+        err.name = params.errorType || 'request_error';
+        reportFailureToXTinker(err, {
+          event: 'request_completed',
+          requestId: params.logId ?? '',
+          attemptId: params.attemptId ?? '',
+          path: params.requestPath,
+          method: params.requestMethod,
+          statusCode: String(params.statusCode ?? ''),
+          modelName: params.modelName,
+          originalModelName: params.originalModelName ?? '',
+          providerName: params.providerName ?? '',
+          providerId: params.providerId ?? '',
+          virtualKeyId: params.virtualKey.id ?? '',
+          virtualKeyName: params.virtualKey.name ?? '',
+          errorType: params.errorType ?? '',
+          errorMessage: params.errorMessage ?? '',
+          clientIp: params.clientIp ?? '',
+          userAgent: params.userAgent?.slice(0, 200) ?? '',
+          clientType: params.clientType ?? '',
+          incomingProtocol: params.incomingProtocol ?? '',
+          targetProtocol: params.targetProtocol ?? '',
+          streaming: String(params.streaming),
+          responseTimeMs: String(params.responseTimeMs),
+          inputTokens: String(params.inputTokens ?? 0),
+          outputTokens: String(params.outputTokens ?? 0),
+          totalTokens: String((params.inputTokens ?? 0) + (params.outputTokens ?? 0)),
+          retryCount: String(params.retryCount ?? 0),
+          requestGroupId: params.requestGroupId ?? '',
+          candidateIndex: String(params.candidateIndex ?? 0),
+          conversationId: params.conversationId ?? '',
+          userId: params.userId ?? '',
+          organizationId: params.organizationId ?? '',
+          tags: Array.isArray(params.tags) ? params.tags.join(',') : '',
+          gatewayOverheadMs: params.gatewayOverheadMs != null ? String(params.gatewayOverheadMs) : '',
+          providerTtfbMs: params.providerTtfbMs != null ? String(params.providerTtfbMs) : '',
+          streamDurationMs: params.streamDurationMs != null ? String(params.streamDurationMs) : '',
+        });
+      }
+
       return;
     }
 
@@ -269,6 +330,48 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
     await recordClientRequestedModel(params.originalModelName || params.modelName);
 
     logger.debug({ logId, modelName: params.modelName, status: params.status }, 'Request logged successfully');
+
+    // Report failure to x-tinker for insert path
+    if (params.status === 'failure') {
+      const err = new Error(params.errorMessage || 'Request failed');
+      err.name = params.errorType || 'request_error';
+      reportFailureToXTinker(err, {
+        event: 'request_inserted',
+        requestId: logId,
+        attemptId: params.attemptId ?? '',
+        path: params.requestPath,
+        method: params.requestMethod,
+        statusCode: String(params.statusCode ?? ''),
+        modelName: params.modelName,
+        originalModelName: params.originalModelName ?? '',
+        providerName: params.providerName ?? '',
+        providerId: params.providerId ?? '',
+        virtualKeyId: params.virtualKey.id ?? '',
+        virtualKeyName: params.virtualKey.name ?? '',
+        errorType: params.errorType ?? '',
+        errorMessage: params.errorMessage ?? '',
+        clientIp: params.clientIp ?? '',
+        userAgent: params.userAgent?.slice(0, 200) ?? '',
+        clientType: params.clientType ?? '',
+        incomingProtocol: params.incomingProtocol ?? '',
+        targetProtocol: params.targetProtocol ?? '',
+        streaming: String(params.streaming),
+        responseTimeMs: String(params.responseTimeMs),
+        inputTokens: String(params.inputTokens ?? 0),
+        outputTokens: String(params.outputTokens ?? 0),
+        totalTokens: String((params.inputTokens ?? 0) + (params.outputTokens ?? 0)),
+        retryCount: String(params.retryCount ?? 0),
+        requestGroupId: params.requestGroupId ?? '',
+        candidateIndex: String(params.candidateIndex ?? 0),
+        conversationId: params.conversationId ?? '',
+        userId: params.userId ?? '',
+        organizationId: params.organizationId ?? '',
+        tags: Array.isArray(params.tags) ? params.tags.join(',') : '',
+        gatewayOverheadMs: params.gatewayOverheadMs != null ? String(params.gatewayOverheadMs) : '',
+        providerTtfbMs: params.providerTtfbMs != null ? String(params.providerTtfbMs) : '',
+        streamDurationMs: params.streamDurationMs != null ? String(params.streamDurationMs) : '',
+      });
+    }
   } catch (error) {
     const errorDetails = error instanceof Error ? { message: error.message, name: error.name, stack: error.stack } : error;
     logger.error({ error: errorDetails, modelName: params.modelName, virtualKeyId: params.virtualKey.id }, 'Failed to log request');
@@ -321,6 +424,22 @@ export async function markLogAsFailed(params: {
     });
 
     logger.debug({ logId, attemptId, statusCode: params.statusCode }, 'Log marked as failed (failover)');
+
+    // Report failover failure to x-tinker
+    const err = new Error(params.errorMessage || 'Request failed after failover');
+    err.name = params.errorType || 'provider_error';
+    reportFailureToXTinker(err, {
+      event: 'failover_failed',
+      requestId: logId,
+      attemptId,
+      statusCode: String(params.statusCode),
+      errorType: params.errorType ?? 'provider_error',
+      errorMessage: params.errorMessage,
+      failoverReason: params.failoverReason ?? '',
+      retryCount: String(params.retryCount ?? 0),
+      responseTimeMs: params.responseTimeMs != null ? String(params.responseTimeMs) : '',
+      providerTtfbMs: params.providerTtfbMs != null ? String(params.providerTtfbMs) : '',
+    });
   } catch (error) {
     logger.warn({ error, logId }, 'Failed to mark log as failed');
   }

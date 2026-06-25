@@ -1,5 +1,6 @@
 import type { MiddlewareHandler } from 'hono';
 import { HTTPException } from 'hono/http-exception';
+import { ErrorReporter } from '@x-tinker/sdk';
 
 import rootLogger from '../lib/logger';
 
@@ -16,11 +17,34 @@ export class AppError extends Error {
   }
 }
 
+// x-tinker reporter instance (lazily initialized from env)
+let xTinkerReporter: ErrorReporter | null = null;
+function getReporter(): ErrorReporter | null {
+  if (xTinkerReporter) return xTinkerReporter;
+  const url = process.env.X_TINKER_URL;
+  if (!url) return null;
+  xTinkerReporter = new ErrorReporter({
+    serverUrl: url,
+    projectId: process.env.X_TINKER_PROJECT_ID || 'x-llm-gateway',
+  });
+  return xTinkerReporter;
+}
+
 export const errorHandler: MiddlewareHandler = async (c, next) => {
   try {
     await next();
   } catch (error) {
     logger.error({ err: error }, 'Request error');
+
+    // Report to x-tinker with request context
+    const reporter = getReporter();
+    if (reporter && error instanceof Error) {
+      reporter.report(error, undefined, {
+        request_path: c.req.path,
+        request_method: c.req.method,
+        request_id: c.get('requestId') as string || '',
+      }).catch(() => {});
+    }
 
     if (error instanceof HTTPException) {
       return c.json(

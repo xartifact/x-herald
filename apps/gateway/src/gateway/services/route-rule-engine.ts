@@ -7,8 +7,8 @@ import { eq, and, asc, sql } from 'drizzle-orm';
 
 import { getDatabase } from '../../db/client';
 import logger from '../../lib/logger';
-import { modelRoutes } from '../../features/model-groups/db';
-import type { RouteCondition, ModelRoute } from '../../features/model-groups/db';
+import { modelRoutes, type ModelRoute } from '@x-llm-gateway/db';
+import type { RouteCondition } from '../../features/model-groups/db';
 
 // 性能上下文：聚合目标路由规则所有实例的最差健康状态
 export interface PerfContext {

@@ -2,8 +2,8 @@ import { useMemo, useState } from 'react'
 
 import { Wifi } from 'lucide-react'
 
+import { useProviderStats } from '../../../hooks/logs'
 import {
-  useProviderStats,
   ProviderStatsCard,
   ProviderStatsSummary,
   ProviderStatsToolbar,

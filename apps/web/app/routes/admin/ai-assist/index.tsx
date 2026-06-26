@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Sparkles, Wrench, AlertCircle, Loader2 } from 'lucide-react'
 
+import { useLogs } from '../../../hooks/logs'
+import type { LogListItem } from '@x-llm-gateway/shared'
 import {
   Button,
   Card,
@@ -25,8 +27,6 @@ import {
   TableRow,
   get,
   post,
-  useLogs,
-  type LogListItem,
 } from '@x-llm-gateway/ui'
 
 interface FixSuggestion {

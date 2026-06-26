@@ -12,7 +12,7 @@ import { Hono } from 'hono';
 import { drizzle as drizzlePglite } from 'drizzle-orm/pglite';
 
 import { createEngine } from '../createEngine';
-import * as schema from '../db/schema';
+import * as schema from '../db';
 
 import type { Database } from '../db/client';
 import type { EngineInstance } from '../createEngine';

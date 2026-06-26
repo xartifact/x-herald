@@ -11,7 +11,7 @@ export {
 } from './gateway/transformer';
 
 // db (server-only exports)
-export { seedSystemData } from './db/seed';
+export { seedSystemData } from '@x-llm-gateway/db';
 
 // createEngine factory
 export { createEngine, type CreateEngineOptions, type EngineInstance } from "./createEngine";

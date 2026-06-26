@@ -6,9 +6,9 @@ import { jsonrepair } from 'jsonrepair';
 import { getDatabase } from '../../db/client';
 import { callAI, AiNotConfiguredError } from '../../lib';
 import { rootLogger } from '../../lib';
-import { modelInstances } from '../model-groups/db';
+import { modelInstances } from '@x-llm-gateway/db';
 import type { InstanceConfig } from '../model-groups/db';
-import { providers } from '../providers/db';
+import { providers } from '@x-llm-gateway/db';
 
 import { ErrorDiagnoser } from './error-diagnoser';
 import { ErrorPatternLearner } from './error-patterns';

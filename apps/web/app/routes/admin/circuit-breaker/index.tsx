@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useCircuitBreakerStats, useRealtimeStates, useCircuitBreakerEvents, useManualAction } from '../../../hooks/circuit-breaker'
 import {
   CircuitBreakerStatsCards,
   RealtimeStateTable,
@@ -6,10 +7,6 @@ import {
   EventHistoryTable,
   CircuitBreakerConfirmDialog,
   Button,
-  useCircuitBreakerStats,
-  useRealtimeStates,
-  useCircuitBreakerEvents,
-  useManualAction,
 } from '@x-llm-gateway/ui'
 import { RefreshCw } from 'lucide-react'
 import type { CircuitBreakerEventType } from '@x-llm-gateway/shared'

@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { Plus, Search } from 'lucide-react'
 
+import { useAccessModels, useCreateAccessModel, useUpdateAccessModel, useDeleteAccessModel, useToggleAccessModel } from '../../../hooks/access-models'
 import {
   Button,
   Card,
@@ -9,11 +10,6 @@ import {
   Input,
   AccessModelTable,
   AccessModelFormDialog,
-  useAccessModels,
-  useCreateAccessModel,
-  useUpdateAccessModel,
-  useDeleteAccessModel,
-  useToggleAccessModel,
 } from '@x-llm-gateway/ui'
 
 import type { AccessModel } from '@x-llm-gateway/shared'

@@ -1,6 +1,6 @@
 import type { Context } from 'hono';
 
-import type { VirtualKey } from '../../../features/keys/db';
+import type { VirtualKey } from '@x-llm-gateway/db';
 import type { TransformerContext } from '@x-llm-gateway/shared';
 
 export interface ResponseHandlerParams {

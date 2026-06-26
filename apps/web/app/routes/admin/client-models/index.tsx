@@ -2,8 +2,8 @@ import { useMemo, useState } from 'react'
 
 import { Brain } from 'lucide-react'
 
+import { useClientModelStats } from '../../../hooks/logs'
 import {
-  useClientModelStats,
   ClientModelFilter,
   ClientModelList,
   ClientModelSummary,

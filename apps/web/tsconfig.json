@@ -7,7 +7,6 @@
     "skipLibCheck": true, "resolveJsonModule": true, "isolatedModules": true,
     "paths": {
       "@x-llm-gateway/shared": ["../../packages/shared/src"],
-      "@x-llm-gateway/gateway": ["../../apps/gateway/src"],
       "@x-llm-gateway/ui": ["../../packages/ui/src"]
     }
   },

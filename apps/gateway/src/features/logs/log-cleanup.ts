@@ -5,7 +5,7 @@ import rootLogger from '../../lib/logger';
 
 const logger = rootLogger.child({ module: 'log-cleanup' });
 
-import { requestLogs } from './db';
+import { requestLogs } from '@x-llm-gateway/db';
 
 /**
  * 清理过期日志

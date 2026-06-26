@@ -10,27 +10,25 @@
     "start": "bun run --env-file=../../.env.local --env-file=../../.env src/server.ts",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
-    "db:migrate": "drizzle-kit push"
+    "db:migrate": "cd ../../packages/db && bun run db:migrate"
   },
   "dependencies": {
     "@dagrejs/dagre": "^3.0.0",
     "@x-llm-gateway/ai-agent": "workspace:*",
+    "@x-llm-gateway/db": "workspace:*",
     "@x-llm-gateway/shared": "workspace:*",
     "@x-tinker/sdk": "file:../../../x-tinker/packages/sdk",
     "@x-tinker/shared": "file:../../../x-tinker/packages/shared",
     "@xyflow/react": "^12.10.1",
-    "drizzle-orm": "^0.45.1",
     "hono": "^4.0.0",
     "json5": "^2.2.3",
     "jsonrepair": "^3.13.2",
     "pino": "^8.17.2",
     "pino-pretty": "^10.3.1",
-    "postgres": "^3.4.3",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "drizzle-kit": "^0.31.8",
     "typescript": "^5.3.3"
   },
   "peerDependencies": {

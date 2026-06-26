@@ -1,6 +1,7 @@
 import { useNavigate, useParams } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
-import { useLog, LogDetailContent, Button } from '@x-llm-gateway/ui'
+import { useLog } from '../../../hooks/logs'
+import { LogDetailContent, Button } from '@x-llm-gateway/ui'
 
 const CLIENT_REGISTRY: Record<string, string> = {
   'claude-code': 'Claude Code',

@@ -1,6 +1,6 @@
 import { describe, it, expect, mock, beforeEach, afterEach } from 'bun:test';
 
-import type { ModelGroup, ModelInstance } from '../../features/model-groups/db';
+import type { ModelGroup, ModelInstance } from '@x-llm-gateway/db';
 import type { InstancePerfData } from '../../features/metrics/services/instance-perf-cache';
 
 mock.module('../../features/metrics/services/instance-perf-cache', () => ({
@@ -41,7 +41,7 @@ mock.module('./circuit-breaker-policy', () => ({
 import { circuitBreakerRegistry } from './circuit-breaker-state';
 import { fetchGroupInstancesPerf } from '../../features/metrics/services/instance-perf-cache';
 
-type ProviderSelect = typeof import('../../features/providers/db').providers.$inferSelect;
+type ProviderSelect = typeof import('@x-llm-gateway/db').providers.$inferSelect;
 
 function createTestProvider(overrides: Partial<ProviderSelect> = {}): ProviderSelect {
   return {

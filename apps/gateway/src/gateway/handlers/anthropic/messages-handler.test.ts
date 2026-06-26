@@ -1,6 +1,6 @@
 import { describe, it, expect, mock, beforeEach, afterAll } from 'bun:test';
 import type { Context } from 'hono';
-import type { VirtualKey } from '../../../features/keys/db';
+import type { VirtualKey } from '@x-llm-gateway/db';
 import {
   createTestVirtualKey,
   createTestProvider,

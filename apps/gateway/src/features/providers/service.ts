@@ -5,9 +5,10 @@ import { z } from 'zod'
 import type { Database } from '../../db/client'
 import { getDatabase } from '../../db/client'
 import rootLogger from '../../lib/logger'
-import { modelInstances } from '../../features/model-groups/db'
+import { modelInstances } from '@x-llm-gateway/db'
 
-import { providers, type ProtocolsConfig } from './db'
+import { providers } from '@x-llm-gateway/db'
+import type { ProtocolsConfig } from './db'
 
 const logger = rootLogger.child({ module: 'providers-service' })
 
@@ -206,7 +207,7 @@ export async function syncModels(id: string, data: SyncModelsCommand, db?: Datab
   const database = db ?? getDatabase()
 
   if (data.groupId) {
-    const { modelGroups } = await import('../../features/model-groups/db')
+    const { modelGroups } = await import('@x-llm-gateway/db')
     const group = await database.select().from(modelGroups).where(eq(modelGroups.id, data.groupId)).limit(1)
     if (group.length === 0) return { ok: false, code: 'GROUP_NOT_FOUND' }
   }
@@ -222,7 +223,7 @@ export async function syncModels(id: string, data: SyncModelsCommand, db?: Datab
     ).returning({ id: modelInstances.id })
 
     if (data.groupId && inserted.length > 0) {
-      const { modelGroupMemberships } = await import('../../features/model-groups/db')
+      const { modelGroupMemberships } = await import('@x-llm-gateway/db')
       await database.insert(modelGroupMemberships).values(inserted.map((i) => ({ groupId: data.groupId as string, instanceId: i.id })))
     }
   }

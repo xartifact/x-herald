@@ -1,8 +1,8 @@
 import { getDatabase } from '../db/client';
-import { providers, modelGroups, modelInstances, modelGroupMemberships, virtualKeys } from '../db/schema';
-import type { Provider } from '../features/providers/db';
-import type { ModelGroup, ModelInstance } from '../features/model-groups/db';
-import type { VirtualKey } from '../features/keys/db';
+import { providers, modelGroups, modelInstances, modelGroupMemberships, virtualKeys } from '../db';
+import type { Provider } from '@x-llm-gateway/db';
+import type { ModelGroup, ModelInstance } from '@x-llm-gateway/db';
+import type { VirtualKey } from '@x-llm-gateway/db';
 
 export interface ScenarioContext {
   provider: Provider;

@@ -3,18 +3,16 @@ import { asc, desc, eq, inArray } from 'drizzle-orm'
 import type { Database } from '../../db/client'
 import { getDatabase } from '../../db/client'
 import rootLogger from '../../lib/logger'
-import { providers } from '../../features/providers/db'
+import { providers } from '@x-llm-gateway/db'
 
 import {
   modelGroupMemberships,
   modelGroups,
   modelInstances,
-  type InstanceConfig,
-  type ModelCapabilities,
   type NewModelGroup,
   type NewModelInstance,
-  type RoutingConfig,
-} from './db'
+} from '@x-llm-gateway/db'
+import type { InstanceConfig, ModelCapabilities, RoutingConfig } from './db'
 
 const logger = rootLogger.child({ module: 'model-groups-service' })
 

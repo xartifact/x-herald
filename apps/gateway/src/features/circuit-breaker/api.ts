@@ -4,7 +4,7 @@ import { Hono } from 'hono';
 import { getDatabase } from '../../db/client';
 import { circuitBreakerRegistry } from '../../gateway/services/circuit-breaker-state';
 
-import { circuitBreakerEvents } from './db';
+import { circuitBreakerEvents } from '@x-llm-gateway/db';
 
 const circuitBreakerRoutes = new Hono();
 

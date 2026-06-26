@@ -1,3 +1,3 @@
 // Server-side exports only
-export { virtualKeys, type NewVirtualKey } from './db';
+export { virtualKeys, type NewVirtualKey } from '@x-llm-gateway/db';
 export * from './service';

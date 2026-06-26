@@ -2,7 +2,7 @@ import { and, eq, gt, desc } from 'drizzle-orm';
 
 import { getDatabase } from '../../db/client';
 import logger from '../../lib/logger';
-import { circuitBreakerEvents } from '../../features/circuit-breaker/db';
+import { circuitBreakerEvents } from '@x-llm-gateway/db';
 
 import {
   runtimeConfig,

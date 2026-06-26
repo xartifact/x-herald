@@ -1,5 +1,5 @@
 import { MetricsSummaryCards, InstancePerfTable, ProviderQualityTable, InstancePerfChart } from '@x-llm-gateway/ui'
-import { useMetricsSummary, useInstancesSummary } from '@x-llm-gateway/ui'
+import { useMetricsSummary, useInstancesSummary } from '../../../hooks/metrics'
 
 export function MetricsPage() {
   const { data: summary, isLoading } = useMetricsSummary()

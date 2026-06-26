@@ -2,7 +2,7 @@ import type { Context } from 'hono';
 
 import { loadConfig } from '../../../config';
 import logger from '../../../lib/logger';
-import type { VirtualKey } from '../../../features/keys/db';
+import type { VirtualKey } from '@x-llm-gateway/db';
 import type { StandardRequest } from '@x-llm-gateway/shared';
 
 import { accessModelRouter } from '../../services/access-model-router';

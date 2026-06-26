@@ -71,7 +71,7 @@ export function detectProtocol(
  */
 export function getProviderProtocol(
   clientProtocol: 'openai' | 'anthropic',
-  provider: { protocols?: Record<string, { enabled?: boolean }> }
+  provider: { protocols?: Record<string, { enabled?: boolean }> | Partial<Record<string, { enabled?: boolean }>> }
 ): 'openai' | 'anthropic' {
   // 1. 优先原生匹配
   if (provider.protocols?.[clientProtocol]?.enabled) {
@@ -94,7 +94,7 @@ export function getProviderProtocol(
  * 获取 Provider 的 API URL
  */
 export function getProviderUrl(
-  provider: { protocols?: Record<string, { enabled?: boolean; baseUrl?: string }> },
+  provider: { protocols?: Record<string, { enabled?: boolean; baseUrl?: string }> | Partial<Record<string, { enabled?: boolean; baseUrl?: string }>> },
   protocol: 'openai' | 'anthropic',
 ): string | null {
   const config = provider.protocols?.[protocol];

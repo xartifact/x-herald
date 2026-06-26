@@ -1,2 +1,2 @@
 // Server-side exports only
-export * from './db';
+export * from '@x-llm-gateway/db';

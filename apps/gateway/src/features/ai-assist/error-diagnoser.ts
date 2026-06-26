@@ -3,9 +3,10 @@ import { jsonrepair } from 'jsonrepair';
 
 import { getDatabase } from '../../db/client';
 import { callAI } from '../../lib/ai-caller';
-import { requestAttempts, requestLogs } from '../logs/db';
-import { modelInstances } from '../model-groups/db';
+import { requestAttempts, requestLogs } from '@x-llm-gateway/db';
+import { modelInstances } from '@x-llm-gateway/db';
 import type { InstanceConfig } from '../model-groups/db';
+import type { LogMetadata } from '../logs/db';
 
 export interface DiagnosisResult {
   rootCause: string;
@@ -55,7 +56,8 @@ export class ErrorDiagnoser {
       .limit(1);
     const attempt = attemptRows[0];
 
-    const instanceId = attempt?.instanceId ?? log.metadata?.routing?.instanceId ?? null;
+    const logMetadata = log.metadata as LogMetadata | null | undefined;
+const instanceId = attempt?.instanceId ?? logMetadata?.routing?.instanceId ?? null;
 
     let currentConfig: InstanceConfig | null = null;
     if (instanceId) {

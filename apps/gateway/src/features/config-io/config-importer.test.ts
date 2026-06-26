@@ -2,10 +2,10 @@ import { describe, it, expect, mock, beforeEach, afterEach, afterAll } from 'bun
 
 const realDbClient = await import('../../db/client');
 
-import { providers } from '../../features/providers/db';
-import { modelGroups, modelInstances, modelGroupMemberships, accessModels, modelRoutes } from '../../features/model-groups/db';
-import { virtualKeys } from '../../features/keys/db';
-import { gatewayConfigs } from '../../features/gateway-config/db';
+import { providers } from '@x-llm-gateway/db';
+import { modelGroups, modelInstances, modelGroupMemberships, accessModels, modelRoutes } from '@x-llm-gateway/db';
+import { virtualKeys } from '@x-llm-gateway/db';
+import { gatewayConfigs } from '@x-llm-gateway/db';
 
 // ─── Mock DB with mutable state ─────────────────────────────────────────────
 

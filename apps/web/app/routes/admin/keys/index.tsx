@@ -3,23 +3,19 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Plus, Search } from 'lucide-react'
 
+import { useKeys, useCreateKey, useUpdateKey, useDeleteKey, useResetKey } from '../../../hooks/keys'
+import { useKeysStats } from '../../../hooks/logs'
+import type { KeyFormData } from '@x-llm-gateway/ui'
 import {
   Button,
   Card,
   CardContent,
   Input,
-  useKeys,
-  useCreateKey,
-  useUpdateKey,
-  useDeleteKey,
-  useResetKey,
-  useKeysStats,
   KeyTable,
   KeyFormDialog,
   KeyResetDialog,
   KeyStatsSheet,
 } from '@x-llm-gateway/ui'
-import type { KeyFormData } from '@x-llm-gateway/ui'
 import { keySchema, type KeyFormSchema } from './key-form-schema'
 
 export function KeysPage() {

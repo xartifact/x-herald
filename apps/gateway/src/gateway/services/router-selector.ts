@@ -3,8 +3,8 @@ import {
   fetchGroupInstancesPerf,
   type InstancePerfData,
 } from '../../features/metrics/services/instance-perf-cache';
-import type { ModelGroup, ModelInstance } from '../../features/model-groups/db';
-import { providers } from '../../features/providers/db';
+import type { ModelGroup, ModelInstance } from '@x-llm-gateway/db';
+import { providers } from '@x-llm-gateway/db';
 
 import { circuitBreakerRegistry } from './circuit-breaker';
 import type { ModelMappingResult } from './model-mapping';

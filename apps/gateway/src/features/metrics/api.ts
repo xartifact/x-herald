@@ -4,8 +4,8 @@ import { Hono } from 'hono';
 import { getDatabase } from '../../db/client';
 
 import { AnomalyDetector } from './anomaly-detector';
-import { anomalyEvents } from './anomaly-db';
-import { instancePerfSnapshots } from './db';
+import { anomalyEvents } from '@x-llm-gateway/db';
+import { instancePerfSnapshots } from '@x-llm-gateway/db';
 
 export const metricsRoutes = new Hono();
 

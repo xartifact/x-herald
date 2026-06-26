@@ -4,8 +4,8 @@ import type { Message, ToolCall, ToolDefinition } from '@x-llm-gateway/ai-agent'
 import { getDatabase } from '../db/client';
 import rootLogger from '../lib/logger';
 import { getConfig } from '../features/gateway-config/service';
-import { modelInstances, modelGroupMemberships } from '../features/model-groups/db';
-import { providers } from '../features/providers/db';
+import { modelInstances, modelGroupMemberships } from '@x-llm-gateway/db';
+import { providers } from '@x-llm-gateway/db';
 
 const logger = rootLogger.child({ module: 'ai-caller' });
 

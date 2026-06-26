@@ -3,8 +3,8 @@ import type { ToolExecutor } from '@x-llm-gateway/ai-agent'
 import { builtInTools } from '@x-llm-gateway/ai-agent'
 
 import { getDatabase } from '../../db/client'
-import { requestLogs, requestAttempts } from '../logs/db'
-import { modelInstances } from '../model-groups/db'
+import { requestLogs, requestAttempts } from '@x-llm-gateway/db'
+import { modelInstances } from '@x-llm-gateway/db'
 
 export const diagnoseErrorExecutor: ToolExecutor = {
   tool: builtInTools.diagnoseError,

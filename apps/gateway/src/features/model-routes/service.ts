@@ -3,7 +3,8 @@ import { eq, sql } from 'drizzle-orm';
 import type { Database } from '../../db/client';
 import { getDatabase } from '../../db/client';
 import rootLogger from '../../lib/logger';
-import { modelRoutes, accessModels, type RouteCondition, type RouteAction, type FlowData } from '../model-groups/db';
+import { modelRoutes, accessModels } from '@x-llm-gateway/db';
+import type { RouteCondition, RouteAction, FlowData } from '../model-groups/db';
 
 const logger = rootLogger.child({ module: 'model-routes-service' });
 

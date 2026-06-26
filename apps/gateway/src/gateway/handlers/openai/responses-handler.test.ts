@@ -7,7 +7,7 @@ import {
   createTestModelGroup,
   createTestModelInstance,
 } from '../../../test/factories';
-import type { VirtualKey } from '../../../features/keys/db';
+import type { VirtualKey } from '@x-llm-gateway/db';
 import type { RouteResult } from '../../services/router-selector';
 
 // ---------------------------------------------------------------------------

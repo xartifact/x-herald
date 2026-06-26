@@ -2,16 +2,15 @@ import { useState, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 
+import { useProviders, useCreateProvider, useUpdateProvider, useDeleteProvider, useToggleProvider, useProviderInstanceState, useProviderDialogState } from '../../../hooks/providers'
+import type { ProviderFormData } from '@x-llm-gateway/ui'
 import {
   Card, CardContent, Button, Input,
-  useProviders, useCreateProvider, useUpdateProvider, useDeleteProvider, useToggleProvider,
-  useProviderInstanceState, useProviderDialogState,
   ProviderCard, ProviderFormDialog, ModelInstanceForm,
   SyncModelsDialog, ThinkingTypeMappingDialog,
   PROTOCOL_OPTIONS, providerSchema,
 } from '@x-llm-gateway/ui'
 import type { Provider } from '@x-llm-gateway/shared'
-import type { ProviderFormData } from '@x-llm-gateway/ui'
 import { Plus, Search } from 'lucide-react'
 
 const defaultValues: ProviderFormData = {

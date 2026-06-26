@@ -1,11 +1,11 @@
-import type { Provider } from '../features/providers/db';
-import type { VirtualKey } from '../features/keys/db';
-import type { ModelGroup, ModelInstance, ModelRoute, AccessModel } from '../features/model-groups/db';
-import type { RequestLog } from '../features/logs/db';
-import type { CostRecord } from '../features/costs/db';
-import type { CircuitBreakerEvent } from '../features/circuit-breaker/db';
-import type { HealthRun } from '../features/health/db';
-import type { InstancePerfSnapshot } from '../features/metrics/db';
+import type { Provider } from '@x-llm-gateway/db';
+import type { VirtualKey } from '@x-llm-gateway/db';
+import type { ModelGroup, ModelInstance, ModelRoute, AccessModel } from '@x-llm-gateway/db';
+import type { RequestLog } from '@x-llm-gateway/db';
+import type { CostRecord } from '@x-llm-gateway/db';
+import type { CircuitBreakerEvent } from '@x-llm-gateway/db';
+import type { HealthRun } from '@x-llm-gateway/db';
+import type { InstancePerfSnapshot } from '@x-llm-gateway/db';
 import type { AnomalyEvent } from '../features/metrics/anomaly-db';
 
 export function createTestProvider(overrides: Partial<Provider> = {}): Provider {

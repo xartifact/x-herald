@@ -1,9 +1,9 @@
 import type { Context } from 'hono';
 
 import logger from '../../../lib/logger';
-import type { VirtualKey } from '../../../features/keys/db';
-import type { ModelGroup, ModelInstance } from '../../../features/model-groups/db';
-import type { providers } from '../../../features/providers/db';
+import type { VirtualKey } from '@x-llm-gateway/db';
+import type { ModelGroup, ModelInstance } from '@x-llm-gateway/db';
+import type { providers } from '@x-llm-gateway/db';
 import type { StandardRequest } from '@x-llm-gateway/shared';
 import type { TransformerContext } from '@x-llm-gateway/shared';
 
@@ -85,7 +85,7 @@ export class ChatCompletionCandidateExecutor {
     const { providerUrl, isPassthroughEnabled, targetProtocol } = this.config;
 
     standardReq.model = instance.actualModelName;
-    this.ctx.provider = { name: provider.name, baseUrl: providerUrl, apiKey: provider.apiKey || '', protocol: targetProtocol, models: [], protocols: provider.protocols };
+    this.ctx.provider = { name: provider.name, baseUrl: providerUrl, apiKey: provider.apiKey || '', protocol: targetProtocol, models: [], protocols: provider.protocols as Record<string, { baseUrl: string; enabled: boolean }> };
     this.ctx.instanceConfig = (instance.config ?? undefined) as Record<string, unknown> | undefined;
 
     const { transformedBody, targetUrl, pHeaders } = await this.buildProviderParts();

@@ -2,9 +2,9 @@ import type { Context } from 'hono';
 
 import { loadConfig } from '../../../config';
 import logger from '../../../lib/logger';
-import type { VirtualKey } from '../../../features/keys/db';
-import type { ModelGroup, ModelInstance } from '../../../features/model-groups/db';
-import type { providers } from '../../../features/providers/db';
+import type { VirtualKey } from '@x-llm-gateway/db';
+import type { ModelGroup, ModelInstance } from '@x-llm-gateway/db';
+import type { providers } from '@x-llm-gateway/db';
 import type { StandardRequest, TransformerContext } from '@x-llm-gateway/shared';
 
 import { accessModelRouter } from '../../services/access-model-router';
@@ -189,7 +189,7 @@ export async function handleResponsesAPI(
     const isPassthroughEnabled = isSameProtocol && config.sameProtocolPassthrough.enabled && config.sameProtocolPassthrough.allowedProtocols.includes(incomingProtocol);
 
     standardReq.model = instance.actualModelName;
-    ctx.provider = { name: provider.name, baseUrl: providerUrl, apiKey: provider.apiKey || '', protocol: targetProtocol, models: [], protocols: provider.protocols };
+    ctx.provider = { name: provider.name, baseUrl: providerUrl, apiKey: provider.apiKey || '', protocol: targetProtocol, models: [], protocols: (provider.protocols as Record<string, {baseUrl: string; enabled: boolean}>) };
     ctx.instanceConfig = (instance.config ?? undefined) as Record<string, unknown> | undefined;
 
     const candidate: CandidateInfo = { instance, provider, group, matchedRule, mapping, decision };

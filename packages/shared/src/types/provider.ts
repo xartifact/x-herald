@@ -13,24 +13,23 @@ export interface ProtocolConfig {
   enabled: boolean
 }
 
-export interface ProtocolsConfig {
-  openai?: ProtocolConfig
-  anthropic?: ProtocolConfig
-  gemini?: ProtocolConfig
-}
-
-export interface ThinkingTypeMapping {
-  from: string
-  to: string
-}
-
 export interface ThinkingMappingConfig {
   enabled: boolean
   mappings: Record<string, string>
 }
 
+export type SyntheticThinkingStrategy = 'strip' | 'inject';
+
 export interface ExtendedProtocolConfig extends ProtocolConfig {
-  thinkingMapping?: ThinkingMappingConfig
+  thinkingMapping?: ThinkingMappingConfig;
+  syntheticThinking?: SyntheticThinkingStrategy;
+}
+
+export type ProtocolsConfig = Partial<Record<string, ExtendedProtocolConfig>>;
+
+export interface ThinkingTypeMapping {
+  from: string
+  to: string
 }
 
 export interface ExtendedProtocolsConfig {
@@ -38,5 +37,3 @@ export interface ExtendedProtocolsConfig {
   anthropic?: ExtendedProtocolConfig
   gemini?: ExtendedProtocolConfig
 }
-
-export type SyntheticThinkingStrategy = 'strip' | 'inject';

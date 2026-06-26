@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 
+import { useLogs, useDeleteLog, useCleanupLogs, useLogStorage } from '../../../hooks/logs'
 import {
   LogTable,
   LogSearchFilter,
@@ -10,10 +11,6 @@ import {
   LiveLogsPanel,
   LogsEmptyState,
   LogsPageHeader,
-  useLogs,
-  useDeleteLog,
-  useCleanupLogs,
-  useLogStorage,
 } from '@x-llm-gateway/ui'
 import type { LogListItem } from '@x-llm-gateway/shared'
 

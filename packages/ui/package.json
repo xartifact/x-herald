@@ -22,7 +22,6 @@
     "@radix-ui/react-slot": "^1.2.4",
     "@radix-ui/react-switch": "^1.2.6",
     "@radix-ui/react-tabs": "^1.1.13",
-    "@tanstack/react-router": "^1.170.16",
     "@x-llm-gateway/shared": "workspace:*",
     "@xyflow/react": "^12.10.1",
     "class-variance-authority": "^0.7.1",

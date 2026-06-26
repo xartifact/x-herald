@@ -4,9 +4,9 @@ import { IS_PRODUCTION } from '../../config/env';
 import type { DbClient } from '../../db/client';
 import { getDatabase } from '../../db/client';
 import logger from '../../lib/logger';
-import type { VirtualKey } from '../../features/keys/db';
+import type { VirtualKey } from '@x-llm-gateway/db';
 import { trackKeyUsage } from '../../features/keys/usage-tracker';
-import { requestLogs, requestAttempts } from '../../features/logs/db';
+import { requestLogs, requestAttempts } from '@x-llm-gateway/db';
 import type { FailoverReason } from '../../features/logs/db';
 import { costService } from '../../features/costs/service';
 

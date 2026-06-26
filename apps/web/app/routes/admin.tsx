@@ -1,6 +1,6 @@
 import { Outlet } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-import { AdminNav } from '@x-llm-gateway/ui'
+import AdminNav from '../components/AdminNav'
 
 export function AdminLayout() {
   const [token] = useState(() => localStorage.getItem('admin_token'))

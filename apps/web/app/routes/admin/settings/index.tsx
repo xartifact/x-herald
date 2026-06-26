@@ -1,5 +1,5 @@
+import { useSettings } from '../../../hooks/settings'
 import {
-  useSettings,
   AiModelSection,
   CircuitBreakerSection,
   ConfigIOSection,

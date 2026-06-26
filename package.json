@@ -14,7 +14,7 @@
     "start": "cd apps/gateway && bun run start",
     "build": "bun run build:web",
     "build:web": "cd apps/web && bun run build",
-    "typecheck": "(cd packages/shared && npx tsc --noEmit) && (cd apps/gateway && bun run typecheck) && (cd packages/ui && npx tsc --noEmit) && (cd packages/ui && npx tsc --noEmit -p tsconfig.ui.json) && (cd apps/web && npx tsc --noEmit) && (cd packages/ai-agent && npx tsc --noEmit)",
+    "typecheck": "(cd packages/db && npx tsc --noEmit) && (cd packages/shared && npx tsc --noEmit) && (cd apps/gateway && bun run typecheck) && (cd packages/ui && npx tsc --noEmit) && (cd packages/ui && npx tsc --noEmit -p tsconfig.ui.json) && (cd apps/web && npx tsc --noEmit) && (cd packages/ai-agent && npx tsc --noEmit)",
     "lint": "bun run --filter './apps/*' lint",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "test": "cd apps/gateway && bun test",

@@ -2,22 +2,13 @@ import { useState, useMemo, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { Plus, Search } from 'lucide-react'
 
+import { useModelGroups, useModelInstances, useCreateModelGroup, useUpdateModelGroup, useDeleteModelGroup, useCreateModelInstance, useUpdateModelInstance, useDeleteModelInstance, useToggleModelInstance, useReorderInstances } from '../../../hooks/model-groups'
+import { useProviders } from '../../../hooks/providers'
 import {
   Button,
   Card,
   CardContent,
   Input,
-  useModelGroups,
-  useModelInstances,
-  useProviders,
-  useCreateModelGroup,
-  useUpdateModelGroup,
-  useDeleteModelGroup,
-  useCreateModelInstance,
-  useUpdateModelInstance,
-  useDeleteModelInstance,
-  useToggleModelInstance,
-  useReorderInstances,
   ModelGroupCard,
   ModelGroupForm,
   ModelInstanceForm,

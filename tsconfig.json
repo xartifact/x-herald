@@ -26,6 +26,9 @@
       ],
       "@x-llm-gateway/ui": [
         "./packages/ui/src"
+      ],
+      "@x-llm-gateway/db": [
+        "./packages/db/src"
       ]
     }
   },

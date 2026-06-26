@@ -7,7 +7,7 @@ import { getDatabase } from '../../db/client'
 import rootLogger from '../../lib/logger'
 import { invalidateVirtualKeyCache } from '../../middleware/virtual-key'
 
-import { virtualKeys, type NewVirtualKey } from './db'
+import { virtualKeys, type NewVirtualKey } from '@x-llm-gateway/db'
 
 const logger = rootLogger.child({ module: 'keys-service' })
 

@@ -10,11 +10,8 @@ import {
   TabsList,
   TabsTrigger,
 } from '@x-llm-gateway/ui'
+import { useCostSummary, useCostByKey, useCostByProvider, useCostByModel } from '../../../hooks/costs'
 import {
-  useCostSummary,
-  useCostByKey,
-  useCostByProvider,
-  useCostByModel,
   CostDateFilter,
   CostSummaryCards,
   CostBreakdownTable,

@@ -22,8 +22,8 @@ function getXTinkerReporter() {
 function reportFailureToXTinker(error: Error, metadata?: Record<string, string>): void {
   getXTinkerReporter()?.report(error, 'gateway/stream', metadata).catch(() => {});
 }
-import type { VirtualKey } from '../../features/keys/db';
-import { requestLogs, requestAttempts } from '../../features/logs/db';
+import type { VirtualKey } from '@x-llm-gateway/db';
+import { requestLogs, requestAttempts } from '@x-llm-gateway/db';
 import type { StreamProgress, StreamContent, LogMetadata, FailoverReason } from '../../features/logs/db';
 import { costService } from '../../features/costs/service';
 

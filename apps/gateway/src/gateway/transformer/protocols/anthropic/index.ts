@@ -1,4 +1,4 @@
-import type { Transformer, TransformerContext, StandardRequest, StandardResponse } from '@x-llm-gateway/shared';
+import type { Transformer, TransformerContext, StandardRequest, StandardResponse } from '@xartifact/x-llm-gateway-shared';
 
 import { adaptAnthropicRequest } from './egress';
 import { normalizeAnthropicRequest } from './ingress';

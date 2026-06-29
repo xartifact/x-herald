@@ -3,7 +3,7 @@
  * 管理所有 Transformer 的注册和获取
  */
 
-import type { Transformer, TransformerConstructor, TransformerRegistry } from '@x-llm-gateway/shared';
+import type { Transformer, TransformerConstructor, TransformerRegistry } from '@xartifact/x-llm-gateway-shared';
 
 class TransformerRegistryImpl implements TransformerRegistry {
   private transformers = new Map<string, Transformer | TransformerConstructor>();

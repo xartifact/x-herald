@@ -1,5 +1,5 @@
 {
-  "name": "@x-llm-gateway/ai-agent",
+  "name": "@xartifact/x-llm-gateway-sdk",
   "version": "0.1.0",
   "type": "module",
   "main": "./src/index.ts",

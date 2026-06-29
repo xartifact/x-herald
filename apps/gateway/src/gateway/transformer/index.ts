@@ -41,7 +41,7 @@ export { AnthropicTransformer } from './protocols/anthropic';
 export { GeminiTransformer } from './protocols/gemini';
 
 // 导出工具函数
-export function createTransformerContext(requestId: string): import('@x-llm-gateway/shared').TransformerContext {
+export function createTransformerContext(requestId: string): import('@xartifact/x-llm-gateway-shared').TransformerContext {
   return {
     requestId,
     startTime: Date.now(),

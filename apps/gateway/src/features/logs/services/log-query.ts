@@ -1,9 +1,9 @@
 import { and, asc, desc, eq, gte, inArray, isNotNull, lt, lte, ne, or, sql } from 'drizzle-orm'
 
 import { getDatabase } from '../../../db/client'
-import { virtualKeys } from '@x-llm-gateway/db'
+import { virtualKeys } from '@xartifact/x-llm-gateway-db'
 
-import { requestLogs, requestAttempts } from '@x-llm-gateway/db'
+import { requestLogs, requestAttempts } from '@xartifact/x-llm-gateway-db'
 
 interface DateRange {
   startDate?: string

@@ -1,4 +1,4 @@
-import type { MessageContent } from '@x-llm-gateway/shared';
+import type { MessageContent } from '@xartifact/x-llm-gateway-shared';
 
 /**
  * Convert OpenAI content to Standard format

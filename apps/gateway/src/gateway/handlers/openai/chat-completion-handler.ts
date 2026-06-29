@@ -2,8 +2,8 @@ import type { Context } from 'hono';
 
 import { loadConfig } from '../../../config';
 import logger from '../../../lib/logger';
-import type { VirtualKey } from '@x-llm-gateway/db';
-import type { StandardRequest } from '@x-llm-gateway/shared';
+import type { VirtualKey } from '@xartifact/x-llm-gateway-db';
+import type { StandardRequest } from '@xartifact/x-llm-gateway-shared';
 
 import { accessModelRouter } from '../../services/access-model-router';
 import { identifyClient } from '../../services/client-identifier';

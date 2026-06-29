@@ -1,5 +1,5 @@
 {
-  "name": "@x-llm-gateway/ui",
+  "name": "@xartifact/x-llm-gateway-ui",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -22,7 +22,7 @@
     "@radix-ui/react-slot": "^1.2.4",
     "@radix-ui/react-switch": "^1.2.6",
     "@radix-ui/react-tabs": "^1.1.13",
-    "@x-llm-gateway/shared": "workspace:*",
+    "@xartifact/x-llm-gateway-shared": "workspace:*",
     "@xyflow/react": "^12.10.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

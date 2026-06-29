@@ -1,8 +1,8 @@
 import { getDatabase } from '../db/client';
 import { providers, modelGroups, modelInstances, modelGroupMemberships, virtualKeys } from '../db';
-import type { Provider } from '@x-llm-gateway/db';
-import type { ModelGroup, ModelInstance } from '@x-llm-gateway/db';
-import type { VirtualKey } from '@x-llm-gateway/db';
+import type { Provider } from '@xartifact/x-llm-gateway-db';
+import type { ModelGroup, ModelInstance } from '@xartifact/x-llm-gateway-db';
+import type { VirtualKey } from '@xartifact/x-llm-gateway-db';
 
 export interface ScenarioContext {
   provider: Provider;

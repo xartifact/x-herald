@@ -1,14 +1,14 @@
-import { getDatabase } from '@x-llm-gateway/gateway';
-import { gatewayConfigs } from '@x-llm-gateway/gateway';
-import { virtualKeys } from '@x-llm-gateway/gateway';
+import { getDatabase } from '../../index';
+import { gatewayConfigs } from '../../index';
+import { virtualKeys } from '../../index';
 import {
   accessModels,
   modelGroupMemberships,
   modelGroups,
   modelInstances,
   modelRoutes,
-} from '@x-llm-gateway/gateway';
-import { providers } from '@x-llm-gateway/gateway';
+} from '../../index';
+import { providers } from '../../index';
 
 import { EXPORT_VERSION, type EngineExportFormat, type ExportedModelRoute } from './types';
 

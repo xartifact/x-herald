@@ -3,7 +3,7 @@
  * OpenAI API 请求/响应/流式数据的 TypeScript 类型
  */
 
-import type { ToolDefinition } from '@x-llm-gateway/shared';
+import type { ToolDefinition } from '@xartifact/x-llm-gateway-shared';
 
 // ==================== 请求类型 ====================
 

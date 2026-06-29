@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 import { Badge } from '../../../../shared/components/ui/badge'
-import type { Log } from '@x-llm-gateway/shared'
+import type { Log } from '@xartifact/x-llm-gateway-shared'
 
 import { InfoRow, Section } from './log-info-row'
 import type { ContentFeatures } from './extract-content-features'

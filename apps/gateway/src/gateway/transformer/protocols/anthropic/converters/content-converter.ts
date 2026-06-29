@@ -1,4 +1,4 @@
-import type { MessageContent, StandardMessage } from '@x-llm-gateway/shared';
+import type { MessageContent, StandardMessage } from '@xartifact/x-llm-gateway-shared';
 
 import type { AnthropicMessage } from '../types';
 

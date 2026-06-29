@@ -8,8 +8,8 @@ import { Card, CardContent } from '../../../shared/components/ui/card'
 import { Switch } from '../../../shared/components/ui/switch'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../shared/components/ui/table'
 
-import { CATCHALL_VM_NAME } from '@x-llm-gateway/shared'
-import type { AccessModel } from '@x-llm-gateway/shared'
+import { CATCHALL_VM_NAME } from '@xartifact/x-llm-gateway-shared'
+import type { AccessModel } from '@xartifact/x-llm-gateway-shared'
 
 interface AccessModelTableProps {
   models: AccessModel[]

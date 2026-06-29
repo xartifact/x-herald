@@ -5,7 +5,7 @@ import { Plus, Search } from 'lucide-react'
 
 import { useKeys, useCreateKey, useUpdateKey, useDeleteKey, useResetKey } from '../../../hooks/keys'
 import { useKeysStats } from '../../../hooks/logs'
-import type { KeyFormData } from '@x-llm-gateway/ui'
+import type { KeyFormData } from '@xartifact/x-llm-gateway-ui'
 import {
   Button,
   Card,
@@ -15,7 +15,7 @@ import {
   KeyFormDialog,
   KeyResetDialog,
   KeyStatsSheet,
-} from '@x-llm-gateway/ui'
+} from '@xartifact/x-llm-gateway-ui'
 import { keySchema, type KeyFormSchema } from './key-form-schema'
 
 export function KeysPage() {

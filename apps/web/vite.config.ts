@@ -13,8 +13,8 @@ export default defineConfig({
   resolve: {
     dedupe: ['@tanstack/react-query', 'react', 'react-dom'],
     alias: {
-      '@x-llm-gateway/shared': path.resolve(__dirname, '../../packages/shared/src'),
-      '@x-llm-gateway/ui': path.resolve(__dirname, '../../packages/ui/src'),
+      '@xartifact/x-llm-gateway-shared': path.resolve(__dirname, '../../packages/shared/src'),
+      '@xartifact/x-llm-gateway-ui': path.resolve(__dirname, '../../packages/ui/src'),
     },
   },
   server: {

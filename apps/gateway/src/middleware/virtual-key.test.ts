@@ -1,6 +1,6 @@
 import { describe, it, expect, mock, beforeEach, afterEach, afterAll } from 'bun:test';
 import { Hono } from 'hono';
-import type { VirtualKey } from '@x-llm-gateway/db';
+import type { VirtualKey } from '@xartifact/x-llm-gateway-db';
 
 // ─── Pre-load cache reset ───────────────────────────────────────────────────
 (globalThis as Record<string, unknown>)._vkCache = new Map<string, unknown>();

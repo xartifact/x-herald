@@ -5,7 +5,7 @@
 
 import { describe, it, expect, beforeEach } from 'bun:test';
 
-import type { TransformerContext, StandardRequest, StandardResponse } from '@x-llm-gateway/shared';
+import type { TransformerContext, StandardRequest, StandardResponse } from '@xartifact/x-llm-gateway-shared';
 
 import { AnthropicTransformer } from '../protocols/anthropic';
 import { OpenAITransformer } from '../protocols/openai';

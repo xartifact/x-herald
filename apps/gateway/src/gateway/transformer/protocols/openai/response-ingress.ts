@@ -1,5 +1,5 @@
 import logger from '../../../../lib/logger';
-import type { TransformerContext, StandardResponse, StandardMessage } from '@x-llm-gateway/shared';
+import type { TransformerContext, StandardResponse, StandardMessage } from '@xartifact/x-llm-gateway-shared';
 
 import type { OpenAIChoice } from './types';
 import { getValueByPath, setValueByPath } from '../../shared/parameter-transformer';

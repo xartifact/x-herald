@@ -1,4 +1,4 @@
-import type { StandardMessage } from '@x-llm-gateway/shared';
+import type { StandardMessage } from '@xartifact/x-llm-gateway-shared';
 
 import type { OpenAIMessage } from '../types';
 import { convertContent } from './content-converter';

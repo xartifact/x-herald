@@ -1,9 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
-import { get, post, put, del as deleteRequest, patch } from '@x-llm-gateway/ui'
+import { get, post, put, del as deleteRequest, patch } from '@xartifact/x-llm-gateway-ui'
 
-import type { ModelRoute, CreateModelRoutePayload, UpdateModelRoutePayload } from '@x-llm-gateway/ui'
+import type { ModelRoute, CreateModelRoutePayload, UpdateModelRoutePayload } from '@xartifact/x-llm-gateway-ui'
 
 interface ApiResponse<T> {
   success: boolean

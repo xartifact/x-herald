@@ -5,10 +5,10 @@ import { useState, useMemo } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 
-import type { ProtocolsConfig } from '@x-llm-gateway/shared'
+import type { ProtocolsConfig } from '@xartifact/x-llm-gateway-shared'
 import { useProviderInstanceState } from './use-provider-instance-state'
 import { useProviders, useCreateProvider, useUpdateProvider, useDeleteProvider, useToggleProvider } from './use-providers'
-import { PROTOCOL_OPTIONS, providerSchema, type ProviderFormData } from '@x-llm-gateway/shared'
+import { PROTOCOL_OPTIONS, providerSchema, type ProviderFormData } from '@xartifact/x-llm-gateway-shared'
 
 
 type ProtocolType = (typeof PROTOCOL_OPTIONS)[number]['value']

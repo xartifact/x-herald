@@ -11,8 +11,8 @@ import {
   LiveLogsPanel,
   LogsEmptyState,
   LogsPageHeader,
-} from '@x-llm-gateway/ui'
-import type { LogListItem } from '@x-llm-gateway/shared'
+} from '@xartifact/x-llm-gateway-ui'
+import type { LogListItem } from '@xartifact/x-llm-gateway-shared'
 
 const CLIENT_REGISTRY: Record<string, string> = {
   'claude-code': 'Claude Code',

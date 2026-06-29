@@ -2,9 +2,9 @@
 
 import { LogOut } from 'lucide-react'
 
-import { APP_VERSION } from '@x-llm-gateway/shared'
+import { APP_VERSION } from '@xartifact/x-llm-gateway-shared'
 
-import { Button } from '@x-llm-gateway/ui'
+import { Button } from '@xartifact/x-llm-gateway-ui'
 
 import { allNavItems } from './admin-nav-config'
 import { NavDesktopDropdowns } from './nav-desktop-dropdowns'

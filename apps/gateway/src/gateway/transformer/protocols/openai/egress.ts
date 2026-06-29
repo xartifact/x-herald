@@ -1,4 +1,4 @@
-import type { TransformerContext, StandardRequest } from '@x-llm-gateway/shared';
+import type { TransformerContext, StandardRequest } from '@xartifact/x-llm-gateway-shared';
 import type { InstanceConfig } from '../../../../features/model-groups/db';
 
 import { convertToOpenAIMessages } from './converters/message-converter';

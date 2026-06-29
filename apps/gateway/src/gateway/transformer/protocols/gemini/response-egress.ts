@@ -1,4 +1,4 @@
-import type { TransformerContext, StandardResponse } from '@x-llm-gateway/shared';
+import type { TransformerContext, StandardResponse } from '@xartifact/x-llm-gateway-shared';
 
 export function mapToGeminiFinishReason(reason: string | null): string {
   switch (reason) {

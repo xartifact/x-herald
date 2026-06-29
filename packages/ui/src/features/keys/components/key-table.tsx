@@ -1,4 +1,4 @@
-import type { KeyStat } from '@x-llm-gateway/shared'
+import type { KeyStat } from '@xartifact/x-llm-gateway-shared'
 import { Card, CardContent } from '../../../shared/components/ui/card'
 import {
   Table,
@@ -11,7 +11,7 @@ import {
 import type { KeyRowActions, KeyRowDisplay } from './key-table-row'
 import { KeyTableRow } from './key-table-row'
 // TODO(6): from apps/web
-import type { VirtualKey } from '@x-llm-gateway/shared'
+import type { VirtualKey } from '@xartifact/x-llm-gateway-shared'
 
 interface KeyTableProps {
   keys: VirtualKey[]

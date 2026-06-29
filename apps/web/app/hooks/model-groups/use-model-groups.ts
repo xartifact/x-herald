@@ -3,9 +3,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
-import { get, post, put, del as deleteRequest, patch } from '@x-llm-gateway/ui'
+import { get, post, put, del as deleteRequest, patch } from '@xartifact/x-llm-gateway-ui'
 
-import type { ModelGroup, ModelGroupDetail, ApiResponse, RoutingConfig, ModelInstance } from '@x-llm-gateway/shared'
+import type { ModelGroup, ModelGroupDetail, ApiResponse, RoutingConfig, ModelInstance } from '@xartifact/x-llm-gateway-shared'
 
 // ── Query key factory ──────────────────────────────────────────────
 

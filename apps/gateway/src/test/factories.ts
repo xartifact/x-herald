@@ -1,11 +1,11 @@
-import type { Provider } from '@x-llm-gateway/db';
-import type { VirtualKey } from '@x-llm-gateway/db';
-import type { ModelGroup, ModelInstance, ModelRoute, AccessModel } from '@x-llm-gateway/db';
-import type { RequestLog } from '@x-llm-gateway/db';
-import type { CostRecord } from '@x-llm-gateway/db';
-import type { CircuitBreakerEvent } from '@x-llm-gateway/db';
-import type { HealthRun } from '@x-llm-gateway/db';
-import type { InstancePerfSnapshot } from '@x-llm-gateway/db';
+import type { Provider } from '@xartifact/x-llm-gateway-db';
+import type { VirtualKey } from '@xartifact/x-llm-gateway-db';
+import type { ModelGroup, ModelInstance, ModelRoute, AccessModel } from '@xartifact/x-llm-gateway-db';
+import type { RequestLog } from '@xartifact/x-llm-gateway-db';
+import type { CostRecord } from '@xartifact/x-llm-gateway-db';
+import type { CircuitBreakerEvent } from '@xartifact/x-llm-gateway-db';
+import type { HealthRun } from '@xartifact/x-llm-gateway-db';
+import type { InstancePerfSnapshot } from '@xartifact/x-llm-gateway-db';
 import type { AnomalyEvent } from '../features/metrics/anomaly-db';
 
 export function createTestProvider(overrides: Partial<Provider> = {}): Provider {

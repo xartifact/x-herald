@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from '../../../shared/components/ui/table'
-import type { CircuitBreakerTopInstance } from '@x-llm-gateway/shared'
+import type { CircuitBreakerTopInstance } from '@xartifact/x-llm-gateway-shared'
 import { tripCountBadge, relativeTime } from './utils'
 
 interface Props {

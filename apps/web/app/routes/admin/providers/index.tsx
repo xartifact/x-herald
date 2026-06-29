@@ -3,14 +3,14 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 
 import { useProviders, useCreateProvider, useUpdateProvider, useDeleteProvider, useToggleProvider, useProviderInstanceState, useProviderDialogState } from '../../../hooks/providers'
-import type { ProviderFormData } from '@x-llm-gateway/ui'
+import type { ProviderFormData } from '@xartifact/x-llm-gateway-ui'
 import {
   Card, CardContent, Button, Input,
   ProviderCard, ProviderFormDialog, ModelInstanceForm,
   SyncModelsDialog, ThinkingTypeMappingDialog,
   PROTOCOL_OPTIONS, providerSchema,
-} from '@x-llm-gateway/ui'
-import type { Provider } from '@x-llm-gateway/shared'
+} from '@xartifact/x-llm-gateway-ui'
+import type { Provider } from '@xartifact/x-llm-gateway-shared'
 import { Plus, Search } from 'lucide-react'
 
 const defaultValues: ProviderFormData = {

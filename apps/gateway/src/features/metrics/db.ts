@@ -1,1 +1,1 @@
-export type { InstancePerfSnapshot, NewInstancePerfSnapshot } from '@x-llm-gateway/db';
+export type { InstancePerfSnapshot, NewInstancePerfSnapshot } from '@xartifact/x-llm-gateway-db';

@@ -1,5 +1,5 @@
 {
-  "name": "@x-llm-gateway/shared",
+  "name": "@xartifact/x-llm-gateway-shared",
   "version": "0.0.0",
   "private": true,
   "type": "module",

@@ -3,4 +3,4 @@ export type {
   CircuitBreakerConfig,
   SettingsData,
   SettingsFormData,
-} from '@x-llm-gateway/shared';
+} from '@xartifact/x-llm-gateway-shared';

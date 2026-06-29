@@ -5,7 +5,7 @@ import rootLogger from '../../../lib/logger';
 
 const logger = rootLogger.child({ module: 'rank-calculator' });
 
-import { modelRequestStats } from '@x-llm-gateway/db';
+import { modelRequestStats } from '@xartifact/x-llm-gateway-db';
 
 /**
  * Lambda constant for exponential decay: ln(2) / 7 days ≈ 0.099 per day

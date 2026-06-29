@@ -6,8 +6,8 @@
     "strict": true, "noEmit": true, "esModuleInterop": true,
     "skipLibCheck": true, "resolveJsonModule": true, "isolatedModules": true,
     "paths": {
-      "@x-llm-gateway/shared": ["../../packages/shared/src"],
-      "@x-llm-gateway/ui": ["../../packages/ui/src"]
+      "@xartifact/x-llm-gateway-shared": ["../../packages/shared/src"],
+      "@xartifact/x-llm-gateway-ui": ["../../packages/ui/src"]
     }
   },
   "include": ["app", "vite.config.ts"]

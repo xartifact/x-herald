@@ -1,4 +1,4 @@
-import type { TransformerContext, StandardRequest } from '@x-llm-gateway/shared';
+import type { TransformerContext, StandardRequest } from '@xartifact/x-llm-gateway-shared';
 
 import { convertMessage } from './converters/message-converter';
 import { convertAnthropicTool, convertToolChoice } from './converters/tool-converter';

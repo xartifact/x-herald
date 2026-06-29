@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 
-import { get } from '@x-llm-gateway/ui'
+import { get } from '@xartifact/x-llm-gateway-ui'
 
 import { logKeys } from './log-types'
 import type {

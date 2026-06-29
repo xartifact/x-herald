@@ -3,7 +3,7 @@
  * 按 Pipeline 方向拆分后的模块组装
  */
 
-import type { Transformer, TransformerContext, StandardRequest, StandardResponse } from '@x-llm-gateway/shared';
+import type { Transformer, TransformerContext, StandardRequest, StandardResponse } from '@xartifact/x-llm-gateway-shared';
 
 import { adaptOpenAIRequest } from './egress';
 import { normalizeOpenAIRequest } from './ingress';

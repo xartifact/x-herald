@@ -4,7 +4,7 @@ import type { DbClient } from '../../db/client';
 import { getDatabase } from '../../db/client';
 import logger from '../../lib/logger';
 
-import { virtualKeys, keyUsageDaily } from '@x-llm-gateway/db';
+import { virtualKeys, keyUsageDaily } from '@xartifact/x-llm-gateway-db';
 
 /**
  * 更新密钥使用统计（异步，不阻塞请求）

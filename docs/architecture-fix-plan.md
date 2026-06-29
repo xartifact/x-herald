@@ -55,9 +55,9 @@
 
 ### 2.2 前端类型统一从 shared 导入
 
-- **问题**：keys/model-groups 从 `@x-llm-gateway/gateway` 导入类型，providers/logs 从 `@x-llm-gateway/shared` 导入
-- **改动**：全部改为从 `@x-llm-gateway/shared` 导入
-- **验证**：`grep -r "from.*@x-llm-gateway/gateway" apps/web/ packages/ui/src/` 无类型导入
+- **问题**：keys/model-groups 从 `@xartifact/x-llm-gateway-gateway` 导入类型，providers/logs 从 `@xartifact/x-llm-gateway-shared` 导入
+- **改动**：全部改为从 `@xartifact/x-llm-gateway-shared` 导入
+- **验证**：`grep -r "from.*@xartifact/x-llm-gateway-gateway" apps/web/ packages/ui/src/` 无类型导入
 
 ### 2.3 将 Engine 导出的共享类型迁移到 shared
 
@@ -166,7 +166,7 @@
 
 ### 7.2 config-io 修正导入路径
 
-- 同包内 `@x-llm-gateway/gateway` 自引用改为相对路径
+- 同包内 `@xartifact/x-llm-gateway-gateway` 自引用改为相对路径
 
 ### 7.3 shared 中移除 process.env
 

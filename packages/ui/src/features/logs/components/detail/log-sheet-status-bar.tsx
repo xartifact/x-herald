@@ -2,7 +2,7 @@
 
 import { Separator } from '../../../../shared/components/ui/separator'
 import { cn } from '../../../../shared/lib/utils'
-import type { Log } from '@x-llm-gateway/shared'
+import type { Log } from '@xartifact/x-llm-gateway-shared'
 
 interface LogSheetStatusBarProps {
   log: Log

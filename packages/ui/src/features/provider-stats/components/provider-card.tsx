@@ -1,7 +1,7 @@
 import { Server } from 'lucide-react'
 
 import { cn } from '../../../shared/lib/utils'
-import type { ProviderStat } from '@x-llm-gateway/shared'
+import type { ProviderStat } from '@xartifact/x-llm-gateway-shared'
 import { Badge } from '../../../shared/components/ui'
 
 import { formatMs, responseTimeColor, responseTimeQuality, successRateColor } from './provider-stats-utils'

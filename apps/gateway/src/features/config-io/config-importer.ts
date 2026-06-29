@@ -1,18 +1,18 @@
 import { and, eq, sql } from 'drizzle-orm';
 
-import { getDatabase } from '@x-llm-gateway/gateway';
-import { rootLogger } from '@x-llm-gateway/gateway';
+import { getDatabase } from '../../index';
+import { rootLogger } from '../../index';
 import { invalidateVirtualKeyCache } from '../../middleware';
-import { gatewayConfigs } from '@x-llm-gateway/gateway';
-import { virtualKeys } from '@x-llm-gateway/gateway';
+import { gatewayConfigs } from '../../index';
+import { virtualKeys } from '../../index';
 import {
   accessModels,
   modelGroupMemberships,
   modelGroups,
   modelInstances,
   modelRoutes,
-} from '@x-llm-gateway/gateway';
-import { providers } from '@x-llm-gateway/gateway';
+} from '../../index';
+import { providers } from '../../index';
 
 import { type EngineExportFormat, type EngineImportResult, type ImportSummaryItem } from './types';
 

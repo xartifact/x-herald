@@ -1,4 +1,4 @@
-import type { LLMAdapter } from '@x-llm-gateway/ai-agent'
+import type { LLMAdapter } from '@xartifact/x-llm-gateway-sdk'
 
 import { callAI } from './ai-caller'
 

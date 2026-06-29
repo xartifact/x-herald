@@ -1,1 +1,1 @@
-export { type KeyFormData } from '@x-llm-gateway/shared'
+export { type KeyFormData } from '@xartifact/x-llm-gateway-shared'

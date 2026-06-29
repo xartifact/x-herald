@@ -8,7 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from '../../../shared/components/
 import { Button } from '../../../shared/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../shared/components/ui/card'
 
-import type { ImportResult } from '@x-llm-gateway/shared'
+import type { ImportResult } from '@xartifact/x-llm-gateway-shared'
 import { useExportConfig, useImportConfig } from '../hooks/use-config-io'
 
 const IMPORT_LABELS = [

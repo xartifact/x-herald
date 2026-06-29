@@ -3,8 +3,8 @@ import { jsonrepair } from 'jsonrepair';
 
 import { getDatabase } from '../../db/client';
 import { callAI } from '../../lib/ai-caller';
-import { requestAttempts, requestLogs } from '@x-llm-gateway/db';
-import { modelInstances } from '@x-llm-gateway/db';
+import { requestAttempts, requestLogs } from '@xartifact/x-llm-gateway-db';
+import { modelInstances } from '@xartifact/x-llm-gateway-db';
 import type { InstanceConfig } from '../model-groups/db';
 import type { LogMetadata } from '../logs/db';
 

@@ -3,8 +3,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
-import type { SettingsData, SettingsFormData } from '@x-llm-gateway/shared'
-import { get, put } from '@x-llm-gateway/ui'
+import type { SettingsData, SettingsFormData } from '@xartifact/x-llm-gateway-shared'
+import { get, put } from '@xartifact/x-llm-gateway-ui'
 
 async function fetchSettings(): Promise<SettingsData> {
   const result = await get<{ success: boolean; data: SettingsData }>('/api/settings', { extractData: false })

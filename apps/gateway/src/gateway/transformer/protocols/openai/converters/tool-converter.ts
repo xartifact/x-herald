@@ -1,5 +1,5 @@
 import logger from '../../../../../lib/logger';
-import type { ToolCall } from '@x-llm-gateway/shared';
+import type { ToolCall } from '@xartifact/x-llm-gateway-shared';
 
 import { parseToolArguments } from '../../../shared/tool-arguments-parser';
 

@@ -13,7 +13,11 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "noEmit": true,
-    "types": ["vitest/globals", "@testing-library/jest-dom/vitest"]
+    "types": ["vitest/globals", "@testing-library/jest-dom/vitest"],
+    "paths": {
+      "@xartifact/x-llm-gateway-shared": ["../shared/src"],
+      "@xartifact/x-llm-gateway-ui": ["./src"]
+    }
   },
   "include": ["src"],
   "exclude": ["**/*.test.ts", "**/*.test.tsx"]

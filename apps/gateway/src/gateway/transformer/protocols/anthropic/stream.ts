@@ -1,4 +1,4 @@
-import type { TransformerContext, StreamChunk, StandardMessage } from '@x-llm-gateway/shared';
+import type { TransformerContext, StreamChunk, StandardMessage } from '@xartifact/x-llm-gateway-shared';
 
 import { mapToAnthropicStopReason } from './response-egress';
 import { mapAnthropicFinishReason } from './response-ingress';

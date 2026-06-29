@@ -8,7 +8,7 @@ import {
   ProviderStatsSummary,
   ProviderStatsToolbar,
   Card, CardContent, CardHeader, CardTitle, Badge,
-} from '@x-llm-gateway/ui'
+} from '@xartifact/x-llm-gateway-ui'
 
 interface FilterState {
   sortField: 'avgResponseTime' | 'p95ResponseTime' | 'requestCount' | 'successRate'

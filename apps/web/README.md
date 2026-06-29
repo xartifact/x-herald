@@ -1,4 +1,4 @@
-# @x-llm-gateway/web — Web SPA 管理界面
+# @xartifact/x-llm-gateway-web — Web SPA 管理界面
 
 > 新一代管理界面 SPA，逐步取代 `apps/web` 中的 Admin 页面。
 
@@ -6,7 +6,7 @@
 
 - React 19 + TanStack Router (文件路由)
 - TanStack Query v5 (服务端状态管理)
-- `@x-llm-gateway/ui` (shadcn/ui 组件库)
+- `@xartifact/x-llm-gateway-ui` (shadcn/ui 组件库)
 - TailwindCSS v4
 
 ## 开发

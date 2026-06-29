@@ -17,7 +17,7 @@ import {
   SelectValue,
   LogStatsCards,
   AnomalyAlertPanel,
-} from '@x-llm-gateway/ui'
+} from '@xartifact/x-llm-gateway-ui'
 
 function getTimeRange(range: string): Record<string, string> {
   if (range === 'all') return {}

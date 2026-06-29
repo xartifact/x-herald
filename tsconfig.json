@@ -18,16 +18,16 @@
       "bun"
     ],
     "paths": {
-      "@x-llm-gateway/shared": [
+      "@xartifact/x-llm-gateway-shared": [
         "./packages/shared/src"
       ],
-      "@x-llm-gateway/gateway": [
+      "@xartifact/x-llm-gateway-core": [
         "./apps/gateway/src"
       ],
-      "@x-llm-gateway/ui": [
+      "@xartifact/x-llm-gateway-ui": [
         "./packages/ui/src"
       ],
-      "@x-llm-gateway/db": [
+      "@xartifact/x-llm-gateway-db": [
         "./packages/db/src"
       ]
     }

@@ -13,7 +13,11 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "noEmit": true,
-    "types": ["@types/bun"]
+    "types": ["@types/bun"],
+    "paths": {
+      "@xartifact/x-llm-gateway-shared": ["../shared/src"],
+      "@xartifact/x-llm-gateway-ui": ["."]
+    }
   },
   "include": ["src"],
   "exclude": ["**/*.ui.test.tsx"]

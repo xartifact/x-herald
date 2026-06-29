@@ -4,7 +4,7 @@ import type {
   TransformerContext,
   StandardRequest,
   StandardResponse,
-} from '@x-llm-gateway/shared';
+} from '@xartifact/x-llm-gateway-shared';
 
 const realRegistry = await import('./registry');
 const originalGetTransformer = realRegistry.getTransformer;

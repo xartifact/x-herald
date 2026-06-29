@@ -1,4 +1,4 @@
-import type { TransformerContext } from '@x-llm-gateway/shared';
+import type { TransformerContext } from '@xartifact/x-llm-gateway-shared';
 
 export function normalizeGeminiStream(stream: ReadableStream, ctx: TransformerContext): ReadableStream {
   throw new Error('Gemini normalizeStream not yet implemented');

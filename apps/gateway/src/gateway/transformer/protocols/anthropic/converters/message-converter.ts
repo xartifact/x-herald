@@ -1,5 +1,5 @@
 import logger from '../../../../../lib/logger';
-import type { StandardMessage, ToolCall, ToolResult } from '@x-llm-gateway/shared';
+import type { StandardMessage, ToolCall, ToolResult } from '@xartifact/x-llm-gateway-shared';
 
 import type { AnthropicMessage } from '../types';
 import { convertAnthropicContent, convertToAnthropicContent } from './content-converter';

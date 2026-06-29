@@ -135,4 +135,4 @@ export interface StreamContent {
 }
 
 // Table definitions (requestLogs, requestAttempts, etc.) moved to packages/db/src/schema/logs.ts
-export type { RequestLog, NewRequestLog, RequestAttempt, NewRequestAttempt, ClientRequestedModel, NewClientRequestedModel, ModelRequestStat, NewModelRequestStat } from '@x-llm-gateway/db';
+export type { RequestLog, NewRequestLog, RequestAttempt, NewRequestAttempt, ClientRequestedModel, NewClientRequestedModel, ModelRequestStat, NewModelRequestStat } from '@xartifact/x-llm-gateway-db';

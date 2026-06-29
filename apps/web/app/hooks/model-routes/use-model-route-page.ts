@@ -5,9 +5,9 @@ import { useCallback, useRef, useState } from 'react'
 import type { Node, Edge } from '@xyflow/react'
 import { toast } from 'sonner'
 
-import type { FlowEditorHandle } from '@x-llm-gateway/ui'
-import { compileFlowToRoutes, validateFlow } from '@x-llm-gateway/ui'
-import type { ModelRoute } from '@x-llm-gateway/ui'
+import type { FlowEditorHandle } from '@xartifact/x-llm-gateway-ui'
+import { compileFlowToRoutes, validateFlow } from '@xartifact/x-llm-gateway-ui'
+import type { ModelRoute } from '@xartifact/x-llm-gateway-ui'
 import {
   useCreateModelRoute,
   useDeleteModelRoute,

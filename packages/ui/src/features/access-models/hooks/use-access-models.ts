@@ -1,13 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
-import { get, post, put, del as deleteRequest, patch } from '@x-llm-gateway/ui'
+import { get, post, put, del as deleteRequest, patch } from '@xartifact/x-llm-gateway-ui'
 
 import type {
   AccessModel,
   CreateAccessModelPayload,
   UpdateAccessModelPayload,
-} from '@x-llm-gateway/shared'
+} from '@xartifact/x-llm-gateway-shared'
 
 type ApiResponse<T> = { success: boolean; data: T; error?: string }
 

@@ -3,8 +3,8 @@
 import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
-import type { ExportFormat, ImportResult } from '@x-llm-gateway/shared'
-import { post } from '@x-llm-gateway/ui'
+import type { ExportFormat, ImportResult } from '@xartifact/x-llm-gateway-shared'
+import { post } from '@xartifact/x-llm-gateway-ui'
 
 async function exportConfigFn(): Promise<Blob> {
   // Blob 下载 — 使用 raw fetch（api-client 仅支持 JSON）

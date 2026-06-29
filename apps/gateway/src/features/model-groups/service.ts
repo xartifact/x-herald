@@ -3,7 +3,7 @@ import { asc, desc, eq, inArray } from 'drizzle-orm'
 import type { Database } from '../../db/client'
 import { getDatabase } from '../../db/client'
 import rootLogger from '../../lib/logger'
-import { providers } from '@x-llm-gateway/db'
+import { providers } from '@xartifact/x-llm-gateway-db'
 
 import {
   modelGroupMemberships,
@@ -11,7 +11,7 @@ import {
   modelInstances,
   type NewModelGroup,
   type NewModelInstance,
-} from '@x-llm-gateway/db'
+} from '@xartifact/x-llm-gateway-db'
 import type { InstanceConfig, ModelCapabilities, RoutingConfig } from './db'
 
 const logger = rootLogger.child({ module: 'model-groups-service' })

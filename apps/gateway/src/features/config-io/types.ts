@@ -1,4 +1,4 @@
-export type { ExportFormat, ImportResult } from '@x-llm-gateway/shared';
+export type { ExportFormat, ImportResult } from '@xartifact/x-llm-gateway-shared';
 
 export const EXPORT_VERSION = '1' as const;
 

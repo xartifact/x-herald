@@ -1,5 +1,5 @@
 {
-  "name": "x-llm-gateway-cli",
+  "name": "@xartifact/x-llm-gateway-cli",
   "version": "0.1.0",
   "private": true,
   "type": "module",

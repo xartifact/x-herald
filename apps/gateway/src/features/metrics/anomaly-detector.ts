@@ -2,8 +2,8 @@ import { and, desc, eq, gte } from 'drizzle-orm';
 
 import { getDatabase } from '../../db/client';
 
-import { anomalyEvents, type AnomalyEvent } from '@x-llm-gateway/db';
-import { instancePerfSnapshots } from '@x-llm-gateway/db';
+import { anomalyEvents, type AnomalyEvent } from '@xartifact/x-llm-gateway-db';
+import { instancePerfSnapshots } from '@xartifact/x-llm-gateway-db';
 
 // Detection rules
 interface DetectionRule {
@@ -114,5 +114,5 @@ export class AnomalyDetector {
   }
 }
 
-export type { AnomalyEvent } from '@x-llm-gateway/db';
-export { anomalyEvents } from '@x-llm-gateway/db';
+export type { AnomalyEvent } from '@xartifact/x-llm-gateway-db';
+export { anomalyEvents } from '@xartifact/x-llm-gateway-db';

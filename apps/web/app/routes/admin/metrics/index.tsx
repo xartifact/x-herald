@@ -1,4 +1,4 @@
-import { MetricsSummaryCards, InstancePerfTable, ProviderQualityTable, InstancePerfChart } from '@x-llm-gateway/ui'
+import { MetricsSummaryCards, InstancePerfTable, ProviderQualityTable, InstancePerfChart } from '@xartifact/x-llm-gateway-ui'
 import { useMetricsSummary, useInstancesSummary } from '../../../hooks/metrics'
 
 export function MetricsPage() {

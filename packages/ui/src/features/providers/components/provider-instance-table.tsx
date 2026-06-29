@@ -3,7 +3,7 @@
 import { Pencil, Trash2 } from 'lucide-react'
 
 import { StatusToggle } from '../../../shared/components/status-toggle'
-import type { ModelInstance as BaseModelInstance } from '@x-llm-gateway/shared'
+import type { ModelInstance as BaseModelInstance } from '@xartifact/x-llm-gateway-shared'
 import { Badge } from '../../../shared/components/ui/badge'
 import { Button } from '../../../shared/components/ui/button'
 import {

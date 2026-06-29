@@ -4,7 +4,7 @@ import type { Context, Next } from 'hono';
 import { getDatabase } from '../db/client';
 import { rateLimitEngine } from '../gateway/services/rate-limit-engine';
 import rootLogger from '../lib/logger';
-import { virtualKeys, type VirtualKey } from '@x-llm-gateway/db';
+import { virtualKeys, type VirtualKey } from '@xartifact/x-llm-gateway-db';
 
 const logger = rootLogger.child({ module: 'gateway.auth' });
 

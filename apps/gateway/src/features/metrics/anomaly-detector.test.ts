@@ -3,7 +3,7 @@ import { describe, it, expect, mock, beforeEach, afterAll } from 'bun:test';
 const realDbClient = await import('../../db/client');
 const originalGetDatabase = realDbClient.getDatabase;
 
-import { instancePerfSnapshots } from '@x-llm-gateway/db';
+import { instancePerfSnapshots } from '@xartifact/x-llm-gateway-db';
 import { anomalyEvents } from './anomaly-db';
 
 let mockSnapshots: unknown[] = [];

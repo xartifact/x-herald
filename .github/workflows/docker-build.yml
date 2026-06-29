@@ -6,6 +6,7 @@ on:
       - main
       - master
       - ci/docker
+      - ci/**
       - feat/**
       - fix/**
     tags:

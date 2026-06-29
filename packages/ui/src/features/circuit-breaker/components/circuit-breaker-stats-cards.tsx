@@ -4,7 +4,7 @@ import { Zap, ShieldAlert, ShieldCheck } from 'lucide-react'
 
 import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/components/ui/card'
 import { Button } from '../../../shared/components/ui/button'
-import type { CircuitBreakerStats } from '@x-llm-gateway/shared'
+import type { CircuitBreakerStats } from '@xartifact/x-llm-gateway-shared'
 
 interface Props {
   stats: CircuitBreakerStats | null | undefined

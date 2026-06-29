@@ -22,8 +22,8 @@ export type {
   AccessModel,
   CreateAccessModelPayload,
   UpdateAccessModelPayload,
-} from '@x-llm-gateway/shared'
+} from '@xartifact/x-llm-gateway-shared'
 export type {
   AuthResponse,
   AuthMeResponse,
-} from '@x-llm-gateway/shared'
+} from '@xartifact/x-llm-gateway-shared'

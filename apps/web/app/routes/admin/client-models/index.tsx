@@ -7,8 +7,8 @@ import {
   ClientModelFilter,
   ClientModelList,
   ClientModelSummary,
-} from '@x-llm-gateway/ui'
-import type { FilterConfig } from '@x-llm-gateway/ui'
+} from '@xartifact/x-llm-gateway-ui'
+import type { FilterConfig } from '@xartifact/x-llm-gateway-ui'
 
 function buildQueryParams(timeRange: string): Record<string, string> {
   if (timeRange === 'all') return {}

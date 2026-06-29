@@ -34,7 +34,7 @@ export interface RoutingConfig {
   fallbackEnabled: boolean;
 }
 
-export type { ModelGroup, NewModelGroup } from '@x-llm-gateway/db';
+export type { ModelGroup, NewModelGroup } from '@xartifact/x-llm-gateway-db';
 
 /**
  * 模型实例 (Model Instance)
@@ -124,11 +124,11 @@ export interface InstanceConfig {
   responseTransform?: string;
 }
 
-export type { ModelInstance, NewModelInstance } from '@x-llm-gateway/db';
+export type { ModelInstance, NewModelInstance } from '@xartifact/x-llm-gateway-db';
 
-export type { ModelGroupMembership, NewModelGroupMembership } from '@x-llm-gateway/db';
+export type { ModelGroupMembership, NewModelGroupMembership } from '@xartifact/x-llm-gateway-db';
 
-export type { AccessModel, NewAccessModel } from '@x-llm-gateway/db';
+export type { AccessModel, NewAccessModel } from '@xartifact/x-llm-gateway-db';
 
 /**
  * 路由规则 (Model Route)
@@ -157,4 +157,4 @@ export interface FlowData {
   edges: Array<{ id: string; source: string; target: string; sourceHandle?: string; targetHandle?: string }>;
 }
 
-export type { ModelRoute, NewModelRoute } from '@x-llm-gateway/db';
+export type { ModelRoute, NewModelRoute } from '@xartifact/x-llm-gateway-db';

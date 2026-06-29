@@ -1,5 +1,5 @@
 /**
- * Thin wrapper around @x-llm-gateway/db.
+ * Thin wrapper around @xartifact/x-llm-gateway-db.
  *
  * Exposes the same public API as before (createDatabase, getDatabase, closeDatabase)
  * so that all 75+ consumers importing ../../db/client need zero changes.
@@ -11,14 +11,14 @@ import {
   createDbConnection,
   getDatabase as getDbClient,
   closeDb,
-} from '@x-llm-gateway/db';
-import type { DatabaseOptions as DbOpts } from '@x-llm-gateway/db';
+} from '@xartifact/x-llm-gateway-db';
+import type { DatabaseOptions as DbOpts } from '@xartifact/x-llm-gateway-db';
 
 import { MIGRATE_ON_BOOT } from '../config/env';
 import logger from '../lib/logger';
-import * as schema from '@x-llm-gateway/db';
+import * as schema from '@xartifact/x-llm-gateway-db';
 
-export type { Database, DbClient, Transaction, DatabaseOptions } from '@x-llm-gateway/db';
+export type { Database, DbClient, Transaction, DatabaseOptions } from '@xartifact/x-llm-gateway-db';
 
 export async function createDatabase(options: {
   type: 'postgres' | 'pglite';

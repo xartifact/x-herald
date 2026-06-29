@@ -6,9 +6,9 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import * as z from 'zod'
 
-import { useKeysStats } from '@x-llm-gateway/ui'
+import { useKeysStats } from '@xartifact/x-llm-gateway-ui'
 
-import type { KeyFormData } from '@x-llm-gateway/shared'
+import type { KeyFormData } from '@xartifact/x-llm-gateway-shared'
 import { useKeys, useCreateKey, useUpdateKey, useDeleteKey, useResetKey } from './use-keys'
 
 const keySchema = z.object({

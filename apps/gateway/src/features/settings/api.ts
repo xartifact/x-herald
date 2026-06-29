@@ -5,7 +5,7 @@ import { getDatabase } from '../../db/client';
 import { rootLogger } from '../../lib';
 import { CB_CONFIG_KEY, configureCircuitBreaker } from '../../gateway/services';
 import { getConfig, setConfig } from '../gateway-config/service';
-import { modelGroups, modelGroupMemberships } from '@x-llm-gateway/db';
+import { modelGroups, modelGroupMemberships } from '@xartifact/x-llm-gateway-db';
 
 const logger = rootLogger.child({ module: 'settings' });
 

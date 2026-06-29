@@ -4,13 +4,13 @@ import { ChevronDown } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 
 
-import { cn } from '@x-llm-gateway/ui'
+import { cn } from '@xartifact/x-llm-gateway-ui'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@x-llm-gateway/ui'
+} from '@xartifact/x-llm-gateway-ui'
 
 import { navGroups } from './admin-nav-config'
 import type { NavGroup } from './admin-nav-config'

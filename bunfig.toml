@@ -1,0 +1,3 @@
+[install]
+# Workaround for x-tinker packages publishing src/ paths in main/exports
+# instead of dist/ — bun reads the root main/exports, not publishConfig

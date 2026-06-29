@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Button } from '../../../shared/components/ui/button'
 import { Input } from '../../../shared/components/ui/input'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../../../shared/components/ui/dialog'
-import type { LogStorage } from '@x-llm-gateway/shared'
+import type { LogStorage } from '@xartifact/x-llm-gateway-shared'
 
 interface LogCleanupDialogProps {
   open: boolean

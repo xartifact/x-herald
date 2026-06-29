@@ -11,7 +11,7 @@ export {
 } from './gateway/transformer';
 
 // db (server-only exports)
-export { seedSystemData } from '@x-llm-gateway/db';
+export { seedSystemData } from '@xartifact/x-llm-gateway-db';
 
 // createEngine factory
 export { createEngine, type CreateEngineOptions, type EngineInstance } from "./createEngine";
@@ -26,7 +26,7 @@ export { buildFlowFromData, compileFlowToRoutes, validateFlow, getLayoutedElemen
 export { CB_CONFIG_KEY, configureCircuitBreaker } from './gateway/services';
 
 // Settings feature types
-export type { SettingsData, SettingsFormData, CircuitBreakerConfig, AvailableModelGroup } from '@x-llm-gateway/shared';
+export type { SettingsData, SettingsFormData, CircuitBreakerConfig, AvailableModelGroup } from '@xartifact/x-llm-gateway-shared';
 
 // Provider feature types
 export type { ProtocolsConfig, SyntheticThinkingStrategy } from './features/providers/db';
@@ -54,7 +54,7 @@ export type {
   CreateModelGroupPayload, UpdateModelGroupPayload,
   CreateModelInstancePayload, UpdateModelInstancePayload,
   RoutingConfig,
-} from '@x-llm-gateway/shared';
-export type { KeyFormData } from '@x-llm-gateway/shared';
+} from '@xartifact/x-llm-gateway-shared';
+export type { KeyFormData } from '@xartifact/x-llm-gateway-shared';
 export type { AccessModel, NewAccessModel } from './features/model-groups/db';
 

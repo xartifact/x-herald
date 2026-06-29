@@ -12,8 +12,8 @@ import {
   CardTitle,
   Input,
   Label,
-} from '@x-llm-gateway/ui'
-import { useLogin } from '@x-llm-gateway/ui'
+} from '@xartifact/x-llm-gateway-ui'
+import { useLogin } from '@xartifact/x-llm-gateway-ui'
 import { LogIn } from 'lucide-react'
 
 export function LoginPage() {

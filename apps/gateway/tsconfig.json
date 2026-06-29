@@ -18,8 +18,20 @@
       "@types/bun"
     ],
     "paths": {
-      "@x-llm-gateway/shared": [
+      "@xartifact/x-llm-gateway-shared": [
         "../../packages/shared/src"
+      ],
+      "@xartifact/x-llm-gateway-db": [
+        "../../packages/db/src"
+      ],
+      "@xartifact/x-llm-gateway-sdk": [
+        "../../packages/ai-agent/src"
+      ],
+      "@xartifact/x-tinker-sdk": [
+        "./node_modules/@xartifact/x-tinker-sdk/dist"
+      ],
+      "@xartifact/x-tinker-shared": [
+        "./node_modules/@xartifact/x-tinker-shared/dist"
       ]
     }
   },

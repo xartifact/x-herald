@@ -6,12 +6,12 @@ import { getDatabase } from '../../db/client';
 import logger from '../../lib/logger';
 
 // ─── x-tinker reporter (lazily initialized) ─────────────────
-let xTinkerReporter: import('@x-tinker/sdk').ErrorReporter | null = null;
+let xTinkerReporter: import('@xartifact/x-tinker-sdk').ErrorReporter | null = null;
 function getXTinkerReporter() {
   if (xTinkerReporter) return xTinkerReporter;
   const url = process.env.X_TINKER_URL;
   if (!url) return null;
-  const { ErrorReporter } = require('@x-tinker/sdk') as typeof import('@x-tinker/sdk');
+  const { ErrorReporter } = require('@xartifact/x-tinker-sdk') as typeof import('@xartifact/x-tinker-sdk');
   xTinkerReporter = new ErrorReporter({
     serverUrl: url,
     projectId: process.env.X_TINKER_PROJECT_ID || 'x-llm-gateway',
@@ -22,8 +22,8 @@ function getXTinkerReporter() {
 function reportFailureToXTinker(error: Error, metadata?: Record<string, string>): void {
   getXTinkerReporter()?.report(error, 'gateway/stream', metadata).catch(() => {});
 }
-import type { VirtualKey } from '@x-llm-gateway/db';
-import { requestLogs, requestAttempts } from '@x-llm-gateway/db';
+import type { VirtualKey } from '@xartifact/x-llm-gateway-db';
+import { requestLogs, requestAttempts } from '@xartifact/x-llm-gateway-db';
 import type { StreamProgress, StreamContent, LogMetadata, FailoverReason } from '../../features/logs/db';
 import { costService } from '../../features/costs/service';
 

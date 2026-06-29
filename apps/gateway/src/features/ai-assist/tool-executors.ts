@@ -1,10 +1,10 @@
 import { eq, and } from 'drizzle-orm'
-import type { ToolExecutor } from '@x-llm-gateway/ai-agent'
-import { builtInTools } from '@x-llm-gateway/ai-agent'
+import type { ToolExecutor } from '@xartifact/x-llm-gateway-sdk'
+import { builtInTools } from '@xartifact/x-llm-gateway-sdk'
 
 import { getDatabase } from '../../db/client'
-import { requestLogs, requestAttempts } from '@x-llm-gateway/db'
-import { modelInstances } from '@x-llm-gateway/db'
+import { requestLogs, requestAttempts } from '@xartifact/x-llm-gateway-db'
+import { modelInstances } from '@xartifact/x-llm-gateway-db'
 
 export const diagnoseErrorExecutor: ToolExecutor = {
   tool: builtInTools.diagnoseError,

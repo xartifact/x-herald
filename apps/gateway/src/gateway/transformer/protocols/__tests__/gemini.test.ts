@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
 
-import type { TransformerContext } from '@x-llm-gateway/shared';
+import type { TransformerContext } from '@xartifact/x-llm-gateway-shared';
 
 import { GeminiTransformer } from '../gemini';
 import { mapGeminiFinishReason } from '../gemini/response-ingress';

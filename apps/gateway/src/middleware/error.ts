@@ -1,6 +1,6 @@
 import type { MiddlewareHandler } from 'hono';
 import { HTTPException } from 'hono/http-exception';
-import { ErrorReporter } from '@x-tinker/sdk';
+import { ErrorReporter } from '@xartifact/x-tinker-sdk';
 
 import rootLogger from '../lib/logger';
 

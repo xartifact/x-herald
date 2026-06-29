@@ -14,7 +14,7 @@
     "noEmit": true,
     "types": ["bun"],
     "paths": {
-      "@x-llm-gateway/shared": ["../shared/src"]
+      "@xartifact/x-llm-gateway-shared": ["../shared/src"]
     }
   },
   "include": ["src"]

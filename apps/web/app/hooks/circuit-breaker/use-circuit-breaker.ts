@@ -2,8 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { get, post } from '@x-llm-gateway/ui'
-import type { CircuitBreakerStats, CircuitBreakerRealtimeState, CircuitBreakerEventResponse } from '@x-llm-gateway/shared'
+import { get, post } from '@xartifact/x-llm-gateway-ui'
+import type { CircuitBreakerStats, CircuitBreakerRealtimeState, CircuitBreakerEventResponse } from '@xartifact/x-llm-gateway-shared'
 
 export function useCircuitBreakerStats() {
   return useQuery<CircuitBreakerStats>({

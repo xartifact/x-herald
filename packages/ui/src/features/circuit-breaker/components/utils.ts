@@ -1,4 +1,4 @@
-import type { CircuitBreakerState } from '@x-llm-gateway/shared'
+import type { CircuitBreakerState } from '@xartifact/x-llm-gateway-shared'
 
 export function stateBadgeColor(state: CircuitBreakerState): string {
   switch (state) {

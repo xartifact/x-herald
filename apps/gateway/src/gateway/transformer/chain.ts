@@ -10,7 +10,7 @@ import type {
   Transformer,
   TransformerContext,
   TransformerChainConfig,
-} from '@x-llm-gateway/shared';
+} from '@xartifact/x-llm-gateway-shared';
 
 import { getTransformer } from './registry';
 

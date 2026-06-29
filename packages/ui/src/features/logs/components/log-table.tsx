@@ -1,7 +1,7 @@
 'use client'
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../shared/components/ui/table'
-import type { LogListItem } from '@x-llm-gateway/shared'
+import type { LogListItem } from '@xartifact/x-llm-gateway-shared'
 import { LogTableRow } from './log-table-row'
 
 interface LogTableProps {

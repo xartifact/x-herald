@@ -9,7 +9,7 @@ import type { Database } from '../../db/client';
 import { getDatabase } from '../../db/client';
 import logger from '../../lib/logger';
 
-import { gatewayConfigs } from '@x-llm-gateway/db';
+import { gatewayConfigs } from '@xartifact/x-llm-gateway-db';
 
 // 内存缓存
 const configCache = new Map<string, unknown>();

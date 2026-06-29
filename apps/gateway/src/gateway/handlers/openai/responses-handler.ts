@@ -2,10 +2,10 @@ import type { Context } from 'hono';
 
 import { loadConfig } from '../../../config';
 import logger from '../../../lib/logger';
-import type { VirtualKey } from '@x-llm-gateway/db';
-import type { ModelGroup, ModelInstance } from '@x-llm-gateway/db';
-import type { providers } from '@x-llm-gateway/db';
-import type { StandardRequest, TransformerContext } from '@x-llm-gateway/shared';
+import type { VirtualKey } from '@xartifact/x-llm-gateway-db';
+import type { ModelGroup, ModelInstance } from '@xartifact/x-llm-gateway-db';
+import type { providers } from '@xartifact/x-llm-gateway-db';
+import type { StandardRequest, TransformerContext } from '@xartifact/x-llm-gateway-shared';
 
 import { accessModelRouter } from '../../services/access-model-router';
 import { identifyClient } from '../../services/client-identifier';

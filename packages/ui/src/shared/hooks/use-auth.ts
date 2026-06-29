@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 
 import { get, post } from '../lib/api-client'
 
-import type { AuthResponse, AuthMeResponse } from '@x-llm-gateway/shared'
+import type { AuthResponse, AuthMeResponse } from '@xartifact/x-llm-gateway-shared'
 
 /**
  * 登录

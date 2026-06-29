@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 
 import logger from '../lib/logger';
-import type { VirtualKey } from '@x-llm-gateway/db';
+import type { VirtualKey } from '@xartifact/x-llm-gateway-db';
 
 import { virtualKeyMiddleware } from '../middleware/virtual-key';
 import actuatorRoutes from './routes/actuator';

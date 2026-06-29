@@ -6,8 +6,8 @@ BigInt.prototype.toJSON = function () {
   return this.toString();
 };
 
-import { captureUnhandledErrors, ErrorReporter } from '@x-tinker/sdk';
-import type { ErrorReporterConfig } from '@x-tinker/sdk';
+import { captureUnhandledErrors, ErrorReporter } from '@xartifact/x-tinker-sdk';
+import type { ErrorReporterConfig } from '@xartifact/x-tinker-sdk';
 import { createEngine, createDatabase, getDatabase, loadConfig, seedSystemData, IS_PRODUCTION } from './index';
 import rootLogger from './lib/logger';
 import { startAutoCleanup } from './features/logs/log-cleanup';

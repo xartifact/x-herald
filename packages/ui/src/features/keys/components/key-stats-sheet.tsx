@@ -1,14 +1,14 @@
 'use client'
 
 import { Button } from '../../../shared/components/ui/button'
-import type { KeyStat } from '@x-llm-gateway/shared'
+import type { KeyStat } from '@xartifact/x-llm-gateway-shared'
 import { Card, CardContent } from '../../../shared/components/ui/card'
 import { Separator } from '../../../shared/components/ui/separator'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../../../shared/components/ui/sheet'
 import { Tabs, TabsList, TabsTrigger } from '../../../shared/components/ui/tabs'
 
 // TODO(6): from apps/web
-import type { VirtualKey } from '@x-llm-gateway/shared'
+import type { VirtualKey } from '@xartifact/x-llm-gateway-shared'
 import { useKeyUsage, useResetKeyUsage } from '../hooks/use-keys'
 
 interface KeyStatsSheetProps {

@@ -8,7 +8,7 @@ import { JsonViewer } from '../../../../shared'
 import { Badge } from '../../../../shared/components/ui/badge'
 import { Button } from '../../../../shared/components/ui/button'
 import { Card, CardContent, CardHeader } from '../../../../shared/components/ui/card'
-import type { Log, LogMetadata } from '@x-llm-gateway/shared'
+import type { Log, LogMetadata } from '@xartifact/x-llm-gateway-shared'
 
 import { InfoRow, Section } from './log-info-row'
 

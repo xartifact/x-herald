@@ -2,7 +2,7 @@ import { and, eq, lt, or } from 'drizzle-orm';
 
 import { getDatabase } from '../../db/client';
 import logger from '../../lib/logger';
-import { requestLogs } from '@x-llm-gateway/db';
+import { requestLogs } from '@xartifact/x-llm-gateway-db';
 
 /**
  * 清理超时的流日志

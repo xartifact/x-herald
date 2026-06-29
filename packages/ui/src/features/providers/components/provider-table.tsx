@@ -16,7 +16,7 @@ import {
 } from '../../../shared/components/ui/table'
 
 // TODO(6): from apps/web
-import type { Provider, ProtocolsConfig } from '@x-llm-gateway/shared'
+import type { Provider, ProtocolsConfig } from '@xartifact/x-llm-gateway-shared'
 
 interface ProviderTableProps {
   providers: Provider[]

@@ -5,7 +5,7 @@ import {
   ConfigIOSection,
   Card, CardContent,
   Alert, AlertTitle, AlertDescription,
-} from '@x-llm-gateway/ui'
+} from '@xartifact/x-llm-gateway-ui'
 import { AlertCircle } from 'lucide-react'
 
 export function SettingsPage() {

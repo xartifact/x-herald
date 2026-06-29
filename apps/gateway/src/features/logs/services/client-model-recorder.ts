@@ -3,7 +3,7 @@ import { eq, sql } from 'drizzle-orm';
 import { getDatabase } from '../../../db/client';
 import logger from '../../../lib/logger';
 
-import { clientRequestedModels } from '@x-llm-gateway/db';
+import { clientRequestedModels } from '@xartifact/x-llm-gateway-db';
 
 /**
  * 记录客户端请求的模型名称

@@ -14,7 +14,7 @@ import {
   TableRow,
 } from '../../../shared/components/ui/table'
 
-import type { ModelInstance } from '@x-llm-gateway/shared'
+import type { ModelInstance } from '@xartifact/x-llm-gateway-shared'
 
 interface ModelInstanceTableProps {
   instances: ModelInstance[]

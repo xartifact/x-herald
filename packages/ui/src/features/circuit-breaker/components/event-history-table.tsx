@@ -21,7 +21,7 @@ import {
 import type {
   CircuitBreakerEventResponse,
   CircuitBreakerEventType,
-} from '@x-llm-gateway/shared'
+} from '@xartifact/x-llm-gateway-shared'
 import { EventBadge } from './event-badge'
 import { ListPagination } from '../../../shared'
 import { relativeTime } from './utils'

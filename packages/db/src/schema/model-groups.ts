@@ -2,7 +2,7 @@ import { relations } from 'drizzle-orm';
 import { pgTable, varchar, boolean, timestamp, jsonb, uuid, text, integer, primaryKey } from 'drizzle-orm/pg-core';
 import { providers } from './providers';
 
-import type { ModelCapabilities, RoutingConfig, InstanceConfig, RouteCondition, RouteAction, FlowData } from '@x-llm-gateway/shared';
+import type { ModelCapabilities, RoutingConfig, InstanceConfig, RouteCondition, RouteAction, FlowData } from '@xartifact/x-llm-gateway-shared';
 
 export const modelGroups = pgTable('model_groups', {
   id: uuid('id').primaryKey().defaultRandom(),

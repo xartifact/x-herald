@@ -8,4 +8,4 @@ export {
   type CreateModelRoutePayload,
   type UpdateModelRoutePayload,
   type SyncResult,
-} from '@x-llm-gateway/shared'
+} from '@xartifact/x-llm-gateway-shared'

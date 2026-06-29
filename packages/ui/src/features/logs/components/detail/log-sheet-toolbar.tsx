@@ -5,7 +5,7 @@ import { ChevronRight, GitBranch, X } from 'lucide-react'
 import { Badge } from '../../../../shared/components/ui/badge'
 import { Button } from '../../../../shared/components/ui/button'
 import { cn } from '../../../../shared/lib/utils'
-import type { Log } from '@x-llm-gateway/shared'
+import type { Log } from '@xartifact/x-llm-gateway-shared'
 
 interface LogSheetToolbarProps {
   log: Log

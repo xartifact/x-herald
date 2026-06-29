@@ -44,7 +44,7 @@ bun run db:migrate      # 推送 schema 更改（开发用）
 ```
 x-llm-gateway/
 ├── apps/
-│   ├── gateway/                # @x-llm-gateway/gateway — 网关内核（Hono + Bun.serve）
+│   ├── gateway/                # @xartifact/x-llm-gateway-gateway — 网关内核（Hono + Bun.serve）
 │   │   └── src/
 │   │       ├── server.ts       # 入口文件
 │   │       ├── createEngine.ts # 引擎工厂
@@ -57,8 +57,8 @@ x-llm-gateway/
 │   │       └── routes/         # 代码路由（admin, login, __root）
 │   └── cli/                    # CLI 工具
 ├── packages/
-│   ├── shared/                 # @x-llm-gateway/shared — 类型/常量
-│   └── ui/                     # @x-llm-gateway/ui — shadcn 组件库
+│   ├── shared/                 # @xartifact/x-llm-gateway-shared — 类型/常量
+│   └── ui/                     # @xartifact/x-llm-gateway-ui — shadcn 组件库
 └── docs/                       # 项目文档
 ```
 
@@ -149,8 +149,8 @@ app/
 
 ### 共享包
 
-- **@x-llm-gateway/shared**：类型定义、常量、Zod schema
-- **@x-llm-gateway/ui**：shadcn/ui 组件库、admin 组件
+- **@xartifact/x-llm-gateway-shared**：类型定义、常量、Zod schema
+- **@xartifact/x-llm-gateway-ui**：shadcn/ui 组件库、admin 组件
 
 ## 开发规范
 

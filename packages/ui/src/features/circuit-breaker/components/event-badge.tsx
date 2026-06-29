@@ -1,7 +1,7 @@
 'use client'
 
 import { Badge } from '../../../shared/components/ui/badge'
-import type { CircuitBreakerEventType } from '@x-llm-gateway/shared'
+import type { CircuitBreakerEventType } from '@xartifact/x-llm-gateway-shared'
 import { ShieldOff, AlertTriangle, CheckCircle, Timer, RotateCcw, Octagon } from 'lucide-react'
 
 interface EventBadgeProps {

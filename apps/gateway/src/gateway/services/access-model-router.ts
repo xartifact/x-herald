@@ -9,8 +9,8 @@ import { getDatabase } from '../../db/client';
 import logger from '../../lib/logger';
 import { CATCHALL_VM_NAME } from '../../features/access-models/constants';
 import { fetchPerfContext } from '../../features/metrics/services/perf-context-fetcher';
-import { accessModels, modelInstances, modelGroups, modelGroupMemberships, modelRoutes } from '@x-llm-gateway/db';
-import { providers } from '@x-llm-gateway/db';
+import { accessModels, modelInstances, modelGroups, modelGroupMemberships, modelRoutes } from '@xartifact/x-llm-gateway-db';
+import { providers } from '@xartifact/x-llm-gateway-db';
 
 
 import { modelGroupRouter, RequestRejectedError, type RouteResult, type RoutingContext } from './model-group-router';

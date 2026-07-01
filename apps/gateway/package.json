@@ -28,7 +28,9 @@
     "@xartifact/x-tinker-shared": "^0.1.2"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.4.3",
     "@types/bun": "latest",
+    "drizzle-orm": "^0.45.1",
     "typescript": "^5.3.3"
   },
   "peerDependencies": {

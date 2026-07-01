@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql } from '@xartifact/x-llm-gateway-db';
 import { Hono } from 'hono';
 
 import { getDatabase } from '../../db/client';

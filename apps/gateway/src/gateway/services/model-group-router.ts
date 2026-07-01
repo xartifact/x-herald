@@ -1,4 +1,4 @@
-import { eq, and, asc } from 'drizzle-orm';
+import { eq, and, asc } from '@xartifact/x-llm-gateway-db';
 
 import { getDatabase } from '../../db/client';
 import logger from '../../lib/logger';
@@ -8,6 +8,7 @@ import type { ModelGroup, ModelInstance } from '@xartifact/x-llm-gateway-db';
 import { providers } from '@xartifact/x-llm-gateway-db';
 
 import { selectByStrategy, filterCandidates } from './router-selector';
+import { ModelNotFoundError, ModelDisabledError, NoAvailableInstanceError, NoSuitableInstanceError } from './router-selector';
 import type { RouteResult, RoutingContext } from './router-selector';
 
 export type { RouteResult, RoutingContext } from './router-selector';
@@ -19,13 +20,19 @@ export {
   NoSuitableInstanceError,
   RequestRejectedError,
 } from './router-selector';
-
 export class ModelGroupRouter {
   async routeCandidatesByGroupId(groupId: string, context: RoutingContext): Promise<RouteResult[]> {
     const db = getDatabase();
 
     const groupResult = await db.select().from(modelGroups).where(eq(modelGroups.id, groupId)).limit(1);
-    if (groupResult.length === 0 || !groupResult[0].enabled) return [];
+    if (groupResult.length === 0) {
+      throw new ModelNotFoundError(context.requestedModel,
+        `Model group not found for access model '${context.requestedModel}' (target group id: ${groupId})`);
+    }
+    if (!groupResult[0].enabled) {
+      throw new ModelDisabledError(groupResult[0].name,
+        `Model group '${groupResult[0].name}' is disabled`);
+    }
 
     const group = groupResult[0];
     const instances = await db
@@ -36,10 +43,17 @@ export class ModelGroupRouter {
       .where(and(eq(modelGroupMemberships.groupId, group.id), eq(modelInstances.enabled, true), eq(providers.enabled, true)))
       .orderBy(asc(modelInstances.priority), asc(modelInstances.createdAt));
 
-    if (instances.length === 0) return [];
+    if (instances.length === 0) {
+      throw new NoAvailableInstanceError(group.name,
+        `No enabled instances in model group '${group.name}' (all instances or their providers may be disabled)`);
+    }
 
-    const filtered = await filterCandidates(instances, context, group);
-    if (filtered.length === 0) return [];
+    const { candidates: filtered, rejections } = await filterCandidates(instances, context, group);
+    if (filtered.length === 0) {
+      const reasons = rejections.map(r => `${r.instanceName} (${r.reason})`).join(', ');
+      throw new NoSuitableInstanceError(group.name,
+        `All instances filtered out for model group '${group.name}': ${reasons}`);
+    }
 
     const strategy = group.routingConfig?.strategy ?? 'priority';
     const sorted = await selectByStrategy(filtered, strategy, group.id);

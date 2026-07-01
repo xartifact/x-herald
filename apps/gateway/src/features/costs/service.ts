@@ -1,4 +1,4 @@
-import { and, gte, lte, sql } from 'drizzle-orm';
+import { and, gte, lte, sql } from '@xartifact/x-llm-gateway-db';
 
 import type { Database } from '../../db/client';
 import type { DbClient } from '../../db/client';

@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq } from '@xartifact/x-llm-gateway-db';
 import { jsonrepair } from 'jsonrepair';
 
 import { getDatabase } from '../../db/client';

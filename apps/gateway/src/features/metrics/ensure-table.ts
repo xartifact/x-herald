@@ -1,4 +1,4 @@
-import { sql } from 'drizzle-orm';
+import { sql } from '@xartifact/x-llm-gateway-db';
 
 import { getDatabase } from '../../db/client';
 import rootLogger from '../../lib/logger';

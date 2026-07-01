@@ -132,56 +132,84 @@ export async function selectByStrategy(candidates: Candidate[], strategy: string
   }
 }
 
+export interface InstanceRejection {
+  instanceName: string;
+  reason: string;
+}
+
+export interface FilterResult {
+  candidates: Candidate[];
+  rejections: InstanceRejection[];
+}
+
 export async function filterCandidates(
   instances: Array<{ instance: ModelInstance; provider: typeof providers.$inferSelect }>,
   context: RoutingContext,
   group: ModelGroup,
-): Promise<Candidate[]> {
+): Promise<FilterResult> {
+  const rejections: InstanceRejection[] = [];
   const checks = await Promise.all(
     instances.map(async ({ instance, provider }) => {
       if (await circuitBreakerRegistry.isOpen(instance.id)) {
         logger.debug({ instanceId: instance.id }, '[CircuitBreaker] Skipping open circuit instance');
+        rejections.push({ instanceName: instance.name, reason: 'circuit breaker open' });
         return false;
       }
-      if (instance.status === 'down') return false;
+      if (instance.status === 'down') {
+        rejections.push({ instanceName: instance.name, reason: 'instance status is down' });
+        return false;
+      }
       const capabilities = { ...group.capabilities, ...instance.config?.capabilityOverrides };
-      if (context.streaming && !capabilities.streaming) return false;
-      if (context.hasTools && !capabilities.functionCalling) return false;
-      if (context.hasVision && !capabilities.vision) return false;
+      if (context.streaming && !capabilities.streaming) {
+        rejections.push({ instanceName: instance.name, reason: 'streaming not supported' });
+        return false;
+      }
+      if (context.hasTools && !capabilities.functionCalling) {
+        rejections.push({ instanceName: instance.name, reason: 'function calling not supported' });
+        return false;
+      }
+      if (context.hasVision && !capabilities.vision) {
+        rejections.push({ instanceName: instance.name, reason: 'vision not supported' });
+        return false;
+      }
       const protocol = provider.protocols?.openai || provider.protocols?.anthropic;
-      if (!protocol?.enabled) return false;
+      if (!protocol?.enabled) {
+        rejections.push({ instanceName: instance.name, reason: 'provider protocol not enabled' });
+        return false;
+      }
       return true;
     })
   );
-  return instances
+  const candidates = instances
     .filter((_, i) => checks[i])
     .map(({ instance, provider }) => ({ instance, provider, group }));
+  return { candidates, rejections };
 }
 
 export class ModelNotFoundError extends Error {
-  constructor(modelName: string) {
-    super(`Model group '${modelName}' not found`);
+  constructor(modelName: string, detail?: string) {
+    super(detail ?? `Model '${modelName}' not found`);
     this.name = 'ModelNotFoundError';
   }
 }
 
 export class ModelDisabledError extends Error {
-  constructor(modelName: string) {
-    super(`Model group '${modelName}' is disabled`);
+  constructor(modelName: string, detail?: string) {
+    super(detail ?? `Model '${modelName}' is disabled`);
     this.name = 'ModelDisabledError';
   }
 }
 
 export class NoAvailableInstanceError extends Error {
-  constructor(modelName: string) {
-    super(`No available instances for model '${modelName}'`);
+  constructor(modelName: string, detail?: string) {
+    super(detail ?? `No available instances for model '${modelName}'`);
     this.name = 'NoAvailableInstanceError';
   }
 }
 
 export class NoSuitableInstanceError extends Error {
-  constructor(modelName: string) {
-    super(`No suitable instance found for model '${modelName}' with given constraints`);
+  constructor(modelName: string, detail?: string) {
+    super(detail ?? `No suitable instance found for model '${modelName}' with given constraints`);
     this.name = 'NoSuitableInstanceError';
   }
 }

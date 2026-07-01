@@ -130,8 +130,8 @@ describe('filterCandidates', () => {
     const group = createTestGroup();
 
     const result = await filterCandidates([{ instance, provider }], defaultRoutingContext, group);
-    expect(result).toHaveLength(1);
-    expect(result[0].instance.id).toBe(instance.id);
+    expect(result.candidates).toHaveLength(1);
+    expect(result.candidates[0].instance.id).toBe(instance.id);
   });
 
   it('should exclude instance when circuit breaker is open', async () => {
@@ -150,8 +150,8 @@ describe('filterCandidates', () => {
       group,
     );
 
-    expect(result).toHaveLength(1);
-    expect(result[0].instance.id).toBe(okId);
+    expect(result.candidates).toHaveLength(1);
+    expect(result.candidates[0].instance.id).toBe(okId);
   });
 
   it('should exclude instance with status "down"', async () => {
@@ -166,8 +166,8 @@ describe('filterCandidates', () => {
       group,
     );
 
-    expect(result).toHaveLength(1);
-    expect(result[0].instance.id).toBe(okInstance.id);
+    expect(result.candidates).toHaveLength(1);
+    expect(result.candidates[0].instance.id).toBe(okInstance.id);
   });
 
   it('should exclude instance lacking streaming capability when context.streaming=true', async () => {
@@ -176,7 +176,7 @@ describe('filterCandidates', () => {
     const group = createTestGroup({ capabilities: { ...defaultGroupCapabilities, streaming: false } });
 
     const result = await filterCandidates([{ instance, provider }], { ...defaultRoutingContext, streaming: true }, group);
-    expect(result).toHaveLength(0);
+    expect(result.candidates).toHaveLength(0);
   });
 
   it('should exclude instance lacking functionCalling capability when context.hasTools=true', async () => {
@@ -185,7 +185,7 @@ describe('filterCandidates', () => {
     const group = createTestGroup({ capabilities: { ...defaultGroupCapabilities, functionCalling: false } });
 
     const result = await filterCandidates([{ instance, provider }], { ...defaultRoutingContext, hasTools: true }, group);
-    expect(result).toHaveLength(0);
+    expect(result.candidates).toHaveLength(0);
   });
 
   it('should exclude instance lacking vision capability when context.hasVision=true', async () => {
@@ -194,7 +194,7 @@ describe('filterCandidates', () => {
     const group = createTestGroup({ capabilities: { ...defaultGroupCapabilities, vision: false } });
 
     const result = await filterCandidates([{ instance, provider }], { ...defaultRoutingContext, hasVision: true }, group);
-    expect(result).toHaveLength(0);
+    expect(result.candidates).toHaveLength(0);
   });
 
   it('should exclude instance when provider protocol is disabled', async () => {
@@ -203,7 +203,7 @@ describe('filterCandidates', () => {
     const group = createTestGroup();
 
     const result = await filterCandidates([{ instance, provider }], defaultRoutingContext, group);
-    expect(result).toHaveLength(0);
+    expect(result.candidates).toHaveLength(0);
   });
 
   it('should allow instance with capability overrides from instance config', async () => {
@@ -212,7 +212,7 @@ describe('filterCandidates', () => {
     const group = createTestGroup({ capabilities: { ...defaultGroupCapabilities, vision: false } });
 
     const result = await filterCandidates([{ instance, provider }], { ...defaultRoutingContext, hasVision: true }, group);
-    expect(result).toHaveLength(1);
+    expect(result.candidates).toHaveLength(1);
   });
 
   it('should return empty array when all instances are filtered out', async () => {
@@ -230,7 +230,7 @@ describe('filterCandidates', () => {
       group,
     );
 
-    expect(result).toHaveLength(0);
+    expect(result.candidates).toHaveLength(0);
   });
 });
 

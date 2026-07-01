@@ -1,4 +1,4 @@
-import { and, eq, lt, or } from 'drizzle-orm';
+import { and, eq, lt, or } from '@xartifact/x-llm-gateway-db';
 
 import { getDatabase } from '../../db/client';
 import logger from '../../lib/logger';

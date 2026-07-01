@@ -1,4 +1,4 @@
-import { eq, and } from 'drizzle-orm'
+import { eq, and } from '@xartifact/x-llm-gateway-db'
 import type { ToolExecutor } from '@xartifact/x-llm-gateway-sdk'
 import { builtInTools } from '@xartifact/x-llm-gateway-sdk'
 

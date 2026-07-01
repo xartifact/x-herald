@@ -1,6 +1,6 @@
 import crypto from 'crypto'
 
-import { desc, eq } from 'drizzle-orm'
+import { desc, eq } from '@xartifact/x-llm-gateway-db'
 
 import type { Database } from '../../db/client'
 import { getDatabase } from '../../db/client'

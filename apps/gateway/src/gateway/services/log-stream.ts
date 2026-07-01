@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq } from '@xartifact/x-llm-gateway-db';
 
 import { IS_PRODUCTION } from '../../config/env';
 import type { DbClient } from '../../db/client';

@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq } from '@xartifact/x-llm-gateway-db';
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { jsonrepair } from 'jsonrepair';

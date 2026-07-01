@@ -1,11 +1,11 @@
-import { lt } from 'drizzle-orm';
+import { lt, inArray } from '@xartifact/x-llm-gateway-db';
 
 import { getDatabase } from '../../db/client';
 import rootLogger from '../../lib/logger';
 
 const logger = rootLogger.child({ module: 'log-cleanup' });
 
-import { requestLogs } from '@xartifact/x-llm-gateway-db';
+import { requestLogs, requestAttempts } from '@xartifact/x-llm-gateway-db';
 
 /**
  * 清理过期日志
@@ -16,6 +16,22 @@ export async function cleanupLogs(retentionDays: number = 30): Promise<number> {
   const db = getDatabase();
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
+
+  const expiredIds = await db
+    .select({ id: requestLogs.id })
+    .from(requestLogs)
+    .where(lt(requestLogs.createdAt, cutoffDate));
+
+  if (expiredIds.length === 0) {
+    logger.info('No expired logs to clean up');
+    return 0;
+  }
+
+  const ids = expiredIds.map((r) => r.id);
+
+  await db
+    .delete(requestAttempts)
+    .where(inArray(requestAttempts.requestLogId, ids));
 
   const deleteResult = await db
     .delete(requestLogs)

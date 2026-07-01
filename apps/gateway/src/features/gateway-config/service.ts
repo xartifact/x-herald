@@ -3,7 +3,7 @@
  * 支持动态配置，带内存缓存
  */
 
-import { eq } from 'drizzle-orm';
+import { eq } from '@xartifact/x-llm-gateway-db';
 
 import type { Database } from '../../db/client';
 import { getDatabase } from '../../db/client';

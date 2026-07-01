@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, lte, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, lte, sql } from '@xartifact/x-llm-gateway-db';
 import { Hono } from 'hono';
 
 import { getDatabase } from '../../db/client';

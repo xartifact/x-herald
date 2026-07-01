@@ -3,7 +3,7 @@
  * 通过规则引擎将接入模型请求路由到模型组或模型实例
  */
 
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql } from '@xartifact/x-llm-gateway-db';
 
 import { getDatabase } from '../../db/client';
 import logger from '../../lib/logger';
@@ -14,6 +14,7 @@ import { providers } from '@xartifact/x-llm-gateway-db';
 
 
 import { modelGroupRouter, RequestRejectedError, type RouteResult, type RoutingContext } from './model-group-router';
+import { ModelNotFoundError, NoAvailableInstanceError } from './router-selector';
 import type { ModelMappingResult } from './model-mapping';
 import { routeRuleEngine } from './route-rule-engine';
 
@@ -44,7 +45,10 @@ export class AccessModelRouter {
       perf,
     });
 
-    if (!ruleMatch) return [];
+    if (!ruleMatch) {
+      throw new NoAvailableInstanceError(context.requestedModel,
+        `No matching route rule for access model '${am.name}' (requested model: '${context.requestedModel}')`);
+    }
 
     const action = ruleMatch.action;
     const mappingResult: ModelMappingResult = {
@@ -73,12 +77,13 @@ export class AccessModelRouter {
         { accessModel: am.name, targetGroupId: action.targetId },
         'Route rule target group returned no candidates'
       );
-      return [];
+      throw new NoAvailableInstanceError(am.name,
+        `Route rule '${ruleMatch.name}' targeted group but returned no candidates for access model '${am.name}'`);
     }
 
     if (action.type === 'route_to_instance' && action.targetId) {
       const result = await this.routeToInstance(action.targetId, am, context, mappingResult, ruleMatch);
-      return result ? [result] : [];
+      return [result];
     }
 
     return [];
@@ -105,7 +110,10 @@ export class AccessModelRouter {
       .where(and(eq(accessModels.name, CATCHALL_VM_NAME), eq(accessModels.enabled, true)))
       .limit(1);
 
-    if (defaultAmResult.length === 0) return [];
+    if (defaultAmResult.length === 0) {
+      throw new ModelNotFoundError(context.requestedModel,
+        `Access model '${context.requestedModel}' not found and no catchall (__catchall__) configured`);
+    }
 
     const defaultAm = defaultAmResult[0];
 
@@ -116,7 +124,10 @@ export class AccessModelRouter {
       perf,
     });
 
-    if (!ruleMatch) return [];
+    if (!ruleMatch) {
+      throw new NoAvailableInstanceError(context.requestedModel,
+        `No matching route rule for catchall access model (requested: '${context.requestedModel}')`);
+    }
 
     const fallbackMapping: ModelMappingResult = {
       modelName: context.requestedModel,
@@ -146,7 +157,8 @@ export class AccessModelRouter {
           matchedRule: { id: ruleMatch.id, name: ruleMatch.name, priority: ruleMatch.priority },
         }));
       }
-      return [];
+      throw new NoAvailableInstanceError(context.requestedModel,
+        `Catchall route rule '${ruleMatch.name}' targeted group but returned no candidates (requested: '${context.requestedModel}')`);
     }
 
     if (action.type === 'route_to_instance' && action.targetId) {
@@ -157,7 +169,7 @@ export class AccessModelRouter {
         fallbackMapping,
         ruleMatch
       );
-      return result ? [result] : [];
+      return [result];
     }
 
     return [];
@@ -195,7 +207,7 @@ export class AccessModelRouter {
     context: RoutingContext,
     mappingResult: ModelMappingResult,
     ruleMatch?: { id: string; name: string; priority: number }
-  ): Promise<RouteResult | null> {
+  ): Promise<RouteResult> {
     const db = getDatabase();
 
     const instanceResult = await db
@@ -212,11 +224,8 @@ export class AccessModelRouter {
       .limit(1);
 
     if (instanceResult.length === 0) {
-      logger.warn(
-        { accessModel: am.name, targetInstanceId: instanceId },
-        'Access model rule target instance not available'
-      );
-      return null;
+      throw new NoAvailableInstanceError(am.name,
+        `Target instance not available for access model '${am.name}' (instance or its provider may be disabled)`);
     }
 
     const { instance, provider } = instanceResult[0];

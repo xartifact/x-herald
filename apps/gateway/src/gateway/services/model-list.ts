@@ -1,4 +1,4 @@
-import { eq, and, ne, sql } from 'drizzle-orm';
+import { eq, and, ne, sql } from '@xartifact/x-llm-gateway-db';
 
 import { getDatabase } from '../../db/client';
 import { CATCHALL_VM_NAME } from '../../features/access-models/constants';

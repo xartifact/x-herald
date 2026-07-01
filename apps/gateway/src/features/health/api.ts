@@ -1,4 +1,4 @@
-import { sql } from 'drizzle-orm';
+import { sql } from '@xartifact/x-llm-gateway-db';
 import { Hono } from 'hono';
 
 import { APP_VERSION } from '../../config';

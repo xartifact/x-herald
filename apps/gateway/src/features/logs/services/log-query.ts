@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, inArray, isNotNull, lt, lte, ne, or, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, inArray, isNotNull, lt, lte, ne, or, sql } from '@xartifact/x-llm-gateway-db'
 
 import { getDatabase } from '../../../db/client'
 import { virtualKeys } from '@xartifact/x-llm-gateway-db'

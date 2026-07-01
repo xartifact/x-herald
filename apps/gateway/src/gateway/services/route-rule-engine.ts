@@ -3,7 +3,7 @@
  * 按优先级匹配规则，执行条件判断
  */
 
-import { eq, and, asc, sql } from 'drizzle-orm';
+import { eq, and, asc, sql } from '@xartifact/x-llm-gateway-db';
 
 import { getDatabase } from '../../db/client';
 import logger from '../../lib/logger';

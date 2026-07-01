@@ -1,4 +1,4 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and } from '@xartifact/x-llm-gateway-db';
 import type { Message, ToolCall, ToolDefinition } from '@xartifact/x-llm-gateway-sdk';
 
 import { getDatabase } from '../db/client';

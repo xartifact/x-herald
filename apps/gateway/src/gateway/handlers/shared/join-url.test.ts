@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test'
-import { joinUrl } from './join-url'
+const { joinUrl } = await import('./join-url?v=1')
 
 describe('joinUrl', () => {
   // basic cases

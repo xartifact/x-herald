@@ -1,6 +1,16 @@
-import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
+import { describe, it, expect, beforeEach, afterEach, mock } from 'bun:test';
+
+const mockRegisterAbortController = mock(() => {});
+const mockAbortRequest = mock(() => true);
+
+mock.module('../../services/log-event-bus', () => ({
+  logEventBus: {
+    registerAbortController: mockRegisterAbortController,
+    abortRequest: mockAbortRequest,
+  },
+}));
+
 const { AbortManager } = await import('./abort-manager?v=1');
-import { logEventBus } from '../../services/log-event-bus';
 
 describe('AbortManager', () => {
   let abortManager: AbortManager;
@@ -100,11 +110,7 @@ describe('AbortManager', () => {
       abortManager.setLogId('test-log-id');
       const { controller, cleanup } = abortManager.createAttempt(10000, 'test-request', false);
 
-      // Verify registration via abortRequest — calls controller.abort() if found
-      const found = logEventBus.abortRequest('test-log-id');
-      expect(controller.signal.aborted).toBe(true);
-      // abortRequest returns whether the request was in activeStreams — not our concern
-      // but the side effect (controller aborted) confirms registration
+      expect(mockRegisterAbortController).toHaveBeenCalledWith('test-log-id', controller);
       cleanup();
     });
   });

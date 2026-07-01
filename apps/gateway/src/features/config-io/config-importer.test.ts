@@ -225,9 +225,12 @@ describe('importConfig', () => {
       from: mock(() => ({
         where: mock(() => ({
           limit: mock(() => Promise.reject(new Error('DB failure'))),
+          returning: mock(() => Promise.resolve([])),
+          then: (resolve: (value: unknown) => void, reject?: (reason: unknown) => void) =>
+            Promise.reject(new Error('DB failure')).then(resolve, reject),
         })),
       })),
-    }));
+    }) as unknown as ReturnType<typeof mockDb.select>);
 
     const result = await importConfig({
       providers: [

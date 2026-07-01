@@ -25,7 +25,7 @@ const mockLogger = {
 };
 mock.module('../../../lib/logger', () => ({ default: mockLogger }));
 
-const mockRouteCandidates = mock(async () => []);
+const mockRouteCandidates = mock(async (): Promise<unknown[]> => []);
 mock.module('../../services/access-model-router', () => ({
   accessModelRouter: { routeCandidates: mockRouteCandidates },
 }));
@@ -54,7 +54,7 @@ mock.module('../../services/model-group-router', () => ({
 }));
 
 const mockGetProviderProtocol = mock(() => 'anthropic');
-const mockGetProviderUrl = mock(() => 'https://api.anthropic.com');
+const mockGetProviderUrl = mock((): string | undefined => 'https://api.anthropic.com');
 mock.module('../../services/protocol-detector', () => ({
   getProviderProtocol: mockGetProviderProtocol,
   getProviderUrl: mockGetProviderUrl,
@@ -334,12 +334,12 @@ describe('handleAnthropicMessages', () => {
 
     expect(mockHandleGatewayError).toHaveBeenCalled();
     const calls = getMockCalls(mockHandleGatewayError);
-    expect(calls[0][0].error).toBeInstanceOf(MockModelNotFoundError);
+    expect((calls[0][0] as { error: Error }).error).toBeInstanceOf(MockModelNotFoundError);
   });
 
   // Test 3
   it('catches error when no transformer found and calls handleGatewayError', async () => {
-    mockGetTransformer.mockImplementation(() => null);
+    mockGetTransformer.mockImplementation(() => null as unknown as ReturnType<typeof mockGetTransformer>);
 
     const c = createMockContext();
     await handleAnthropicMessages(c, false);
@@ -385,6 +385,7 @@ describe('handleAnthropicMessages', () => {
     ]);
     mockExecuteFailoverIteration.mockImplementation(async () => ({
       type: 'failover',
+      response: new Response('error', { status: 500 }),
       retryCount: 0,
     }));
 
@@ -393,7 +394,7 @@ describe('handleAnthropicMessages', () => {
 
     expect(mockHandleGatewayError).toHaveBeenCalled();
     const calls = getMockCalls(mockHandleGatewayError);
-    expect(calls[0][0].error.message).toBe('All candidate instances exhausted');
+    expect((calls[0][0] as { error: { message: string } }).error.message).toBe('All candidate instances exhausted');
   });
 
   // Test 7
@@ -405,10 +406,10 @@ describe('handleAnthropicMessages', () => {
     const response = await handleAnthropicMessages(c, false);
 
     expect(response.status).toBe(400);
-    const body = await response.json();
+    const body = await response.json() as Record<string, unknown>;
     expect(body).toHaveProperty('type', 'error');
     expect(body.error).toHaveProperty('type', 'protocol_error');
-    expect(body.error.message).toContain('Protocol');
+    expect((body.error as Record<string, unknown>).message).toContain('Protocol');
   });
 
   // Test 8
@@ -480,7 +481,7 @@ describe('handleAnthropicMessages', () => {
     }));
 
     const response1 = await handleAnthropicMessages(c1, false, { model: 'claude-3-sonnet' });
-    const body1 = await response1.json();
+    const body1 = await response1.json() as Record<string, unknown>;
     expect(body1).toHaveProperty('type', 'error');
     expect(body1.error).toHaveProperty('type', 'permission_error');
 
@@ -490,7 +491,7 @@ describe('handleAnthropicMessages', () => {
 
     const c2 = createMockContext();
     const response2 = await handleAnthropicMessages(c2, false);
-    const body2 = await response2.json();
+    const body2 = await response2.json() as Record<string, unknown>;
     expect(body2).toHaveProperty('type', 'error');
     expect(body2.error).toHaveProperty('type', 'protocol_error');
   });
@@ -512,6 +513,7 @@ describe('handleAnthropicMessages', () => {
   it('returns abort via handleGatewayError when result type is abort', async () => {
     mockExecuteFailoverIteration.mockImplementation(async () => ({
       type: 'abort',
+      response: new Response('aborted', { status: 499 }),
       retryCount: 0,
     }));
 

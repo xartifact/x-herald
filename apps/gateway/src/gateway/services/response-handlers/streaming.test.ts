@@ -18,7 +18,7 @@ const realRateLimitEngine = await import('../rate-limit-engine');
 // ------------------------------------------------------------------
 //  Mock modules
 // ------------------------------------------------------------------
-const mockGetTransformer = mock(() => undefined);
+const mockGetTransformer = mock((..._args: any[]): any => undefined);
 const mockUpgradeToStreamLog = mock(() => Promise.resolve());
 const mockFinalizeStreamLog = mock(() => Promise.resolve());
 const mockMarkStreamFailed = mock(() => Promise.resolve());
@@ -351,7 +351,7 @@ describe('handleStreamingResponse', () => {
     await handleStreamingResponse(params);
 
     expect(mockEmitLog).toHaveBeenCalled();
-    const startedCalls = mockEmitLog.mock.calls.filter((c: any[]) => c[0].event === 'started');
+    const startedCalls = (mockEmitLog.mock.calls as any[][]).filter((c: any[]) => c[0].event === 'started');
     expect(startedCalls.length).toBeGreaterThanOrEqual(1);
     expect(startedCalls[0][0]).toMatchObject({
       event: 'started',
@@ -379,7 +379,7 @@ describe('handleStreamingResponse', () => {
     // Wait for flush
     await new Promise((r) => setTimeout(r, 50));
 
-    const chunkCalls = mockEmitLog.mock.calls.filter((c: any[]) => c[0].event === 'chunk');
+    const chunkCalls = (mockEmitLog.mock.calls as any[][]).filter((c: any[]) => c[0].event === 'chunk');
     expect(chunkCalls.length).toBeGreaterThanOrEqual(1);
     expect(chunkCalls[0][0]).toMatchObject({
       event: 'chunk',

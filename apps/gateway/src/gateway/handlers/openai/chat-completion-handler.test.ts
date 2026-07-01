@@ -215,7 +215,7 @@ describe('handleOpenAIChatCompletion', () => {
     const mockGetProviderUrl = getProviderUrl as unknown as { mockImplementation: (fn: (...args: unknown[]) => unknown) => void };
     mockGetProviderUrl.mockImplementation(() => 'https://api.openai.com');
 
-    const mockGetTransformer = getTransformer as unknown as { mockImplementation: (fn: (...args: unknown[]) => unknown) => void };
+    const mockGetTransformer = getTransformer as unknown as { mockImplementation: (fn: (protocol: string) => unknown) => void };
     mockGetTransformer.mockImplementation((protocol: string) => {
       if (protocol === 'openai') {
         return {
@@ -347,9 +347,9 @@ describe('handleOpenAIChatCompletion', () => {
     });
 
     const response = await handleOpenAIChatCompletion(c, false);
-    const body = await response.json();
-    expect(body.error.type).toBe('permission_error');
-    expect(body.error.message).toBe('Your API key does not have permission to use this model');
+    const body = await response.json() as Record<string, unknown>;
+    expect((body.error as Record<string, unknown>).type).toBe('permission_error');
+    expect((body.error as Record<string, unknown>).message).toBe('Your API key does not have permission to use this model');
   });
 
   it('calls handleGatewayError when all candidates are exhausted', async () => {
@@ -378,11 +378,11 @@ describe('handleOpenAIChatCompletion', () => {
 
     const c = createMockContext();
     const response = await handleOpenAIChatCompletion(c, false);
-    const body = await response.json();
+    const body = await response.json() as Record<string, unknown>;
 
     expect(response.status).toBe(400);
-    expect(body.error.type).toBe('protocol_error');
-    expect(body.error.message).toContain("not configured for provider");
+    expect((body.error as Record<string, unknown>).type).toBe('protocol_error');
+    expect((body.error as Record<string, unknown>).message).toContain("not configured for provider");
   });
 
   it('continues to next candidate when provider URL is missing on non-last candidate', async () => {

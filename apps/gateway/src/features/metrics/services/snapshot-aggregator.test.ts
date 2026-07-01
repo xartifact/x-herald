@@ -1,9 +1,9 @@
-import { describe, it, expect, mock, beforeEach, afterAll } from 'bun:test';
+import { describe, it, expect, mock, beforeEach, afterAll, type Mock } from 'bun:test';
 
 const realDbClient = await import('../../../db/client');
 const originalGetDatabase = realDbClient.getDatabase;
 
-let mockExecute = mock(() => Promise.resolve({ rows: [] }));
+let mockExecute: Mock<() => Promise<unknown>> = mock((): Promise<unknown> => Promise.resolve({ rows: [] }));
 
 const mockDb = {
   get execute() {
@@ -66,11 +66,11 @@ describe('alignToBucket', () => {
 
 describe('aggregateBucket', () => {
   beforeEach(() => {
-    mockExecute = mock(() => Promise.resolve({ rows: [] }));
+    mockExecute = mock((): Promise<unknown> => Promise.resolve({ rows: [] }));
   });
 
   it('returns row count from execute result', async () => {
-    mockExecute = mock(() => Promise.resolve({ rows: [{}, {}] }));
+    mockExecute = mock((): Promise<unknown> => Promise.resolve({ rows: [{}, {}] }));
     const count = await aggregateBucket(new Date('2025-01-15T10:00:00Z'), 5);
     expect(count).toBe(2);
   });
@@ -82,7 +82,7 @@ describe('aggregateBucket', () => {
   });
 
   it('handles array result from pg', async () => {
-    mockExecute = mock(() => Promise.resolve([{}, {}, {}]));
+    mockExecute = mock((): Promise<unknown> => Promise.resolve([{}, {}, {}]));
     const count = await aggregateBucket(new Date('2025-01-15T10:00:00Z'), 5);
     expect(count).toBe(3);
   });
@@ -90,7 +90,7 @@ describe('aggregateBucket', () => {
 
 describe('aggregateRecentBuckets', () => {
   beforeEach(() => {
-    mockExecute = mock(() => Promise.resolve({ rows: [] }));
+    mockExecute = mock((): Promise<unknown> => Promise.resolve({ rows: [] }));
   });
 
   it('calls aggregateBucket N times for bucketCount', async () => {
@@ -100,7 +100,7 @@ describe('aggregateRecentBuckets', () => {
 
   it('continues on error for individual buckets', async () => {
     let callCount = 0;
-    mockExecute = mock(() => {
+    mockExecute = mock((): Promise<unknown> => {
       callCount++;
       if (callCount === 2) {
         return Promise.reject(new Error('bucket error'));

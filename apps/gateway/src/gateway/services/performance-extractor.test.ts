@@ -58,12 +58,12 @@ describe('extractPerformanceMetrics', () => {
       providerTtfbMs: null as unknown as undefined,
       streamDurationMs: undefined,
     });
-    expect(result).toEqual({
+    expect(result!).toEqual({
       responseTimeTier: 'fast',
       gatewayOverheadMs: undefined,
       providerTtfbMs: null,
       streamDurationMs: undefined,
-    });
+    } as any);
   });
 });
 

@@ -237,7 +237,7 @@ describe('extractToolCalls', () => {
     };
     const result = extractToolCalls({ messages: [] }, response);
     expect(result?.tools).toEqual([]);
-    expect(result?.details[0]).toMatchObject({
+    expect(result?.details![0]).toMatchObject({
       name: 'unknown',
       arguments: undefined,
       callId: 'call_orphan',
@@ -262,7 +262,7 @@ describe('extractToolCalls', () => {
       ],
     };
     const result = extractToolCalls(requestBody, response);
-    expect(result?.details[0].result).toBe('{"temp":72}');
+    expect(result?.details![0].result).toBe('{"temp":72}');
   });
 
   it('does not merge result when no tool results match', () => {
@@ -283,7 +283,7 @@ describe('extractToolCalls', () => {
       ],
     };
     const result = extractToolCalls(requestBody, response);
-    expect(result?.details[0].result).toBeUndefined();
+    expect(result?.details![0].result).toBeUndefined();
   });
 
   it('matches tool result by toolName when callId differs', () => {
@@ -304,6 +304,6 @@ describe('extractToolCalls', () => {
       ],
     };
     const result = extractToolCalls(requestBody, response);
-    expect(result?.details[0].result).toBe('result_by_name');
+    expect(result?.details![0].result).toBe('result_by_name');
   });
 });

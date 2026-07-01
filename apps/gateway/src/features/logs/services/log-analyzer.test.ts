@@ -141,7 +141,7 @@ describe('buildAnalysisStream', () => {
         status: 500,
         text: () => Promise.resolve('Internal Server Error'),
       } as Response)
-    );
+    ) as unknown as typeof fetch;
 
     const stream = await buildAnalysisStream('log-1');
     const reader = stream.getReader();
@@ -170,7 +170,7 @@ describe('buildAnalysisStream', () => {
         ok: true,
         body: mockStream,
       } as Response)
-    );
+    ) as unknown as typeof fetch;
 
     const stream = await buildAnalysisStream('log-1');
     expect(stream).toBe(mockStream);

@@ -95,7 +95,7 @@ describe('errorHandler logic via app.onError()', () => {
     const app = new Hono();
     app.onError((err, c) => {
       if (err instanceof AppError) {
-        return c.json({ error: err.message, code: err.code || 'INTERNAL_ERROR' }, err.statusCode);
+        return c.json({ error: err.message, code: err.code || 'INTERNAL_ERROR' }, err.statusCode as 400 | 401 | 403 | 404 | 500);
       }
       return c.text('Internal Server Error', 500);
     });
@@ -114,7 +114,7 @@ describe('errorHandler logic via app.onError()', () => {
     const app = new Hono();
     app.onError((err, c) => {
       if (err instanceof AppError) {
-        return c.json({ error: err.message, code: err.code || 'INTERNAL_ERROR' }, err.statusCode);
+        return c.json({ error: err.message, code: err.code || 'INTERNAL_ERROR' }, err.statusCode as 400 | 401 | 403 | 404 | 500);
       }
       return c.text('Internal Server Error', 500);
     });
@@ -133,7 +133,7 @@ describe('errorHandler logic via app.onError()', () => {
     const app = new Hono();
     app.onError((err, c) => {
       if (err instanceof AppError) {
-        return c.json({ error: err.message, code: err.code || 'INTERNAL_ERROR' }, err.statusCode);
+        return c.json({ error: err.message, code: err.code || 'INTERNAL_ERROR' }, err.statusCode as 400 | 401 | 403 | 404 | 500);
       }
       if (err instanceof Error) {
         return c.json({ error: err.message, code: 'INTERNAL_ERROR' }, 500);

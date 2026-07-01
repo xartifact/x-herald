@@ -120,9 +120,10 @@ describe('circuit-breaker API', () => {
     expect(status).toBe(200);
     expect(body.success).toBe(true);
     expect(Array.isArray(body.data.instances)).toBe(true);
-    expect(body.data.instances.length).toBeGreaterThan(0);
-    const instance = body.data.instances.find((i: { instanceId: string }) => i.instanceId === instanceId);
+    const instances = body.data.instances as Array<{ instanceId: string; state: string }>;
+    expect(instances.length).toBeGreaterThan(0);
+    const instance = instances.find((i) => i.instanceId === instanceId);
     expect(instance).toBeDefined();
-    expect(instance.state).toBe('open');
+    expect(instance!.state).toBe('open');
   });
 });

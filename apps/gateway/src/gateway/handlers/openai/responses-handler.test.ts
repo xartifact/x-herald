@@ -80,9 +80,6 @@ mock.module('../../services/access-model-router', () => ({
   accessModelRouter: {
     route: mock(async () => routeResultValue),
   },
-  accessModelRouter: {
-    route: mock(async () => routeResultValue),
-  },
 }));
 
 mock.module('../../services/client-identifier', () => ({
@@ -351,9 +348,9 @@ describe('handleResponsesAPI', () => {
     const response = await handleResponsesAPI(c, false, { model: 'gpt-4', input: 'hello' });
 
     expect(response.status).toBe(403);
-    const body = await response.json();
-    expect(body.error.type).toBe('permission_error');
-    expect(body.error.message).toContain('does not have permission');
+    const body = await response.json() as Record<string, unknown>;
+    expect((body.error as Record<string, unknown>).type).toBe('permission_error');
+    expect((body.error as Record<string, unknown>).message).toContain('does not have permission');
   });
 
   // 2. Throws ModelNotFoundError when route returns null
@@ -377,9 +374,9 @@ describe('handleResponsesAPI', () => {
     const response = await handleResponsesAPI(c, false, { model: 'gpt-4', input: 'hello' });
 
     expect(response.status).toBe(400);
-    const body = await response.json();
-    expect(body.error.type).toBe('protocol_error');
-    expect(body.error.message).toContain('not configured');
+    const body = await response.json() as Record<string, unknown>;
+    expect((body.error as Record<string, unknown>).type).toBe('protocol_error');
+    expect((body.error as Record<string, unknown>).message).toContain('not configured');
   });
 
   // 4. Successful non-streaming → calls handleNonStreamingResponse then convertChatToResponsesBody
@@ -391,7 +388,7 @@ describe('handleResponsesAPI', () => {
 
     expect(handleNonStreamingResponseMock).toHaveBeenCalled();
     expect(response.status).toBe(200);
-    const body = await response.json();
+    const body = await response.json() as Record<string, unknown>;
     expect(body.object).toBe('response');
     expect(body.id).toBe('resp-test');
   });
@@ -416,11 +413,11 @@ describe('handleResponsesAPI', () => {
     const response = await handleResponsesAPI(c, false, { model: 'gpt-4', input: 'hello' });
 
     expect(response.status).toBe(403);
-    const body = await response.json();
+    const body = await response.json() as Record<string, unknown>;
     expect(body).toHaveProperty('error');
     expect(body.error).toHaveProperty('type', 'permission_error');
     expect(body.error).toHaveProperty('message');
-    expect(typeof body.error.message).toBe('string');
+    expect(typeof (body.error as Record<string, unknown>).message).toBe('string');
   });
 
   // 7. Upstream returns non-ok → calls handleProviderError (or handleProviderErrorPassthrough when passthrough)

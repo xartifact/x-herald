@@ -52,14 +52,14 @@ describe('keys service', () => {
     ]
     db._setResult('select', keys)
     const result = await listKeys(db)
-    expect(result).toEqual(keys)
+    expect(result).toEqual(keys as any)
   })
 
   it('getKey returns existing key by id', async () => {
     const key = { id: 'key-1', key: 'xg_abc123', name: 'Test Key' }
     db._setResult('select', [key])
     const result = await getKey('key-1', db)
-    expect(result).toEqual(key)
+    expect(result).toEqual(key as any)
   })
 
   it('getKey returns null for non-existent id', async () => {
@@ -72,7 +72,7 @@ describe('keys service', () => {
     const newKey = { id: 'key-1', key: 'xg_test123', name: 'New Key' }
     db._setResult('insert', [newKey])
     const result = await createKey({ name: 'New Key' }, db)
-    expect(result).toEqual(newKey)
+    expect(result).toEqual(newKey as any)
     expect(result.key.startsWith('xg_')).toBe(true)
   })
 
@@ -98,7 +98,7 @@ describe('keys service', () => {
       enabled: false,
       expiresAt: '2024-12-31T00:00:00Z',
     }, db)
-    expect(result).toEqual(newKey)
+    expect(result).toEqual(newKey as any)
   })
 
   it('updateKey updates existing key and returns updated key', async () => {
@@ -107,7 +107,7 @@ describe('keys service', () => {
     db._setResult('select', [existingKey])
     db._setResult('update', [updatedKey])
     const result = await updateKey('key-1', { name: 'New Name' }, db)
-    expect(result).toEqual(updatedKey)
+    expect(result).toEqual(updatedKey as any)
   })
 
   it('updateKey returns null for non-existent key', async () => {
@@ -135,8 +135,8 @@ describe('keys service', () => {
     db._setResult('select', [existingKey])
     db._setResult('update', [newResetKey])
     const result = await resetKey('key-1', db)
-    expect(result).toEqual(newResetKey)
-    expect(result.key).not.toBe(existingKey.key)
+    expect(result).toEqual(newResetKey as any)
+    expect(result!.key).not.toBe(existingKey.key)
   })
 
   it('resetKey returns null for non-existent key', async () => {

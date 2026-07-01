@@ -163,22 +163,22 @@ describe('ModelGroupRouter integration', () => {
   // routeCandidatesByGroupId
   // ──────────────────────────────────────────────────────────────────────────
 
-  it('returns empty array for non-existent groupId', async () => {
-    const candidates = await modelGroupRouter.routeCandidatesByGroupId(
-      '00000000-0000-0000-0000-000000000000',
-      defaultContext
-    );
-    expect(candidates).toEqual([]);
+  it('throws ModelNotFoundError for non-existent groupId', async () => {
+    await expect(
+      modelGroupRouter.routeCandidatesByGroupId('00000000-0000-0000-0000-000000000000', defaultContext)
+    ).rejects.toThrow('Model group not found');
   });
 
-  it('returns empty array for disabled group', async () => {
-    const candidates = await modelGroupRouter.routeCandidatesByGroupId(disabledGroupId, defaultContext);
-    expect(candidates).toEqual([]);
+  it('throws ModelDisabledError for disabled group', async () => {
+    await expect(
+      modelGroupRouter.routeCandidatesByGroupId(disabledGroupId, defaultContext)
+    ).rejects.toThrow('disabled');
   });
 
-  it('returns empty array for group with no instances', async () => {
-    const candidates = await modelGroupRouter.routeCandidatesByGroupId(emptyGroupId, defaultContext);
-    expect(candidates).toEqual([]);
+  it('throws NoAvailableInstanceError for group with no instances', async () => {
+    await expect(
+      modelGroupRouter.routeCandidatesByGroupId(emptyGroupId, defaultContext)
+    ).rejects.toThrow('No enabled instances');
   });
 
   it('returns candidates with correct structure for enabled group with instances', async () => {
@@ -265,17 +265,16 @@ describe('ModelGroupRouter integration', () => {
     expect(result).toEqual(candidates[0]);
   });
 
-  it('routeByGroupId returns null for non-existent group', async () => {
-    const result = await modelGroupRouter.routeByGroupId(
-      '00000000-0000-0000-0000-000000000000',
-      defaultContext
-    );
-    expect(result).toBeNull();
+  it('routeByGroupId throws for non-existent group', async () => {
+    await expect(
+      modelGroupRouter.routeByGroupId('00000000-0000-0000-0000-000000000000', defaultContext)
+    ).rejects.toThrow('Model group not found');
   });
 
-  it('routeByGroupId returns null for group with no instances', async () => {
-    const result = await modelGroupRouter.routeByGroupId(emptyGroupId, defaultContext);
-    expect(result).toBeNull();
+  it('routeByGroupId throws for group with no instances', async () => {
+    await expect(
+      modelGroupRouter.routeByGroupId(emptyGroupId, defaultContext)
+    ).rejects.toThrow('No enabled instances');
   });
 
   // ──────────────────────────────────────────────────────────────────────────

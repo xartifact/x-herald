@@ -61,7 +61,7 @@ describe('convertResponsesToChatFormat', () => {
     const result = convertResponsesToChatFormat(body);
 
     expect(result.messages).toHaveLength(1);
-    expect(result.messages![0].role).toBe('user');
+    expect((result.messages as Array<Record<string, unknown>>)[0].role).toBe('user');
   });
 
   it('preserves assistant role', () => {
@@ -70,7 +70,7 @@ describe('convertResponsesToChatFormat', () => {
     const result = convertResponsesToChatFormat(body);
 
     expect(result.messages).toHaveLength(1);
-    expect(result.messages![0].role).toBe('assistant');
+    expect((result.messages as Array<Record<string, unknown>>)[0].role).toBe('assistant');
   });
 
   it('maps input_text type items to user role', () => {
@@ -79,7 +79,7 @@ describe('convertResponsesToChatFormat', () => {
     const result = convertResponsesToChatFormat(body);
 
     expect(result.messages).toHaveLength(1);
-    expect(result.messages![0]).toEqual({ role: 'user', content: 'hello' });
+    expect((result.messages as Array<Record<string, unknown>>)[0]).toEqual({ role: 'user', content: 'hello' });
   });
 
   it('sets stream default to false', () => {
@@ -133,7 +133,7 @@ describe('convertResponsesToChatFormat', () => {
     const result = convertResponsesToChatFormat(body);
 
     expect(result.messages).toHaveLength(1);
-    expect(result.messages![0].content).toBe('ok');
+    expect((result.messages as Array<Record<string, unknown>>)[0].content).toBe('ok');
   });
 
   it('converts string content directly', () => {
@@ -141,7 +141,7 @@ describe('convertResponsesToChatFormat', () => {
 
     const result = convertResponsesToChatFormat(body);
 
-    expect(result.messages![0].content).toBe('plain string');
+    expect((result.messages as Array<Record<string, unknown>>)[0].content).toBe('plain string');
   });
 
   it('converts array content items (input_text -> text)', () => {
@@ -160,7 +160,7 @@ describe('convertResponsesToChatFormat', () => {
 
     const result = convertResponsesToChatFormat(body);
 
-    expect(result.messages![0].content).toEqual([
+    expect((result.messages as Array<Record<string, unknown>>)[0].content).toEqual([
       { type: 'text', text: 'desc' },
       { type: 'image_url', image_url: { url: 'https://example.com/img.png' } },
     ]);
@@ -174,7 +174,7 @@ describe('convertResponsesToChatFormat', () => {
 
     const result = convertResponsesToChatFormat(body);
 
-    expect(result.messages![0].content).toBe('single');
+    expect((result.messages as Array<Record<string, unknown>>)[0].content).toBe('single');
   });
 });
 
@@ -204,7 +204,7 @@ describe('convertChatToResponsesBody', () => {
     expect(result.created_at).toBe(1718000000);
     expect(result.model).toBe('gpt-4o');
     expect(result.output).toHaveLength(1);
-    expect(result.output[0]).toEqual({
+    expect((result.output as Array<Record<string, unknown>>)[0]).toEqual({
       type: 'message',
       role: 'assistant',
       content: [{ type: 'output_text', text: 'Hello world!' }],
@@ -312,13 +312,13 @@ describe('convertChatToResponsesBody', () => {
     const result = convertChatToResponsesBody(chatBody);
 
     expect(result.output).toHaveLength(2);
-    expect(result.output[0]).toMatchObject({
+    expect((result.output as Array<Record<string, unknown>>)[0]).toMatchObject({
       type: 'function_call',
       id: 'call_abc',
       name: 'get_weather',
       args: { city: 'Paris' },
     });
-    expect(result.output[1]).toMatchObject({
+    expect((result.output as Array<Record<string, unknown>>)[1]).toMatchObject({
       type: 'message',
       role: 'assistant',
     });
@@ -353,7 +353,7 @@ describe('convertChatToResponsesBody', () => {
 
     const result = convertChatToResponsesBody(chatBody);
 
-    expect(result.output[0].content).toEqual([{ type: 'output_text', text: 'Hello' }]);
+    expect((result.output as Array<Record<string, unknown>>)[0].content).toEqual([{ type: 'output_text', text: 'Hello' }]);
   });
 
   it('generates fallback id for tool_call when id is missing', () => {
@@ -379,8 +379,8 @@ describe('convertChatToResponsesBody', () => {
 
     const result = convertChatToResponsesBody(chatBody);
 
-    expect(result.output[0].id).toMatch(/^fc_/);
-    expect(result.output[0].id).not.toBe('call_abc');
+    expect((result.output as Array<Record<string, unknown>>)[0].id).toMatch(/^fc_/);
+    expect((result.output as Array<Record<string, unknown>>)[0].id).not.toBe('call_abc');
   });
 });
 

@@ -7,7 +7,7 @@ import type { VirtualKey } from '@xartifact/x-llm-gateway-db';
 
 // ─── Mock module state ──────────────────────────────────────────────────────
 let currentMockDb: ReturnType<typeof createMockDb> | null = null;
-let currentRateLimitResult: ReturnType<typeof createRateLimitResult> | null = null;
+let currentRateLimitResult: { allowed: boolean; reason?: string; rpm?: unknown; rpd?: unknown; token?: unknown } | null = null;
 
 function createMockDb() {
   return {
@@ -74,7 +74,7 @@ function createTestApp() {
   const app = new Hono();
   app.use('*', virtualKeyMiddleware);
   app.get('/test', (c) => {
-    const key = c.get('virtualKey') as VirtualKey | undefined;
+    const key = c.get('virtualKey' as any) as VirtualKey | undefined;
     return c.json({ ok: true, keyId: key?.id, keyName: key?.name });
   });
   return app;
@@ -158,7 +158,7 @@ describe('virtualKeyMiddleware', () => {
       const app = createTestApp();
       const res = await app.request('/test');
       expect(res.status).toBe(401);
-      const body = await res.json();
+      const body = (await res.json()) as Record<string, any>;
       expect(body.code).toBe('UNAUTHORIZED');
       expect(body.error).toContain('Missing API key');
     });
@@ -171,7 +171,7 @@ describe('virtualKeyMiddleware', () => {
         headers: { Authorization: 'Bearer sk-bearer-test' },
       });
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as Record<string, any>;
       expect(body.keyId).toBe(key.id);
       expect(body.keyName).toBe(key.name);
     });
@@ -187,7 +187,7 @@ describe('virtualKeyMiddleware', () => {
         },
       });
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as Record<string, any>;
       expect(body.keyId).toBe(key.id);
     });
 
@@ -199,7 +199,7 @@ describe('virtualKeyMiddleware', () => {
         headers: { 'x-api-key': 'sk-xapi-only' },
       });
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as Record<string, any>;
       expect(body.keyId).toBe(key.id);
     });
 
@@ -209,7 +209,7 @@ describe('virtualKeyMiddleware', () => {
         headers: { Authorization: '' },
       });
       expect(res.status).toBe(401);
-      const body = await res.json();
+      const body = (await res.json()) as Record<string, any>;
       expect(body.code).toBe('UNAUTHORIZED');
     });
   });
@@ -226,7 +226,7 @@ describe('virtualKeyMiddleware', () => {
         headers: { Authorization: 'Bearer sk-cache-ok' },
       });
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as Record<string, any>;
       expect(body.ok).toBe(true);
       expect(body.keyId).toBe(key.id);
     });
@@ -239,7 +239,7 @@ describe('virtualKeyMiddleware', () => {
         headers: { Authorization: 'Bearer sk-cache-disabled' },
       });
       expect(res.status).toBe(403);
-      const body = await res.json();
+      const body = (await res.json()) as Record<string, any>;
       expect(body.code).toBe('KEY_DISABLED');
       expect(body.error).toContain('disabled');
     });
@@ -255,7 +255,7 @@ describe('virtualKeyMiddleware', () => {
         headers: { Authorization: 'Bearer sk-cache-expired' },
       });
       expect(res.status).toBe(403);
-      const body = await res.json();
+      const body = (await res.json()) as Record<string, any>;
       expect(body.code).toBe('KEY_EXPIRED');
       expect(body.error).toContain('expired');
     });
@@ -275,7 +275,7 @@ describe('virtualKeyMiddleware', () => {
         headers: { Authorization: 'Bearer sk-cache-ratelimit' },
       });
       expect(res.status).toBe(429);
-      const body = await res.json();
+      const body = (await res.json()) as Record<string, any>;
       expect(body.error.type).toBe('rate_limit_error');
       expect(body.error.code).toBe('RATE_LIMIT_EXCEEDED');
       expect(body.error.limit.type).toBe('rpm');
@@ -294,7 +294,7 @@ describe('virtualKeyMiddleware', () => {
         headers: { Authorization: 'Bearer sk-db-ok' },
       });
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as Record<string, any>;
       expect(body.keyId).toBe(key.id);
       expect(body.keyName).toBe(key.name);
     });
@@ -306,7 +306,7 @@ describe('virtualKeyMiddleware', () => {
         headers: { Authorization: 'Bearer sk-db-missing' },
       });
       expect(res.status).toBe(401);
-      const body = await res.json();
+      const body = (await res.json()) as Record<string, any>;
       expect(body.code).toBe('INVALID_KEY');
       expect(body.error).toContain('Invalid API key');
     });
@@ -319,7 +319,7 @@ describe('virtualKeyMiddleware', () => {
         headers: { Authorization: 'Bearer sk-db-disabled' },
       });
       expect(res.status).toBe(403);
-      const body = await res.json();
+      const body = (await res.json()) as Record<string, any>;
       expect(body.code).toBe('KEY_DISABLED');
     });
 
@@ -334,7 +334,7 @@ describe('virtualKeyMiddleware', () => {
         headers: { Authorization: 'Bearer sk-db-expired' },
       });
       expect(res.status).toBe(403);
-      const body = await res.json();
+      const body = (await res.json()) as Record<string, any>;
       expect(body.code).toBe('KEY_EXPIRED');
     });
 
@@ -345,7 +345,7 @@ describe('virtualKeyMiddleware', () => {
         headers: { Authorization: 'Bearer sk-db-error' },
       });
       expect(res.status).toBe(500);
-      const body = await res.json();
+      const body = (await res.json()) as Record<string, any>;
       expect(body.code).toBe('AUTH_ERROR');
       expect(body.error).toContain('Authentication failed');
     });
@@ -391,7 +391,7 @@ describe('virtualKeyMiddleware', () => {
       expect(res.headers.get('X-RateLimit-RPM-Limit')).toBe('100');
       expect(res.headers.get('X-RateLimit-RPM-Remaining')).toBe('0');
       expect(res.headers.get('X-RateLimit-RPM-Reset')).toBeTruthy();
-      const body = await res.json();
+      const body = (await res.json()) as Record<string, any>;
       expect(body.error.limit.type).toBe('rpm');
     });
 
@@ -413,7 +413,7 @@ describe('virtualKeyMiddleware', () => {
       expect(res.headers.get('X-RateLimit-RPD-Limit')).toBe('1000');
       expect(res.headers.get('X-RateLimit-RPD-Remaining')).toBe('0');
       expect(res.headers.get('X-RateLimit-RPD-Reset')).toBeTruthy();
-      const body = await res.json();
+      const body = (await res.json()) as Record<string, any>;
       expect(body.error.limit.type).toBe('rpd');
     });
 
@@ -435,7 +435,7 @@ describe('virtualKeyMiddleware', () => {
       expect(res.headers.get('X-RateLimit-Tokens-Limit')).toBe('50000');
       expect(res.headers.get('X-RateLimit-Tokens-Remaining')).toBe('0');
       expect(res.headers.get('X-RateLimit-Tokens-Reset')).toBeTruthy();
-      const body = await res.json();
+      const body = (await res.json()) as Record<string, any>;
       expect(body.error.limit.type).toBe('token');
     });
 
@@ -509,7 +509,7 @@ describe('virtualKeyMiddleware', () => {
         headers: { Authorization: 'Bearer sk-invalidate' },
       });
       expect(res.status).toBe(401);
-      expect((await res.json()).code).toBe('INVALID_KEY');
+      expect(((await res.json()) as Record<string, any>).code).toBe('INVALID_KEY');
     });
   });
 
@@ -562,7 +562,7 @@ describe('virtualKeyMiddleware', () => {
         headers: { Authorization: 'Bearer sk-exact-expire' },
       });
       expect(res.status).toBe(403);
-      const body = await res.json();
+      const body = (await res.json()) as Record<string, any>;
       expect(body.code).toBe('KEY_EXPIRED');
     });
   });

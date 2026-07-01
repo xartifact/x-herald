@@ -1,7 +1,7 @@
 import { describe, it, expect, mock, beforeEach, afterEach } from 'bun:test'
 import type { CircuitBreakerSettings, CircuitBreakerMeta } from './circuit-breaker-policy'
 
-const mockPersistEvent = mock(() => {})
+const mockPersistEvent = mock((...args: unknown[]) => {})
 
 const mockRefreshConfigIfStale = mock(() => {})
 

@@ -3,13 +3,12 @@ import { describe, it, expect, mock, beforeEach, afterAll } from 'bun:test';
 const realDbClient = await import('../../db/client');
 const originalGetDatabase = realDbClient.getDatabase;
 
-import { instancePerfSnapshots } from '@xartifact/x-llm-gateway-db';
-import { anomalyEvents } from './anomaly-db';
+import { instancePerfSnapshots, anomalyEvents } from '@xartifact/x-llm-gateway-db';
 
 let mockSnapshots: unknown[] = [];
 let mockAnomalyEvents: unknown[] = [];
 
-const mockInsertValues = mock(() => Promise.resolve());
+const mockInsertValues = mock((_value: unknown) => Promise.resolve());
 const mockUpdateSetWhere = mock(() => Promise.resolve());
 
 const createAnomalyChain = (result: unknown) => {

@@ -380,7 +380,7 @@ describe('AnthropicMessagesExecutor', () => {
     it('auth header is authorization: Bearer when targetProtocol is openai on transform', async () => {
       const mockAdaptRequest = mock(async () => ({
         body: { model: 'gpt-4' },
-        headers: {},
+        headers: { 'content-type': 'application/json' },
         url: 'https://api.openai.com/v1/chat',
       }));
       mockGetTransformer.mockImplementation(() => ({ adaptRequest: mockAdaptRequest }));

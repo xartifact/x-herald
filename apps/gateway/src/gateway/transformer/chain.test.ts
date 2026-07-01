@@ -40,6 +40,12 @@ function createContext(): TransformerContext {
   return {
     requestId: 'test-req-123',
     state: new Map<string, unknown>(),
+    request: { model: '', messages: [] },
+    provider: { name: '', baseUrl: '', apiKey: '', protocol: 'openai' as const, models: [] },
+    model: '',
+    headers: {},
+    metadata: {},
+    startTime: Date.now(),
   };
 }
 
@@ -97,7 +103,7 @@ describe('TransformerChain', () => {
       const ctx = createContext();
       const result = await chain.normalize({ test: true }, ctx);
 
-      expect(result.data).toEqual({ test: true });
+      expect(result.data as unknown).toEqual({ test: true });
       expect(result.metadata.transformers).toEqual([]);
     });
 
@@ -107,7 +113,7 @@ describe('TransformerChain', () => {
       const ctx = createContext();
       const result = await chain.normalize({ test: true }, ctx);
 
-      expect(result.data).toEqual({ test: true });
+      expect(result.data as unknown).toEqual({ test: true });
       expect(result.metadata.transformers).toEqual([]);
       expect(getTransformerMock).toHaveBeenCalledWith('unknown-t');
     });
@@ -162,10 +168,10 @@ describe('TransformerChain', () => {
 
     it('passes output of one transformer as input to next', async () => {
       const t1 = createMockTransformer('t1', {
-        normalizeRequest: mock(async (req: unknown) => ({ ...(req as object), step: 1 })),
+        normalizeRequest: mock(async (req: unknown, _ctx: TransformerContext) => ({ ...(req as object), step: 1 }) as unknown as StandardRequest),
       });
       const t2 = createMockTransformer('t2', {
-        normalizeRequest: mock(async (req: unknown) => ({ ...(req as object), step: 2 })),
+        normalizeRequest: mock(async (req: unknown, _ctx: TransformerContext) => ({ ...(req as object), step: 2 }) as unknown as StandardRequest),
       });
       getTransformerMock.mockImplementation((name: string) => {
         if (name === 't1') return t1;
@@ -179,7 +185,7 @@ describe('TransformerChain', () => {
 
       expect(t1.normalizeRequest).toHaveBeenCalledWith({ base: true }, ctx);
       expect(t2.normalizeRequest).toHaveBeenCalledWith({ base: true, step: 1 }, ctx);
-      expect(result.data).toEqual({ base: true, step: 2 });
+      expect(result.data as unknown).toEqual({ base: true, step: 2 });
     });
 
     it('returns metadata with executed transformer names and duration', async () => {
@@ -234,7 +240,7 @@ describe('TransformerChain', () => {
       const ctx = createContext();
       await chain.adapt({ model: 'test' } as StandardRequest, ctx);
 
-      const adaptCall = t1.adaptRequest.mock.calls[0];
+      const adaptCall = (t1.adaptRequest as unknown as { mock: { calls: unknown[][] } }).mock.calls[0];
       expect(adaptCall[0]).toEqual({ model: 'test', normalized: true });
       expect(adaptCall[1]).toBe(ctx);
     });
@@ -330,7 +336,7 @@ describe('TransformerChain', () => {
 
       const chain = new TransformerChain(['t1', 't2'], 'response');
       const ctx = createContext();
-      const result = await chain.adaptResponse({ status: 200 } as StandardResponse, ctx);
+      const result = await chain.adaptResponse({ status: 200 } as unknown as StandardResponse, ctx);
 
       expect(t1.adaptResponse).toHaveBeenCalledTimes(1);
       expect(t2.adaptResponse).not.toHaveBeenCalled();
@@ -343,7 +349,7 @@ describe('TransformerChain', () => {
 
       const chain = new TransformerChain(['t1'], 'response');
       const ctx = createContext();
-      await expect(chain.adaptResponse({ status: 200 } as StandardResponse, ctx)).rejects.toThrow('No response adapter found in chain');
+      await expect(chain.adaptResponse({ status: 200 } as unknown as StandardResponse, ctx)).rejects.toThrow('No response adapter found in chain');
     });
 
     it('re-throws transformer error', async () => {
@@ -356,7 +362,7 @@ describe('TransformerChain', () => {
 
       const chain = new TransformerChain(['t1'], 'response');
       const ctx = createContext();
-      await expect(chain.adaptResponse({ status: 200 } as StandardResponse, ctx)).rejects.toThrow('adaptResponse error');
+      await expect(chain.adaptResponse({ status: 200 } as unknown as StandardResponse, ctx)).rejects.toThrow('adaptResponse error');
     });
   });
 

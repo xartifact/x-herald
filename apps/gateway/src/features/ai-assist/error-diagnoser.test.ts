@@ -54,7 +54,7 @@ describe('ErrorDiagnoser', () => {
   describe('parseDiagnosis', () => {
     it('Valid JSON with all fields → correct parsed result', () => {
       const diagnoser = new ErrorDiagnoser();
-      const result = (diagnoser as unknown as Record<string, (s: string) => unknown>).parseDiagnosis(
+      const result = (diagnoser as unknown as { parseDiagnosis: (s: string) => Record<string, unknown> }).parseDiagnosis(
         JSON.stringify({
           rootCause: 'test root cause',
           errorCategory: 'param_error',
@@ -88,7 +88,7 @@ describe('ErrorDiagnoser', () => {
 
     it('Invalid JSON → fallback result', () => {
       const diagnoser = new ErrorDiagnoser();
-      const result = (diagnoser as unknown as Record<string, (s: string) => unknown>).parseDiagnosis(
+      const result = (diagnoser as unknown as { parseDiagnosis: (s: string) => Record<string, unknown> }).parseDiagnosis(
         'not valid json {{'
       );
       expect(result).toEqual({
@@ -101,7 +101,7 @@ describe('ErrorDiagnoser', () => {
 
     it('Bad category → defaults to unknown', () => {
       const diagnoser = new ErrorDiagnoser();
-      const result = (diagnoser as unknown as Record<string, (s: string) => unknown>).parseDiagnosis(
+      const result = (diagnoser as unknown as { parseDiagnosis: (s: string) => Record<string, unknown> }).parseDiagnosis(
         JSON.stringify({
           rootCause: 'test',
           errorCategory: 'bad_category',
@@ -114,7 +114,7 @@ describe('ErrorDiagnoser', () => {
 
     it('Bad suggestion action → filtered out', () => {
       const diagnoser = new ErrorDiagnoser();
-      const result = (diagnoser as unknown as Record<string, (s: string) => unknown>).parseDiagnosis(
+      const result = (diagnoser as unknown as { parseDiagnosis: (s: string) => Record<string, unknown> }).parseDiagnosis(
         JSON.stringify({
           rootCause: 'test',
           errorCategory: 'param_error',
@@ -134,7 +134,7 @@ describe('ErrorDiagnoser', () => {
 
     it('Confidence > 1 → clamped to 1', () => {
       const diagnoser = new ErrorDiagnoser();
-      const result = (diagnoser as unknown as Record<string, (s: string) => unknown>).parseDiagnosis(
+      const result = (diagnoser as unknown as { parseDiagnosis: (s: string) => Record<string, unknown> }).parseDiagnosis(
         JSON.stringify({
           rootCause: 'test',
           errorCategory: 'param_error',
@@ -147,7 +147,7 @@ describe('ErrorDiagnoser', () => {
 
     it('Confidence < 0 → clamped to 0', () => {
       const diagnoser = new ErrorDiagnoser();
-      const result = (diagnoser as unknown as Record<string, (s: string) => unknown>).parseDiagnosis(
+      const result = (diagnoser as unknown as { parseDiagnosis: (s: string) => Record<string, unknown> }).parseDiagnosis(
         JSON.stringify({
           rootCause: 'test',
           errorCategory: 'param_error',
@@ -160,7 +160,7 @@ describe('ErrorDiagnoser', () => {
 
     it('Mixed valid + invalid suggestions → only valid ones returned', () => {
       const diagnoser = new ErrorDiagnoser();
-      const result = (diagnoser as unknown as Record<string, (s: string) => unknown>).parseDiagnosis(
+      const result = (diagnoser as unknown as { parseDiagnosis: (s: string) => Record<string, unknown> }).parseDiagnosis(
         JSON.stringify({
           rootCause: 'test',
           errorCategory: 'param_error',

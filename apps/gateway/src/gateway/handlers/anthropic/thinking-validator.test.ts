@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'bun:test';
-import {
+
+const {
   normalizeAnthropicPassthroughMessages,
   hasAssistantMessagesWithoutThinking,
   injectSyntheticThinkingBlocks,
-} from './thinking-validator';
+} = await import('./thinking-validator?v=1');
 
 describe('normalizeAnthropicPassthroughMessages', () => {
   it('passes non-user messages through unchanged', () => {

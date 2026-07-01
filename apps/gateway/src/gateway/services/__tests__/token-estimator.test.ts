@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'bun:test';
 
-import { estimateTokens, estimateUsageFromContent } from '../token-estimator';
+const { estimateTokens, estimateUsageFromContent } = await import('../token-estimator?v=1');
 
 describe('Token Estimator', () => {
   describe('estimateTokens', () => {

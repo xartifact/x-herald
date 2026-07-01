@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
-import { AbortManager } from './abort-manager';
+const { AbortManager } = await import('./abort-manager?v=1');
 import { logEventBus } from '../../services/log-event-bus';
 
 describe('AbortManager', () => {

@@ -3,6 +3,9 @@ import type { Context } from 'hono';
 
 import type { AbortManager } from './abort-manager';
 import type { MarkLogFailedParams } from './failover-executor';
+import type { FailoverExecutorParams } from './failover-executor';
+
+const { executeFailoverIteration } = await import('./failover-executor?v=1');
 
 // Mock executeWithRetry BEFORE importing failover-executor
 mock.module('./retry-executor', () => ({
@@ -14,10 +17,6 @@ mock.module('./retry-executor', () => ({
   })),
 }));
 
-import {
-  executeFailoverIteration,
-  type FailoverExecutorParams,
-} from './failover-executor';
 import { executeWithRetry } from './retry-executor';
 
 const mockedExecuteWithRetry = executeWithRetry as unknown as {

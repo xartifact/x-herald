@@ -36,7 +36,7 @@ jobs:
       - name: Gateway typecheck
         run: cd apps/gateway && bun run typecheck
       - name: Gateway tests
-        run: cd apps/gateway && bun test
+        run: cd apps/gateway && bun test --reporter=dot
       - name: UI tests
         run: bun run test:ui
       - name: Install Playwright browsers

@@ -7,7 +7,7 @@ import { describe, it, expect, beforeEach } from 'bun:test';
 
 import type { TransformerContext, StandardRequest, StandardResponse } from '@xartifact/x-llm-gateway-shared';
 
-import { OpenAITransformer } from '../openai';
+const { OpenAITransformer } = await import('../openai?v=1');
 
 describe('OpenAITransformer', () => {
   let transformer: OpenAITransformer;

@@ -4,7 +4,7 @@
 
 import { describe, it, expect } from 'bun:test';
 
-import { parseToolArguments } from '../tool-arguments-parser';
+const { parseToolArguments } = await import('../tool-arguments-parser?v=1');
 
 describe('parseToolArguments', () => {
   describe('标准 JSON 解析', () => {

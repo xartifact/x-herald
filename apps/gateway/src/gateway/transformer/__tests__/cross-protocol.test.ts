@@ -7,8 +7,8 @@ import { describe, it, expect, beforeEach } from 'bun:test';
 
 import type { TransformerContext, StandardRequest, StandardResponse } from '@xartifact/x-llm-gateway-shared';
 
-import { AnthropicTransformer } from '../protocols/anthropic';
-import { OpenAITransformer } from '../protocols/openai';
+const { AnthropicTransformer } = await import('../protocols/anthropic?v=1');
+const { OpenAITransformer } = await import('../protocols/openai?v=1');
 
 /**
  * 跨协议转换测试

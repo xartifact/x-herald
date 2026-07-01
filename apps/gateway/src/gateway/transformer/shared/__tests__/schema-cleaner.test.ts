@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 
-import { cleanSchemaForOpenAI } from '../schema-cleaner';
+const { cleanSchemaForOpenAI } = await import('../schema-cleaner?v=1');
 
 const ENABLED_CONFIG = { cleanEnabled: true };
 

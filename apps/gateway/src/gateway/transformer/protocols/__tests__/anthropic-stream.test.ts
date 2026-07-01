@@ -7,7 +7,7 @@ import { describe, it, expect } from 'bun:test';
 
 import type { TransformerContext } from '@xartifact/x-llm-gateway-shared';
 
-import { AnthropicTransformer } from '../anthropic';
+const { AnthropicTransformer } = await import('../anthropic?v=1');
 
 // 创建模拟的 TransformerContext
 function createMockContext(direction?: 'normalize' | 'adapt'): TransformerContext {

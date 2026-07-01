@@ -1,7 +1,8 @@
 import { describe, it, expect, mock, beforeEach } from 'bun:test';
 
-import { executeWithRetry } from './retry-executor';
 import type { RetryConfig, RetryExecuteParams, RetryResult } from './retry-executor';
+
+const { executeWithRetry } = await import('./retry-executor?v=1');
 
 // ---------------------------------------------------------------------------
 // Helpers

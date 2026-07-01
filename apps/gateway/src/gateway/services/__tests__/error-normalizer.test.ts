@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'bun:test';
 
-import { normalizeProviderErrorMessage } from '../error-handler';
+const { normalizeProviderErrorMessage } = await import('../error-handler?v=1');
 
 describe('normalizeProviderErrorMessage', () => {
   describe('消息体超 Provider 限制', () => {

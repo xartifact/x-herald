@@ -9,6 +9,7 @@ on:
       - ci/**
       - feat/**
       - fix/**
+      - refactor/**
     tags:
       - "v*"
   pull_request:

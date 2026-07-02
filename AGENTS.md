@@ -308,15 +308,15 @@ cp .env.example .env
 
 ### 测试基础设施
 
-| 文件                                              | 用途                |
-| ------------------------------------------------- | ------------------- |
-| `apps/gateway/src/test/factories.ts`              | Mock 数据工厂函数   |
-| `apps/gateway/src/test/hono-helper.ts`            | Hono 测试请求辅助   |
-| `apps/gateway/src/test/setup.ts`                  | bun:test 全局 setup |
+| 文件                                              | 用途                 |
+| ------------------------------------------------- | -------------------- |
+| `apps/gateway/src/test/factories.ts`              | Mock 数据工厂函数    |
+| `apps/gateway/src/test/hono-helper.ts`            | Hono 测试请求辅助    |
+| `apps/gateway/src/test/setup.ts`                  | bun:test 全局 setup  |
 | `apps/gateway/src/test/mock-upstream.ts`          | Mock 上游 LLM 服务器 |
-| `apps/gateway/src/test/proxy-test-helpers.ts`     | 代理全链路测试环境  |
-| `.claude/skills/writing-tests/SKILL.md`           | 测试编写规范        |
-| `.claude/skills/engineering-conventions/SKILL.md` | 工程编码规范        |
+| `apps/gateway/src/test/proxy-test-helpers.ts`     | 代理全链路测试环境   |
+| `.claude/skills/writing-tests/SKILL.md`           | 测试编写规范         |
+| `.claude/skills/engineering-conventions/SKILL.md` | 工程编码规范         |
 
 <!-- gitnexus:start -->
 

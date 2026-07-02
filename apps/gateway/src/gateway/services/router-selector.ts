@@ -95,9 +95,10 @@ export async function selectByStrategy(
           break
         }
       }
-      const rest = [...candidates.slice(0, selectedIdx), ...candidates.slice(selectedIdx + 1)].toSorted(
-        byPriorityThenAge,
-      )
+      const rest = [
+        ...candidates.slice(0, selectedIdx),
+        ...candidates.slice(selectedIdx + 1),
+      ].toSorted(byPriorityThenAge)
       return [candidates[selectedIdx], ...rest]
     }
 

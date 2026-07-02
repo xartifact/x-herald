@@ -17,5 +17,8 @@
       "@xartifact/x-llm-gateway-shared": ["../shared/src"]
     }
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": [
+    "src/connections/pglite.ts"
+  ]
 }

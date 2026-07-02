@@ -11,7 +11,8 @@ if (g['ResizeObserver'] === undefined) {
 }
 
 // queryCommandSupported polyfill — jsdom does not provide it, but monaco-editor requires it
-const doc = globalThis.document as unknown as Record<string, unknown>
-if (typeof doc.queryCommandSupported !== 'function') {
-  doc.queryCommandSupported = () => false
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const doc = (globalThis as any).document
+if (typeof doc?.queryCommandSupported !== 'function') {
+  if (doc) doc.queryCommandSupported = () => false
 }

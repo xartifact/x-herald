@@ -18,7 +18,5 @@
     }
   },
   "include": ["src"],
-  "exclude": [
-    "src/connections/pglite.ts"
-  ]
+  "exclude": ["src/connections/pglite.ts"]
 }

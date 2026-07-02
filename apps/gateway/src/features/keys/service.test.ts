@@ -25,14 +25,7 @@ afterAll(() => {
   mock.module('../../lib/logger', () => realLogger)
 })
 
-import {
-  listKeys,
-  getKey,
-  createKey,
-  updateKey,
-  deleteKey,
-  resetKey,
-} from './service'
+import { listKeys, getKey, createKey, updateKey, deleteKey, resetKey } from './service'
 
 describe('keys service', () => {
   let db: ReturnType<typeof createMockDb>
@@ -89,15 +82,18 @@ describe('keys service', () => {
   it('createKey handles all optional fields', async () => {
     const newKey = { id: 'key-1', key: 'xg_test', name: 'Full Key' }
     db._setResult('insert', [newKey])
-    const result = await createKey({
-      name: 'Full Key',
-      allowedModels: ['gpt-4'],
-      rateLimitRpm: 10,
-      rateLimitRpd: 100,
-      tokenLimitDaily: 1000,
-      enabled: false,
-      expiresAt: '2024-12-31T00:00:00Z',
-    }, db)
+    const result = await createKey(
+      {
+        name: 'Full Key',
+        allowedModels: ['gpt-4'],
+        rateLimitRpm: 10,
+        rateLimitRpd: 100,
+        tokenLimitDaily: 1000,
+        enabled: false,
+        expiresAt: '2024-12-31T00:00:00Z',
+      },
+      db,
+    )
     expect(result).toEqual(newKey as any)
   })
 

@@ -3,7 +3,11 @@ import { toast } from 'sonner'
 
 import { get, post, put, del as deleteRequest, patch } from '@xartifact/x-llm-gateway-ui'
 
-import type { ModelRoute, CreateModelRoutePayload, UpdateModelRoutePayload } from '@xartifact/x-llm-gateway-ui'
+import type {
+  ModelRoute,
+  CreateModelRoutePayload,
+  UpdateModelRoutePayload,
+} from '@xartifact/x-llm-gateway-ui'
 
 interface ApiResponse<T> {
   success: boolean
@@ -77,9 +81,13 @@ export function useCreateModelRoute() {
 
   return useMutation({
     mutationFn: async (data: CreateModelRoutePayload) => {
-      const response = await post<ApiResponse<ModelRoute>>('/api/model-routes', data as unknown as Record<string, unknown>, {
-        extractData: false,
-      })
+      const response = await post<ApiResponse<ModelRoute>>(
+        '/api/model-routes',
+        data as unknown as Record<string, unknown>,
+        {
+          extractData: false,
+        },
+      )
       if (!response.success) {
         throw new Error(response.error || '创建路由规则失败')
       }
@@ -101,9 +109,13 @@ export function useUpdateModelRoute() {
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: UpdateModelRoutePayload }) => {
-      const response = await put<ApiResponse<ModelRoute>>(`/api/model-routes/${id}`, data as unknown as Record<string, unknown>, {
-        extractData: false,
-      })
+      const response = await put<ApiResponse<ModelRoute>>(
+        `/api/model-routes/${id}`,
+        data as unknown as Record<string, unknown>,
+        {
+          extractData: false,
+        },
+      )
       if (!response.success) {
         throw new Error(response.error || '更新路由规则失败')
       }
@@ -150,9 +162,13 @@ export function useToggleModelRoute() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const response = await patch<ApiResponse<ModelRoute>>(`/api/model-routes/${id}/toggle`, undefined, {
-        extractData: false,
-      })
+      const response = await patch<ApiResponse<ModelRoute>>(
+        `/api/model-routes/${id}/toggle`,
+        undefined,
+        {
+          extractData: false,
+        },
+      )
       if (!response.success) {
         throw new Error(response.error || '切换状态失败')
       }

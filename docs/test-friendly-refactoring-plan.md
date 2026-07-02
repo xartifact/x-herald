@@ -10,40 +10,40 @@
 
 ### 测试全景
 
-| 层 | 文件数 | 运行器 | 状态 |
-|---|:---:|---|---|
-| 后端单元/集成 (`*.test.ts`) | 80 | `bun:test` | ✅ 覆盖面广 |
-| UI 组件 (`*.ui.test.tsx`) | 5 | `vitest` | ⚠️ 仅 providers/keys |
-| E2E (`*.spec.ts`) | 10 | `@playwright/test` | ✅ 覆盖主要 CRUD 页面 |
-| TanStack 应用 | 1 | `bun:test` | ⚠️ 几乎空白 |
-| Shared 包 | 0 | — | ❌ 无测试 |
+| 层                          | 文件数 | 运行器             | 状态                  |
+| --------------------------- | :----: | ------------------ | --------------------- |
+| 后端单元/集成 (`*.test.ts`) |   80   | `bun:test`         | ✅ 覆盖面广           |
+| UI 组件 (`*.ui.test.tsx`)   |   5    | `vitest`           | ⚠️ 仅 providers/keys  |
+| E2E (`*.spec.ts`)           |   10   | `@playwright/test` | ✅ 覆盖主要 CRUD 页面 |
+| TanStack 应用               |   1    | `bun:test`         | ⚠️ 几乎空白           |
+| Shared 包                   |   0    | —                  | ❌ 无测试             |
 
 ### 测试基础设施盘点
 
-| 文件 | 用途 | 质量 |
-|------|------|------|
-| `apps/gateway/src/test/setup.ts` | PGlite 内存 DB + 迁移 + createEngine | ✅ 优秀，155 行 |
-| `apps/gateway/src/test/factories.ts` | 8 个工厂函数 | ✅ 好 |
-| `apps/gateway/src/test/hono-helper.ts` | testRequest / authenticatedRequest | ✅ 够用 |
-| `apps/gateway/src/test/crud-helper.ts` | setupCrudTest / teardownCrudTest | ✅ 好 |
-| `apps/gateway/src/test/ui-setup.ts` | jest-dom + ResizeObserver polyfill | ✅ 11 行够用 |
-| `apps/gateway/bunfig.toml` | coverage=true, thresholds=0.10/0.15 | ✅ 配置好但从未收集 |
-| `vitest.ui.ts` | jsdom env, *.ui.test.tsx | ✅ 干净 |
-| `apps/web/playwright.config.ts` | 3 projects, PGlite webServer, auth state | ✅ 优秀 |
+| 文件                                   | 用途                                     | 质量                |
+| -------------------------------------- | ---------------------------------------- | ------------------- |
+| `apps/gateway/src/test/setup.ts`       | PGlite 内存 DB + 迁移 + createEngine     | ✅ 优秀，155 行     |
+| `apps/gateway/src/test/factories.ts`   | 8 个工厂函数                             | ✅ 好               |
+| `apps/gateway/src/test/hono-helper.ts` | testRequest / authenticatedRequest       | ✅ 够用             |
+| `apps/gateway/src/test/crud-helper.ts` | setupCrudTest / teardownCrudTest         | ✅ 好               |
+| `apps/gateway/src/test/ui-setup.ts`    | jest-dom + ResizeObserver polyfill       | ✅ 11 行够用        |
+| `apps/gateway/bunfig.toml`             | coverage=true, thresholds=0.10/0.15      | ✅ 配置好但从未收集 |
+| `vitest.ui.ts`                         | jsdom env, \*.ui.test.tsx                | ✅ 干净             |
+| `apps/web/playwright.config.ts`        | 3 projects, PGlite webServer, auth state | ✅ 优秀             |
 
 ### 测试友好性评分
 
-| 层 | 评分 | 主要阻断 |
-|---|:---:|---|
-| Failover executor | 4/5 | 原生 `fetch()` |
-| Shared types | 4/5 | 缺 Zod schema 测试 |
-| 前端路由 | 3/5 | 无 API client DI |
-| 引擎组合 | 2/5 | 无 DI，eager 单例 |
-| Transformer registry | 2/5 | 无 reset |
-| Virtual key middleware | 2/5 | Cache 不可注入 |
-| 限流引擎 | 2/5 | 时间硬编码 |
-| Feature services (x7) | 1/5 | 直接 `getDatabase()` 调用 |
-| 熔断器 | 1/5 | 时间硬编码 + fire-and-forget |
+| 层                     | 评分 | 主要阻断                     |
+| ---------------------- | :--: | ---------------------------- |
+| Failover executor      | 4/5  | 原生 `fetch()`               |
+| Shared types           | 4/5  | 缺 Zod schema 测试           |
+| 前端路由               | 3/5  | 无 API client DI             |
+| 引擎组合               | 2/5  | 无 DI，eager 单例            |
+| Transformer registry   | 2/5  | 无 reset                     |
+| Virtual key middleware | 2/5  | Cache 不可注入               |
+| 限流引擎               | 2/5  | 时间硬编码                   |
+| Feature services (x7)  | 1/5  | 直接 `getDatabase()` 调用    |
+| 熔断器                 | 1/5  | 时间硬编码 + fire-and-forget |
 
 ---
 
@@ -68,12 +68,14 @@ Layer 4: E2E 流程          → 完整引擎 + Playwright      ~10%
 > 解锁熔断器和限流器的确定性测试。
 
 ### T1.1 熔断器时间注入
+
 - `circuit-breaker-state.ts` 构造函数接受 `now: () => number`（默认 `Date.now`）
 - `circuit-breaker-policy.ts` 的 `refreshConfigIfStale` 同理
 - 所有 `Date.now()` 替换为 `this.now()`
 - 测试用 `createTimeController()` 注入固定时间
 
 ### T1.2 限流引擎时间注入
+
 - `SlidingWindowCounter` 构造函数接受 `now: () => number`
 - `DailyAccumulator` 同理
 - `RateLimitEngine` 传递 `now` 给内部计数器
@@ -83,12 +85,16 @@ Layer 4: E2E 流程          → 完整引擎 + Playwright      ~10%
 ```typescript
 // test/time-control.ts
 export function createTimeController() {
-  let currentTime = 1_700_000_000_000;
+  let currentTime = 1_700_000_000_000
   return {
     now: () => currentTime,
-    advance: (ms: number) => { currentTime += ms; },
-    set: (ts: number) => { currentTime = ts; },
-  };
+    advance: (ms: number) => {
+      currentTime += ms
+    },
+    set: (ts: number) => {
+      currentTime = ts
+    },
+  }
 }
 ```
 
@@ -117,6 +123,7 @@ export async function listKeys(db?: Database): Promise<VirtualKey[]> {
 ```
 
 ### 涉及文件（7 个 service）
+
 - `features/providers/service.ts`
 - `features/model-groups/service.ts`
 - `features/keys/service.ts`
@@ -147,6 +154,7 @@ export function createMockDb() {
 > 解决测试间状态泄漏。
 
 ### T3.1 各模块导出 reset 函数
+
 - `transformerRegistry` 添加 `clear()` 方法
 - `circuitBreakerRegistry` 添加 `reset()` 方法
 - `rateLimitEngine` 添加 `reset()` 方法
@@ -157,12 +165,12 @@ export function createMockDb() {
 ```typescript
 // test/state-reset.ts
 export async function resetAllState() {
-  transformerRegistry.clear();
-  circuitBreakerRegistry.reset();
-  rateLimitEngine.reset();
-  logEventBus.reset();
-  invalidateAllVirtualKeys();
-  mock.restore();
+  transformerRegistry.clear()
+  circuitBreakerRegistry.reset()
+  rateLimitEngine.reset()
+  logEventBus.reset()
+  invalidateAllVirtualKeys()
+  mock.restore()
 }
 ```
 
@@ -187,7 +195,11 @@ export function decideStateTransition(state: InstanceState, now: number): Instan
 
 ```typescript
 // rate-limit-logic.ts — 纯函数
-export function decideRateLimit(entries: Entry[], maxRequests: number, now: number): RateLimitResult {
+export function decideRateLimit(
+  entries: Entry[],
+  maxRequests: number,
+  now: number,
+): RateLimitResult {
   // 纯逻辑
 }
 ```
@@ -203,11 +215,11 @@ export function decideRateLimit(entries: Entry[], maxRequests: number, now: numb
 ```typescript
 // test/scenario-builder.ts
 export async function buildScenario(db: Database) {
-  const provider = await seedProvider(db, { name: 'OpenAI' });
-  const group = await seedModelGroup(db, { name: 'gpt-4' });
-  const instance = await seedInstance(db, { providerId: provider.id });
-  await seedMembership(db, { groupId: group.id, instanceId: instance.id });
-  return { provider, group, instance };
+  const provider = await seedProvider(db, { name: 'OpenAI' })
+  const group = await seedModelGroup(db, { name: 'gpt-4' })
+  const instance = await seedInstance(db, { providerId: provider.id })
+  await seedMembership(db, { groupId: group.id, instanceId: instance.id })
+  return { provider, group, instance }
 }
 ```
 
@@ -230,6 +242,7 @@ export async function readStream(stream: ReadableStream): Promise<string[]> { ..
 ```
 
 ### T5.4 补充工厂函数
+
 - `createTestCircuitBreakerEvent`
 - `createTestHealthRun`
 - `createTestInstancePerfSnapshot`
@@ -259,6 +272,7 @@ cd apps/gateway && bun test --coverage
 ```
 
 ### T6.3 补齐缺失测试
+
 - `features/circuit-breaker/api.test.ts` — feature 级测试
 - `features/gateway-config/service.test.ts` — service 级测试
 - Shared Zod schema 测试（`providerSchema`、`thinkingMappingFormSchema`）
@@ -281,6 +295,7 @@ export function mockApiResponse<T>(endpoint: string, response: T) { ... }
 ```
 
 ### T7.2 补齐关键组件测试
+
 - ProviderFormDialog — 表单验证 + 提交
 - KeyFormDialog — 创建/编辑流程
 - ModelGroupFormDialog — 组 + 实例管理
@@ -288,6 +303,7 @@ export function mockApiResponse<T>(endpoint: string, response: T) { ... }
 - CircuitBreakerPanel — 状态展示
 
 ### T7.3 API Hook 测试
+
 - 每个 feature 的主查询 hook 1 个测试文件
 - 使用 `renderHook` + `waitFor` 验证数据获取
 
@@ -308,6 +324,7 @@ Phase T7 (UI 测试)      ← 独立，可与 T5/T6 并行
 ```
 
 可并行批次：
+
 - 批次 A：T1 + T2 同时进行
 - 批次 B：T3 + T4（依赖 T1）+ T6（独立）
 - 批次 C：T5 + T7（依赖 T2/T3）
@@ -316,30 +333,30 @@ Phase T7 (UI 测试)      ← 独立，可与 T5/T6 并行
 
 ## 总览
 
-| 阶段 | 内容 | 工时 | 优先级 |
-|------|------|:---:|:---:|
-| T1 | 时间注入 | ~3h | P0 |
-| T2 | Service 参数注入 + Mock DB | ~4h | P0 |
-| T3 | 单例 Reset | ~2h | P1 |
-| T4 | 纯函数提取 | ~3h | P1 |
-| T5 | 测试基础设施 | ~3h | P1 |
-| T6 | CI 集成 + 缺口 | ~3h | P2 |
-| T7 | UI 组件测试 | ~3h | P2 |
-| | **合计** | **~21h** | |
+| 阶段 | 内容                       |   工时   | 优先级 |
+| ---- | -------------------------- | :------: | :----: |
+| T1   | 时间注入                   |   ~3h    |   P0   |
+| T2   | Service 参数注入 + Mock DB |   ~4h    |   P0   |
+| T3   | 单例 Reset                 |   ~2h    |   P1   |
+| T4   | 纯函数提取                 |   ~3h    |   P1   |
+| T5   | 测试基础设施               |   ~3h    |   P1   |
+| T6   | CI 集成 + 缺口             |   ~3h    |   P2   |
+| T7   | UI 组件测试                |   ~3h    |   P2   |
+|      | **合计**                   | **~21h** |        |
 
 ---
 
 ## 预期指标
 
-| 指标 | 当前 | 目标 |
-|------|------|------|
-| Service 测试 mock setup 行数 | ~57 行 | ~5 行 |
-| 熔断器冷却测试时间 | 真实等待 60s | 0ms |
-| 限流窗口测试时间 | 真实等待窗口期 | 0ms |
-| 可独立测试的纯函数模块 | 2 个 | 5+ 个 |
-| UI 组件测试文件 | 5 | 15+ |
-| CI 执行的测试类型 | 1（engine） | 3（engine + UI + E2E） |
-| 覆盖率基线 | 未收集 | 已建立 |
+| 指标                         | 当前           | 目标                   |
+| ---------------------------- | -------------- | ---------------------- |
+| Service 测试 mock setup 行数 | ~57 行         | ~5 行                  |
+| 熔断器冷却测试时间           | 真实等待 60s   | 0ms                    |
+| 限流窗口测试时间             | 真实等待窗口期 | 0ms                    |
+| 可独立测试的纯函数模块       | 2 个           | 5+ 个                  |
+| UI 组件测试文件              | 5              | 15+                    |
+| CI 执行的测试类型            | 1（engine）    | 3（engine + UI + E2E） |
+| 覆盖率基线                   | 未收集         | 已建立                 |
 
 ---
 

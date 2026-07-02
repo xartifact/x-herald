@@ -17,7 +17,9 @@ export function SyntheticThinkingSelector({ value, onChange }: SyntheticThinking
           type="button"
           onClick={() => onChange('strip')}
           className={`p-3 rounded-lg border text-left transition-colors ${
-            value === 'strip' ? 'border-primary bg-primary/5' : 'border-border hover:border-muted-foreground/50'
+            value === 'strip'
+              ? 'border-primary bg-primary/5'
+              : 'border-border hover:border-muted-foreground/50'
           }`}
         >
           <div className="font-medium text-sm">strip（降级）</div>
@@ -29,7 +31,9 @@ export function SyntheticThinkingSelector({ value, onChange }: SyntheticThinking
           type="button"
           onClick={() => onChange('inject')}
           className={`p-3 rounded-lg border text-left transition-colors ${
-            value === 'inject' ? 'border-primary bg-primary/5' : 'border-border hover:border-muted-foreground/50'
+            value === 'inject'
+              ? 'border-primary bg-primary/5'
+              : 'border-border hover:border-muted-foreground/50'
           }`}
         >
           <div className="font-medium text-sm">inject（注入）</div>

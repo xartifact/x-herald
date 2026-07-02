@@ -30,7 +30,13 @@ export interface CircuitBreakerStats {
   topInstances: CircuitBreakerTopInstance[]
 }
 
-export type CircuitBreakerEventType = 'opened' | 'half_open' | 'closed' | 'cooldown' | 'reset' | 'manual_trip'
+export type CircuitBreakerEventType =
+  | 'opened'
+  | 'half_open'
+  | 'closed'
+  | 'cooldown'
+  | 'reset'
+  | 'manual_trip'
 
 export interface CircuitBreakerEventResponse {
   id: string

@@ -1,9 +1,9 @@
-import { eq, sql } from '@xartifact/x-llm-gateway-db';
+import { eq, sql } from '@xartifact/x-llm-gateway-db'
 
-import { getDatabase } from '../../../db/client';
-import logger from '../../../lib/logger';
+import { getDatabase } from '../../../db/client'
+import logger from '../../../lib/logger'
 
-import { clientRequestedModels } from '@xartifact/x-llm-gateway-db';
+import { clientRequestedModels } from '@xartifact/x-llm-gateway-db'
 
 /**
  * 记录客户端请求的模型名称
@@ -12,11 +12,11 @@ import { clientRequestedModels } from '@xartifact/x-llm-gateway-db';
  */
 export async function recordClientRequestedModel(modelName: string): Promise<void> {
   if (!modelName || modelName.trim() === '') {
-    return;
+    return
   }
 
-  const db = getDatabase();
-  const normalizedName = modelName.trim();
+  const db = getDatabase()
+  const normalizedName = modelName.trim()
 
   try {
     // 使用 upsert：如果存在则更新，不存在则插入
@@ -32,12 +32,12 @@ export async function recordClientRequestedModel(modelName: string): Promise<voi
           requestCount: sql`${clientRequestedModels.requestCount} + 1`,
           lastSeenAt: new Date(),
         },
-      });
+      })
 
-    logger.debug({ modelName: normalizedName }, 'Client requested model recorded');
+    logger.debug({ modelName: normalizedName }, 'Client requested model recorded')
   } catch (error) {
     // 记录错误但不影响主流程
-    logger.error({ error, modelName: normalizedName }, 'Failed to record client requested model');
+    logger.error({ error, modelName: normalizedName }, 'Failed to record client requested model')
   }
 }
 
@@ -47,10 +47,10 @@ export async function recordClientRequestedModel(modelName: string): Promise<voi
  */
 export async function recordClientRequestedModels(modelNames: string[]): Promise<void> {
   // 去重并过滤空值
-  const uniqueNames = [...new Set(modelNames.filter(name => name && name.trim() !== ''))];
-  
+  const uniqueNames = [...new Set(modelNames.filter((name) => name && name.trim() !== ''))]
+
   // 串行处理，避免并发冲突
   for (const modelName of uniqueNames) {
-    await recordClientRequestedModel(modelName);
+    await recordClientRequestedModel(modelName)
   }
 }

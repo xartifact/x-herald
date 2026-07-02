@@ -46,9 +46,7 @@ export function CircuitBreakerStatsCards({ stats, loading, error, onRetry }: Pro
             <item.icon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {loading ? '—' : (item.value ?? 0)}
-            </div>
+            <div className="text-2xl font-bold">{loading ? '—' : (item.value ?? 0)}</div>
           </CardContent>
         </Card>
       ))}

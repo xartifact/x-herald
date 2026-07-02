@@ -25,11 +25,15 @@ describe('joinUrl', () => {
   })
 
   it('deduplicates overlapping multi-segment path', () => {
-    expect(joinUrl('https://api.com/v1/chat', '/v1/chat/completions')).toBe('https://api.com/v1/chat/completions')
+    expect(joinUrl('https://api.com/v1/chat', '/v1/chat/completions')).toBe(
+      'https://api.com/v1/chat/completions',
+    )
   })
 
   it('deduplicates partial overlap at path end', () => {
-    expect(joinUrl('https://api.com/v1/chat', '/chat/completions')).toBe('https://api.com/v1/chat/completions')
+    expect(joinUrl('https://api.com/v1/chat', '/chat/completions')).toBe(
+      'https://api.com/v1/chat/completions',
+    )
   })
 
   // non-overlap cases
@@ -52,7 +56,9 @@ describe('joinUrl', () => {
 
   // complex nested paths
   it('handles deeply nested endpoint path', () => {
-    expect(joinUrl('https://api.com/v1', '/v1/chat/completions')).toBe('https://api.com/v1/chat/completions')
+    expect(joinUrl('https://api.com/v1', '/v1/chat/completions')).toBe(
+      'https://api.com/v1/chat/completions',
+    )
   })
 
   it('handles base with multiple segments and single-segment endpoint', () => {

@@ -26,7 +26,9 @@ test.describe('Access Models', () => {
     await page.locator('input[placeholder="my-gpt4"]').fill(name)
     await page.getByRole('button', { name: '创建' }).click()
 
-    await page.waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 10000 }).catch(() => {})
+    await page
+      .waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 10000 })
+      .catch(() => {})
     await expect(page.getByText(name)).toBeVisible({ timeout: 15000 })
   })
 
@@ -39,7 +41,9 @@ test.describe('Access Models', () => {
     await page.waitForSelector('[role="dialog"]')
     await page.locator('input[placeholder="my-gpt4"]').fill(name)
     await page.getByRole('button', { name: '创建' }).click()
-    await page.waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 10000 }).catch(() => {})
+    await page
+      .waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 10000 })
+      .catch(() => {})
     await expect(page.getByText(name)).toBeVisible({ timeout: 15000 })
 
     await page.locator('input[placeholder="搜索接入模型..."]').fill(name)
@@ -61,7 +65,9 @@ test.describe('Access Models', () => {
     await page.waitForSelector('[role="dialog"]')
     await page.locator('input[placeholder="my-gpt4"]').fill(originalName)
     await page.getByRole('button', { name: '创建' }).click()
-    await page.waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 10000 }).catch(() => {})
+    await page
+      .waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 10000 })
+      .catch(() => {})
     await expect(page.getByText(originalName)).toBeVisible({ timeout: 15000 })
 
     const row = page.locator('table tbody tr').filter({ hasText: originalName }).first()
@@ -72,7 +78,9 @@ test.describe('Access Models', () => {
     await page.locator('input[placeholder="my-gpt4"]').fill(newName)
     await page.getByRole('button', { name: '保存更改' }).click()
 
-    await page.waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 10000 }).catch(() => {})
+    await page
+      .waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 10000 })
+      .catch(() => {})
     await expect(page.getByText(newName)).toBeVisible({ timeout: 15000 })
   })
 
@@ -85,7 +93,9 @@ test.describe('Access Models', () => {
     await page.waitForSelector('[role="dialog"]')
     await page.locator('input[placeholder="my-gpt4"]').fill(name)
     await page.getByRole('button', { name: '创建' }).click()
-    await page.waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 10000 }).catch(() => {})
+    await page
+      .waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 10000 })
+      .catch(() => {})
     await expect(page.getByText(name)).toBeVisible({ timeout: 15000 })
 
     const row = page.locator('table tbody tr').filter({ hasText: name }).first()
@@ -104,7 +114,9 @@ test.describe('Access Models', () => {
     await page.waitForSelector('[role="dialog"]')
     await page.locator('input[placeholder="my-gpt4"]').fill(name)
     await page.getByRole('button', { name: '创建' }).click()
-    await page.waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 10000 }).catch(() => {})
+    await page
+      .waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 10000 })
+      .catch(() => {})
     await expect(page.getByText(name)).toBeVisible({ timeout: 15000 })
 
     const row = page.locator('table tbody tr').filter({ hasText: name }).first()

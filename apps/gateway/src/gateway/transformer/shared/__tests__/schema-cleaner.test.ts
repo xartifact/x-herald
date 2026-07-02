@@ -1,8 +1,8 @@
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, it } from 'bun:test'
 
-const { cleanSchemaForOpenAI } = await import('../schema-cleaner?v=1');
+const { cleanSchemaForOpenAI } = await import('../schema-cleaner?v=1')
 
-const ENABLED_CONFIG = { cleanEnabled: true };
+const ENABLED_CONFIG = { cleanEnabled: true }
 
 describe('cleanSchemaForOpenAI', () => {
   it('should remove $schema field', () => {
@@ -12,14 +12,14 @@ describe('cleanSchemaForOpenAI', () => {
       properties: {
         name: { type: 'string' },
       },
-    };
+    }
 
-    const result = cleanSchemaForOpenAI(schema, ENABLED_CONFIG) as Record<string, unknown>;
+    const result = cleanSchemaForOpenAI(schema, ENABLED_CONFIG) as Record<string, unknown>
 
-    expect(result.$schema).toBeUndefined();
-    expect(result.type).toBe('object');
-    expect(result.properties).toBeDefined();
-  });
+    expect(result.$schema).toBeUndefined()
+    expect(result.type).toBe('object')
+    expect(result.properties).toBeDefined()
+  })
 
   it('should preserve additionalProperties field (required by OpenAI)', () => {
     const schema = {
@@ -28,28 +28,28 @@ describe('cleanSchemaForOpenAI', () => {
         name: { type: 'string' },
       },
       additionalProperties: false,
-    };
+    }
 
-    const result = cleanSchemaForOpenAI(schema, ENABLED_CONFIG) as Record<string, unknown>;
+    const result = cleanSchemaForOpenAI(schema, ENABLED_CONFIG) as Record<string, unknown>
 
     // OpenAI API 要求保留 additionalProperties
-    expect(result.additionalProperties).toBe(false);
-    expect(result.type).toBe('object');
-  });
+    expect(result.additionalProperties).toBe(false)
+    expect(result.type).toBe('object')
+  })
 
   it('should preserve enum and description fields', () => {
     const schema = {
       type: 'string',
       description: 'A color choice',
       enum: ['red', 'green', 'blue'],
-    };
+    }
 
-    const result = cleanSchemaForOpenAI(schema, ENABLED_CONFIG) as Record<string, unknown>;
+    const result = cleanSchemaForOpenAI(schema, ENABLED_CONFIG) as Record<string, unknown>
 
-    expect(result.type).toBe('string');
-    expect(result.description).toBe('A color choice');
-    expect(result.enum).toEqual(['red', 'green', 'blue']);
-  });
+    expect(result.type).toBe('string')
+    expect(result.description).toBe('A color choice')
+    expect(result.enum).toEqual(['red', 'green', 'blue'])
+  })
 
   it('should recursively clean nested properties', () => {
     const schema = {
@@ -66,18 +66,18 @@ describe('cleanSchemaForOpenAI', () => {
           additionalProperties: false,
         },
       },
-    };
+    }
 
-    const result = cleanSchemaForOpenAI(schema, ENABLED_CONFIG) as Record<string, unknown>;
-    const userProp = (result.properties as Record<string, unknown>).user as Record<string, unknown>;
+    const result = cleanSchemaForOpenAI(schema, ENABLED_CONFIG) as Record<string, unknown>
+    const userProp = (result.properties as Record<string, unknown>).user as Record<string, unknown>
 
-    expect(result.$schema).toBeUndefined();
-    expect(userProp.$id).toBeUndefined();
+    expect(result.$schema).toBeUndefined()
+    expect(userProp.$id).toBeUndefined()
     // additionalProperties 应该被保留（OpenAI 要求）
-    expect(userProp.additionalProperties).toBe(false);
-    expect(userProp.type).toBe('object');
-    expect(userProp.properties).toBeDefined();
-  });
+    expect(userProp.additionalProperties).toBe(false)
+    expect(userProp.type).toBe('object')
+    expect(userProp.properties).toBeDefined()
+  })
 
   it('should clean items in array schemas', () => {
     const schema = {
@@ -91,15 +91,15 @@ describe('cleanSchemaForOpenAI', () => {
           id: { type: 'number' },
         },
       },
-    };
+    }
 
-    const result = cleanSchemaForOpenAI(schema, ENABLED_CONFIG) as Record<string, unknown>;
-    const items = result.items as Record<string, unknown>;
+    const result = cleanSchemaForOpenAI(schema, ENABLED_CONFIG) as Record<string, unknown>
+    const items = result.items as Record<string, unknown>
 
-    expect(items.$defs).toBeUndefined();
-    expect(items.type).toBe('object');
-    expect(items.properties).toBeDefined();
-  });
+    expect(items.$defs).toBeUndefined()
+    expect(items.type).toBe('object')
+    expect(items.properties).toBeDefined()
+  })
 
   it('should return schema unchanged when cleanEnabled is false (default)', () => {
     const schema = {
@@ -107,22 +107,22 @@ describe('cleanSchemaForOpenAI', () => {
       $id: 'my-schema',
       type: 'object',
       properties: { name: { type: 'string' } },
-    };
+    }
 
-    expect(cleanSchemaForOpenAI(schema)).toEqual(schema);
-    expect(cleanSchemaForOpenAI(schema, { cleanEnabled: false })).toEqual(schema);
-  });
+    expect(cleanSchemaForOpenAI(schema)).toEqual(schema)
+    expect(cleanSchemaForOpenAI(schema, { cleanEnabled: false })).toEqual(schema)
+  })
 
   it('should handle null and undefined', () => {
-    expect(cleanSchemaForOpenAI(null, ENABLED_CONFIG)).toBeNull();
-    expect(cleanSchemaForOpenAI(undefined, ENABLED_CONFIG)).toBeUndefined();
-  });
+    expect(cleanSchemaForOpenAI(null, ENABLED_CONFIG)).toBeNull()
+    expect(cleanSchemaForOpenAI(undefined, ENABLED_CONFIG)).toBeUndefined()
+  })
 
   it('should handle non-object primitives', () => {
-    expect(cleanSchemaForOpenAI('string', ENABLED_CONFIG)).toBe('string');
-    expect(cleanSchemaForOpenAI(123, ENABLED_CONFIG)).toBe(123);
-    expect(cleanSchemaForOpenAI(true, ENABLED_CONFIG)).toBe(true);
-  });
+    expect(cleanSchemaForOpenAI('string', ENABLED_CONFIG)).toBe('string')
+    expect(cleanSchemaForOpenAI(123, ENABLED_CONFIG)).toBe(123)
+    expect(cleanSchemaForOpenAI(true, ENABLED_CONFIG)).toBe(true)
+  })
 
   it('should remove all banned fields', () => {
     const schema = {
@@ -141,25 +141,25 @@ describe('cleanSchemaForOpenAI', () => {
       properties: {
         name: { type: 'string' },
       },
-    };
+    }
 
-    const result = cleanSchemaForOpenAI(schema, ENABLED_CONFIG) as Record<string, unknown>;
+    const result = cleanSchemaForOpenAI(schema, ENABLED_CONFIG) as Record<string, unknown>
 
     // 元数据字段应该被移除
-    expect(result.$schema).toBeUndefined();
-    expect(result.$id).toBeUndefined();
-    expect(result.$ref).toBeUndefined();
-    expect(result.$defs).toBeUndefined();
-    expect(result.definitions).toBeUndefined();
-    expect(result.$comment).toBeUndefined();
-    
+    expect(result.$schema).toBeUndefined()
+    expect(result.$id).toBeUndefined()
+    expect(result.$ref).toBeUndefined()
+    expect(result.$defs).toBeUndefined()
+    expect(result.definitions).toBeUndefined()
+    expect(result.$comment).toBeUndefined()
+
     // additionalProperties 应该被保留（OpenAI 要求）
-    expect(result.additionalProperties).toBe(false);
+    expect(result.additionalProperties).toBe(false)
 
     // 有效字段应该保留
-    expect(result.type).toBe('object');
-    expect(result.properties).toBeDefined();
-  });
+    expect(result.type).toBe('object')
+    expect(result.properties).toBeDefined()
+  })
 
   it('should preserve validation fields', () => {
     const schema = {
@@ -168,15 +168,15 @@ describe('cleanSchemaForOpenAI', () => {
       pattern: '^[a-z]+$',
       minLength: 5,
       maxLength: 100,
-    };
+    }
 
-    const result = cleanSchemaForOpenAI(schema, ENABLED_CONFIG) as Record<string, unknown>;
+    const result = cleanSchemaForOpenAI(schema, ENABLED_CONFIG) as Record<string, unknown>
 
-    expect(result.format).toBe('email');
-    expect(result.pattern).toBe('^[a-z]+$');
-    expect(result.minLength).toBe(5);
-    expect(result.maxLength).toBe(100);
-  });
+    expect(result.format).toBe('email')
+    expect(result.pattern).toBe('^[a-z]+$')
+    expect(result.minLength).toBe(5)
+    expect(result.maxLength).toBe(100)
+  })
 
   it('should handle complex nested structures', () => {
     const schema = {
@@ -203,22 +203,26 @@ describe('cleanSchemaForOpenAI', () => {
         },
       },
       required: ['users'],
-    };
+    }
 
-    const result = cleanSchemaForOpenAI(schema, ENABLED_CONFIG) as Record<string, unknown>;
-    const usersItems = ((result.properties as Record<string, unknown>).users as Record<string, unknown>).items as Record<string, unknown>;
-    const rolesItems = ((usersItems.properties as Record<string, unknown>).roles as Record<string, unknown>).items as Record<string, unknown>;
+    const result = cleanSchemaForOpenAI(schema, ENABLED_CONFIG) as Record<string, unknown>
+    const usersItems = (
+      (result.properties as Record<string, unknown>).users as Record<string, unknown>
+    ).items as Record<string, unknown>
+    const rolesItems = (
+      (usersItems.properties as Record<string, unknown>).roles as Record<string, unknown>
+    ).items as Record<string, unknown>
 
     // 元数据字段应该被移除
-    expect(result.$schema).toBeUndefined();
+    expect(result.$schema).toBeUndefined()
 
     // additionalProperties 应该被保留（OpenAI 要求）
-    expect(usersItems.additionalProperties).toBe(false);
+    expect(usersItems.additionalProperties).toBe(false)
 
     // 有效字段应该保留
-    expect(result.type).toBe('object');
-    expect(result.required).toEqual(['users']);
-    expect(usersItems.required).toEqual(['name']);
-    expect(rolesItems.enum).toEqual(['admin', 'user', 'guest']);
-  });
-});
+    expect(result.type).toBe('object')
+    expect(result.required).toEqual(['users'])
+    expect(usersItems.required).toEqual(['name'])
+    expect(rolesItems.enum).toEqual(['admin', 'user', 'guest'])
+  })
+})

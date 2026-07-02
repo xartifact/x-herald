@@ -91,9 +91,7 @@ export function useProviderModels(providerId: string, enabled = false) {
   return useQuery({
     queryKey: [...providerKeys.detail(providerId), 'models'] as const,
     queryFn: () =>
-      get<{ id: string; name: string; synced: boolean }[]>(
-        `/api/providers/${providerId}/models`
-      ),
+      get<{ id: string; name: string; synced: boolean }[]>(`/api/providers/${providerId}/models`),
     enabled: !!providerId && enabled,
   })
 }
@@ -114,10 +112,10 @@ export function useSyncProviderModels() {
       models: Array<{ id: string; name: string }>
       groupId?: string
     }) =>
-      post<{ created: number; skipped: number }>(
-        `/api/providers/${providerId}/sync-models`,
-        { models, groupId }
-      ),
+      post<{ created: number; skipped: number }>(`/api/providers/${providerId}/sync-models`, {
+        models,
+        groupId,
+      }),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: providerKeys.lists() })
       // 同时刷新 model-groups 的 instances

@@ -21,7 +21,8 @@ export function HeadersTab({ headers, onAdd, onUpdate, onRemove }: HeadersTabPro
           <p className="text-xs text-muted-foreground">添加到 Provider 请求的自定义 Headers</p>
         </div>
         <Button type="button" variant="outline" size="sm" onClick={onAdd}>
-          <Plus className="h-4 w-4 mr-1" />添加 Header
+          <Plus className="h-4 w-4 mr-1" />
+          添加 Header
         </Button>
       </div>
 
@@ -46,7 +47,9 @@ export function HeadersTab({ headers, onAdd, onUpdate, onRemove }: HeadersTabPro
             className="flex-1 h-8 text-xs"
           />
           <Button
-            type="button" variant="ghost" size="sm"
+            type="button"
+            variant="ghost"
+            size="sm"
             className="h-8 w-8 p-0"
             onClick={() => onRemove(key)}
           >
@@ -58,7 +61,9 @@ export function HeadersTab({ headers, onAdd, onUpdate, onRemove }: HeadersTabPro
       <div className="text-xs text-muted-foreground">
         <p>变量支持：</p>
         <ul className="list-disc list-inside mt-1 space-y-1">
-          <li><code>{'${requestId}'}</code> - 当前请求 ID</li>
+          <li>
+            <code>{'${requestId}'}</code> - 当前请求 ID
+          </li>
         </ul>
       </div>
     </div>

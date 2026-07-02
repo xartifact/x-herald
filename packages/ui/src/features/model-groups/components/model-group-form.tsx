@@ -27,7 +27,14 @@ interface ModelGroupFormProps {
   onSubmit: (data: Record<string, any>) => void
 }
 
-export function ModelGroupForm({ open, onOpenChange, form, editingId, isPending, onSubmit }: ModelGroupFormProps) {
+export function ModelGroupForm({
+  open,
+  onOpenChange,
+  form,
+  editingId,
+  isPending,
+  onSubmit,
+}: ModelGroupFormProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">

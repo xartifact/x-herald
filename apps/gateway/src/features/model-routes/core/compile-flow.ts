@@ -112,8 +112,8 @@ export function validateFlow(nodes: Node[], edges: Edge[]): ValidationError[] {
 
 export function compileFlowToRoutes(nodes: Node[], edges: Edge[]): CreateModelRoutePayload[] {
   const outEdges = buildOutEdgeMap(edges)
-  const nodeMap = new Map(nodes.map(n => [n.id, n]))
-  const vmNodes = nodes.filter(n => n.type === 'modelTrigger')
+  const nodeMap = new Map(nodes.map((n) => [n.id, n]))
+  const vmNodes = nodes.filter((n) => n.type === 'modelTrigger')
 
   // signature → { vmIds, conditions, leaf }
   const pathMap = new Map<string, { vmIds: string[]; conditions: RouteCondition[]; leaf: Node }>()
@@ -140,25 +140,31 @@ export function compileFlowToRoutes(nodes: Node[], edges: Edge[]): CreateModelRo
     }
   }
 
-  const entries = Array.from(pathMap.values()).map(entry => {
-    const action = extractAction(entry.leaf)
-    if (!action) return null
-    const d = entry.leaf.data as Record<string, unknown>
-    const condCount = entry.conditions.length
-    const name = ((d.label as string) ||
-      (condCount > 0
-        ? entry.conditions.map(c => `${c.field} ${c.operator} ${String(c.value ?? '')}`).join(' & ')
-        : action.type)).slice(0, 255)
-    return {
-      name,
-      accessModelIds: [...new Set(entry.vmIds)],
-      conditions: entry.conditions,
-      action,
-      enabled: true,
-      _condCount: condCount,
-      _leafY: (entry.leaf.position?.y ?? 0),
-    }
-  }).filter(Boolean) as Array<CreateModelRoutePayload & { _condCount: number; _leafY: number }>
+  const entries = Array.from(pathMap.values())
+    .map((entry) => {
+      const action = extractAction(entry.leaf)
+      if (!action) return null
+      const d = entry.leaf.data as Record<string, unknown>
+      const condCount = entry.conditions.length
+      const name = (
+        (d.label as string) ||
+        (condCount > 0
+          ? entry.conditions
+              .map((c) => `${c.field} ${c.operator} ${String(c.value ?? '')}`)
+              .join(' & ')
+          : action.type)
+      ).slice(0, 255)
+      return {
+        name,
+        accessModelIds: [...new Set(entry.vmIds)],
+        conditions: entry.conditions,
+        action,
+        enabled: true,
+        _condCount: condCount,
+        _leafY: entry.leaf.position?.y ?? 0,
+      }
+    })
+    .filter(Boolean) as Array<CreateModelRoutePayload & { _condCount: number; _leafY: number }>
 
   entries.sort((a, b) => b._condCount - a._condCount || a._leafY - b._leafY)
 

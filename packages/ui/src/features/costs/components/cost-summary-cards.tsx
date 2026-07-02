@@ -39,9 +39,7 @@ export function CostSummaryCards({ summary }: CostSummaryCardsProps) {
   }
 
   const totalTokens = summary.totalInputTokens + summary.totalOutputTokens
-  const avgCostPerRequest = summary.requestCount > 0
-    ? summary.totalCost / summary.requestCount
-    : 0
+  const avgCostPerRequest = summary.requestCount > 0 ? summary.totalCost / summary.requestCount : 0
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -54,9 +52,7 @@ export function CostSummaryCards({ summary }: CostSummaryCardsProps) {
           <div className="text-2xl font-bold text-emerald-600">
             {formatCurrency(summary.totalCost)}
           </div>
-          <div className="text-xs text-muted-foreground mt-1">
-            累计 API 调用费用
-          </div>
+          <div className="text-xs text-muted-foreground mt-1">累计 API 调用费用</div>
         </CardContent>
       </Card>
 
@@ -69,9 +65,7 @@ export function CostSummaryCards({ summary }: CostSummaryCardsProps) {
           <div className="text-2xl font-bold text-blue-600">
             {summary.requestCount.toLocaleString()}
           </div>
-          <div className="text-xs text-muted-foreground mt-1">
-            API 请求总数
-          </div>
+          <div className="text-xs text-muted-foreground mt-1">API 请求总数</div>
         </CardContent>
       </Card>
 
@@ -81,11 +75,10 @@ export function CostSummaryCards({ summary }: CostSummaryCardsProps) {
           <ArrowRightLeft className="h-4 w-4 text-purple-600" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-purple-600">
-            {formatTokens(totalTokens)}
-          </div>
+          <div className="text-2xl font-bold text-purple-600">{formatTokens(totalTokens)}</div>
           <div className="text-xs text-muted-foreground mt-1">
-            ↑ {formatTokens(summary.totalInputTokens)} 输入 / ↓ {formatTokens(summary.totalOutputTokens)} 输出
+            ↑ {formatTokens(summary.totalInputTokens)} 输入 / ↓{' '}
+            {formatTokens(summary.totalOutputTokens)} 输出
           </div>
         </CardContent>
       </Card>
@@ -99,9 +92,7 @@ export function CostSummaryCards({ summary }: CostSummaryCardsProps) {
           <div className="text-2xl font-bold text-orange-600">
             {formatCurrency(avgCostPerRequest)}
           </div>
-          <div className="text-xs text-muted-foreground mt-1">
-            单次请求平均费用
-          </div>
+          <div className="text-xs text-muted-foreground mt-1">单次请求平均费用</div>
         </CardContent>
       </Card>
     </div>

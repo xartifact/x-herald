@@ -8,34 +8,34 @@
 export function normalizeAnthropicPassthroughMessages(
   messages: Array<{ role: string; content: unknown }>,
 ): Array<{ role: string; content: unknown }> {
-  const result: Array<{ role: string; content: unknown }> = [];
+  const result: Array<{ role: string; content: unknown }> = []
 
   for (const msg of messages) {
     if (msg.role !== 'user' || !Array.isArray(msg.content)) {
-      result.push(msg);
-      continue;
+      result.push(msg)
+      continue
     }
 
-    const blocks = msg.content as Array<{ type: string; [key: string]: unknown }>;
-    const hasToolResult = blocks.some((b) => b.type === 'tool_result');
-    const hasNonToolResult = blocks.some((b) => b.type !== 'tool_result');
+    const blocks = msg.content as Array<{ type: string; [key: string]: unknown }>
+    const hasToolResult = blocks.some((b) => b.type === 'tool_result')
+    const hasNonToolResult = blocks.some((b) => b.type !== 'tool_result')
 
     if (!hasToolResult || !hasNonToolResult) {
-      result.push(msg);
-      continue;
+      result.push(msg)
+      continue
     }
 
-    const toolResultBlocks = blocks.filter((b) => b.type === 'tool_result');
-    const otherBlocks = blocks.filter((b) => b.type !== 'tool_result');
+    const toolResultBlocks = blocks.filter((b) => b.type === 'tool_result')
+    const otherBlocks = blocks.filter((b) => b.type !== 'tool_result')
 
-    result.push({ ...msg, content: toolResultBlocks });
+    result.push({ ...msg, content: toolResultBlocks })
 
     if (otherBlocks.length > 0) {
-      result.push({ ...msg, content: otherBlocks });
+      result.push({ ...msg, content: otherBlocks })
     }
   }
 
-  return result;
+  return result
 }
 
 /**
@@ -46,11 +46,11 @@ export function hasAssistantMessagesWithoutThinking(
 ): boolean {
   return messages.some((msg) => {
     if (msg.role !== 'assistant' || !Array.isArray(msg.content)) {
-      return false;
+      return false
     }
-    const blocks = msg.content as Array<{ type: string; [key: string]: unknown }>;
-    return blocks.length > 0 && !blocks.some((b) => b.type === 'thinking');
-  });
+    const blocks = msg.content as Array<{ type: string; [key: string]: unknown }>
+    return blocks.length > 0 && !blocks.some((b) => b.type === 'thinking')
+  })
 }
 
 /**
@@ -62,15 +62,15 @@ export function injectSyntheticThinkingBlocks(
 ): Array<{ role: string; content: unknown }> {
   return messages.map((msg) => {
     if (msg.role !== 'assistant' || !Array.isArray(msg.content)) {
-      return msg;
+      return msg
     }
-    const blocks = msg.content as Array<{ type: string; [key: string]: unknown }>;
+    const blocks = msg.content as Array<{ type: string; [key: string]: unknown }>
     if (blocks.some((b) => b.type === 'thinking')) {
-      return msg;
+      return msg
     }
     return {
       ...msg,
       content: [{ type: 'thinking', thinking: '...' }, ...blocks],
-    };
-  });
+    }
+  })
 }

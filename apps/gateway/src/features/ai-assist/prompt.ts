@@ -1,11 +1,11 @@
-import type { InstanceConfig } from '../model-groups/db';
+import type { InstanceConfig } from '../model-groups/db'
 
 export interface InstanceContext {
-  instanceId: string;
-  instanceName: string;
-  actualModelName: string;
-  providerName: string;
-  currentConfig: InstanceConfig | null;
+  instanceId: string
+  instanceName: string
+  actualModelName: string
+  providerName: string
+  currentConfig: InstanceConfig | null
 }
 
 export function buildSystemPrompt(ctx: InstanceContext): string {
@@ -149,5 +149,5 @@ interface InstanceConfig {
 - 如果用户要求删除某项配置，在 config 中省略该字段
 - explanation 控制在 50 字以内，简洁说明改动内容
 - 不确定时宁可少改，不要猜测用户意图
-`;
+`
 }

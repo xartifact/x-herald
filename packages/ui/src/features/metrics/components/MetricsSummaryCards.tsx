@@ -1,28 +1,28 @@
-import { Activity, AlertTriangle, Clock, Zap } from 'lucide-react';
+import { Activity, AlertTriangle, Clock, Zap } from 'lucide-react'
 
-import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/components/ui';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/components/ui'
 
-import type { MetricsSummary } from '../hooks/use-metrics';
+import type { MetricsSummary } from '../hooks/use-metrics'
 
 interface Props {
-  summary: MetricsSummary | undefined;
-  isLoading: boolean;
+  summary: MetricsSummary | undefined
+  isLoading: boolean
 }
 
 function fmt(v: number | null | undefined, unit = '', decimals = 0): string {
-  if (v == null) return '—';
-  return `${v.toFixed(decimals)}${unit}`;
+  if (v == null) return '—'
+  return `${v.toFixed(decimals)}${unit}`
 }
 
 function fmtMs(ms: number | null | undefined): string {
-  if (ms == null) return '—';
-  if (ms >= 1000) return `${(ms / 1000).toFixed(1)}s`;
-  return `${Math.round(ms)}ms`;
+  if (ms == null) return '—'
+  if (ms >= 1000) return `${(ms / 1000).toFixed(1)}s`
+  return `${Math.round(ms)}ms`
 }
 
 export function MetricsSummaryCards({ summary, isLoading }: Props) {
-  const s = summary?.recentHour;
-  const anomaly = summary?.anomalyCount ?? 0;
+  const s = summary?.recentHour
+  const anomaly = summary?.anomalyCount ?? 0
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -47,16 +47,22 @@ export function MetricsSummaryCards({ summary, isLoading }: Props) {
           <Zap className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className={`text-2xl font-bold ${
-            s?.avgSuccessRate == null ? '' :
-            s.avgSuccessRate >= 0.95 ? 'text-green-600' :
-            s.avgSuccessRate >= 0.8 ? 'text-yellow-600' : 'text-red-600'
-          }`}>
-            {isLoading ? '—' : fmt(s?.avgSuccessRate != null ? s.avgSuccessRate * 100 : null, '%', 1)}
+          <div
+            className={`text-2xl font-bold ${
+              s?.avgSuccessRate == null
+                ? ''
+                : s.avgSuccessRate >= 0.95
+                  ? 'text-green-600'
+                  : s.avgSuccessRate >= 0.8
+                    ? 'text-yellow-600'
+                    : 'text-red-600'
+            }`}
+          >
+            {isLoading
+              ? '—'
+              : fmt(s?.avgSuccessRate != null ? s.avgSuccessRate * 100 : null, '%', 1)}
           </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            {s?.activeInstances ?? 0} 个实例活跃
-          </p>
+          <p className="text-xs text-muted-foreground mt-1">{s?.activeInstances ?? 0} 个实例活跃</p>
         </CardContent>
       </Card>
 
@@ -66,11 +72,17 @@ export function MetricsSummaryCards({ summary, isLoading }: Props) {
           <Clock className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className={`text-2xl font-bold ${
-            s?.avgTtfbP95 == null ? '' :
-            s.avgTtfbP95 < 3000 ? 'text-green-600' :
-            s.avgTtfbP95 < 10000 ? 'text-yellow-600' : 'text-red-600'
-          }`}>
+          <div
+            className={`text-2xl font-bold ${
+              s?.avgTtfbP95 == null
+                ? ''
+                : s.avgTtfbP95 < 3000
+                  ? 'text-green-600'
+                  : s.avgTtfbP95 < 10000
+                    ? 'text-yellow-600'
+                    : 'text-red-600'
+            }`}
+          >
             {isLoading ? '—' : fmtMs(s?.avgTtfbP95)}
           </div>
           <p className="text-xs text-muted-foreground mt-1">各实例均值</p>
@@ -90,5 +102,5 @@ export function MetricsSummaryCards({ summary, isLoading }: Props) {
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }

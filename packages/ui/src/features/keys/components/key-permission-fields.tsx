@@ -33,7 +33,9 @@ export function KeyPermissionFields({ form }: KeyPermissionFieldsProps) {
                   type="number"
                   placeholder="无限制"
                   {...field}
-                  onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                  onChange={(e) =>
+                    field.onChange(e.target.value ? parseInt(e.target.value) : undefined)
+                  }
                   value={field.value ?? ''}
                 />
               </FormControl>
@@ -52,7 +54,9 @@ export function KeyPermissionFields({ form }: KeyPermissionFieldsProps) {
                   type="number"
                   placeholder="无限制"
                   {...field}
-                  onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                  onChange={(e) =>
+                    field.onChange(e.target.value ? parseInt(e.target.value) : undefined)
+                  }
                   value={field.value ?? ''}
                 />
               </FormControl>
@@ -73,7 +77,9 @@ export function KeyPermissionFields({ form }: KeyPermissionFieldsProps) {
                 type="number"
                 placeholder="无限制"
                 {...field}
-                onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                onChange={(e) =>
+                  field.onChange(e.target.value ? parseInt(e.target.value) : undefined)
+                }
                 value={field.value ?? ''}
               />
             </FormControl>

@@ -1,4 +1,17 @@
-import { and, asc, desc, eq, gte, inArray, isNotNull, lt, lte, ne, or, sql } from '@xartifact/x-llm-gateway-db'
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gte,
+  inArray,
+  isNotNull,
+  lt,
+  lte,
+  ne,
+  or,
+  sql,
+} from '@xartifact/x-llm-gateway-db'
 
 import { getDatabase } from '../../../db/client'
 import { virtualKeys } from '@xartifact/x-llm-gateway-db'
@@ -11,7 +24,7 @@ interface DateRange {
 }
 
 interface LogsPageParams extends DateRange {
-  cursor?: string   // base64-encoded { createdAt: ISO, id: string }
+  cursor?: string // base64-encoded { createdAt: ISO, id: string }
   pageSize: number
   virtualKeyId?: string
   modelName?: string
@@ -40,7 +53,9 @@ const LIST_SELECT = {
   requestPath: requestLogs.requestPath,
   createdAt: requestLogs.createdAt,
   isComplete: requestLogs.isComplete,
-  thinkingMode: sql<boolean | null>`((${requestLogs.metadata}->'request'->>'thinkingMode')::boolean)`,
+  thinkingMode: sql<
+    boolean | null
+  >`((${requestLogs.metadata}->'request'->>'thinkingMode')::boolean)`,
   responseModelName: sql<string | null>`(${requestLogs.metadata}->'routing'->>'responseModelName')`,
 }
 
@@ -67,18 +82,26 @@ export async function getLogsPage(params: LogsPageParams) {
 
   if (cursor) {
     try {
-      const { createdAt, id } = JSON.parse(Buffer.from(cursor, 'base64').toString()) as { createdAt: string; id: string }
+      const { createdAt, id } = JSON.parse(Buffer.from(cursor, 'base64').toString()) as {
+        createdAt: string
+        id: string
+      }
       conditions.push(
         or(
           lt(requestLogs.createdAt, new Date(createdAt)),
-          and(eq(requestLogs.createdAt, new Date(createdAt)), lt(requestLogs.id, id))!
-        )!
+          and(eq(requestLogs.createdAt, new Date(createdAt)), lt(requestLogs.id, id))!,
+        )!,
       )
-    } catch { /* invalid cursor, ignore */ }
+    } catch {
+      /* invalid cursor, ignore */
+    }
   }
 
   const where = conditions.length > 0 ? and(...conditions) : undefined
-  const rows = await db.select(LIST_SELECT).from(requestLogs).where(where)
+  const rows = await db
+    .select(LIST_SELECT)
+    .from(requestLogs)
+    .where(where)
     .orderBy(desc(requestLogs.createdAt), desc(requestLogs.id))
     .limit(pageSize + 1)
 
@@ -88,10 +111,12 @@ export async function getLogsPage(params: LogsPageParams) {
   let nextCursor: string | null = null
   if (hasMore && logs.length > 0) {
     const last = logs[logs.length - 1]
-    nextCursor = Buffer.from(JSON.stringify({
-      createdAt: last.createdAt.toISOString(),
-      id: last.id,
-    })).toString('base64')
+    nextCursor = Buffer.from(
+      JSON.stringify({
+        createdAt: last.createdAt.toISOString(),
+        id: last.id,
+      }),
+    ).toString('base64')
   }
 
   return { logs, nextCursor, hasMore }
@@ -101,12 +126,14 @@ export async function getLogDetail(id: string) {
   const db = getDatabase()
   const [log, attempts] = await Promise.all([
     db.select().from(requestLogs).where(eq(requestLogs.id, id)).limit(1),
-    db.select({
-      transformedRequestBody: requestAttempts.transformedRequestBody,
-      providerRequestHeaders: requestAttempts.providerRequestHeaders,
-      providerResponseBody: requestAttempts.providerResponseBody,
-      providerResponseHeaders: requestAttempts.providerResponseHeaders,
-    }).from(requestAttempts)
+    db
+      .select({
+        transformedRequestBody: requestAttempts.transformedRequestBody,
+        providerRequestHeaders: requestAttempts.providerRequestHeaders,
+        providerResponseBody: requestAttempts.providerResponseBody,
+        providerResponseHeaders: requestAttempts.providerResponseHeaders,
+      })
+      .from(requestAttempts)
       .where(and(eq(requestAttempts.requestLogId, id), eq(requestAttempts.candidateIndex, 0)))
       .limit(1),
   ])
@@ -123,7 +150,11 @@ export async function getLogDetail(id: string) {
 
 export async function deleteLog(id: string): Promise<boolean> {
   const db = getDatabase()
-  const existing = await db.select({ id: requestLogs.id }).from(requestLogs).where(eq(requestLogs.id, id)).limit(1)
+  const existing = await db
+    .select({ id: requestLogs.id })
+    .from(requestLogs)
+    .where(eq(requestLogs.id, id))
+    .limit(1)
   if (existing.length === 0) return false
   await db.delete(requestLogs).where(eq(requestLogs.id, id))
   return true
@@ -146,22 +177,40 @@ export async function getOverviewStats(range: DateRange) {
 
   const [overview, modelStats, keyStats, clientStats] = await Promise.all([
     db.select(OVERVIEW_SELECT).from(requestLogs).where(where),
-    db.select({
-      modelName: requestLogs.modelName,
-      requestCount: sql<number>`count(*)`,
-      avgResponseTime: sql<number>`avg(${requestLogs.responseTimeMs})`,
-      totalTokens: sql<number>`sum(${requestLogs.totalTokens})`,
-    }).from(requestLogs).where(where).groupBy(requestLogs.modelName),
-    db.select({
-      virtualKeyId: requestLogs.virtualKeyId,
-      virtualKeyName: requestLogs.virtualKeyName,
-      requestCount: sql<number>`count(*)`,
-      totalTokens: sql<number>`sum(${requestLogs.totalTokens})`,
-    }).from(requestLogs).where(conditions.length > 0 ? and(...conditions, isNotNull(requestLogs.virtualKeyId)) : isNotNull(requestLogs.virtualKeyId)).groupBy(requestLogs.virtualKeyId, requestLogs.virtualKeyName),
-    db.select({
-      clientType: requestLogs.clientType,
-      requestCount: sql<number>`count(*)`,
-    }).from(requestLogs).where(where).groupBy(requestLogs.clientType).orderBy(desc(sql`count(*)`)).limit(10),
+    db
+      .select({
+        modelName: requestLogs.modelName,
+        requestCount: sql<number>`count(*)`,
+        avgResponseTime: sql<number>`avg(${requestLogs.responseTimeMs})`,
+        totalTokens: sql<number>`sum(${requestLogs.totalTokens})`,
+      })
+      .from(requestLogs)
+      .where(where)
+      .groupBy(requestLogs.modelName),
+    db
+      .select({
+        virtualKeyId: requestLogs.virtualKeyId,
+        virtualKeyName: requestLogs.virtualKeyName,
+        requestCount: sql<number>`count(*)`,
+        totalTokens: sql<number>`sum(${requestLogs.totalTokens})`,
+      })
+      .from(requestLogs)
+      .where(
+        conditions.length > 0
+          ? and(...conditions, isNotNull(requestLogs.virtualKeyId))
+          : isNotNull(requestLogs.virtualKeyId),
+      )
+      .groupBy(requestLogs.virtualKeyId, requestLogs.virtualKeyName),
+    db
+      .select({
+        clientType: requestLogs.clientType,
+        requestCount: sql<number>`count(*)`,
+      })
+      .from(requestLogs)
+      .where(where)
+      .groupBy(requestLogs.clientType)
+      .orderBy(desc(sql`count(*)`))
+      .limit(10),
   ])
 
   return {
@@ -186,7 +235,10 @@ export async function getOverviewStats(range: DateRange) {
       requestCount: Number(s.requestCount),
       totalTokens: Number(s.totalTokens),
     })),
-    clientStats: clientStats.map((s) => ({ clientType: s.clientType, requestCount: Number(s.requestCount) })),
+    clientStats: clientStats.map((s) => ({
+      clientType: s.clientType,
+      requestCount: Number(s.requestCount),
+    })),
   }
 }
 
@@ -195,17 +247,21 @@ export async function getClientModelStats(range: DateRange) {
   const conditions = [isNotNull(requestLogs.originalModelName), ...buildDateConditions(range)]
   const where = and(...conditions)
 
-  const stats = await db.select({
-    originalModelName: requestLogs.originalModelName,
-    requestCount: sql<number>`count(*)`,
-    successCount: sql<number>`count(*) filter (where ${requestLogs.status} = 'success')`,
-    failureCount: sql<number>`count(*) filter (where ${requestLogs.status} = 'failure')`,
-    totalInputTokens: sql<number>`sum(${requestLogs.inputTokens})`,
-    totalOutputTokens: sql<number>`sum(${requestLogs.outputTokens})`,
-    totalTokens: sql<number>`sum(${requestLogs.totalTokens})`,
-    avgResponseTime: sql<number>`avg(${requestLogs.responseTimeMs})`,
-    lastRequestAt: sql<string>`max(${requestLogs.createdAt})`,
-  }).from(requestLogs).where(where).groupBy(requestLogs.originalModelName)
+  const stats = await db
+    .select({
+      originalModelName: requestLogs.originalModelName,
+      requestCount: sql<number>`count(*)`,
+      successCount: sql<number>`count(*) filter (where ${requestLogs.status} = 'success')`,
+      failureCount: sql<number>`count(*) filter (where ${requestLogs.status} = 'failure')`,
+      totalInputTokens: sql<number>`sum(${requestLogs.inputTokens})`,
+      totalOutputTokens: sql<number>`sum(${requestLogs.outputTokens})`,
+      totalTokens: sql<number>`sum(${requestLogs.totalTokens})`,
+      avgResponseTime: sql<number>`avg(${requestLogs.responseTimeMs})`,
+      lastRequestAt: sql<string>`max(${requestLogs.createdAt})`,
+    })
+    .from(requestLogs)
+    .where(where)
+    .groupBy(requestLogs.originalModelName)
 
   return stats.map((s) => ({
     originalModelName: s.originalModelName,
@@ -228,11 +284,16 @@ export async function getStorageStats() {
 
   const [countResult, dateRange, expiredCount] = await Promise.all([
     db.select({ count: sql<number>`count(*)` }).from(requestLogs),
-    db.select({
-      oldest: sql<string>`min(${requestLogs.createdAt})`,
-      newest: sql<string>`max(${requestLogs.createdAt})`,
-    }).from(requestLogs),
-    db.select({ count: sql<number>`count(*)` }).from(requestLogs).where(lt(requestLogs.createdAt, cutoffDate)),
+    db
+      .select({
+        oldest: sql<string>`min(${requestLogs.createdAt})`,
+        newest: sql<string>`max(${requestLogs.createdAt})`,
+      })
+      .from(requestLogs),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(requestLogs)
+      .where(lt(requestLogs.createdAt, cutoffDate)),
   ])
 
   return {
@@ -249,7 +310,10 @@ export async function cleanupLogs(retentionDays: number) {
   const db = getDatabase()
   const cutoffDate = new Date()
   cutoffDate.setDate(cutoffDate.getDate() - retentionDays)
-  const deleted = await db.delete(requestLogs).where(lt(requestLogs.createdAt, cutoffDate)).returning({ id: requestLogs.id })
+  const deleted = await db
+    .delete(requestLogs)
+    .where(lt(requestLogs.createdAt, cutoffDate))
+    .returning({ id: requestLogs.id })
   return { deletedCount: deleted.length, retentionDays }
 }
 
@@ -257,13 +321,15 @@ export async function getKeyStats(period: string) {
   const db = getDatabase()
 
   if (period === 'all') {
-    const keys = await db.select({
-      id: virtualKeys.id,
-      name: virtualKeys.name,
-      lastUsedAt: virtualKeys.lastUsedAt,
-      totalRequests: virtualKeys.totalRequests,
-      totalTokens: virtualKeys.totalTokens,
-    }).from(virtualKeys)
+    const keys = await db
+      .select({
+        id: virtualKeys.id,
+        name: virtualKeys.name,
+        lastUsedAt: virtualKeys.lastUsedAt,
+        totalRequests: virtualKeys.totalRequests,
+        totalTokens: virtualKeys.totalTokens,
+      })
+      .from(virtualKeys)
 
     return keys.map((k) => ({
       virtualKeyId: k.id,
@@ -292,18 +358,22 @@ export async function getKeyStats(period: string) {
   }
   conditions.push(gte(requestLogs.createdAt, start))
 
-  const rows = await db.select({
-    virtualKeyId: requestLogs.virtualKeyId,
-    virtualKeyName: requestLogs.virtualKeyName,
-    requestCount: sql<number>`count(*)`,
-    successCount: sql<number>`count(*) filter (where ${requestLogs.status} = 'success')`,
-    failureCount: sql<number>`count(*) filter (where ${requestLogs.status} = 'failure')`,
-    totalInputTokens: sql<number>`coalesce(sum(${requestLogs.inputTokens}), 0)`,
-    totalOutputTokens: sql<number>`coalesce(sum(${requestLogs.outputTokens}), 0)`,
-    totalTokens: sql<number>`coalesce(sum(${requestLogs.totalTokens}), 0)`,
-    avgResponseTimeMs: sql<number>`round(avg(${requestLogs.responseTimeMs}))`,
-    lastUsedAt: sql<string>`max(${requestLogs.createdAt})`,
-  }).from(requestLogs).where(and(...conditions)).groupBy(requestLogs.virtualKeyId, requestLogs.virtualKeyName)
+  const rows = await db
+    .select({
+      virtualKeyId: requestLogs.virtualKeyId,
+      virtualKeyName: requestLogs.virtualKeyName,
+      requestCount: sql<number>`count(*)`,
+      successCount: sql<number>`count(*) filter (where ${requestLogs.status} = 'success')`,
+      failureCount: sql<number>`count(*) filter (where ${requestLogs.status} = 'failure')`,
+      totalInputTokens: sql<number>`coalesce(sum(${requestLogs.inputTokens}), 0)`,
+      totalOutputTokens: sql<number>`coalesce(sum(${requestLogs.outputTokens}), 0)`,
+      totalTokens: sql<number>`coalesce(sum(${requestLogs.totalTokens}), 0)`,
+      avgResponseTimeMs: sql<number>`round(avg(${requestLogs.responseTimeMs}))`,
+      lastUsedAt: sql<string>`max(${requestLogs.createdAt})`,
+    })
+    .from(requestLogs)
+    .where(and(...conditions))
+    .groupBy(requestLogs.virtualKeyId, requestLogs.virtualKeyName)
 
   return rows.map((r) => ({
     virtualKeyId: r.virtualKeyId,
@@ -321,33 +391,37 @@ export async function getKeyStats(period: string) {
 
 export async function getConversationTrace(conversationId: string) {
   const db = getDatabase()
-  const logs = await db.select({
-    id: requestLogs.id,
-    createdAt: requestLogs.createdAt,
-    status: requestLogs.status,
-    modelName: requestLogs.modelName,
-    inputTokens: requestLogs.inputTokens,
-    outputTokens: requestLogs.outputTokens,
-    responseTimeMs: requestLogs.responseTimeMs,
-    errorMessage: requestLogs.errorMessage,
-  }).from(requestLogs)
+  const logs = await db
+    .select({
+      id: requestLogs.id,
+      createdAt: requestLogs.createdAt,
+      status: requestLogs.status,
+      modelName: requestLogs.modelName,
+      inputTokens: requestLogs.inputTokens,
+      outputTokens: requestLogs.outputTokens,
+      responseTimeMs: requestLogs.responseTimeMs,
+      errorMessage: requestLogs.errorMessage,
+    })
+    .from(requestLogs)
     .where(eq(requestLogs.conversationId, conversationId))
     .orderBy(asc(requestLogs.createdAt))
 
   if (logs.length === 0) return []
 
   const logIds = logs.map((l) => l.id)
-  const allAttempts = await db.select({
-    id: requestAttempts.id,
-    requestLogId: requestAttempts.requestLogId,
-    candidateIndex: requestAttempts.candidateIndex,
-    providerName: requestAttempts.providerName,
-    status: requestAttempts.status,
-    failoverReason: requestAttempts.failoverReason,
-    ttfbMs: requestAttempts.ttfbMs,
-    durationMs: requestAttempts.durationMs,
-    statusCode: requestAttempts.statusCode,
-  }).from(requestAttempts)
+  const allAttempts = await db
+    .select({
+      id: requestAttempts.id,
+      requestLogId: requestAttempts.requestLogId,
+      candidateIndex: requestAttempts.candidateIndex,
+      providerName: requestAttempts.providerName,
+      status: requestAttempts.status,
+      failoverReason: requestAttempts.failoverReason,
+      ttfbMs: requestAttempts.ttfbMs,
+      durationMs: requestAttempts.durationMs,
+      statusCode: requestAttempts.statusCode,
+    })
+    .from(requestAttempts)
     .where(inArray(requestAttempts.requestLogId, logIds))
     .orderBy(asc(requestAttempts.candidateIndex))
 
@@ -385,19 +459,42 @@ export async function getProviderStats(range: DateRange) {
   const conditions = [isNotNull(requestLogs.providerId), ...buildDateConditions(range)]
   const ttfbExpr = sql`(${requestLogs.metadata}->'performance'->>'providerTtfbMs')::numeric`
 
-  return db.select({
-    providerId: requestLogs.providerId,
-    providerName: requestLogs.providerName,
-    totalRequests: sql<number>`count(*)`.mapWith(Number),
-    successCount: sql<number>`count(*) filter (where ${requestLogs.status} = 'success')`.mapWith(Number),
-    failureCount: sql<number>`count(*) filter (where ${requestLogs.status} = 'failure')`.mapWith(Number),
-    avgResponseTime: sql<number>`round(avg(${requestLogs.responseTimeMs}))`.mapWith(Number),
-    minResponseTime: sql<number>`min(${requestLogs.responseTimeMs})`.mapWith(Number),
-    maxResponseTime: sql<number>`max(${requestLogs.responseTimeMs})`.mapWith(Number),
-    p95ResponseTime: sql<number>`round(percentile_cont(0.95) within group (order by ${requestLogs.responseTimeMs}))`.mapWith(Number),
-    avgTtfb: sql<number | null>`round(avg(${ttfbExpr}) filter (where ${requestLogs.status} = 'success' and ${ttfbExpr} is not null))`.mapWith(Number),
-    p95Ttfb: sql<number | null>`round(percentile_cont(0.95) within group (order by ${ttfbExpr}) filter (where ${requestLogs.status} = 'success' and ${ttfbExpr} is not null))`.mapWith(Number),
-    ttfbCount: sql<number>`count(*) filter (where ${requestLogs.status} = 'success' and ${ttfbExpr} is not null)`.mapWith(Number),
-    lastRequestAt: sql<string>`max(${requestLogs.createdAt})`,
-  }).from(requestLogs).where(and(...conditions)).groupBy(requestLogs.providerId, requestLogs.providerName).orderBy(sql`avg(${requestLogs.responseTimeMs}) asc nulls last`)
+  return db
+    .select({
+      providerId: requestLogs.providerId,
+      providerName: requestLogs.providerName,
+      totalRequests: sql<number>`count(*)`.mapWith(Number),
+      successCount: sql<number>`count(*) filter (where ${requestLogs.status} = 'success')`.mapWith(
+        Number,
+      ),
+      failureCount: sql<number>`count(*) filter (where ${requestLogs.status} = 'failure')`.mapWith(
+        Number,
+      ),
+      avgResponseTime: sql<number>`round(avg(${requestLogs.responseTimeMs}))`.mapWith(Number),
+      minResponseTime: sql<number>`min(${requestLogs.responseTimeMs})`.mapWith(Number),
+      maxResponseTime: sql<number>`max(${requestLogs.responseTimeMs})`.mapWith(Number),
+      p95ResponseTime:
+        sql<number>`round(percentile_cont(0.95) within group (order by ${requestLogs.responseTimeMs}))`.mapWith(
+          Number,
+        ),
+      avgTtfb: sql<
+        number | null
+      >`round(avg(${ttfbExpr}) filter (where ${requestLogs.status} = 'success' and ${ttfbExpr} is not null))`.mapWith(
+        Number,
+      ),
+      p95Ttfb: sql<
+        number | null
+      >`round(percentile_cont(0.95) within group (order by ${ttfbExpr}) filter (where ${requestLogs.status} = 'success' and ${ttfbExpr} is not null))`.mapWith(
+        Number,
+      ),
+      ttfbCount:
+        sql<number>`count(*) filter (where ${requestLogs.status} = 'success' and ${ttfbExpr} is not null)`.mapWith(
+          Number,
+        ),
+      lastRequestAt: sql<string>`max(${requestLogs.createdAt})`,
+    })
+    .from(requestLogs)
+    .where(and(...conditions))
+    .groupBy(requestLogs.providerId, requestLogs.providerName)
+    .orderBy(sql`avg(${requestLogs.responseTimeMs}) asc nulls last`)
 }

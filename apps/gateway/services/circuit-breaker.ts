@@ -1,1 +1,4 @@
-export { circuitBreakerRegistry, configureCircuitBreaker } from '../src/gateway/services/circuit-breaker';
+export {
+  circuitBreakerRegistry,
+  configureCircuitBreaker,
+} from '../src/gateway/services/circuit-breaker'

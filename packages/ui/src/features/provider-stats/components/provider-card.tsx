@@ -4,7 +4,12 @@ import { cn } from '../../../shared/lib/utils'
 import type { ProviderStat } from '@xartifact/x-llm-gateway-shared'
 import { Badge } from '../../../shared/components/ui'
 
-import { formatMs, responseTimeColor, responseTimeQuality, successRateColor } from './provider-stats-utils'
+import {
+  formatMs,
+  responseTimeColor,
+  responseTimeQuality,
+  successRateColor,
+} from './provider-stats-utils'
 
 interface ProviderCardProps {
   stat: ProviderStat
@@ -19,10 +24,14 @@ export function ProviderCard({ stat, rank }: ProviderCardProps) {
     <div className="rounded-lg border p-4 hover:bg-accent/30 transition-colors">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
-          <Badge variant="outline" className="w-8 justify-center font-mono">{rank}</Badge>
+          <Badge variant="outline" className="w-8 justify-center font-mono">
+            {rank}
+          </Badge>
           <Server className="h-4 w-4 text-muted-foreground" />
           <span className="font-semibold">{stat.providerName ?? '未知供应商'}</span>
-          <Badge variant="outline" className={cn('text-xs', quality.className)}>{quality.label}</Badge>
+          <Badge variant="outline" className={cn('text-xs', quality.className)}>
+            {quality.label}
+          </Badge>
         </div>
         <span className="text-xs text-muted-foreground">
           最后请求: {new Date(stat.lastRequestAt).toLocaleString('zh-CN')}
@@ -58,31 +67,56 @@ export function ProviderCard({ stat, rank }: ProviderCardProps) {
         <div className="bg-blue-50/50 dark:bg-blue-950/20 rounded-lg px-3 py-2 border border-blue-100 dark:border-blue-900">
           <div className="text-xs text-muted-foreground">
             TTFB 均值
-            {stat.ttfbCount > 0 && <span className="ml-1 text-blue-500">({stat.ttfbCount}/{stat.totalRequests})</span>}
+            {stat.ttfbCount > 0 && (
+              <span className="ml-1 text-blue-500">
+                ({stat.ttfbCount}/{stat.totalRequests})
+              </span>
+            )}
           </div>
-          <div className={cn('font-semibold text-base', stat.avgTtfb != null ? responseTimeColor(stat.avgTtfb) : 'text-muted-foreground')}>
+          <div
+            className={cn(
+              'font-semibold text-base',
+              stat.avgTtfb != null ? responseTimeColor(stat.avgTtfb) : 'text-muted-foreground',
+            )}
+          >
             {stat.avgTtfb != null ? formatMs(stat.avgTtfb) : '—'}
           </div>
         </div>
         <div className="bg-blue-50/50 dark:bg-blue-950/20 rounded-lg px-3 py-2 border border-blue-100 dark:border-blue-900">
           <div className="text-xs text-muted-foreground">TTFB P95</div>
-          <div className={cn('font-semibold text-base', stat.p95Ttfb != null ? responseTimeColor(stat.p95Ttfb) : 'text-muted-foreground')}>
+          <div
+            className={cn(
+              'font-semibold text-base',
+              stat.p95Ttfb != null ? responseTimeColor(stat.p95Ttfb) : 'text-muted-foreground',
+            )}
+          >
             {stat.p95Ttfb != null ? formatMs(stat.p95Ttfb) : '—'}
           </div>
         </div>
         <div className="bg-muted/50 rounded-lg px-3 py-2">
           <div className="text-xs text-muted-foreground">最快</div>
-          <div className="font-semibold text-base text-green-600">{formatMs(stat.minResponseTime)}</div>
+          <div className="font-semibold text-base text-green-600">
+            {formatMs(stat.minResponseTime)}
+          </div>
         </div>
         <div className="bg-muted/50 rounded-lg px-3 py-2">
           <div className="text-xs text-muted-foreground">最慢</div>
-          <div className="font-semibold text-base text-red-600">{formatMs(stat.maxResponseTime)}</div>
+          <div className="font-semibold text-base text-red-600">
+            {formatMs(stat.maxResponseTime)}
+          </div>
         </div>
       </div>
 
       <div className="mt-3 h-1.5 bg-muted rounded-full overflow-hidden">
         <div
-          className={cn('h-full rounded-full transition-all', successRate >= 0.95 ? 'bg-green-500' : successRate >= 0.80 ? 'bg-yellow-500' : 'bg-red-500')}
+          className={cn(
+            'h-full rounded-full transition-all',
+            successRate >= 0.95
+              ? 'bg-green-500'
+              : successRate >= 0.8
+                ? 'bg-yellow-500'
+                : 'bg-red-500',
+          )}
           style={{ width: `${(successRate * 100).toFixed(1)}%` }}
         />
       </div>

@@ -1,22 +1,22 @@
 'use client'
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect } from 'react'
 
-import Editor, { loader } from "@monaco-editor/react"
-import { Copy, Check } from "lucide-react"
-import * as monaco from "monaco-editor"
+import Editor, { loader } from '@monaco-editor/react'
+import { Copy, Check } from 'lucide-react'
+import * as monaco from 'monaco-editor'
 
-import { Button } from "./ui/button"
+import { Button } from './ui/button'
 
 loader.config({ monaco })
 
 interface JsonViewerProps {
   data: unknown
-  height?: string | "auto"
+  height?: string | 'auto'
   readonly?: boolean
 }
 
-export function JsonViewer({ data, height = "400px", readonly = true }: JsonViewerProps) {
+export function JsonViewer({ data, height = '400px', readonly = true }: JsonViewerProps) {
   const [copied, setCopied] = useState(false)
   const [measuredHeight, setMeasuredHeight] = useState(400)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -30,7 +30,7 @@ export function JsonViewer({ data, height = "400px", readonly = true }: JsonView
   }
 
   useEffect(() => {
-    if (height !== "auto" || !containerRef.current) return
+    if (height !== 'auto' || !containerRef.current) return
     const el = containerRef.current
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
@@ -44,7 +44,7 @@ export function JsonViewer({ data, height = "400px", readonly = true }: JsonView
     return () => observer.disconnect()
   }, [height])
 
-  const isAuto = height === "auto"
+  const isAuto = height === 'auto'
   const editorHeight = isAuto ? `${measuredHeight}px` : height
 
   return (
@@ -54,11 +54,22 @@ export function JsonViewer({ data, height = "400px", readonly = true }: JsonView
       style={isAuto ? { flex: 1, minHeight: 0 } : undefined}
     >
       <div className="absolute top-2 right-2 z-10">
-        <Button variant="outline" size="sm" onClick={handleCopy} className="bg-background/80 backdrop-blur-sm">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleCopy}
+          className="bg-background/80 backdrop-blur-sm"
+        >
           {copied ? (
-            <><Check className="h-3 w-3 mr-1" />已复制</>
+            <>
+              <Check className="h-3 w-3 mr-1" />
+              已复制
+            </>
           ) : (
-            <><Copy className="h-3 w-3 mr-1" />复制</>
+            <>
+              <Copy className="h-3 w-3 mr-1" />
+              复制
+            </>
           )}
         </Button>
       </div>
@@ -72,10 +83,10 @@ export function JsonViewer({ data, height = "400px", readonly = true }: JsonView
           minimap: { enabled: false },
           scrollBeyondLastLine: false,
           fontSize: 12,
-          lineNumbers: "on",
-          renderWhitespace: "selection",
+          lineNumbers: 'on',
+          renderWhitespace: 'selection',
           folding: true,
-          wordWrap: "on",
+          wordWrap: 'on',
         }}
       />
     </div>

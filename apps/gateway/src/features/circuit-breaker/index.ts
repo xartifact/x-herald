@@ -1,2 +1,2 @@
 // Server-side exports only
-export * from '@xartifact/x-llm-gateway-db';
+export * from '@xartifact/x-llm-gateway-db'

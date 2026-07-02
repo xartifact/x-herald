@@ -42,10 +42,16 @@ async function readAnalysisStream(
       const chunk = line.slice(6).trim()
       if (chunk === '[DONE]') continue
       try {
-        const parsed = JSON.parse(chunk) as { error?: string; choices?: Array<{ delta?: { content?: string } }> }
+        const parsed = JSON.parse(chunk) as {
+          error?: string
+          choices?: Array<{ delta?: { content?: string } }>
+        }
         if (parsed.error) throw new Error(parsed.error)
         const delta = parsed.choices?.[0]?.delta?.content
-        if (delta) { accumulated += delta; onProgress() }
+        if (delta) {
+          accumulated += delta
+          onProgress()
+        }
       } catch (e) {
         if (e instanceof Error && e.message !== 'skip') throw e
       }
@@ -78,25 +84,28 @@ export function useMessageAnalysis({ logId, selectedIndices }: UseMessageAnalysi
     setActiveMode(mode)
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : ''
-      const body = mode === 'selected'
-        ? { indices: selectedIndices }
-        : { mode }
+      const body = mode === 'selected' ? { indices: selectedIndices } : { mode }
       const response = await fetch(`/api/logs/${logId}/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token ?? ''}` },
         body: JSON.stringify(body),
       })
       if (!response.ok) {
-        const data = await response.json().catch(() => ({})) as { error?: string }
+        const data = (await response.json().catch(() => ({}))) as { error?: string }
         setError(data.error ?? `请求失败 (${response.status})`)
         setStatus('error')
         return
       }
       setStatus('streaming')
-      const raw = await readAnalysisStream(response.body!.getReader(), () => { /* progress pulse */ })
+      const raw = await readAnalysisStream(response.body!.getReader(), () => {
+        /* progress pulse */
+      })
       try {
         // strip possible markdown code fences
-        const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim()
+        const cleaned = raw
+          .replace(/^```(?:json)?\s*/i, '')
+          .replace(/\s*```$/i, '')
+          .trim()
         setResult(JSON.parse(cleaned) as AnalysisResult)
         setStatus('done')
       } catch {
@@ -109,5 +118,15 @@ export function useMessageAnalysis({ logId, selectedIndices }: UseMessageAnalysi
     }
   }
 
-  return { status, result, error, expanded, setExpanded, handleAnalyze, hasSelection, isActive, activeMode }
+  return {
+    status,
+    result,
+    error,
+    expanded,
+    setExpanded,
+    handleAnalyze,
+    hasSelection,
+    isActive,
+    activeMode,
+  }
 }

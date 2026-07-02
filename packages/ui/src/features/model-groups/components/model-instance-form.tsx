@@ -12,7 +12,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../../../shared/components/ui/dialog'
-import { Form, FormControl, FormField, FormItem, FormMessage } from '../../../shared/components/ui/form'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from '../../../shared/components/ui/form'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../shared/components/ui/tabs'
 
 // Record<string, any> defined locally // TODO(6): from apps/web
@@ -29,7 +35,15 @@ interface ModelInstanceFormProps {
   onSubmit: (data: Record<string, any>) => void
 }
 
-export function ModelInstanceForm({ open, onOpenChange, form, editingId, isPending, providers, onSubmit }: ModelInstanceFormProps) {
+export function ModelInstanceForm({
+  open,
+  onOpenChange,
+  form,
+  editingId,
+  isPending,
+  providers,
+  onSubmit,
+}: ModelInstanceFormProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
@@ -69,7 +83,9 @@ export function ModelInstanceForm({ open, onOpenChange, form, editingId, isPendi
             </Tabs>
 
             <DialogFooter className="pt-4">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>取消</Button>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                取消
+              </Button>
               <Button type="submit" disabled={isPending}>
                 {isPending ? '保存中...' : editingId ? '保存更改' : '创建'}
               </Button>

@@ -13,7 +13,6 @@ const CLIENT_LABELS: Record<string, string> = {
   unknown: '未知客户端',
 }
 
-
 interface LogStatsCardsProps {
   stats?: LogStats['overview']
   storage?: LogStorage
@@ -23,9 +22,8 @@ interface LogStatsCardsProps {
 export function LogStatsCards({ stats, storage, clientStats }: LogStatsCardsProps) {
   if (!stats) return null
 
-  const successRate = stats.totalRequests > 0
-    ? ((stats.successRequests / stats.totalRequests) * 100).toFixed(1)
-    : '0'
+  const successRate =
+    stats.totalRequests > 0 ? ((stats.successRequests / stats.totalRequests) * 100).toFixed(1) : '0'
 
   const formatTokens = (tokens: number) => {
     if (tokens >= 1000000) return `${(tokens / 1000000).toFixed(1)}M`
@@ -48,7 +46,10 @@ export function LogStatsCards({ stats, storage, clientStats }: LogStatsCardsProp
         <CardContent>
           <div className="text-2xl font-bold">{stats.totalRequests.toLocaleString()}</div>
           <div className="flex items-center gap-2 mt-1">
-            <Badge variant={Number(successRate) >= 95 ? 'default' : 'secondary'} className="text-xs">
+            <Badge
+              variant={Number(successRate) >= 95 ? 'default' : 'secondary'}
+              className="text-xs"
+            >
               {successRate}% 成功率
             </Badge>
             <span className="text-xs text-muted-foreground">
@@ -66,7 +67,8 @@ export function LogStatsCards({ stats, storage, clientStats }: LogStatsCardsProp
         <CardContent>
           <div className="text-2xl font-bold">{formatTokens(stats.totalTokens)}</div>
           <div className="text-xs text-muted-foreground mt-1">
-            ↑ {formatTokens(stats.totalInputTokens)} 输入 / ↓ {formatTokens(stats.totalOutputTokens)} 输出
+            ↑ {formatTokens(stats.totalInputTokens)} 输入 / ↓{' '}
+            {formatTokens(stats.totalOutputTokens)} 输出
           </div>
         </CardContent>
       </Card>
@@ -100,33 +102,37 @@ export function LogStatsCards({ stats, storage, clientStats }: LogStatsCardsProp
         </CardContent>
       </Card>
 
-      {clientStats && clientStats.length > 0 && (() => {
-        const top = clientStats[0]
-        const topName = top.clientType
-          ? (CLIENT_LABELS[top.clientType] ?? top.clientType)
-          : '未知客户端'
-        return (
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">客户端分布</CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold truncate" title={topName}>{topName}</div>
-              <div className="flex items-center gap-2 mt-1 flex-wrap">
-                <Badge variant="secondary" className="text-xs">
-                  最多 {top.requestCount} 次
-                </Badge>
-                {clientStats.slice(1, 3).map(s => (
-                  <span key={s.clientType ?? 'unknown'} className="text-xs text-muted-foreground">
-                    {s.clientType ? (CLIENT_LABELS[s.clientType] ?? s.clientType) : '未知'}
-                  </span>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )
-      })()}
+      {clientStats &&
+        clientStats.length > 0 &&
+        (() => {
+          const top = clientStats[0]
+          const topName = top.clientType
+            ? (CLIENT_LABELS[top.clientType] ?? top.clientType)
+            : '未知客户端'
+          return (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">客户端分布</CardTitle>
+                <BarChart3 className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold truncate" title={topName}>
+                  {topName}
+                </div>
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                  <Badge variant="secondary" className="text-xs">
+                    最多 {top.requestCount} 次
+                  </Badge>
+                  {clientStats.slice(1, 3).map((s) => (
+                    <span key={s.clientType ?? 'unknown'} className="text-xs text-muted-foreground">
+                      {s.clientType ? (CLIENT_LABELS[s.clientType] ?? s.clientType) : '未知'}
+                    </span>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })()}
     </div>
   )
 }

@@ -4,10 +4,7 @@ import { useModelRoutes, useModelRoutePage } from '../../../hooks/model-routes'
 import { useAccessModels } from '../../../hooks/access-models'
 import { useModelGroups, useModelInstances } from '../../../hooks/model-groups'
 import { buildFlowFromData } from '@xartifact/x-llm-gateway-ui'
-import {
-  Card, CardContent,
-  FlowEditor, DeployBanner,
-} from '@xartifact/x-llm-gateway-ui'
+import { Card, CardContent, FlowEditor, DeployBanner } from '@xartifact/x-llm-gateway-ui'
 
 export function ModelRoutesPage() {
   const { data: routes = [], isLoading: routesLoading } = useModelRoutes()

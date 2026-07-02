@@ -1,11 +1,4 @@
-import type {
-  LLMAdapter,
-  Message,
-  ToolExecutor,
-  Skill,
-  AgentConfig,
-  AgentResult,
-} from './types'
+import type { LLMAdapter, Message, ToolExecutor, Skill, AgentConfig, AgentResult } from './types'
 
 export class Agent {
   private adapter: LLMAdapter
@@ -31,24 +24,25 @@ export class Agent {
   async run(params: {
     prompt: string
     skill?: string
-    tools?: string[]  // 限制可用工具
+    tools?: string[] // 限制可用工具
     maxTurns?: number
   }): Promise<AgentResult> {
     const skill = params.skill ? this.skills.get(params.skill) : null
     const maxTurns = params.maxTurns || this.config.maxTurns || 10
 
     // 构建工具列表
-    const availableToolNames = params.tools || skill?.tools.map(t => t.name) || Array.from(this.executors.keys())
+    const availableToolNames =
+      params.tools || skill?.tools.map((t) => t.name) || Array.from(this.executors.keys())
     const toolDefinitions = availableToolNames
-      .map(name => this.executors.get(name)?.tool)
+      .map((name) => this.executors.get(name)?.tool)
       .filter(Boolean)
-      .map(tool => ({
+      .map((tool) => ({
         type: 'function' as const,
         function: {
           name: tool!.name,
           description: tool!.description,
           parameters: tool!.parameters,
-        }
+        },
       }))
 
     // 构建消息

@@ -15,7 +15,13 @@ interface ChatInputProps {
   onSend: (message: string) => void
 }
 
-export function ChatInput({ input, loading, showTemplates, onInputChange, onSend }: ChatInputProps) {
+export function ChatInput({
+  input,
+  loading,
+  showTemplates,
+  onInputChange,
+  onSend,
+}: ChatInputProps) {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()

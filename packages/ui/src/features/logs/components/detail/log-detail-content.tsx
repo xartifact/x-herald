@@ -43,9 +43,20 @@ export function LogDetailContent({
 
   const metadataColumn = (
     <>
-      <MetadataBasicSections log={log} isPending={isPending} isSuccess={isSuccess} contentFeatures={contentFeatures} onOpenTrace={log.conversationId ? () => setTraceOpen(true) : undefined} />
+      <MetadataBasicSections
+        log={log}
+        isPending={isPending}
+        isSuccess={isSuccess}
+        contentFeatures={contentFeatures}
+        onOpenTrace={log.conversationId ? () => setTraceOpen(true) : undefined}
+      />
       <MetadataRequestSections log={log} resolveClientType={resolveClientType} />
-      <MetadataPerformanceSections log={log} contentFeatures={contentFeatures} formatDuration={formatDuration} formatTokens={formatTokens} />
+      <MetadataPerformanceSections
+        log={log}
+        contentFeatures={contentFeatures}
+        formatDuration={formatDuration}
+        formatTokens={formatTokens}
+      />
     </>
   )
 
@@ -80,8 +91,12 @@ export function LogDetailContent({
                   <TabsTrigger value="response">Response</TabsTrigger>
                 </TabsList>
               </div>
-              <TabsContent value="request" className="flex-1 m-0 overflow-hidden"><RequestPanel log={log} className="h-full border-r-0" /></TabsContent>
-              <TabsContent value="response" className="flex-1 m-0 overflow-hidden"><ResponsePanel log={log} className="h-full border-r-0" /></TabsContent>
+              <TabsContent value="request" className="flex-1 m-0 overflow-hidden">
+                <RequestPanel log={log} className="h-full border-r-0" />
+              </TabsContent>
+              <TabsContent value="response" className="flex-1 m-0 overflow-hidden">
+                <ResponsePanel log={log} className="h-full border-r-0" />
+              </TabsContent>
             </Tabs>
           </div>
         </div>
@@ -96,9 +111,15 @@ export function LogDetailContent({
                 <TabsTrigger value="response">响应</TabsTrigger>
               </TabsList>
             </div>
-            <TabsContent value="overview" className="flex-1 m-0 overflow-hidden"><ScrollArea className="h-full">{metadataColumn}</ScrollArea></TabsContent>
-            <TabsContent value="request" className="flex-1 m-0 overflow-hidden"><RequestPanel log={log} className="h-full border-r-0" /></TabsContent>
-            <TabsContent value="response" className="flex-1 m-0 overflow-hidden"><ResponsePanel log={log} className="h-full border-r-0" /></TabsContent>
+            <TabsContent value="overview" className="flex-1 m-0 overflow-hidden">
+              <ScrollArea className="h-full">{metadataColumn}</ScrollArea>
+            </TabsContent>
+            <TabsContent value="request" className="flex-1 m-0 overflow-hidden">
+              <RequestPanel log={log} className="h-full border-r-0" />
+            </TabsContent>
+            <TabsContent value="response" className="flex-1 m-0 overflow-hidden">
+              <ResponsePanel log={log} className="h-full border-r-0" />
+            </TabsContent>
           </Tabs>
         </div>
 

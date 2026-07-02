@@ -32,7 +32,15 @@ export function useGroupPageInstances() {
   const reorderInstances = useReorderInstances()
 
   const instanceForm = useForm<InstanceFormData>({
-    defaultValues: { providerId: '', name: '', actualModelName: '', description: '', weight: 100, priority: 0, config: undefined },
+    defaultValues: {
+      providerId: '',
+      name: '',
+      actualModelName: '',
+      description: '',
+      weight: 100,
+      priority: 0,
+      config: undefined,
+    },
   })
 
   const instancesByGroup = useMemo(() => {
@@ -45,7 +53,10 @@ export function useGroupPageInstances() {
       }
     }
     for (const [key, list] of map) {
-      map.set(key, list.sort((a, b) => a.priority - b.priority))
+      map.set(
+        key,
+        list.toSorted((a, b) => a.priority - b.priority),
+      )
     }
     return map
   }, [instances])
@@ -57,7 +68,14 @@ export function useGroupPageInstances() {
 
   const handleAddInstance = () => {
     setEditingInstanceId(null)
-    instanceForm.reset({ providerId: '', name: '', actualModelName: '', description: '', weight: 100, priority: 0 })
+    instanceForm.reset({
+      providerId: '',
+      name: '',
+      actualModelName: '',
+      description: '',
+      weight: 100,
+      priority: 0,
+    })
     setInstanceDialogOpen(true)
   }
 
@@ -101,7 +119,15 @@ export function useGroupPageInstances() {
   )
 
   const onInstanceSubmit = async (data: InstanceFormData) => {
-    const payload = { providerId: data.providerId, name: data.name, actualModelName: data.actualModelName, description: data.description, weight: data.weight, priority: data.priority, config: data.config }
+    const payload = {
+      providerId: data.providerId,
+      name: data.name,
+      actualModelName: data.actualModelName,
+      description: data.description,
+      weight: data.weight,
+      priority: data.priority,
+      config: data.config,
+    }
     if (editingInstanceId) {
       await updateInstance.mutateAsync({ id: editingInstanceId, data: payload })
     } else {

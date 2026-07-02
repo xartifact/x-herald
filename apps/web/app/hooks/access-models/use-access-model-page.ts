@@ -80,15 +80,17 @@ export function useAccessModelPage() {
       displayName: am.displayName || '',
       description: am.description || '',
       enabled: am.enabled,
-      capabilities: cap ? {
-        streaming: cap.streaming ?? true,
-        functionCalling: cap.functionCalling ?? false,
-        vision: cap.vision ?? false,
-        jsonMode: cap.jsonMode ?? false,
-        reasoning: Boolean(cap.reasoning),
-        contextWindow: Number(cap.contextWindow ?? 0),
-        maxTokens: Number(cap.maxTokens ?? 0),
-      } : DEFAULT_CAPABILITIES,
+      capabilities: cap
+        ? {
+            streaming: cap.streaming ?? true,
+            functionCalling: cap.functionCalling ?? false,
+            vision: cap.vision ?? false,
+            jsonMode: cap.jsonMode ?? false,
+            reasoning: Boolean(cap.reasoning),
+            contextWindow: Number(cap.contextWindow ?? 0),
+            maxTokens: Number(cap.maxTokens ?? 0),
+          }
+        : DEFAULT_CAPABILITIES,
     })
     setDialogOpen(true)
   }
@@ -132,7 +134,7 @@ export function useAccessModelPage() {
   const filteredModels = accessModels.filter(
     (am) =>
       am.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (am.displayName || '').toLowerCase().includes(searchQuery.toLowerCase())
+      (am.displayName || '').toLowerCase().includes(searchQuery.toLowerCase()),
   )
 
   return {

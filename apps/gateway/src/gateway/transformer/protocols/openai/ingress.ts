@@ -1,23 +1,20 @@
-import type { TransformerContext, StandardRequest } from '@xartifact/x-llm-gateway-shared';
+import type { TransformerContext, StandardRequest } from '@xartifact/x-llm-gateway-shared'
 
-import { convertMessages } from './converters/message-converter';
-import type { OpenAIRequest } from './types';
+import { convertMessages } from './converters/message-converter'
+import type { OpenAIRequest } from './types'
 
 /**
  * Normalize OpenAI request to standard format
  */
-export function normalizeOpenAIRequest(
-  request: unknown,
-  ctx: TransformerContext,
-): StandardRequest {
-  const openaiReq = request as OpenAIRequest;
+export function normalizeOpenAIRequest(request: unknown, ctx: TransformerContext): StandardRequest {
+  const openaiReq = request as OpenAIRequest
 
   const outputConfig = openaiReq.response_format
     ? {
         type: openaiReq.response_format.type,
         schema: openaiReq.response_format.schema,
       }
-    : undefined;
+    : undefined
 
   return {
     model: openaiReq.model,
@@ -42,5 +39,5 @@ export function normalizeOpenAIRequest(
       originalProvider: 'openai',
       ...ctx.metadata,
     },
-  };
+  }
 }

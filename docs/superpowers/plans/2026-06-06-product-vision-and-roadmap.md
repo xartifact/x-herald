@@ -20,16 +20,16 @@
 
 ### 核心原则
 
-| 原则 | 定义 |
-|------|------|
-| **第一原则：透明代理** | 对客户端透明，不改变开发者使用习惯，不增加接入成本 |
+| 原则                         | 定义                                                             |
+| ---------------------------- | ---------------------------------------------------------------- |
+| **第一原则：透明代理**       | 对客户端透明，不改变开发者使用习惯，不增加接入成本               |
 | **第二原则：AI-native 扩展** | AI 帮用户扩展产品（写插件、适配 Provider），而非修改产品自身代码 |
-| **第三原则：自进化** | 网关自动检测异常、自动学习 Provider 行为、自动优化路由策略 |
+| **第三原则：自进化**         | 网关自动检测异常、自动学习 Provider 行为、自动优化路由策略       |
 
 ### 目标用户
 
-| 用户画像 | 需求 |
-|----------|------|
+| 用户画像                                  | 需求                                     |
+| ----------------------------------------- | ---------------------------------------- |
 | **独立开发者** 使用 Cursor/Claude/Copilot | 多 Provider 故障转移、成本可见、模型切换 |
 
 ---
@@ -39,6 +39,7 @@
 ### ✅ 在范围内
 
 #### Phase 1: 核心代理（MVP）— ✅ 大部分完成
+
 - Base URL 直连模式（客户端配置 base URL 指向网关）
 - 协议转换（OpenAI ↔ Anthropic 双向 + Gemini）
 - 虚拟模型路由（条件规则引擎）
@@ -51,6 +52,7 @@
 - 客户端一键配置（opencode/claude-code/pi/codex）
 
 #### Phase 2: 智能分析 — ✅ 完成
+
 - 成本追踪（按 Key/Model/Provider 统计 Token 单价和花费）
 - 异常检测（自动识别慢请求、高错误率、异常 Token 用量）
 - Provider 健康评分（基于成功率、延迟、TTFB 自动打分）
@@ -58,6 +60,7 @@
 - 实时流量看板（SSE 推送）
 
 #### Phase 3: AI-native 扩展 — ✅ 核心完成
+
 - packages/ai-agent 框架（Agent + Tool + Skill 定义，零依赖）
 - AI 错误诊断 + 自动修复
 - AI 配置生成器（支持 requestInject/responseExtract）
@@ -65,15 +68,15 @@
 
 ### ❌ 不在范围内
 
-| 不做 | 原因 |
-|------|------|
-| 系统级 TUN 拦截 | 平台噩梦（Apple 签名 + App Store 审核），Base URL 直连已够用 |
-| 100+ Provider 预置配置 | 用动态扩展能力替代手工维护 |
-| 语义缓存 | 复杂度高，收益不确定 |
-| 内容审核/Guardrails | 需要 ML 模型，超出网关核心能力边界 |
-| WASM 自修改代码 | 安全风险过高，TypeScript 插件系统已够用 |
-| 云托管版本 | 专注自托管，不分散精力 |
-| 企业级功能（多租户、SSO、审计日志、高可用） | 不在当前目标用户需求范围内 |
+| 不做                                        | 原因                                                         |
+| ------------------------------------------- | ------------------------------------------------------------ |
+| 系统级 TUN 拦截                             | 平台噩梦（Apple 签名 + App Store 审核），Base URL 直连已够用 |
+| 100+ Provider 预置配置                      | 用动态扩展能力替代手工维护                                   |
+| 语义缓存                                    | 复杂度高，收益不确定                                         |
+| 内容审核/Guardrails                         | 需要 ML 模型，超出网关核心能力边界                           |
+| WASM 自修改代码                             | 安全风险过高，TypeScript 插件系统已够用                      |
+| 云托管版本                                  | 专注自托管，不分散精力                                       |
+| 企业级功能（多租户、SSO、审计日志、高可用） | 不在当前目标用户需求范围内                                   |
 
 ---
 
@@ -94,6 +97,7 @@
 ```
 
 **实现要点：**
+
 - 客户端将 API base URL 指向网关地址（如 `http://localhost:3000/api/v1`）
 - Hono 框架作为 HTTP 反向代理接收请求
 - 透明转发：不修改原始请求头（除必要的路由头）
@@ -121,6 +125,7 @@
 ```
 
 **数据流：**
+
 ```
 请求 → logEventBus.emit('request:start')
      → WebSocket 推送到前端
@@ -130,28 +135,33 @@
 #### 3.2.2 成本追踪
 
 **数据模型：**
+
 ```typescript
 interface CostRecord {
-  keyId: string;
-  modelName: string;
-  providerName: string;
-  inputTokens: number;
-  outputTokens: number;
-  inputCost: number;   // = inputTokens * unitPrice / 1000
-  outputCost: number;  // = outputTokens * unitPrice / 1000
-  totalCost: number;
-  timestamp: Date;
+  keyId: string
+  modelName: string
+  providerName: string
+  inputTokens: number
+  outputTokens: number
+  inputCost: number // = inputTokens * unitPrice / 1000
+  outputCost: number // = outputTokens * unitPrice / 1000
+  totalCost: number
+  timestamp: Date
 }
 ```
 
 **Provider 单价配置：**
+
 ```typescript
 interface ProviderPricing {
-  providerId: string;
-  modelPricing: Record<string, {
-    inputPer1k: number;   // 每 1000 input tokens 的美元价格
-    outputPer1k: number;  // 每 1000 output tokens 的美元价格
-  }>;
+  providerId: string
+  modelPricing: Record<
+    string,
+    {
+      inputPer1k: number // 每 1000 input tokens 的美元价格
+      outputPer1k: number // 每 1000 output tokens 的美元价格
+    }
+  >
 }
 ```
 
@@ -159,16 +169,17 @@ interface ProviderPricing {
 
 **自动检测规则：**
 
-| 异常类型 | 检测条件 | 严重级别 |
-|----------|----------|----------|
-| 慢请求 | TTFB > 10s 或 总延迟 > 60s | ⚠️ Warning |
-| 高错误率 | 5 分钟内错误率 > 20% | 🔴 Critical |
-| 异常 Token 用量 | 单次请求 > 100k tokens | ⚠️ Warning |
-| 成本异常 | 单次请求 > $5 | ⚠️ Warning |
-| 重试风暴 | 10 秒内重试 > 5 次 | 🔴 Critical |
-| Provider 不可用 | 连续 3 次失败 | 🔴 Critical |
+| 异常类型        | 检测条件                   | 严重级别    |
+| --------------- | -------------------------- | ----------- |
+| 慢请求          | TTFB > 10s 或 总延迟 > 60s | ⚠️ Warning  |
+| 高错误率        | 5 分钟内错误率 > 20%       | 🔴 Critical |
+| 异常 Token 用量 | 单次请求 > 100k tokens     | ⚠️ Warning  |
+| 成本异常        | 单次请求 > $5              | ⚠️ Warning  |
+| 重试风暴        | 10 秒内重试 > 5 次         | 🔴 Critical |
+| Provider 不可用 | 连续 3 次失败              | 🔴 Critical |
 
 **AI 增强检测（Phase 3）：**
+
 - 学习历史流量模式，识别偏离基线的请求
 - 自动关联异常事件（如：Provider X 延迟升高 + Provider Y 错误率升高 = 网络问题）
 - 生成异常报告（自然语言描述）
@@ -209,19 +220,21 @@ closed ──失败达阈值──→ open ──超时──→ half_open
 ```
 
 **配置参数：**
+
 ```typescript
 interface CircuitBreakerConfig {
-  failureThreshold: number;      // 触发熔断的失败次数（默认 3）
-  openDurationMs: number;        // 熔断持续时间（默认 60s）
-  maxBackoffMs: number;          // 最大退避时间（默认 30s）
-  maxTripsBeforeCooldown: number; // 触发冷却的次数（默认 5）
-  cooldownDurationMs: number;    // 冷却期时长（默认 300s）
+  failureThreshold: number // 触发熔断的失败次数（默认 3）
+  openDurationMs: number // 熔断持续时间（默认 60s）
+  maxBackoffMs: number // 最大退避时间（默认 30s）
+  maxTripsBeforeCooldown: number // 触发冷却的次数（默认 5）
+  cooldownDurationMs: number // 冷却期时长（默认 300s）
 }
 ```
 
 #### 3.3.3 协议转换
 
 **Transformer Chain：**
+
 ```
 Request → Ingress（协议检测）→ Normalize（标准模型）→ Route → Adapt（目标协议）→ Forward
 Response → ResponseIngress → ResponseAdapt → ResponseEgress → Client
@@ -238,24 +251,25 @@ Response → ResponseIngress → ResponseAdapt → ResponseEgress → Client
 
 #### 3.4.1 管理 UI 页面
 
-| 页面 | 功能 | 优先级 |
-|------|------|--------|
-| Dashboard | 实时统计、请求数、成功率、延迟、Token 用量 | P0 |
-| Providers | Provider CRUD、API Key 管理、健康状态 | P0 |
-| Model Groups | 模型组 + 实例 CRUD、优先级配置 | P0 |
-| Model Routes | 虚拟模型 + 路由规则（可视化编辑器） | P0 |
-| Keys | 虚拟密钥管理、速率限制、Token 额度 | P0 |
-| Logs | 请求日志查询、详情查看、导出 | P0 |
-| Settings | 配置导入/导出、系统设置 | P0 |
-| Circuit Breaker | 熔断器状态监控、手动触发/重置 | P1 |
-| Access Models | 访问模型白名单/黑名单 | P1 |
-| Metrics | 性能指标、Provider 质量评分 | P1 |
-| Client Models | 客户端模型使用统计 | P1 |
-| Provider Stats | Provider 级别统计面板 | P1 |
+| 页面            | 功能                                       | 优先级 |
+| --------------- | ------------------------------------------ | ------ |
+| Dashboard       | 实时统计、请求数、成功率、延迟、Token 用量 | P0     |
+| Providers       | Provider CRUD、API Key 管理、健康状态      | P0     |
+| Model Groups    | 模型组 + 实例 CRUD、优先级配置             | P0     |
+| Model Routes    | 虚拟模型 + 路由规则（可视化编辑器）        | P0     |
+| Keys            | 虚拟密钥管理、速率限制、Token 额度         | P0     |
+| Logs            | 请求日志查询、详情查看、导出               | P0     |
+| Settings        | 配置导入/导出、系统设置                    | P0     |
+| Circuit Breaker | 熔断器状态监控、手动触发/重置              | P1     |
+| Access Models   | 访问模型白名单/黑名单                      | P1     |
+| Metrics         | 性能指标、Provider 质量评分                | P1     |
+| Client Models   | 客户端模型使用统计                         | P1     |
+| Provider Stats  | Provider 级别统计面板                      | P1     |
 
 #### 3.4.2 一键配置
 
 **Cursor 配置：**
+
 ```bash
 # 自动配置 Cursor 使用 x-llm-gateway
 npx x-llm-gateway configure cursor
@@ -266,6 +280,7 @@ npx x-llm-gateway configure cursor
 ```
 
 **Claude Desktop 配置：**
+
 ```bash
 npx x-llm-gateway configure claude-desktop
 
@@ -280,23 +295,23 @@ npx x-llm-gateway configure claude-desktop
 
 ```typescript
 interface Plugin {
-  name: string;
-  version: string;
-  
+  name: string
+  version: string
+
   // 生命周期钩子
-  onInit?(ctx: PluginContext): Promise<void>;
-  onRequest?(request: GatewayRequest): Promise<GatewayRequest>;
-  onResponse?(response: GatewayResponse): Promise<GatewayResponse>;
-  onError?(error: GatewayError): Promise<GatewayError>;
-  onShutdown?(): Promise<void>;
+  onInit?(ctx: PluginContext): Promise<void>
+  onRequest?(request: GatewayRequest): Promise<GatewayRequest>
+  onResponse?(response: GatewayResponse): Promise<GatewayResponse>
+  onError?(error: GatewayError): Promise<GatewayError>
+  onShutdown?(): Promise<void>
 }
 
 interface PluginContext {
-  config: GatewayConfig;
-  db: Database;
-  logger: Logger;
-  registerRoute: (path: string, handler: Handler) => void;
-  registerTransformer: (name: string, transformer: Transformer) => void;
+  config: GatewayConfig
+  db: Database
+  logger: Logger
+  registerRoute: (path: string, handler: Handler) => void
+  registerTransformer: (name: string, transformer: Transformer) => void
 }
 ```
 
@@ -681,6 +696,7 @@ GET    /health/ready
 **状态：** ✅ 已完成（Commit: `3d35c43`）
 
 **完成内容：**
+
 - 修复 `use-live-logs.ts` 协议：从 WebSocket 改为 Fetch SSE reader
 - 修复事件 payload 字段对齐
 - 验证 SSE 端点正常工作
@@ -693,53 +709,53 @@ GET    /health/ready
 
 **目标：** 让 opencode/claude-code/pi 用户 5 分钟内跑起来
 
-| 周次 | 任务 | 产出 | 状态 |
-|------|------|------|------|
-| W1 | Base URL 直连模式 | 客户端配置 base URL 指向网关 | ✅ 已有 |
-| W1 | 协议检测 + 透传 | 自动识别 OpenAI/Anthropic 请求 | ✅ 已有 |
-| W2 | 客户端一键配置脚本 | `xgate configure opencode/claude-code/pi/codex` | ✅ 已完成 `258f2da` |
-| W3 | 协议转换完善 | OpenAI ↔ Anthropic 双向转换 | ✅ 已有 |
-| W3 | 虚拟模型路由 | 条件规则引擎 | ✅ 已有 |
-| W4 | 虚拟密钥 + 速率限制 | Key 管理 + RPM/Token 限制 | ✅ 已完成 `3d35c43` |
-| W4 | 熔断器 + 故障转移 | 生产级可靠性 | ✅ 已有 |
-| W5 | 请求日志 + 管理 UI | Dashboard + Logs 页面 | ✅ 已有 |
-| W5 | Provider + Model Group 管理 | CRUD 页面 | ✅ 已有 |
-| W6 | 集成测试 + Bug 修复 | 稳定版本 | ⬜ 待做 |
-| W6 | Docker 部署 + 文档 | 一键部署 | ⬜ 待做 |
+| 周次 | 任务                        | 产出                                            | 状态                |
+| ---- | --------------------------- | ----------------------------------------------- | ------------------- |
+| W1   | Base URL 直连模式           | 客户端配置 base URL 指向网关                    | ✅ 已有             |
+| W1   | 协议检测 + 透传             | 自动识别 OpenAI/Anthropic 请求                  | ✅ 已有             |
+| W2   | 客户端一键配置脚本          | `xgate configure opencode/claude-code/pi/codex` | ✅ 已完成 `258f2da` |
+| W3   | 协议转换完善                | OpenAI ↔ Anthropic 双向转换                     | ✅ 已有             |
+| W3   | 虚拟模型路由                | 条件规则引擎                                    | ✅ 已有             |
+| W4   | 虚拟密钥 + 速率限制         | Key 管理 + RPM/Token 限制                       | ✅ 已完成 `3d35c43` |
+| W4   | 熔断器 + 故障转移           | 生产级可靠性                                    | ✅ 已有             |
+| W5   | 请求日志 + 管理 UI          | Dashboard + Logs 页面                           | ✅ 已有             |
+| W5   | Provider + Model Group 管理 | CRUD 页面                                       | ✅ 已有             |
+| W6   | 集成测试 + Bug 修复         | 稳定版本                                        | ⬜ 待做             |
+| W6   | Docker 部署 + 文档          | 一键部署                                        | ⬜ 待做             |
 
 ### Phase 2: 智能分析（3-4 周）
 
 **目标：** 让用户看清流量、算清成本、发现异常
 
-| 周次 | 任务 | 产出 | 状态 |
-|------|------|------|------|
-| W7 | 成本追踪系统 | Token 单价配置 + 花费统计 | ✅ 已完成 `3f731bf` |
-| W7 | 成本统计 UI | 按 Key/Model/Provider 统计 | ✅ 已完成 `2cc8b7f` |
-| W7 | 密钥用量统计持久化 | lastUsedAt + totalRequests + totalTokens | ✅ 已完成 `9133ff0` |
-| W8 | 实时流量推送 | SSE + 前端实时更新 | ✅ 已完成（Phase 0） |
-| W8 | 请求/响应查看器 | Chrome DevTools 风格 | ✅ 已有 22 个组件 |
-| W9 | 异常检测引擎 | 自动识别慢请求、高错误率等 | ✅ 已完成 `dace811` |
-| W9 | 异常告警 UI | 异常列表 + 详情 + 解决 | ✅ 已完成 `dace811` |
-| W10 | Provider 健康评分 | 自动打分 + 趋势图 | ✅ 已有 ProviderQualityTable |
-| W10 | 性能指标 Dashboard | 延迟分布、吞吐量、错误率 | ✅ 已完成 `1f6c85c` |
+| 周次 | 任务               | 产出                                     | 状态                         |
+| ---- | ------------------ | ---------------------------------------- | ---------------------------- |
+| W7   | 成本追踪系统       | Token 单价配置 + 花费统计                | ✅ 已完成 `3f731bf`          |
+| W7   | 成本统计 UI        | 按 Key/Model/Provider 统计               | ✅ 已完成 `2cc8b7f`          |
+| W7   | 密钥用量统计持久化 | lastUsedAt + totalRequests + totalTokens | ✅ 已完成 `9133ff0`          |
+| W8   | 实时流量推送       | SSE + 前端实时更新                       | ✅ 已完成（Phase 0）         |
+| W8   | 请求/响应查看器    | Chrome DevTools 风格                     | ✅ 已有 22 个组件            |
+| W9   | 异常检测引擎       | 自动识别慢请求、高错误率等               | ✅ 已完成 `dace811`          |
+| W9   | 异常告警 UI        | 异常列表 + 详情 + 解决                   | ✅ 已完成 `dace811`          |
+| W10  | Provider 健康评分  | 自动打分 + 趋势图                        | ✅ 已有 ProviderQualityTable |
+| W10  | 性能指标 Dashboard | 延迟分布、吞吐量、错误率                 | ✅ 已完成 `1f6c85c`          |
 
 ### Phase 3: AI-native 扩展
 
 **目标：** 让 AI 帮用户扩展产品
 
-| 周次 | 任务 | 产出 | 状态 |
-|------|------|------|------|
-| W11 | packages/ai-agent 框架 | Agent + Tool + Skill 定义（零依赖） | ✅ 已完成 `81c4b99` |
-| W11 | engine 适配 | LLMAdapter + Tool 执行器 + Agent API | ✅ 已完成 `ffb2820` |
-| W11 | AI 错误诊断 + 自动修复 | 诊断 API + 模式学习 + 管理 UI | ✅ 已完成 `283041d` |
-| W12 | AI 配置生成器增强 | 支持 requestInject/responseExtract | ✅ 已完成 `6a6a412` |
+| 周次 | 任务                   | 产出                                 | 状态                |
+| ---- | ---------------------- | ------------------------------------ | ------------------- |
+| W11  | packages/ai-agent 框架 | Agent + Tool + Skill 定义（零依赖）  | ✅ 已完成 `81c4b99` |
+| W11  | engine 适配            | LLMAdapter + Tool 执行器 + Agent API | ✅ 已完成 `ffb2820` |
+| W11  | AI 错误诊断 + 自动修复 | 诊断 API + 模式学习 + 管理 UI        | ✅ 已完成 `283041d` |
+| W12  | AI 配置生成器增强      | 支持 requestInject/responseExtract   | ✅ 已完成 `6a6a412` |
 
 ---
 
 ## 七、技术风险与缓解
 
-| 风险 | 影响 | 缓解措施 |
-|------|------|----------|
+| 风险              | 影响             | 缓解措施           |
+| ----------------- | ---------------- | ------------------ |
 | Provider API 变更 | Transformer 失效 | AI 自动检测 + 适配 |
 
 ---
@@ -748,25 +764,25 @@ GET    /health/ready
 
 ### MVP（Phase 1 完成后）
 
-| 指标 | 目标 | 状态 |
-|------|------|------|
-| opencode/claude-code/pi 用户 5 分钟跑起来 | 一键配置 | ✅ |
-| 支持 OpenAI + Anthropic | 协议转换 | ✅ |
-| 故障自动转移 | 熔断器 + 重试 | ✅ |
-| 管理 UI 可用 | Dashboard + Logs | ✅ |
+| 指标                                      | 目标             | 状态 |
+| ----------------------------------------- | ---------------- | ---- |
+| opencode/claude-code/pi 用户 5 分钟跑起来 | 一键配置         | ✅   |
+| 支持 OpenAI + Anthropic                   | 协议转换         | ✅   |
+| 故障自动转移                              | 熔断器 + 重试    | ✅   |
+| 管理 UI 可用                              | Dashboard + Logs | ✅   |
 
 ### Phase 2 完成后
 
-| 指标 | 目标 | 状态 |
-|------|------|------|
-| 成本可见 | 按 Key/Model/Provider 统计 | ✅ |
-| 异常可发现 | 自动检测 + 告警 | ✅ |
-| 流量可分析 | 实时看板 + 请求详情 | ✅ |
+| 指标       | 目标                       | 状态 |
+| ---------- | -------------------------- | ---- |
+| 成本可见   | 按 Key/Model/Provider 统计 | ✅   |
+| 异常可发现 | 自动检测 + 告警            | ✅   |
+| 流量可分析 | 实时看板 + 请求详情        | ✅   |
 
 ### Phase 3 完成后
 
-| 指标 | 目标 | 状态 |
-|------|------|------|
-| AI 辅助配置 | 生成 InstanceConfig | ✅ |
-| AI 错误诊断 | 自动分析错误 + 建议修复 | ✅ |
-| Provider 动态扩展 | requestInject/responseExtract | ✅ |
+| 指标              | 目标                          | 状态 |
+| ----------------- | ----------------------------- | ---- |
+| AI 辅助配置       | 生成 InstanceConfig           | ✅   |
+| AI 错误诊断       | 自动分析错误 + 建议修复       | ✅   |
+| Provider 动态扩展 | requestInject/responseExtract | ✅   |

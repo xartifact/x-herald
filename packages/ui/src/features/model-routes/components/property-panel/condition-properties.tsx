@@ -7,23 +7,28 @@ import { GitBranch } from 'lucide-react'
 
 import { Input } from '../../../../shared/components/ui/input'
 import { Label } from '../../../../shared/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../shared/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../../../shared/components/ui/select'
 
 import { FIELDS, NUMERIC_OPERATORS, STRING_OPERATORS, isNumericField } from './condition-fields'
 
 interface ConditionNodeData {
-  label?: string;
-  field?: string;
-  operator?: string;
-  value?: unknown;
-  [key: string]: unknown;
+  label?: string
+  field?: string
+  operator?: string
+  value?: unknown
+  [key: string]: unknown
 }
 
 interface ConditionPropertiesProps {
-  node: Node<ConditionNodeData>;
-  onUpdate: (nodeId: string, data: Record<string, unknown>) => void;
+  node: Node<ConditionNodeData>
+  onUpdate: (nodeId: string, data: Record<string, unknown>) => void
 }
-
 
 export function ConditionProperties({ node, onUpdate }: ConditionPropertiesProps) {
   const [label, setLabel] = useState(node.data.label ?? '')
@@ -64,7 +69,10 @@ export function ConditionProperties({ node, onUpdate }: ConditionPropertiesProps
         <Label className="text-xs text-muted-foreground">显示名称</Label>
         <Input
           value={label}
-          onChange={e => { setLabel(e.target.value); update({ label: e.target.value }) }}
+          onChange={(e) => {
+            setLabel(e.target.value)
+            update({ label: e.target.value })
+          }}
           placeholder="条件名称（可选）"
           className="h-8 text-sm"
         />
@@ -77,8 +85,10 @@ export function ConditionProperties({ node, onUpdate }: ConditionPropertiesProps
             <SelectValue placeholder="选择字段..." />
           </SelectTrigger>
           <SelectContent>
-            {FIELDS.map(f => (
-              <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
+            {FIELDS.map((f) => (
+              <SelectItem key={f.value} value={f.value}>
+                {f.label}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -86,13 +96,21 @@ export function ConditionProperties({ node, onUpdate }: ConditionPropertiesProps
 
       <div className="space-y-1.5">
         <Label className="text-xs text-muted-foreground">操作符</Label>
-        <Select value={operator} onValueChange={v => { setOperator(v); update({ operator: v }) }}>
+        <Select
+          value={operator}
+          onValueChange={(v) => {
+            setOperator(v)
+            update({ operator: v })
+          }}
+        >
           <SelectTrigger className="h-8 text-sm">
             <SelectValue placeholder="选择操作符..." />
           </SelectTrigger>
           <SelectContent>
-            {operators.map(op => (
-              <SelectItem key={op.value} value={op.value}>{op.label}</SelectItem>
+            {operators.map((op) => (
+              <SelectItem key={op.value} value={op.value}>
+                {op.label}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -105,8 +123,17 @@ export function ConditionProperties({ node, onUpdate }: ConditionPropertiesProps
           </Label>
           <Input
             value={value}
-            onChange={e => { setValue(e.target.value); update({ value: e.target.value }) }}
-            placeholder={operator === 'in' ? '18,19,20,21,22' : operator === 'starts_with' ? 'premium-' : 'gpt-4'}
+            onChange={(e) => {
+              setValue(e.target.value)
+              update({ value: e.target.value })
+            }}
+            placeholder={
+              operator === 'in'
+                ? '18,19,20,21,22'
+                : operator === 'starts_with'
+                  ? 'premium-'
+                  : 'gpt-4'
+            }
             className="h-8 text-sm font-mono"
           />
           {operator === 'in' && (

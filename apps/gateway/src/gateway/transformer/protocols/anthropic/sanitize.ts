@@ -6,20 +6,20 @@
 const CONTROL_TAG_PATTERNS = [
   /<is_displaying_contents>[\s\S]*?<\/is_displaying_contents>/gi,
   /<filepaths>[\s\S]*?<\/filepaths>/gi,
-];
+]
 
 /**
  * Sanitize text content by removing control tags
  * Removes Claude Code CLI related XML/HTML control tags
  */
 export function sanitizeContent(text: string): string {
-  if (!text) return text;
+  if (!text) return text
 
-  let cleaned = text;
+  let cleaned = text
   for (const pattern of CONTROL_TAG_PATTERNS) {
-    cleaned = cleaned.replace(pattern, '');
+    cleaned = cleaned.replace(pattern, '')
   }
 
-  cleaned = cleaned.replace(/\n{3,}/g, '\n\n').trim();
-  return cleaned;
+  cleaned = cleaned.replace(/\n{3,}/g, '\n\n').trim()
+  return cleaned
 }

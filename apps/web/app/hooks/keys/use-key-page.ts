@@ -58,18 +58,18 @@ export function useKeyPage() {
   })
 
   const editingKey = editingKeyId ? keys.find((k) => k.id === editingKeyId) : null
-  const statsKey = statsKeyId ? keys.find((k) => k.id === statsKeyId) ?? null : null
+  const statsKey = statsKeyId ? (keys.find((k) => k.id === statsKeyId) ?? null) : null
 
-  const statsMap = useMemo(
-    () => new Map(keysStats.map((s) => [s.virtualKeyId, s])),
-    [keysStats],
-  )
+  const statsMap = useMemo(() => new Map(keysStats.map((s) => [s.virtualKeyId, s])), [keysStats])
 
   const handleShowStats = (keyId: string) => setStatsKeyId(keyId)
 
   const onSubmit = async (data: KeyFormSchema) => {
     const allowedModels = data.allowedModels
-      ? data.allowedModels.split(',').map((s) => s.trim()).filter(Boolean)
+      ? data.allowedModels
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
       : null
 
     const payload = {
@@ -183,7 +183,7 @@ export function useKeyPage() {
   }
 
   const filteredKeys = keys.filter((key) =>
-    key.name.toLowerCase().includes(searchQuery.toLowerCase())
+    key.name.toLowerCase().includes(searchQuery.toLowerCase()),
   )
 
   const formatDate = (dateStr: string | null) => {

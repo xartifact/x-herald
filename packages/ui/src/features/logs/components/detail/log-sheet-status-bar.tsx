@@ -21,7 +21,12 @@ export function LogSheetStatusBar({ log, formatDuration, formatTokens }: LogShee
         <Separator orientation="vertical" className="h-4" />
         <span>Token: {formatTokens(log.totalTokens)}</span>
         <Separator orientation="vertical" className="h-4 hidden md:block" />
-        <span className={cn('hidden md:inline', isPending ? 'text-amber-600' : isSuccess ? 'text-green-600' : 'text-red-600')}>
+        <span
+          className={cn(
+            'hidden md:inline',
+            isPending ? 'text-amber-600' : isSuccess ? 'text-green-600' : 'text-red-600',
+          )}
+        >
           {isPending ? '请求中' : isSuccess ? '成功' : '失败'}
         </span>
       </div>

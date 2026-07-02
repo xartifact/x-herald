@@ -1,1 +1,1 @@
-export { metricsRoutes } from './api';
+export { metricsRoutes } from './api'

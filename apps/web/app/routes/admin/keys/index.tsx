@@ -52,68 +52,77 @@ export function KeysPage() {
     },
   })
 
-  const statsKey = statsKeyId ? (keys as any[]).find((k) => k.id === statsKeyId) ?? null : null
+  const statsKey = statsKeyId ? ((keys as any[]).find((k) => k.id === statsKeyId) ?? null) : null
 
-  const statsMap = useMemo(
-    () => new Map(keysStats.map((s) => [s.virtualKeyId, s])),
-    [keysStats],
-  )
+  const statsMap = useMemo(() => new Map(keysStats.map((s) => [s.virtualKeyId, s])), [keysStats])
 
   const handleShowStats = useCallback((keyId: string) => setStatsKeyId(keyId), [])
 
-  const onSubmit = useCallback(async (data: KeyFormData) => {
-    const allowedModels = data.allowedModels
-      ? data.allowedModels.split(',').map((s) => s.trim()).filter(Boolean)
-      : null
+  const onSubmit = useCallback(
+    async (data: KeyFormData) => {
+      const allowedModels = data.allowedModels
+        ? data.allowedModels
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : null
 
-    const payload = {
-      name: data.name,
-      allowedModels,
-      rateLimitRpm: data.rateLimitRpm ?? null,
-      rateLimitRpd: data.rateLimitRpd ?? null,
-      tokenLimitDaily: data.tokenLimitDaily ?? null,
-      enabled: data.enabled,
-      expiresAt: data.expiresAt || null,
-    }
-
-    if (editingKeyId) {
-      await updateKey.mutateAsync({ id: editingKeyId, data: payload })
-      setDialogOpen(false)
-      setEditingKeyId(null)
-      form.reset()
-    } else {
-      const result = await createKey.mutateAsync(payload)
-      if (result && result.key) {
-        setNewlyCreatedKey(result.key)
-        setShowNewKey(true)
+      const payload = {
+        name: data.name,
+        allowedModels,
+        rateLimitRpm: data.rateLimitRpm ?? null,
+        rateLimitRpd: data.rateLimitRpd ?? null,
+        tokenLimitDaily: data.tokenLimitDaily ?? null,
+        enabled: data.enabled,
+        expiresAt: data.expiresAt || null,
       }
-    }
-  }, [editingKeyId, updateKey, createKey, form])
 
-  const handleEdit = useCallback((keyId: string) => {
-    const key = keys.find((k) => k.id === keyId)
-    if (!key) return
+      if (editingKeyId) {
+        await updateKey.mutateAsync({ id: editingKeyId, data: payload })
+        setDialogOpen(false)
+        setEditingKeyId(null)
+        form.reset()
+      } else {
+        const result = await createKey.mutateAsync(payload)
+        if (result && result.key) {
+          setNewlyCreatedKey(result.key)
+          setShowNewKey(true)
+        }
+      }
+    },
+    [editingKeyId, updateKey, createKey, form],
+  )
 
-    setEditingKeyId(keyId)
-    setNewlyCreatedKey(null)
-    setShowNewKey(false)
+  const handleEdit = useCallback(
+    (keyId: string) => {
+      const key = keys.find((k) => k.id === keyId)
+      if (!key) return
 
-    form.reset({
-      name: key.name,
-      allowedModels: key.allowedModels?.join(', ') || '',
-      rateLimitRpm: key.rateLimitRpm || undefined,
-      rateLimitRpd: key.rateLimitRpd || undefined,
-      tokenLimitDaily: key.tokenLimitDaily ? Number(key.tokenLimitDaily) : undefined,
-      enabled: key.enabled,
-      expiresAt: key.expiresAt ? new Date(key.expiresAt).toISOString().split('T')[0] : '',
-    })
-    setDialogOpen(true)
-  }, [keys, form])
+      setEditingKeyId(keyId)
+      setNewlyCreatedKey(null)
+      setShowNewKey(false)
 
-  const handleDelete = useCallback(async (id: string, name: string) => {
-    if (!confirm(`确定要删除密钥 "${name}" 吗？\n\n此操作不可撤销。`)) return
-    await deleteKey.mutateAsync(id)
-  }, [deleteKey])
+      form.reset({
+        name: key.name,
+        allowedModels: key.allowedModels?.join(', ') || '',
+        rateLimitRpm: key.rateLimitRpm || undefined,
+        rateLimitRpd: key.rateLimitRpd || undefined,
+        tokenLimitDaily: key.tokenLimitDaily ? Number(key.tokenLimitDaily) : undefined,
+        enabled: key.enabled,
+        expiresAt: key.expiresAt ? new Date(key.expiresAt).toISOString().split('T')[0] : '',
+      })
+      setDialogOpen(true)
+    },
+    [keys, form],
+  )
+
+  const handleDelete = useCallback(
+    async (id: string, name: string) => {
+      if (!confirm(`确定要删除密钥 "${name}" 吗？\n\n此操作不可撤销。`)) return
+      await deleteKey.mutateAsync(id)
+    },
+    [deleteKey],
+  )
 
   const handleAddNew = useCallback(() => {
     setEditingKeyId(null)
@@ -236,8 +245,18 @@ export function KeysPage() {
       ) : (
         <KeyTable
           keys={filteredKeys as any}
-          display={{ showKeyValue, copiedKey, onToggleShow: toggleShowKey, onCopy: copyToClipboard }}
-          actions={{ onEdit: handleEdit, onDelete: handleDelete, onReset: handleReset, onShowStats: handleShowStats }}
+          display={{
+            showKeyValue,
+            copiedKey,
+            onToggleShow: toggleShowKey,
+            onCopy: copyToClipboard,
+          }}
+          actions={{
+            onEdit: handleEdit,
+            onDelete: handleDelete,
+            onReset: handleReset,
+            onShowStats: handleShowStats,
+          }}
           stats={statsMap}
           formatDate={formatDate}
         />
@@ -245,7 +264,10 @@ export function KeysPage() {
 
       <KeyFormDialog
         open={dialogOpen}
-        onOpenChange={(open) => { if (!open) closeDialog(); else setDialogOpen(true) }}
+        onOpenChange={(open) => {
+          if (!open) closeDialog()
+          else setDialogOpen(true)
+        }}
         form={form}
         editingId={editingKeyId}
         isPending={createKey.isPending || updateKey.isPending}
@@ -258,7 +280,10 @@ export function KeysPage() {
 
       <KeyResetDialog
         open={resetDialogOpen}
-        onOpenChange={(open) => { if (!open) closeResetDialog(); else setResetDialogOpen(true) }}
+        onOpenChange={(open) => {
+          if (!open) closeResetDialog()
+          else setResetDialogOpen(true)
+        }}
         resetKeyValue={resetKeyValue}
         copied={copiedKey === 'reset'}
         isPending={resetKey.isPending}
@@ -269,7 +294,9 @@ export function KeysPage() {
 
       <KeyStatsSheet
         open={statsKeyId !== null}
-        onOpenChange={(open) => { if (!open) setStatsKeyId(null) }}
+        onOpenChange={(open) => {
+          if (!open) setStatsKeyId(null)
+        }}
         virtualKey={statsKey}
         stat={statsKeyId ? statsMap.get(statsKeyId) : undefined}
         period={statsPeriod}

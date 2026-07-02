@@ -8,7 +8,10 @@ import type { ConversationTraceResponse } from './log-types'
 export function useConversationTrace(conversationId: string | null | undefined) {
   return useQuery({
     queryKey: logKeys.conversation(conversationId ?? ''),
-    queryFn: () => get<ConversationTraceResponse>(`/api/logs/conversation/${conversationId}`, { extractData: false }),
+    queryFn: () =>
+      get<ConversationTraceResponse>(`/api/logs/conversation/${conversationId}`, {
+        extractData: false,
+      }),
     enabled: !!conversationId,
     staleTime: 30_000,
   })

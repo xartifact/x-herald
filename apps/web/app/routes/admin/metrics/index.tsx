@@ -1,4 +1,9 @@
-import { MetricsSummaryCards, InstancePerfTable, ProviderQualityTable, InstancePerfChart } from '@xartifact/x-llm-gateway-ui'
+import {
+  MetricsSummaryCards,
+  InstancePerfTable,
+  ProviderQualityTable,
+  InstancePerfChart,
+} from '@xartifact/x-llm-gateway-ui'
 import { useMetricsSummary, useInstancesSummary } from '../../../hooks/metrics'
 
 export function MetricsPage() {
@@ -17,15 +22,15 @@ export function MetricsPage() {
       </div>
 
       <MetricsSummaryCards summary={summary} isLoading={isLoading} />
-      
+
       {/* 实例性能图表 - 默认显示第一个实例 */}
       {firstInstance && (
-        <InstancePerfChart 
+        <InstancePerfChart
           instanceId={firstInstance.instanceId}
           instanceName={firstInstance.instanceName || firstInstance.instanceId}
         />
       )}
-      
+
       <InstancePerfTable />
       <ProviderQualityTable />
     </div>

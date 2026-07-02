@@ -51,7 +51,7 @@ export function LoginPage() {
                   id="password"
                   type="password"
                   value={password}
-                  onChange={e => setPassword(e.target.value)}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="输入管理员密码"
                   required
                   autoFocus
@@ -71,11 +71,7 @@ export function LoginPage() {
             <p className="text-sm text-muted-foreground text-center">
               提示：管理员密码在 .env 文件中配置
             </p>
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={login.isPending}
-            >
+            <Button type="submit" className="w-full" disabled={login.isPending}>
               {login.isPending ? (
                 '登录中...'
               ) : (

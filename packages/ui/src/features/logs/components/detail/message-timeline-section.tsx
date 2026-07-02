@@ -14,7 +14,12 @@ interface MessageTimelineSectionProps {
   onSelectionChange: (indices: number[]) => void
 }
 
-export function MessageTimelineSection({ messageSequence, messages, selectedIndices, onSelectionChange }: MessageTimelineSectionProps) {
+export function MessageTimelineSection({
+  messageSequence,
+  messages,
+  selectedIndices,
+  onSelectionChange,
+}: MessageTimelineSectionProps) {
   const [expandedIndices, setExpandedIndices] = useState<Set<number>>(new Set())
 
   if (!messageSequence?.roles?.length) {
@@ -51,7 +56,8 @@ export function MessageTimelineSection({ messageSequence, messages, selectedIndi
       <div className="flex items-center justify-between mb-4">
         <span className="text-sm text-muted-foreground">共 {totalCount} 条消息</span>
         <Button
-          variant="ghost" size="sm"
+          variant="ghost"
+          size="sm"
           onClick={() => onSelectionChange(allSelected ? [] : allIndices)}
           className="h-6 px-2 text-xs"
         >
@@ -64,7 +70,10 @@ export function MessageTimelineSection({ messageSequence, messages, selectedIndi
           key={idx}
           roleInfo={roleInfo}
           message={messages?.[roleInfo.index - 1]}
-          displayState={{ isExpanded: expandedIndices.has(roleInfo.index), isSelected: selectedIndices.includes(roleInfo.index) }}
+          displayState={{
+            isExpanded: expandedIndices.has(roleInfo.index),
+            isSelected: selectedIndices.includes(roleInfo.index),
+          }}
           onSelect={() => toggleSelected(roleInfo.index)}
           onToggleExpand={() => toggleExpanded(roleInfo.index)}
         />

@@ -1,11 +1,11 @@
-import { lt, inArray } from '@xartifact/x-llm-gateway-db';
+import { lt, inArray } from '@xartifact/x-llm-gateway-db'
 
-import { getDatabase } from '../../db/client';
-import rootLogger from '../../lib/logger';
+import { getDatabase } from '../../db/client'
+import rootLogger from '../../lib/logger'
 
-const logger = rootLogger.child({ module: 'log-cleanup' });
+const logger = rootLogger.child({ module: 'log-cleanup' })
 
-import { requestLogs, requestAttempts } from '@xartifact/x-llm-gateway-db';
+import { requestLogs, requestAttempts } from '@xartifact/x-llm-gateway-db'
 
 /**
  * 清理过期日志
@@ -13,35 +13,33 @@ import { requestLogs, requestAttempts } from '@xartifact/x-llm-gateway-db';
  * @returns 删除的日志数量
  */
 export async function cleanupLogs(retentionDays: number = 30): Promise<number> {
-  const db = getDatabase();
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
+  const db = getDatabase()
+  const cutoffDate = new Date()
+  cutoffDate.setDate(cutoffDate.getDate() - retentionDays)
 
   const expiredIds = await db
     .select({ id: requestLogs.id })
     .from(requestLogs)
-    .where(lt(requestLogs.createdAt, cutoffDate));
+    .where(lt(requestLogs.createdAt, cutoffDate))
 
   if (expiredIds.length === 0) {
-    logger.info('No expired logs to clean up');
-    return 0;
+    logger.info('No expired logs to clean up')
+    return 0
   }
 
-  const ids = expiredIds.map((r) => r.id);
+  const ids = expiredIds.map((r) => r.id)
 
-  await db
-    .delete(requestAttempts)
-    .where(inArray(requestAttempts.requestLogId, ids));
+  await db.delete(requestAttempts).where(inArray(requestAttempts.requestLogId, ids))
 
   const deleteResult = await db
     .delete(requestLogs)
     .where(lt(requestLogs.createdAt, cutoffDate))
-    .returning({ id: requestLogs.id });
+    .returning({ id: requestLogs.id })
 
-  const deletedCount = deleteResult.length;
-  logger.info({ deletedCount, retentionDays }, 'Logs cleaned up');
+  const deletedCount = deleteResult.length
+  logger.info({ deletedCount, retentionDays }, 'Logs cleaned up')
 
-  return deletedCount;
+  return deletedCount
 }
 
 /**
@@ -50,23 +48,26 @@ export async function cleanupLogs(retentionDays: number = 30): Promise<number> {
  * @param retentionDays 保留天数（默认30天）
  * @returns 定时器ID
  */
-export function startAutoCleanup(intervalHours: number = 24, retentionDays: number = 30): NodeJS.Timeout {
-  logger.info({ intervalHours, retentionDays }, 'Starting auto log cleanup scheduler');
+export function startAutoCleanup(
+  intervalHours: number = 24,
+  retentionDays: number = 30,
+): NodeJS.Timeout {
+  logger.info({ intervalHours, retentionDays }, 'Starting auto log cleanup scheduler')
 
   // 立即执行一次
   cleanupLogs(retentionDays).catch((error) => {
-    logger.error({ error }, 'Initial log cleanup failed');
-  });
+    logger.error({ error }, 'Initial log cleanup failed')
+  })
 
   // 设置定时器
-  const intervalMs = intervalHours * 60 * 60 * 1000;
+  const intervalMs = intervalHours * 60 * 60 * 1000
   const timerId = setInterval(() => {
     cleanupLogs(retentionDays).catch((error) => {
-      logger.error({ error }, 'Scheduled log cleanup failed');
-    });
-  }, intervalMs);
+      logger.error({ error }, 'Scheduled log cleanup failed')
+    })
+  }, intervalMs)
 
-  return timerId;
+  return timerId
 }
 
 /**
@@ -74,6 +75,6 @@ export function startAutoCleanup(intervalHours: number = 24, retentionDays: numb
  * @param timerId 定时器ID
  */
 export function stopAutoCleanup(timerId: NodeJS.Timeout): void {
-  clearInterval(timerId);
-  logger.info('Auto log cleanup scheduler stopped');
+  clearInterval(timerId)
+  logger.info('Auto log cleanup scheduler stopped')
 }

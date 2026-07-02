@@ -39,51 +39,51 @@ Authorization: Bearer {api_key}
 
 ### Request Body
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `model` | string | Yes | Model ID (e.g., 'gpt-4o') |
-| `messages` | array | Yes | Array of message objects |
-| `max_tokens` | integer | No | Max tokens to generate |
-| `temperature` | number | No | Sampling temp (0-2, default 1) |
-| `top_p` | number | No | Nucleus sampling (0-1) |
-| `n` | integer | No | Number of completions (default 1) |
-| `stream` | boolean | No | Enable streaming (default false) |
-| `stop` | string/array | No | Stop sequences |
-| `presence_penalty` | number | No | -2.0 to 2.0 |
-| `frequency_penalty` | number | No | -2.0 to 2.0 |
-| `logit_bias` | object | No | Token bias map |
-| `user` | string | No | End-user ID |
-| `seed` | integer | No | Deterministic sampling |
-| `tools` | array | No | Available tools |
-| `tool_choice` | string/object | No | Tool selection control |
-| `response_format` | object | No | Output format control |
+| Field               | Type          | Required | Description                       |
+| ------------------- | ------------- | -------- | --------------------------------- |
+| `model`             | string        | Yes      | Model ID (e.g., 'gpt-4o')         |
+| `messages`          | array         | Yes      | Array of message objects          |
+| `max_tokens`        | integer       | No       | Max tokens to generate            |
+| `temperature`       | number        | No       | Sampling temp (0-2, default 1)    |
+| `top_p`             | number        | No       | Nucleus sampling (0-1)            |
+| `n`                 | integer       | No       | Number of completions (default 1) |
+| `stream`            | boolean       | No       | Enable streaming (default false)  |
+| `stop`              | string/array  | No       | Stop sequences                    |
+| `presence_penalty`  | number        | No       | -2.0 to 2.0                       |
+| `frequency_penalty` | number        | No       | -2.0 to 2.0                       |
+| `logit_bias`        | object        | No       | Token bias map                    |
+| `user`              | string        | No       | End-user ID                       |
+| `seed`              | integer       | No       | Deterministic sampling            |
+| `tools`             | array         | No       | Available tools                   |
+| `tool_choice`       | string/object | No       | Tool selection control            |
+| `response_format`   | object        | No       | Output format control             |
 
 ### Message Object
 
 ```typescript
 interface ChatCompletionMessageParam {
-  role: 'system' | 'user' | 'assistant' | 'tool';
-  content: string | Array<ContentPart>;
-  name?: string;
-  tool_calls?: Array<ToolCall>;
-  tool_call_id?: string;
+  role: 'system' | 'user' | 'assistant' | 'tool'
+  content: string | Array<ContentPart>
+  name?: string
+  tool_calls?: Array<ToolCall>
+  tool_call_id?: string
 }
 
 type ContentPart =
   | { type: 'text'; text: string }
-  | { type: 'image_url'; image_url: { url: string; detail?: 'low' | 'high' | 'auto' } };
+  | { type: 'image_url'; image_url: { url: string; detail?: 'low' | 'high' | 'auto' } }
 ```
 
 ### Tool Definition
 
 ```typescript
 interface ChatCompletionTool {
-  type: 'function';
+  type: 'function'
   function: {
-    name: string;
-    description?: string;
-    parameters: object; // JSON Schema
-  };
+    name: string
+    description?: string
+    parameters: object // JSON Schema
+  }
 }
 ```
 
@@ -94,20 +94,20 @@ type ChatCompletionToolChoiceOption =
   | 'none'
   | 'auto'
   | 'required'
-  | { type: 'function'; function: { name: string } };
+  | { type: 'function'; function: { name: string } }
 ```
 
 ### Response Format
 
 ```typescript
 interface ResponseFormat {
-  type: 'text' | 'json_object' | 'json_schema';
+  type: 'text' | 'json_object' | 'json_schema'
   json_schema?: {
-    name: string;
-    description?: string;
-    schema: object;
-    strict?: boolean;
-  };
+    name: string
+    description?: string
+    schema: object
+    strict?: boolean
+  }
 }
 ```
 
@@ -117,43 +117,43 @@ interface ResponseFormat {
 
 ```typescript
 interface ChatCompletion {
-  id: string;
-  object: 'chat.completion';
-  created: number;
-  model: string;
+  id: string
+  object: 'chat.completion'
+  created: number
+  model: string
   choices: Array<{
-    index: number;
+    index: number
     message: {
-      role: 'assistant';
-      content: string | null;
+      role: 'assistant'
+      content: string | null
       tool_calls?: Array<{
-        id: string;
-        type: 'function';
+        id: string
+        type: 'function'
         function: {
-          name: string;
-          arguments: string;
-        };
-      }>;
-    };
-    finish_reason: 'stop' | 'length' | 'tool_calls' | 'content_filter' | null;
-    logprobs?: object;
-  }>;
+          name: string
+          arguments: string
+        }
+      }>
+    }
+    finish_reason: 'stop' | 'length' | 'tool_calls' | 'content_filter' | null
+    logprobs?: object
+  }>
   usage: {
-    prompt_tokens: number;
-    completion_tokens: number;
-    total_tokens: number;
+    prompt_tokens: number
+    completion_tokens: number
+    total_tokens: number
     prompt_tokens_details?: {
-      cached_tokens?: number;
-      audio_tokens?: number;
-    };
+      cached_tokens?: number
+      audio_tokens?: number
+    }
     completion_tokens_details?: {
-      reasoning_tokens?: number;
-      audio_tokens?: number;
-      accepted_prediction_tokens?: number;
-      rejected_prediction_tokens?: number;
-    };
-  };
-  system_fingerprint?: string;
+      reasoning_tokens?: number
+      audio_tokens?: number
+      accepted_prediction_tokens?: number
+      rejected_prediction_tokens?: number
+    }
+  }
+  system_fingerprint?: string
 }
 ```
 
@@ -190,45 +190,45 @@ interface ChatCompletion {
 ```typescript
 interface ErrorResponse {
   error: {
-    message: string;
-    type: string;
-    param?: string;
-    code?: string;
-  };
+    message: string
+    type: string
+    param?: string
+    code?: string
+  }
 }
 ```
 
 ### HTTP Status Codes
 
-| Status | Description | Retryable |
-|--------|-------------|-----------|
-| 200 | Success | - |
-| 400 | Bad Request | No |
-| 401 | Unauthorized | No |
-| 403 | Forbidden | No |
-| 404 | Not Found | No |
-| 429 | Rate Limited | Yes |
-| 500 | Server Error | Yes |
-| 502 | Bad Gateway | Yes |
-| 503 | Service Unavailable | Yes |
+| Status | Description         | Retryable |
+| ------ | ------------------- | --------- |
+| 200    | Success             | -         |
+| 400    | Bad Request         | No        |
+| 401    | Unauthorized        | No        |
+| 403    | Forbidden           | No        |
+| 404    | Not Found           | No        |
+| 429    | Rate Limited        | Yes       |
+| 500    | Server Error        | Yes       |
+| 502    | Bad Gateway         | Yes       |
+| 503    | Service Unavailable | Yes       |
 
 ### Common Error Types
 
 ```typescript
 type ErrorType =
-  | 'invalid_request_error'    // Invalid request parameters
-  | 'authentication_error'     // API key issues
-  | 'rate_limit_error'        // Too many requests
-  | 'server_error'            // OpenAI server issues
-  | 'insufficient_quota'      // Billing/quota exceeded
+  | 'invalid_request_error' // Invalid request parameters
+  | 'authentication_error' // API key issues
+  | 'rate_limit_error' // Too many requests
+  | 'server_error' // OpenAI server issues
+  | 'insufficient_quota' // Billing/quota exceeded
   | 'context_length_exceeded' // Token limit exceeded
-  | 'content_filter'          // Content policy violation
-  ;
+  | 'content_filter' // Content policy violation
 ```
 
 ### Error Examples
 
 **Invalid Model:**
+
 ```json
 {
   "error": {
@@ -241,6 +241,7 @@ type ErrorType =
 ```
 
 **Rate Limit:**
+
 ```json
 {
   "error": {
@@ -253,6 +254,7 @@ type ErrorType =
 ```
 
 **Context Length:**
+
 ```json
 {
   "error": {

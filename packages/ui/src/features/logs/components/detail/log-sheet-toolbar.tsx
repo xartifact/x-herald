@@ -28,13 +28,18 @@ export function LogSheetToolbar({ log, onClose, onOpenTrace }: LogSheetToolbarPr
           ) : (
             <div className="h-2 w-2 rounded-full bg-red-500 flex-shrink-0" />
           )}
-          <span className="text-sm font-semibold hidden md:inline">{log.requestMethod || 'REQUEST'}</span>
+          <span className="text-sm font-semibold hidden md:inline">
+            {log.requestMethod || 'REQUEST'}
+          </span>
           <ChevronRight className="h-4 w-4 text-muted-foreground hidden md:inline flex-shrink-0" />
           <span className="text-sm font-medium truncate">{log.modelName}</span>
         </div>
         <Badge
           variant={isPending ? 'outline' : isSuccess ? 'default' : 'destructive'}
-          className={cn('font-mono text-xs flex-shrink-0', isPending && 'border-amber-500 text-amber-600')}
+          className={cn(
+            'font-mono text-xs flex-shrink-0',
+            isPending && 'border-amber-500 text-amber-600',
+          )}
         >
           {isPending ? '请求中' : log.statusCode != null ? String(log.statusCode) : log.status}
         </Badge>
@@ -44,7 +49,12 @@ export function LogSheetToolbar({ log, onClose, onOpenTrace }: LogSheetToolbarPr
           {new Date(log.createdAt).toLocaleString('zh-CN')}
         </span>
         {onOpenTrace && (
-          <Button variant="ghost" size="sm" onClick={onOpenTrace} className="h-7 px-2 text-xs gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onOpenTrace}
+            className="h-7 px-2 text-xs gap-1"
+          >
             <GitBranch className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">链路追踪</span>
           </Button>

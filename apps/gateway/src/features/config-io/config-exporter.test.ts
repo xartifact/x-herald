@@ -1,18 +1,24 @@
-import { describe, it, expect, mock, beforeEach, afterEach, afterAll } from 'bun:test';
+import { describe, it, expect, mock, beforeEach, afterEach, afterAll } from 'bun:test'
 
-const realDbClient = await import('../../db/client');
+const realDbClient = await import('../../db/client')
 
-import { providers } from '@xartifact/x-llm-gateway-db';
-import { modelGroups, modelInstances, modelGroupMemberships, accessModels, modelRoutes } from '@xartifact/x-llm-gateway-db';
-import { virtualKeys } from '@xartifact/x-llm-gateway-db';
-import { gatewayConfigs } from '@xartifact/x-llm-gateway-db';
+import { providers } from '@xartifact/x-llm-gateway-db'
+import {
+  modelGroups,
+  modelInstances,
+  modelGroupMemberships,
+  accessModels,
+  modelRoutes,
+} from '@xartifact/x-llm-gateway-db'
+import { virtualKeys } from '@xartifact/x-llm-gateway-db'
+import { gatewayConfigs } from '@xartifact/x-llm-gateway-db'
 
 // ─── Mock DB with mutable state ─────────────────────────────────────────────
 
-let mockDb: ReturnType<typeof createMockDb>;
+let mockDb: ReturnType<typeof createMockDb>
 
 function createMockDb() {
-  const selectResults = new Map<unknown, unknown[]>();
+  const selectResults = new Map<unknown, unknown[]>()
 
   function makeQuery(result: unknown) {
     const query = {
@@ -21,8 +27,8 @@ function createMockDb() {
       returning: () => Promise.resolve(result),
       then: (onResolve: unknown, onReject: unknown) =>
         Promise.resolve(result).then(onResolve as never, onReject as never),
-    };
-    return query;
+    }
+    return query
   }
 
   return {
@@ -43,25 +49,25 @@ function createMockDb() {
     delete: mock(() => ({
       where: mock(() => Promise.resolve()),
     })),
-  };
+  }
 }
 
 mock.module('../../db/client', () => ({
   getDatabase: () => {
-    const g = globalThis as unknown as { __xllm_dbClient?: unknown };
+    const g = globalThis as unknown as { __xllm_dbClient?: unknown }
     if (g.__xllm_dbClient) {
-      return g.__xllm_dbClient;
+      return g.__xllm_dbClient
     }
-    return mockDb;
+    return mockDb
   },
   createDatabase: mock(async () => mockDb),
   closeDatabase: mock(async () => {}),
   schema: {},
-}));
+}))
 
 // ─── Import module under test ────────────────────────────────────────────────
 
-const { exportConfig } = await import('./config-exporter');
+const { exportConfig } = await import('./config-exporter')
 
 // ─── Tests ───────────────────────────────────────────────────────────────────
 
@@ -71,31 +77,31 @@ afterAll(() => {
     closeDatabase: realDbClient.closeDatabase,
     createDatabase: realDbClient.createDatabase,
     schema: realDbClient.schema,
-  }));
-});
+  }))
+})
 
 describe('exportConfig', () => {
   afterEach(() => {
-    mock.restore();
-  });
+    mock.restore()
+  })
 
   beforeEach(() => {
-    mockDb = createMockDb();
-  });
+    mockDb = createMockDb()
+  })
 
   it('returns empty config for empty database', async () => {
-    const result = await exportConfig();
+    const result = await exportConfig()
 
-    expect(result.version).toBe('1');
-    expect(typeof result.exportedAt).toBe('string');
-    expect(result.data.providers).toEqual([]);
-    expect(result.data.modelGroups).toEqual([]);
-    expect(result.data.modelInstances).toEqual([]);
-    expect(result.data.virtualModels).toEqual([]);
-    expect(result.data.modelRoutes).toEqual([]);
-    expect(result.data.virtualKeys).toEqual([]);
-    expect(result.data.gatewayConfigs).toEqual([]);
-  });
+    expect(result.version).toBe('1')
+    expect(typeof result.exportedAt).toBe('string')
+    expect(result.data.providers).toEqual([])
+    expect(result.data.modelGroups).toEqual([])
+    expect(result.data.modelInstances).toEqual([])
+    expect(result.data.virtualModels).toEqual([])
+    expect(result.data.modelRoutes).toEqual([])
+    expect(result.data.virtualKeys).toEqual([])
+    expect(result.data.gatewayConfigs).toEqual([])
+  })
 
   it('exports providers with correct shape', async () => {
     mockDb.selectResults.set(providers, [
@@ -108,18 +114,18 @@ describe('exportConfig', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       },
-    ]);
+    ])
 
-    const result = await exportConfig();
+    const result = await exportConfig()
 
-    expect(result.data.providers).toHaveLength(1);
+    expect(result.data.providers).toHaveLength(1)
     expect(result.data.providers[0]).toEqual({
       name: 'OpenAI',
       apiKey: 'sk-test-key',
       protocols: { openai: { baseUrl: 'https://api.openai.com', enabled: true } },
       enabled: true,
-    });
-  });
+    })
+  })
 
   it('exports model groups with correct shape', async () => {
     mockDb.selectResults.set(modelGroups, [
@@ -138,11 +144,11 @@ describe('exportConfig', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       },
-    ]);
+    ])
 
-    const result = await exportConfig();
+    const result = await exportConfig()
 
-    expect(result.data.modelGroups).toHaveLength(1);
+    expect(result.data.modelGroups).toHaveLength(1)
     expect(result.data.modelGroups[0]).toEqual({
       name: 'gpt-4',
       aliases: ['gpt4'],
@@ -153,13 +159,13 @@ describe('exportConfig', () => {
       supportedProtocols: ['openai'],
       enabled: true,
       metadata: null,
-    });
-  });
+    })
+  })
 
   it('exports model instances with group names', async () => {
-    const providerId = 'provider-1';
-    const groupId = 'group-1';
-    const instanceId = 'instance-1';
+    const providerId = 'provider-1'
+    const groupId = 'group-1'
+    const instanceId = 'instance-1'
 
     mockDb.selectResults.set(providers, [
       {
@@ -171,7 +177,7 @@ describe('exportConfig', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       },
-    ]);
+    ])
 
     mockDb.selectResults.set(modelGroups, [
       {
@@ -189,7 +195,7 @@ describe('exportConfig', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       },
-    ]);
+    ])
 
     mockDb.selectResults.set(modelInstances, [
       {
@@ -210,15 +216,15 @@ describe('exportConfig', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       },
-    ]);
+    ])
 
     mockDb.selectResults.set(modelGroupMemberships, [
       { groupId, instanceId, createdAt: new Date() },
-    ]);
+    ])
 
-    const result = await exportConfig();
+    const result = await exportConfig()
 
-    expect(result.data.modelInstances).toHaveLength(1);
+    expect(result.data.modelInstances).toHaveLength(1)
     expect(result.data.modelInstances[0]).toEqual({
       name: 'OpenAI GPT-4',
       actualModelName: 'gpt-4-turbo',
@@ -233,8 +239,8 @@ describe('exportConfig', () => {
       healthCheckUrl: null,
       enabled: true,
       metadata: null,
-    });
-  });
+    })
+  })
 
   it('exports virtual keys with correct shape', async () => {
     mockDb.selectResults.set(virtualKeys, [
@@ -254,11 +260,11 @@ describe('exportConfig', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       },
-    ]);
+    ])
 
-    const result = await exportConfig();
+    const result = await exportConfig()
 
-    expect(result.data.virtualKeys).toHaveLength(1);
+    expect(result.data.virtualKeys).toHaveLength(1)
     expect(result.data.virtualKeys[0]).toEqual({
       name: 'Test Key',
       key: 'xg-test-key',
@@ -268,14 +274,14 @@ describe('exportConfig', () => {
       tokenLimitDaily: null,
       enabled: true,
       expiresAt: null,
-    });
-  });
+    })
+  })
 
   it('exports complete config with all resources', async () => {
-    const providerId = 'provider-1';
-    const groupId = 'group-1';
-    const accessModelId = 'vm-1';
-    const instanceId = 'instance-1';
+    const providerId = 'provider-1'
+    const groupId = 'group-1'
+    const accessModelId = 'vm-1'
+    const instanceId = 'instance-1'
 
     mockDb.selectResults.set(providers, [
       {
@@ -287,7 +293,7 @@ describe('exportConfig', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       },
-    ]);
+    ])
 
     mockDb.selectResults.set(modelGroups, [
       {
@@ -305,7 +311,7 @@ describe('exportConfig', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       },
-    ]);
+    ])
 
     mockDb.selectResults.set(modelInstances, [
       {
@@ -326,11 +332,11 @@ describe('exportConfig', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       },
-    ]);
+    ])
 
     mockDb.selectResults.set(modelGroupMemberships, [
       { groupId, instanceId, createdAt: new Date() },
-    ]);
+    ])
 
     mockDb.selectResults.set(accessModels, [
       {
@@ -343,7 +349,7 @@ describe('exportConfig', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       },
-    ]);
+    ])
 
     mockDb.selectResults.set(modelRoutes, [
       {
@@ -359,7 +365,7 @@ describe('exportConfig', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       },
-    ]);
+    ])
 
     mockDb.selectResults.set(virtualKeys, [
       {
@@ -378,7 +384,7 @@ describe('exportConfig', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       },
-    ]);
+    ])
 
     mockDb.selectResults.set(gatewayConfigs, [
       {
@@ -389,19 +395,19 @@ describe('exportConfig', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       },
-    ]);
+    ])
 
-    const result = await exportConfig();
+    const result = await exportConfig()
 
-    expect(result.data.providers).toHaveLength(1);
-    expect(result.data.modelGroups).toHaveLength(1);
-    expect(result.data.modelInstances).toHaveLength(1);
-    expect(result.data.virtualModels).toHaveLength(1);
-    expect(result.data.modelRoutes).toHaveLength(1);
-    expect(result.data.virtualKeys).toHaveLength(1);
-    expect(result.data.gatewayConfigs).toHaveLength(1);
+    expect(result.data.providers).toHaveLength(1)
+    expect(result.data.modelGroups).toHaveLength(1)
+    expect(result.data.modelInstances).toHaveLength(1)
+    expect(result.data.virtualModels).toHaveLength(1)
+    expect(result.data.modelRoutes).toHaveLength(1)
+    expect(result.data.virtualKeys).toHaveLength(1)
+    expect(result.data.gatewayConfigs).toHaveLength(1)
 
-    expect(result.data.providers[0].apiKey).toBe('sk-secret');
-    expect(result.data.modelRoutes[0].action.targetRef).toBe('gpt-4');
-  });
-});
+    expect(result.data.providers[0].apiKey).toBe('sk-secret')
+    expect(result.data.modelRoutes[0].action.targetRef).toBe('gpt-4')
+  })
+})

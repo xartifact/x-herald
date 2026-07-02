@@ -1,1 +1,1 @@
-export { default as logsRoutes } from './api';
+export { default as logsRoutes } from './api'

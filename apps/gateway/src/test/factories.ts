@@ -1,12 +1,17 @@
-import type { Provider } from '@xartifact/x-llm-gateway-db';
-import type { VirtualKey } from '@xartifact/x-llm-gateway-db';
-import type { ModelGroup, ModelInstance, ModelRoute, AccessModel } from '@xartifact/x-llm-gateway-db';
-import type { RequestLog } from '@xartifact/x-llm-gateway-db';
-import type { CostRecord } from '@xartifact/x-llm-gateway-db';
-import type { CircuitBreakerEvent } from '@xartifact/x-llm-gateway-db';
-import type { HealthRun } from '@xartifact/x-llm-gateway-db';
-import type { InstancePerfSnapshot } from '@xartifact/x-llm-gateway-db';
-import type { AnomalyEvent } from '../features/metrics/anomaly-db';
+import type { Provider } from '@xartifact/x-llm-gateway-db'
+import type { VirtualKey } from '@xartifact/x-llm-gateway-db'
+import type {
+  ModelGroup,
+  ModelInstance,
+  ModelRoute,
+  AccessModel,
+} from '@xartifact/x-llm-gateway-db'
+import type { RequestLog } from '@xartifact/x-llm-gateway-db'
+import type { CostRecord } from '@xartifact/x-llm-gateway-db'
+import type { CircuitBreakerEvent } from '@xartifact/x-llm-gateway-db'
+import type { HealthRun } from '@xartifact/x-llm-gateway-db'
+import type { InstancePerfSnapshot } from '@xartifact/x-llm-gateway-db'
+import type { AnomalyEvent } from '../features/metrics/anomaly-db'
 
 export function createTestProvider(overrides: Partial<Provider> = {}): Provider {
   return {
@@ -23,7 +28,7 @@ export function createTestProvider(overrides: Partial<Provider> = {}): Provider 
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides,
-  };
+  }
 }
 
 export function createTestModelGroup(overrides: Partial<ModelGroup> = {}): ModelGroup {
@@ -49,7 +54,7 @@ export function createTestModelGroup(overrides: Partial<ModelGroup> = {}): Model
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides,
-  };
+  }
 }
 
 export function createTestModelInstance(overrides: Partial<ModelInstance> = {}): ModelInstance {
@@ -71,7 +76,7 @@ export function createTestModelInstance(overrides: Partial<ModelInstance> = {}):
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides,
-  };
+  }
 }
 
 export function createTestVirtualKey(overrides: Partial<VirtualKey> = {}): VirtualKey {
@@ -91,7 +96,7 @@ export function createTestVirtualKey(overrides: Partial<VirtualKey> = {}): Virtu
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides,
-  };
+  }
 }
 
 export function createTestRequestLog(overrides: Partial<RequestLog> = {}): RequestLog {
@@ -139,7 +144,7 @@ export function createTestRequestLog(overrides: Partial<RequestLog> = {}): Reque
     isComplete: true,
     createdAt: new Date(),
     ...overrides,
-  };
+  }
 }
 
 export function createTestCostRecord(overrides: Partial<CostRecord> = {}): CostRecord {
@@ -157,7 +162,7 @@ export function createTestCostRecord(overrides: Partial<CostRecord> = {}): CostR
     totalCost: 0.003,
     createdAt: new Date(),
     ...overrides,
-  };
+  }
 }
 
 export function createTestModelRoute(overrides: Partial<ModelRoute> = {}): ModelRoute {
@@ -174,7 +179,7 @@ export function createTestModelRoute(overrides: Partial<ModelRoute> = {}): Model
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides,
-  };
+  }
 }
 
 export function createTestAccessModel(overrides: Partial<AccessModel> = {}): AccessModel {
@@ -195,10 +200,12 @@ export function createTestAccessModel(overrides: Partial<AccessModel> = {}): Acc
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides,
-  };
+  }
 }
 
-export function createTestCircuitBreakerEvent(overrides: Partial<CircuitBreakerEvent> = {}): CircuitBreakerEvent {
+export function createTestCircuitBreakerEvent(
+  overrides: Partial<CircuitBreakerEvent> = {},
+): CircuitBreakerEvent {
   return {
     id: crypto.randomUUID(),
     instanceId: crypto.randomUUID(),
@@ -212,7 +219,7 @@ export function createTestCircuitBreakerEvent(overrides: Partial<CircuitBreakerE
     cooldownUntil: null,
     createdAt: new Date(),
     ...overrides,
-  };
+  }
 }
 
 export function createTestHealthRun(overrides: Partial<HealthRun> = {}): HealthRun {
@@ -225,11 +232,13 @@ export function createTestHealthRun(overrides: Partial<HealthRun> = {}): HealthR
     errorType: null,
     errorMessage: null,
     ...overrides,
-  };
+  }
 }
 
-export function createTestInstancePerfSnapshot(overrides: Partial<InstancePerfSnapshot> = {}): InstancePerfSnapshot {
-  const now = new Date();
+export function createTestInstancePerfSnapshot(
+  overrides: Partial<InstancePerfSnapshot> = {},
+): InstancePerfSnapshot {
+  const now = new Date()
   return {
     id: crypto.randomUUID(),
     instanceId: crypto.randomUUID(),
@@ -263,7 +272,7 @@ export function createTestInstancePerfSnapshot(overrides: Partial<InstancePerfSn
     avgRetryCount: 0,
     createdAt: now,
     ...overrides,
-  };
+  }
 }
 
 export function createTestAnomalyEvent(overrides: Partial<AnomalyEvent> = {}): AnomalyEvent {
@@ -280,5 +289,5 @@ export function createTestAnomalyEvent(overrides: Partial<AnomalyEvent> = {}): A
     resolvedAt: null,
     createdAt: new Date(),
     ...overrides,
-  };
+  }
 }

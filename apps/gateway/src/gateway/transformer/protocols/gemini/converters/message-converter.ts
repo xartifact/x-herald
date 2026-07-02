@@ -1,11 +1,11 @@
-import type { StandardMessage } from '@xartifact/x-llm-gateway-shared';
+import type { StandardMessage } from '@xartifact/x-llm-gateway-shared'
 
-import type { GeminiContent } from '../types';
+import type { GeminiContent } from '../types'
 
 export function convertMessage(msg: GeminiContent): StandardMessage {
-  throw new Error('Gemini message converter not yet implemented');
+  throw new Error('Gemini message converter not yet implemented')
 }
 
 export function convertToGeminiMessages(messages: StandardMessage[]): GeminiContent[] {
-  throw new Error('Gemini message converter not yet implemented');
+  throw new Error('Gemini message converter not yet implemented')
 }

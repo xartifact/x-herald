@@ -1,4 +1,4 @@
-import type { Config } from 'drizzle-kit';
+import type { Config } from 'drizzle-kit'
 export default {
   schema: './src/db/schema.ts',
   out: './src/db/migrations',
@@ -11,4 +11,4 @@ export default {
     database: process.env.DB_NAME || 'llm_gateway',
     ssl: process.env.DB_SSL === 'true',
   },
-} satisfies Config;
+} satisfies Config

@@ -10,12 +10,13 @@ import {
   TabsList,
   TabsTrigger,
 } from '@xartifact/x-llm-gateway-ui'
-import { useCostSummary, useCostByKey, useCostByProvider, useCostByModel } from '../../../hooks/costs'
 import {
-  CostDateFilter,
-  CostSummaryCards,
-  CostBreakdownTable,
-} from '@xartifact/x-llm-gateway-ui'
+  useCostSummary,
+  useCostByKey,
+  useCostByProvider,
+  useCostByModel,
+} from '../../../hooks/costs'
+import { CostDateFilter, CostSummaryCards, CostBreakdownTable } from '@xartifact/x-llm-gateway-ui'
 import type { DateRangeFilter } from '@xartifact/x-llm-gateway-ui'
 
 function buildQueryParams(filter: DateRangeFilter): { startDate?: string; endDate?: string } {
@@ -32,10 +33,26 @@ export function CostsPage() {
 
   const queryParams = useMemo(() => buildQueryParams(filter), [filter])
 
-  const { data: summaryData, isLoading: summaryLoading, refetch: refetchSummary } = useCostSummary(queryParams)
-  const { data: byKeyData, isLoading: byKeyLoading, refetch: refetchByKey } = useCostByKey(queryParams)
-  const { data: byProviderData, isLoading: byProviderLoading, refetch: refetchByProvider } = useCostByProvider(queryParams)
-  const { data: byModelData, isLoading: byModelLoading, refetch: refetchByModel } = useCostByModel(queryParams)
+  const {
+    data: summaryData,
+    isLoading: summaryLoading,
+    refetch: refetchSummary,
+  } = useCostSummary(queryParams)
+  const {
+    data: byKeyData,
+    isLoading: byKeyLoading,
+    refetch: refetchByKey,
+  } = useCostByKey(queryParams)
+  const {
+    data: byProviderData,
+    isLoading: byProviderLoading,
+    refetch: refetchByProvider,
+  } = useCostByProvider(queryParams)
+  const {
+    data: byModelData,
+    isLoading: byModelLoading,
+    refetch: refetchByModel,
+  } = useCostByModel(queryParams)
 
   const summary = summaryData ?? undefined
   const byKey = byKeyData ?? []
@@ -81,11 +98,7 @@ export function CostsPage() {
             </TabsList>
 
             <TabsContent value="by-key">
-              <CostBreakdownTable
-                items={byKey}
-                totalCost={totalCost}
-                isLoading={byKeyLoading}
-              />
+              <CostBreakdownTable items={byKey} totalCost={totalCost} isLoading={byKeyLoading} />
             </TabsContent>
 
             <TabsContent value="by-provider">

@@ -11,7 +11,8 @@ function createMockDb() {
   const selectWhereMock = mock((): Promise<unknown[]> => Promise.resolve([]))
   const selectGroupByOrderByMock = mock((): Promise<unknown[]> => Promise.resolve([]))
   const insertValuesMock = mock(() => ({
-    then: (resolve: (value: unknown) => void, reject: (reason: unknown) => void) => resolve(undefined),
+    then: (resolve: (value: unknown) => void, reject: (reason: unknown) => void) =>
+      resolve(undefined),
   }))
 
   return {
@@ -70,9 +71,9 @@ afterAll(() => {
     closeDatabase: realDbClient.closeDatabase,
     createDatabase: realDbClient.createDatabase,
     schema: realDbClient.schema,
-  }));
-  mock.module('../../lib/logger', () => realLogger);
-});
+  }))
+  mock.module('../../lib/logger', () => realLogger)
+})
 
 describe('costs service', () => {
   let costService: CostService
@@ -100,12 +101,16 @@ describe('costs service', () => {
   })
 
   it('getCostSummary returns zero values for empty DB', async () => {
-    currentMockDb!._selectWhere.mockReturnValue(Promise.resolve([{
-      totalCost: 0,
-      totalInputTokens: 0,
-      totalOutputTokens: 0,
-      requestCount: 0,
-    }]))
+    currentMockDb!._selectWhere.mockReturnValue(
+      Promise.resolve([
+        {
+          totalCost: 0,
+          totalInputTokens: 0,
+          totalOutputTokens: 0,
+          requestCount: 0,
+        },
+      ]),
+    )
     const result = await costService.getCostSummary({})
     expect(result.totalCost).toBe(0)
     expect(result.totalInputTokens).toBe(0)
@@ -114,12 +119,16 @@ describe('costs service', () => {
   })
 
   it('getCostSummary aggregates costs correctly', async () => {
-    currentMockDb!._selectWhere.mockReturnValue(Promise.resolve([{
-      totalCost: 10.5,
-      totalInputTokens: 1000,
-      totalOutputTokens: 500,
-      requestCount: 5,
-    }]))
+    currentMockDb!._selectWhere.mockReturnValue(
+      Promise.resolve([
+        {
+          totalCost: 10.5,
+          totalInputTokens: 1000,
+          totalOutputTokens: 500,
+          requestCount: 5,
+        },
+      ]),
+    )
     const result = await costService.getCostSummary({})
     expect(result.totalCost).toBe(10.5)
     expect(result.totalInputTokens).toBe(1000)
@@ -128,12 +137,16 @@ describe('costs service', () => {
   })
 
   it('getCostSummary filters by date range', async () => {
-    currentMockDb!._selectWhere.mockReturnValue(Promise.resolve([{
-      totalCost: 5,
-      totalInputTokens: 500,
-      totalOutputTokens: 300,
-      requestCount: 2,
-    }]))
+    currentMockDb!._selectWhere.mockReturnValue(
+      Promise.resolve([
+        {
+          totalCost: 5,
+          totalInputTokens: 500,
+          totalOutputTokens: 300,
+          requestCount: 2,
+        },
+      ]),
+    )
     const result = await costService.getCostSummary({
       startDate: new Date('2024-01-01'),
       endDate: new Date('2024-01-31'),
@@ -142,10 +155,12 @@ describe('costs service', () => {
   })
 
   it('getCostByDimension returns key breakdown', async () => {
-    currentMockDb!._selectGroupByOrderBy.mockReturnValue(Promise.resolve([
-      { name: 'key-1', totalCost: 5.0, requestCount: 2, inputTokens: 500, outputTokens: 300 },
-      { name: 'key-2', totalCost: 3.0, requestCount: 1, inputTokens: 200, outputTokens: 100 },
-    ]))
+    currentMockDb!._selectGroupByOrderBy.mockReturnValue(
+      Promise.resolve([
+        { name: 'key-1', totalCost: 5.0, requestCount: 2, inputTokens: 500, outputTokens: 300 },
+        { name: 'key-2', totalCost: 3.0, requestCount: 1, inputTokens: 200, outputTokens: 100 },
+      ]),
+    )
     const result = await costService.getCostByDimension({ dimension: 'key' })
     expect(result).toHaveLength(2)
     expect(result[0].name).toBe('key-1')
@@ -156,18 +171,22 @@ describe('costs service', () => {
   })
 
   it('getCostByDimension returns provider breakdown', async () => {
-    currentMockDb!._selectGroupByOrderBy.mockReturnValue(Promise.resolve([
-      { name: 'openai', totalCost: 5.0, requestCount: 2, inputTokens: 500, outputTokens: 300 },
-    ]))
+    currentMockDb!._selectGroupByOrderBy.mockReturnValue(
+      Promise.resolve([
+        { name: 'openai', totalCost: 5.0, requestCount: 2, inputTokens: 500, outputTokens: 300 },
+      ]),
+    )
     const result = await costService.getCostByDimension({ dimension: 'provider' })
     expect(result[0].name).toBe('openai')
     expect(result[0].totalCost).toBe(5.0)
   })
 
   it('getCostByDimension returns model breakdown', async () => {
-    currentMockDb!._selectGroupByOrderBy.mockReturnValue(Promise.resolve([
-      { name: 'gpt-4', totalCost: 5.0, requestCount: 2, inputTokens: 500, outputTokens: 300 },
-    ]))
+    currentMockDb!._selectGroupByOrderBy.mockReturnValue(
+      Promise.resolve([
+        { name: 'gpt-4', totalCost: 5.0, requestCount: 2, inputTokens: 500, outputTokens: 300 },
+      ]),
+    )
     const result = await costService.getCostByDimension({ dimension: 'model' })
     expect(result[0].name).toBe('gpt-4')
     expect(result[0].totalCost).toBe(5.0)
@@ -201,13 +220,16 @@ describe('costs service', () => {
 
   it('handles DB errors gracefully in recordCost', async () => {
     currentMockDb!._insertValues.mockReturnValue({
-      then: (_resolve: (value: unknown) => void, reject: (reason: unknown) => void) => reject(new Error('DB error')),
+      then: (_resolve: (value: unknown) => void, reject: (reason: unknown) => void) =>
+        reject(new Error('DB error')),
     })
-    await expect(costService.recordCost({
-      providerName: 'openai',
-      inputTokens: 1000,
-      outputTokens: 500,
-    })).resolves.toBeUndefined()
+    await expect(
+      costService.recordCost({
+        providerName: 'openai',
+        inputTokens: 1000,
+        outputTokens: 500,
+      }),
+    ).resolves.toBeUndefined()
   })
 
   it('propagates DB errors in getCostSummary', async () => {

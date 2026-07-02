@@ -93,9 +93,7 @@ export function RealtimeStateTable({
                     <TableCell className="text-right">
                       <Badge className={badge.color}>{badge.label}</Badge>
                     </TableCell>
-                    <TableCell className="text-right">
-                      {formatDuration(inst.remainingMs)}
-                    </TableCell>
+                    <TableCell className="text-right">{formatDuration(inst.remainingMs)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
                         <Button

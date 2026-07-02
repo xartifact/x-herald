@@ -1,38 +1,42 @@
-import logger from '../../../lib/logger';
+import logger from '../../../lib/logger'
 
 export interface RetryConfig {
-  maxRetries: number;
-  baseDelay: number;
-  maxDelay: number;
-  retryableStatusCodes: number[];
+  maxRetries: number
+  baseDelay: number
+  maxDelay: number
+  retryableStatusCodes: number[]
 }
 
 export interface RetryExecuteParams {
   /** AbortManager (tracks client disconnect, creates attempt controllers) */
   abortManager: {
-    isClientDisconnected: boolean;
-    createAttempt: (timeout: number, requestId: string, isStreaming: boolean) => {
-      controller: AbortController;
-      cleanup: () => void;
-    };
-  };
+    isClientDisconnected: boolean
+    createAttempt: (
+      timeout: number,
+      requestId: string,
+      isStreaming: boolean,
+    ) => {
+      controller: AbortController
+      cleanup: () => void
+    }
+  }
   /** fetch-like operation to execute with retry */
-  operation: (signal: AbortSignal) => Promise<Response>;
+  operation: (signal: AbortSignal) => Promise<Response>
   /** TTFB timeout for each attempt */
-  timeout: number;
-  requestId: string;
-  isStreaming: boolean;
-  config: RetryConfig;
+  timeout: number
+  requestId: string
+  isStreaming: boolean
+  config: RetryConfig
   /** Called before each retry attempt (for logging) */
-  onRetry?: (attempt: number, delay: number, lastResponse?: Response) => void;
+  onRetry?: (attempt: number, delay: number, lastResponse?: Response) => void
 }
 
 export interface RetryResult {
-  response: Response | null;
-  retryCount: number;
-  aborted: 'client_disconnect' | 'timeout' | null;
+  response: Response | null
+  retryCount: number
+  aborted: 'client_disconnect' | 'timeout' | null
   /** True when fetch itself threw a network error (TLS, DNS, connection refused, etc.) */
-  networkError: boolean;
+  networkError: boolean
 }
 
 /**
@@ -47,38 +51,42 @@ export interface RetryResult {
  * - Network errors (TLS, DNS, connection refused, connect timeout): immediate exit → failover
  */
 export async function executeWithRetry(params: RetryExecuteParams): Promise<RetryResult> {
-  const { operation, timeout, requestId, isStreaming, config, onRetry } = params;
-  const { maxRetries, baseDelay, maxDelay, retryableStatusCodes } = config;
+  const { operation, timeout, requestId, isStreaming, config, onRetry } = params
+  const { maxRetries, baseDelay, maxDelay, retryableStatusCodes } = config
 
-  let retryCount = 0;
-  let lastRetryableResponse: Response | undefined;
+  let retryCount = 0
+  let lastRetryableResponse: Response | undefined
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     // Retry delay: exponential backoff + jitter
     if (attempt > 0) {
-      if (params.abortManager.isClientDisconnected) break;
+      if (params.abortManager.isClientDisconnected) break
 
-      const retryAfterHeader = lastRetryableResponse?.headers.get('Retry-After');
-      const retryAfterSec = retryAfterHeader ? parseInt(retryAfterHeader, 10) : NaN;
-      const MAX_RETRY_AFTER_MS = 30_000;
+      const retryAfterHeader = lastRetryableResponse?.headers.get('Retry-After')
+      const retryAfterSec = retryAfterHeader ? parseInt(retryAfterHeader, 10) : NaN
+      const MAX_RETRY_AFTER_MS = 30_000
       const delay = !isNaN(retryAfterSec)
         ? Math.min(retryAfterSec * 1000, MAX_RETRY_AFTER_MS)
-        : Math.min(baseDelay * Math.pow(2, attempt - 1), maxDelay) + Math.round(Math.random() * 200);
+        : Math.min(baseDelay * Math.pow(2, attempt - 1), maxDelay) + Math.round(Math.random() * 200)
 
-      onRetry?.(attempt, delay, lastRetryableResponse);
-      await new Promise<void>((r) => setTimeout(r, delay));
-      retryCount = attempt;
+      onRetry?.(attempt, delay, lastRetryableResponse)
+      await new Promise<void>((r) => setTimeout(r, delay))
+      retryCount = attempt
     }
 
-    if (params.abortManager.isClientDisconnected) break;
+    if (params.abortManager.isClientDisconnected) break
 
-    const { controller, cleanup } = params.abortManager.createAttempt(timeout, requestId, isStreaming);
+    const { controller, cleanup } = params.abortManager.createAttempt(
+      timeout,
+      requestId,
+      isStreaming,
+    )
 
-    let attemptResponse: Response;
+    let attemptResponse: Response
     try {
-      attemptResponse = await operation(controller.signal);
+      attemptResponse = await operation(controller.signal)
     } catch (fetchError) {
-      cleanup();
+      cleanup()
 
       if (fetchError instanceof Error && fetchError.name === 'AbortError') {
         return {
@@ -86,7 +94,7 @@ export async function executeWithRetry(params: RetryExecuteParams): Promise<Retr
           retryCount,
           aborted: params.abortManager.isClientDisconnected ? 'client_disconnect' : 'timeout',
           networkError: false,
-        };
+        }
       }
 
       // Network error (TLS, DNS, connection refused, connect timeout, etc.)
@@ -95,16 +103,16 @@ export async function executeWithRetry(params: RetryExecuteParams): Promise<Retr
       logger.warn(
         { requestId, error: fetchError instanceof Error ? fetchError.message : String(fetchError) },
         '[Network] Connection error, triggering failover',
-      );
+      )
       return {
         response: null,
         retryCount,
         aborted: null,
         networkError: true,
-      };
+      }
     }
 
-    cleanup();
+    cleanup()
 
     // Check if retryable HTTP status
     if (
@@ -113,11 +121,11 @@ export async function executeWithRetry(params: RetryExecuteParams): Promise<Retr
       attempt < maxRetries &&
       !params.abortManager.isClientDisconnected
     ) {
-      lastRetryableResponse = attemptResponse;
-      continue;
+      lastRetryableResponse = attemptResponse
+      continue
     }
 
-    return { response: attemptResponse, retryCount, aborted: null, networkError: false };
+    return { response: attemptResponse, retryCount, aborted: null, networkError: false }
   }
 
   // HTTP retries exhausted or client disconnected
@@ -126,5 +134,5 @@ export async function executeWithRetry(params: RetryExecuteParams): Promise<Retr
     retryCount,
     aborted: params.abortManager.isClientDisconnected ? 'client_disconnect' : null,
     networkError: false,
-  };
+  }
 }

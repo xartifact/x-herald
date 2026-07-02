@@ -1,28 +1,28 @@
-import logger from '../../../../../lib/logger';
-import type { ToolCall } from '@xartifact/x-llm-gateway-shared';
+import logger from '../../../../../lib/logger'
+import type { ToolCall } from '@xartifact/x-llm-gateway-shared'
 
-import { parseToolArguments } from '../../../shared/tool-arguments-parser';
+import { parseToolArguments } from '../../../shared/tool-arguments-parser'
 
 export function normalizeToolCalls(
   toolCalls: Array<{
-    id: string;
-    type: 'function';
+    id: string
+    type: 'function'
     function: {
-      name: string;
-      arguments: string | unknown;
-    };
+      name: string
+      arguments: string | unknown
+    }
   }>,
 ): ToolCall[] {
-  if (!toolCalls) return [];
+  if (!toolCalls) return []
 
   return toolCalls.map((tc) => {
-    let argsString: string;
+    let argsString: string
     if (typeof tc.function.arguments === 'string') {
-      argsString = tc.function.arguments;
+      argsString = tc.function.arguments
     } else {
-      argsString = JSON.stringify(tc.function.arguments);
+      argsString = JSON.stringify(tc.function.arguments)
     }
-    const validatedArgs = parseToolArguments(argsString, logger);
+    const validatedArgs = parseToolArguments(argsString, logger)
 
     return {
       id: tc.id,
@@ -31,6 +31,6 @@ export function normalizeToolCalls(
         name: tc.function.name,
         arguments: validatedArgs,
       },
-    };
-  });
+    }
+  })
 }

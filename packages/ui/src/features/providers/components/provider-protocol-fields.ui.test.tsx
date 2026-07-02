@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'vite-plus/test'
 import { render, screen, cleanup, waitFor } from '@testing-library/react'
 import React from 'react'
 import userEvent from '@testing-library/user-event'
@@ -37,7 +37,7 @@ describe('ProviderProtocolFields', () => {
             gemini: { enabled: false },
           },
         }}
-      />
+      />,
     )
 
     expect(screen.getByRole('checkbox', { name: /OpenAI/i })).toBeInTheDocument()
@@ -57,12 +57,14 @@ describe('ProviderProtocolFields', () => {
             gemini: { enabled: false },
           },
         }}
-      />
+      />,
     )
 
     expect(screen.getByPlaceholderText('https://api.openai.com/v1')).toBeInTheDocument()
     expect(screen.queryByPlaceholderText('https://api.anthropic.com/v1')).not.toBeInTheDocument()
-    expect(screen.queryByPlaceholderText('https://generativelanguage.googleapis.com/v1')).not.toBeInTheDocument()
+    expect(
+      screen.queryByPlaceholderText('https://generativelanguage.googleapis.com/v1'),
+    ).not.toBeInTheDocument()
 
     cleanup()
 
@@ -77,12 +79,14 @@ describe('ProviderProtocolFields', () => {
             gemini: { enabled: false },
           },
         }}
-      />
+      />,
     )
 
     expect(screen.getByPlaceholderText('https://api.openai.com/v1')).toBeInTheDocument()
     expect(screen.getByPlaceholderText('https://api.anthropic.com/v1')).toBeInTheDocument()
-    expect(screen.queryByPlaceholderText('https://generativelanguage.googleapis.com/v1')).not.toBeInTheDocument()
+    expect(
+      screen.queryByPlaceholderText('https://generativelanguage.googleapis.com/v1'),
+    ).not.toBeInTheDocument()
   })
 
   it('hides baseUrl input when protocol is disabled', async () => {
@@ -98,7 +102,7 @@ describe('ProviderProtocolFields', () => {
             gemini: { enabled: false },
           },
         }}
-      />
+      />,
     )
 
     const openaiCheckbox = screen.getByRole('checkbox', { name: /OpenAI/i })
@@ -154,7 +158,7 @@ describe('ProviderProtocolFields', () => {
             gemini: { enabled: false },
           },
         }}
-      />
+      />,
     )
 
     expect(screen.queryByText('至少需要启用一个协议')).not.toBeInTheDocument()
@@ -172,12 +176,14 @@ describe('ProviderProtocolFields', () => {
             gemini: { enabled: true },
           },
         }}
-      />
+      />,
     )
 
     expect(screen.getByPlaceholderText('https://api.openai.com/v1')).toBeInTheDocument()
     expect(screen.getByPlaceholderText('https://api.anthropic.com/v1')).toBeInTheDocument()
-    expect(screen.getByPlaceholderText('https://generativelanguage.googleapis.com/v1')).toBeInTheDocument()
+    expect(
+      screen.getByPlaceholderText('https://generativelanguage.googleapis.com/v1'),
+    ).toBeInTheDocument()
   })
 
   it('baseUrl input value updates', async () => {
@@ -193,7 +199,7 @@ describe('ProviderProtocolFields', () => {
             gemini: { enabled: false },
           },
         }}
-      />
+      />,
     )
 
     const input = screen.getByPlaceholderText('https://api.openai.com/v1')

@@ -1,4 +1,10 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../shared/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '../../../shared/components/ui/card'
 import { Label } from '../../../shared/components/ui/label'
 import { Switch } from '../../../shared/components/ui/switch'
 import { Textarea } from '../../../shared/components/ui/textarea'
@@ -36,9 +42,14 @@ export function SchemaTab({ schemaConfig, onChange }: SchemaTabProps) {
           <Textarea
             placeholder="输入要保留的字段，每行一个&#10;例如：$schema&#10;definitions"
             value={(schemaConfig?.preserveFields || []).join('\n')}
-            onChange={(e) => onChange({
-              preserveFields: e.target.value.split('\n').map((s) => s.trim()).filter(Boolean),
-            })}
+            onChange={(e) =>
+              onChange({
+                preserveFields: e.target.value
+                  .split('\n')
+                  .map((s) => s.trim())
+                  .filter(Boolean),
+              })
+            }
             className="min-h-[80px] text-xs"
           />
         </div>
@@ -48,9 +59,14 @@ export function SchemaTab({ schemaConfig, onChange }: SchemaTabProps) {
           <Textarea
             placeholder="输入要额外清理的字段，每行一个&#10;例如：customField&#10;deprecated"
             value={(schemaConfig?.additionalBannedFields || []).join('\n')}
-            onChange={(e) => onChange({
-              additionalBannedFields: e.target.value.split('\n').map((s) => s.trim()).filter(Boolean),
-            })}
+            onChange={(e) =>
+              onChange({
+                additionalBannedFields: e.target.value
+                  .split('\n')
+                  .map((s) => s.trim())
+                  .filter(Boolean),
+              })
+            }
             className="min-h-[80px] text-xs"
           />
         </div>

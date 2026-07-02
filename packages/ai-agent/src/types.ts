@@ -1,10 +1,7 @@
 // ─── LLM Adapter 接口（由 engine 实现）──────────────────────
 
 export interface LLMAdapter {
-  chat(params: {
-    messages: Message[]
-    tools?: ToolDefinition[]
-  }): Promise<ChatResult>
+  chat(params: { messages: Message[]; tools?: ToolDefinition[] }): Promise<ChatResult>
 }
 
 export interface Message {
@@ -28,7 +25,7 @@ export interface ToolDefinition {
   function: {
     name: string
     description: string
-    parameters: Record<string, unknown>  // JSON Schema
+    parameters: Record<string, unknown> // JSON Schema
   }
 }
 
@@ -42,7 +39,7 @@ export interface ChatResult {
 export interface ToolDefinition_Input {
   name: string
   description: string
-  parameters: Record<string, unknown>  // JSON Schema
+  parameters: Record<string, unknown> // JSON Schema
 }
 
 // ─── Tool 执行器（engine 实现）─────────────────────────────

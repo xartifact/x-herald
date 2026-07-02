@@ -26,12 +26,7 @@ export function DeployBanner({ isDirty, isDeploying, onDeploy }: DeployBannerPro
         <TriangleAlert className="h-4 w-4" />
         <span>有未部署的变更</span>
       </div>
-      <Button
-        size="sm"
-        onClick={onDeploy}
-        disabled={isDeploying}
-        className="h-7 text-xs gap-1.5"
-      >
+      <Button size="sm" onClick={onDeploy} disabled={isDeploying} className="h-7 text-xs gap-1.5">
         {isDeploying ? (
           <>
             <Loader2 className="h-3 w-3 animate-spin" />

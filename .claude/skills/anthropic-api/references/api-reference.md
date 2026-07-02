@@ -19,6 +19,7 @@ Complete parameter documentation for the Anthropic Messages API.
 The model to use for generation.
 
 **Available models:**
+
 - `claude-opus-4-5-20251101` - Most capable, best for complex tasks
 - `claude-sonnet-4-5-20250929` - Balanced performance and speed
 - `claude-3-5-haiku-20241022` - Fast and cost-effective
@@ -32,6 +33,7 @@ model: 'claude-sonnet-4-5-20250929'
 Maximum number of tokens to generate. **Required, no default value.**
 
 **Recommendations:**
+
 - Short responses: 256-512
 - Medium responses: 1024-2048
 - Long responses: 4096+
@@ -46,6 +48,7 @@ max_tokens: 1024
 Array of message objects representing the conversation.
 
 **Structure:**
+
 ```typescript
 messages: [
   {
@@ -56,11 +59,13 @@ messages: [
 ```
 
 **Rules:**
+
 - Must start with a `user` message
 - Roles must alternate (user → assistant → user → ...)
 - Content can be string or array of content blocks
 
 **Content block types:**
+
 ```typescript
 // Text content
 { type: 'text', text: 'Hello' }
@@ -98,8 +103,8 @@ system: [
   {
     type: 'text',
     text: 'You are a helpful assistant.',
-    cache_control: { type: 'ephemeral' }
-  }
+    cache_control: { type: 'ephemeral' },
+  },
 ]
 ```
 
@@ -142,6 +147,7 @@ stop_sequences: ['\n\nHuman:', '###', 'END']
 ```
 
 **Limits:**
+
 - Maximum 4 stop sequences
 - Each sequence max 64 characters
 
@@ -165,15 +171,16 @@ tools: [
     input_schema: {
       type: 'object',
       properties: {
-        param1: { type: 'string', description: 'Parameter description' }
+        param1: { type: 'string', description: 'Parameter description' },
       },
-      required: ['param1']
-    }
-  }
+      required: ['param1'],
+    },
+  },
 ]
 ```
 
 **Limits:**
+
 - Maximum 64 tools per request
 - Tool names must be alphanumeric with underscores
 
@@ -261,10 +268,11 @@ metadata: {
 ```
 
 **Cost calculation:**
+
 ```typescript
-const inputCost = usage.input_tokens * MODEL_INPUT_PRICE_PER_1K / 1000;
-const outputCost = usage.output_tokens * MODEL_OUTPUT_PRICE_PER_1K / 1000;
-const totalCost = inputCost + outputCost;
+const inputCost = (usage.input_tokens * MODEL_INPUT_PRICE_PER_1K) / 1000
+const outputCost = (usage.output_tokens * MODEL_OUTPUT_PRICE_PER_1K) / 1000
+const totalCost = inputCost + outputCost
 ```
 
 ## Error Handling
@@ -326,31 +334,31 @@ if (error instanceof Anthropic.InternalServerError) {
 ```typescript
 async function createMessageWithRetry(
   params: Anthropic.MessageCreateParams,
-  maxRetries = 3
+  maxRetries = 3,
 ): Promise<Anthropic.Message> {
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      return await client.messages.create(params);
+      return await client.messages.create(params)
     } catch (error) {
       if (error instanceof Anthropic.RateLimitError) {
         // Exponential backoff
-        const delay = Math.pow(2, attempt) * 1000;
-        await new Promise(resolve => setTimeout(resolve, delay));
-        continue;
+        const delay = Math.pow(2, attempt) * 1000
+        await new Promise((resolve) => setTimeout(resolve, delay))
+        continue
       }
 
       if (error instanceof Anthropic.InternalServerError && attempt < maxRetries - 1) {
         // Retry server errors
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        continue;
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+        continue
       }
 
       // Don't retry other errors
-      throw error;
+      throw error
     }
   }
 
-  throw new Error('Max retries exceeded');
+  throw new Error('Max retries exceeded')
 }
 ```
 
@@ -361,11 +369,13 @@ async function createMessageWithRetry(
 Rate limits vary by account tier and model:
 
 **Requests per minute (RPM):**
+
 - Free tier: 5 RPM
 - Build tier: 50 RPM
 - Scale tier: 1000+ RPM
 
 **Tokens per minute (TPM):**
+
 - Varies by model and tier
 - Check response headers for current limits
 
@@ -384,22 +394,22 @@ console.log('Reset:', response.headers['anthropic-ratelimit-requests-reset']);
 
 ```typescript
 async function createMessageWithRateLimit(
-  params: Anthropic.MessageCreateParams
+  params: Anthropic.MessageCreateParams,
 ): Promise<Anthropic.Message> {
   try {
-    return await client.messages.create(params);
+    return await client.messages.create(params)
   } catch (error) {
     if (error instanceof Anthropic.RateLimitError) {
       // Parse retry-after header
-      const retryAfter = error.headers?.['retry-after'];
-      const delay = retryAfter ? parseInt(retryAfter) * 1000 : 60000;
+      const retryAfter = error.headers?.['retry-after']
+      const delay = retryAfter ? parseInt(retryAfter) * 1000 : 60000
 
-      console.log(`Rate limited. Retrying after ${delay}ms`);
-      await new Promise(resolve => setTimeout(resolve, delay));
+      console.log(`Rate limited. Retrying after ${delay}ms`)
+      await new Promise((resolve) => setTimeout(resolve, delay))
 
-      return await client.messages.create(params);
+      return await client.messages.create(params)
     }
-    throw error;
+    throw error
   }
 }
 ```
@@ -408,27 +418,30 @@ async function createMessageWithRateLimit(
 
 ### Model Capabilities
 
-| Model | Context Window | Max Output | Vision | Tool Use | Speed | Cost |
-|-------|---------------|------------|--------|----------|-------|------|
-| Opus 4.5 | 200K | 4096 | ✅ | ✅ | Slow | High |
-| Sonnet 4.5 | 200K | 4096 | ✅ | ✅ | Medium | Medium |
-| Haiku 3.5 | 200K | 4096 | ✅ | ✅ | Fast | Low |
+| Model      | Context Window | Max Output | Vision | Tool Use | Speed  | Cost   |
+| ---------- | -------------- | ---------- | ------ | -------- | ------ | ------ |
+| Opus 4.5   | 200K           | 4096       | ✅     | ✅       | Slow   | High   |
+| Sonnet 4.5 | 200K           | 4096       | ✅     | ✅       | Medium | Medium |
+| Haiku 3.5  | 200K           | 4096       | ✅     | ✅       | Fast   | Low    |
 
 ### Model Selection Guide
 
 **Use Opus 4.5 for:**
+
 - Complex reasoning tasks
 - Code generation and review
 - Research and analysis
 - Creative writing
 
 **Use Sonnet 4.5 for:**
+
 - General-purpose tasks
 - Balanced performance/cost
 - Production applications
 - Most use cases
 
 **Use Haiku 3.5 for:**
+
 - Simple tasks
 - High-volume applications
 - Cost-sensitive scenarios
@@ -442,15 +455,15 @@ const tokenCount = await client.messages.countTokens({
   model: 'claude-sonnet-4-5-20250929',
   messages: messages,
   system: systemPrompt,
-});
+})
 
-console.log('Input tokens:', tokenCount.input_tokens);
+console.log('Input tokens:', tokenCount.input_tokens)
 
 // Check if within limits
-const MAX_CONTEXT = 200000;
+const MAX_CONTEXT = 200000
 if (tokenCount.input_tokens > MAX_CONTEXT - max_tokens) {
   // Truncate or summarize messages
-  messages = truncateMessages(messages, MAX_CONTEXT - max_tokens);
+  messages = truncateMessages(messages, MAX_CONTEXT - max_tokens)
 }
 ```
 
@@ -462,15 +475,15 @@ if (tokenCount.input_tokens > MAX_CONTEXT - max_tokens) {
 // Bad - will error
 const message = await client.messages.create({
   model: 'claude-sonnet-4-5-20250929',
-  messages: [{ role: 'user', content: 'Hello' }]
-});
+  messages: [{ role: 'user', content: 'Hello' }],
+})
 
 // Good
 const message = await client.messages.create({
   model: 'claude-sonnet-4-5-20250929',
   max_tokens: 1024,
-  messages: [{ role: 'user', content: 'Hello' }]
-});
+  messages: [{ role: 'user', content: 'Hello' }],
+})
 ```
 
 ### 2. Use System Prompts

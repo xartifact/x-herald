@@ -6,13 +6,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 import { Button } from './ui/button'
 import { Input } from './ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from './ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
 
 export interface ListPaginationProps {
   currentPage: number
@@ -51,10 +45,7 @@ export function ListPagination({
         </div>
         <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
           <span>每页</span>
-          <Select
-            value={String(pageSize)}
-            onValueChange={(v) => onPageSizeChange(Number(v))}
-          >
+          <Select value={String(pageSize)} onValueChange={(v) => onPageSizeChange(Number(v))}>
             <SelectTrigger className="h-7 w-16 text-xs">
               <SelectValue />
             </SelectTrigger>

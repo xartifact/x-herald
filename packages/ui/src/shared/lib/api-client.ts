@@ -6,7 +6,7 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     public statusText: string,
-    public data?: unknown
+    public data?: unknown,
   ) {
     super(`API Error: ${status} ${statusText}`)
     this.name = 'ApiError'
@@ -28,10 +28,7 @@ interface RequestOptions extends RequestInit {
 /**
  * 通用请求函数
  */
-async function request<T>(
-  endpoint: string,
-  options: RequestOptions = {}
-): Promise<T> {
+async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const { requiresAuth = true, headers = {}, params, extractData = true, ...fetchOptions } = options
 
   const finalHeaders: Record<string, string> = {
@@ -97,11 +94,7 @@ export function get<T>(endpoint: string, options?: RequestOptions): Promise<T> {
 /**
  * POST 请求
  */
-export function post<T>(
-  endpoint: string,
-  body?: unknown,
-  options?: RequestOptions
-): Promise<T> {
+export function post<T>(endpoint: string, body?: unknown, options?: RequestOptions): Promise<T> {
   return request<T>(endpoint, {
     ...options,
     method: 'POST',
@@ -112,11 +105,7 @@ export function post<T>(
 /**
  * PUT 请求
  */
-export function put<T>(
-  endpoint: string,
-  body?: unknown,
-  options?: RequestOptions
-): Promise<T> {
+export function put<T>(endpoint: string, body?: unknown, options?: RequestOptions): Promise<T> {
   return request<T>(endpoint, {
     ...options,
     method: 'PUT',
@@ -127,21 +116,14 @@ export function put<T>(
 /**
  * DELETE 请求
  */
-export function del<T>(
-  endpoint: string,
-  options?: RequestOptions
-): Promise<T> {
+export function del<T>(endpoint: string, options?: RequestOptions): Promise<T> {
   return request<T>(endpoint, { ...options, method: 'DELETE' })
 }
 
 /**
  * PATCH 请求
  */
-export function patch<T>(
-  endpoint: string,
-  body?: unknown,
-  options?: RequestOptions
-): Promise<T> {
+export function patch<T>(endpoint: string, body?: unknown, options?: RequestOptions): Promise<T> {
   return request<T>(endpoint, {
     ...options,
     method: 'PATCH',

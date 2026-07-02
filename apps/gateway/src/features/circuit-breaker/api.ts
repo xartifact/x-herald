@@ -1,31 +1,41 @@
-import { desc, eq, gte, sql, and, count, max } from '@xartifact/x-llm-gateway-db';
-import { Hono } from 'hono';
+import { desc, eq, gte, sql, and, count, max } from '@xartifact/x-llm-gateway-db'
+import { Hono } from 'hono'
 
-import { getDatabase } from '../../db/client';
-import { circuitBreakerRegistry } from '../../gateway/services/circuit-breaker-state';
+import { getDatabase } from '../../db/client'
+import { circuitBreakerRegistry } from '../../gateway/services/circuit-breaker-state'
 
-import { circuitBreakerEvents } from '@xartifact/x-llm-gateway-db';
+import { circuitBreakerEvents } from '@xartifact/x-llm-gateway-db'
 
-const circuitBreakerRoutes = new Hono();
+const circuitBreakerRoutes = new Hono()
 
 // 统计数据
 circuitBreakerRoutes.get('/stats', async (c) => {
-  const db = getDatabase();
-  const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const db = getDatabase()
+  const now = new Date()
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
 
   const [todayOpened, weekOpened, topInstances, trippedCount] = await Promise.all([
     db
       .select({ count: sql<number>`count(*)`.mapWith(Number) })
       .from(circuitBreakerEvents)
-      .where(and(eq(circuitBreakerEvents.event, 'opened'), gte(circuitBreakerEvents.createdAt, todayStart)))
+      .where(
+        and(
+          eq(circuitBreakerEvents.event, 'opened'),
+          gte(circuitBreakerEvents.createdAt, todayStart),
+        ),
+      )
       .then((r) => r[0].count),
 
     db
       .select({ count: sql<number>`count(*)`.mapWith(Number) })
       .from(circuitBreakerEvents)
-      .where(and(eq(circuitBreakerEvents.event, 'opened'), gte(circuitBreakerEvents.createdAt, weekStart)))
+      .where(
+        and(
+          eq(circuitBreakerEvents.event, 'opened'),
+          gte(circuitBreakerEvents.createdAt, weekStart),
+        ),
+      )
       .then((r) => r[0].count),
 
     db
@@ -50,26 +60,31 @@ circuitBreakerRoutes.get('/stats', async (c) => {
       .limit(10),
 
     db
-      .select({ count: sql<number>`count(distinct ${circuitBreakerEvents.instanceId})`.mapWith(Number) })
+      .select({
+        count: sql<number>`count(distinct ${circuitBreakerEvents.instanceId})`.mapWith(Number),
+      })
       .from(circuitBreakerEvents)
       .where(and(eq(circuitBreakerEvents.event, 'opened'), gte(circuitBreakerEvents.tripCount, 1)))
       .then((r) => r[0].count),
-  ]);
+  ])
 
-  return c.json({ success: true, data: { todayOpened, weekOpened, trippedInstanceCount: trippedCount, topInstances } });
-});
+  return c.json({
+    success: true,
+    data: { todayOpened, weekOpened, trippedInstanceCount: trippedCount, topInstances },
+  })
+})
 
 // 事件列表（分页）
 circuitBreakerRoutes.get('/events', async (c) => {
-  const db = getDatabase();
-  const limit = Math.min(parseInt(c.req.query('limit') ?? '50', 10), 200);
-  const offset = parseInt(c.req.query('offset') ?? '0', 10);
-  const instanceId = c.req.query('instanceId');
-  const event = c.req.query('event') as 'opened' | 'half_open' | 'closed' | undefined;
+  const db = getDatabase()
+  const limit = Math.min(parseInt(c.req.query('limit') ?? '50', 10), 200)
+  const offset = parseInt(c.req.query('offset') ?? '0', 10)
+  const instanceId = c.req.query('instanceId')
+  const event = c.req.query('event') as 'opened' | 'half_open' | 'closed' | undefined
 
-  const conditions = [];
-  if (instanceId) conditions.push(eq(circuitBreakerEvents.instanceId, instanceId));
-  if (event) conditions.push(eq(circuitBreakerEvents.event, event));
+  const conditions = []
+  if (instanceId) conditions.push(eq(circuitBreakerEvents.instanceId, instanceId))
+  if (event) conditions.push(eq(circuitBreakerEvents.event, event))
 
   const [events, total] = await Promise.all([
     db
@@ -85,30 +100,30 @@ circuitBreakerRoutes.get('/events', async (c) => {
       .from(circuitBreakerEvents)
       .where(conditions.length > 0 ? and(...conditions) : undefined)
       .then((r) => r[0].count),
-  ]);
+  ])
 
-  return c.json({ success: true, data: { events, total, limit, offset } });
-});
+  return c.json({ success: true, data: { events, total, limit, offset } })
+})
 
 // 实时状态
 circuitBreakerRoutes.get('/realtime-states', async (_c) => {
-  const instances = await circuitBreakerRegistry.getAllStates();
-  return _c.json({ success: true, data: { instances } });
-});
+  const instances = await circuitBreakerRegistry.getAllStates()
+  return _c.json({ success: true, data: { instances } })
+})
 
 // 手动重置熔断
 circuitBreakerRoutes.post('/:instanceId/reset', async (c) => {
-  const instanceId = c.req.param('instanceId');
-  await circuitBreakerRegistry.manualReset(instanceId);
-  return c.json({ success: true, data: { instanceId, action: 'reset' } });
-});
+  const instanceId = c.req.param('instanceId')
+  await circuitBreakerRegistry.manualReset(instanceId)
+  return c.json({ success: true, data: { instanceId, action: 'reset' } })
+})
 
 // 手动强制熔断
 circuitBreakerRoutes.post('/:instanceId/trip', async (c) => {
-  const instanceId = c.req.param('instanceId');
-  const body = await c.req.json().catch(() => ({}));
-  await circuitBreakerRegistry.manualTrip(instanceId, body.meta);
-  return c.json({ success: true, data: { instanceId, action: 'trip' } });
-});
+  const instanceId = c.req.param('instanceId')
+  const body = await c.req.json().catch(() => ({}))
+  await circuitBreakerRegistry.manualTrip(instanceId, body.meta)
+  return c.json({ success: true, data: { instanceId, action: 'trip' } })
+})
 
-export default circuitBreakerRoutes;
+export default circuitBreakerRoutes

@@ -17,21 +17,21 @@ import type { LogListItem } from '@xartifact/x-llm-gateway-shared'
 const CLIENT_REGISTRY: Record<string, string> = {
   'claude-code': 'Claude Code',
   'cherry-studio': 'CherryStudio',
-  'opencode': 'OpenCode',
-  'openclaw': 'OpenClaw',
-  'cursor': 'Cursor',
-  'cline': 'Cline',
-  'aider': 'Aider',
-  'continue': 'Continue.dev',
-  'litellm': 'LiteLLM',
-  'langchain': 'LangChain',
+  opencode: 'OpenCode',
+  openclaw: 'OpenClaw',
+  cursor: 'Cursor',
+  cline: 'Cline',
+  aider: 'Aider',
+  continue: 'Continue.dev',
+  litellm: 'LiteLLM',
+  langchain: 'LangChain',
   'openai-python': 'OpenAI Python SDK',
   'openai-node': 'OpenAI Node.js SDK',
   'anthropic-python': 'Anthropic Python SDK',
-  'curl': 'cURL',
+  curl: 'cURL',
   'python-httpx': 'Python (httpx)',
   'python-requests': 'Python (requests)',
-  'unknown': '未知客户端',
+  unknown: '未知客户端',
 }
 
 const PAGE_SIZE_OPTIONS = [20, 50, 100]
@@ -41,11 +41,20 @@ function getTimeRange(range: string): Record<string, string> {
   const now = new Date()
   const start = new Date()
   switch (range) {
-    case '1h': start.setHours(now.getHours() - 1); break
-    case '24h': start.setHours(now.getHours() - 24); break
-    case '7d': start.setDate(now.getDate() - 7); break
-    case '30d': start.setDate(now.getDate() - 30); break
-    default: return {}
+    case '1h':
+      start.setHours(now.getHours() - 1)
+      break
+    case '24h':
+      start.setHours(now.getHours() - 24)
+      break
+    case '7d':
+      start.setDate(now.getDate() - 7)
+      break
+    case '30d':
+      start.setDate(now.getDate() - 30)
+      break
+    default:
+      return {}
   }
   return { startDate: start.toISOString() }
 }
@@ -87,18 +96,26 @@ export function LogsPage() {
   const deleteMutation = useDeleteLog()
   const cleanupMutation = useCleanupLogs()
 
-  const logsRes = logsData as { data?: LogListItem[]; pagination?: { total: number; totalPages: number } } | undefined
+  const logsRes = logsData as
+    | { data?: LogListItem[]; pagination?: { total: number; totalPages: number } }
+    | undefined
   const logs = logsRes?.data ?? []
   const pagination = logsRes?.pagination
   const storage = (storageData as { data?: unknown } | undefined)?.data ?? undefined
 
-  const handleViewDetail = useCallback((logId: string) => {
-    navigate({ to: '/admin/logs/$logId', params: { logId } })
-  }, [navigate])
+  const handleViewDetail = useCallback(
+    (logId: string) => {
+      navigate({ to: '/admin/logs/$logId', params: { logId } })
+    },
+    [navigate],
+  )
 
-  const handleDelete = useCallback((id: string) => {
-    deleteMutation.mutate(id)
-  }, [deleteMutation])
+  const handleDelete = useCallback(
+    (id: string) => {
+      deleteMutation.mutate(id)
+    },
+    [deleteMutation],
+  )
 
   const handleCleanup = useCallback(() => {
     cleanupMutation.mutate(parseInt(retentionDays) || 30)
@@ -110,10 +127,22 @@ export function LogsPage() {
     setCurrentPage(1)
   }, [])
 
-  const handleSearchChange = useCallback((v: string) => { setSearchQuery(v); setCurrentPage(1) }, [])
-  const handleStatusChange = useCallback((v: string) => { setStatusFilter(v); setCurrentPage(1) }, [])
-  const handleClientTypeChange = useCallback((v: string) => { setClientTypeFilter(v); setCurrentPage(1) }, [])
-  const handleTimeRangeChange = useCallback((v: string) => { setTimeRange(v); setCurrentPage(1) }, [])
+  const handleSearchChange = useCallback((v: string) => {
+    setSearchQuery(v)
+    setCurrentPage(1)
+  }, [])
+  const handleStatusChange = useCallback((v: string) => {
+    setStatusFilter(v)
+    setCurrentPage(1)
+  }, [])
+  const handleClientTypeChange = useCallback((v: string) => {
+    setClientTypeFilter(v)
+    setCurrentPage(1)
+  }, [])
+  const handleTimeRangeChange = useCallback((v: string) => {
+    setTimeRange(v)
+    setCurrentPage(1)
+  }, [])
 
   return (
     <div className="space-y-4">
@@ -140,10 +169,13 @@ export function LogsPage() {
       <LiveLogsPanel onViewDetail={handleViewDetail} />
 
       <div className="flex items-center justify-between pt-2 border-t">
-        <h3 className="text-sm font-medium tracking-wide uppercase text-muted-foreground">历史记录</h3>
+        <h3 className="text-sm font-medium tracking-wide uppercase text-muted-foreground">
+          历史记录
+        </h3>
         {!isLoading && pagination && pagination.total > 0 && (
           <span className="text-xs text-muted-foreground">
-            第 {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, pagination.total)} 条 / 共 {pagination.total} 条
+            第 {(currentPage - 1) * pageSize + 1}–
+            {Math.min(currentPage * pageSize, pagination.total)} 条 / 共 {pagination.total} 条
           </span>
         )}
       </div>
@@ -152,7 +184,14 @@ export function LogsPage() {
         {isLoading ? (
           <LogTableSkeleton />
         ) : logs.length === 0 ? (
-          <LogsEmptyState hasFilters={!!searchQuery || statusFilter !== 'all' || clientTypeFilter !== 'all' || timeRange !== 'all'} />
+          <LogsEmptyState
+            hasFilters={
+              !!searchQuery ||
+              statusFilter !== 'all' ||
+              clientTypeFilter !== 'all' ||
+              timeRange !== 'all'
+            }
+          />
         ) : (
           <LogTable
             logs={logs}

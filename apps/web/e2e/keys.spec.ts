@@ -29,7 +29,9 @@ test.describe('Keys', () => {
     // After creation, dialog may show the newly created key value
     // Close the dialog first to see the key in the table
     await page.getByRole('button', { name: '关闭' }).click()
-    await page.waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 10000 }).catch(() => {})
+    await page
+      .waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 10000 })
+      .catch(() => {})
     await expect(page.getByText(name)).toBeVisible({ timeout: 15000 })
   })
 
@@ -43,7 +45,9 @@ test.describe('Keys', () => {
     await page.locator('input[placeholder="生产环境密钥"]').fill(name)
     await page.getByRole('button', { name: '创建密钥' }).click()
     await page.getByRole('button', { name: '关闭' }).click()
-    await page.waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 10000 }).catch(() => {})
+    await page
+      .waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 10000 })
+      .catch(() => {})
     await expect(page.getByText(name)).toBeVisible({ timeout: 15000 })
 
     await page.locator('input[placeholder="搜索密钥..."]').fill(name)
@@ -66,7 +70,9 @@ test.describe('Keys', () => {
     await page.locator('input[placeholder="生产环境密钥"]').fill(originalName)
     await page.getByRole('button', { name: '创建密钥' }).click()
     await page.getByRole('button', { name: '关闭' }).click()
-    await page.waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 10000 }).catch(() => {})
+    await page
+      .waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 10000 })
+      .catch(() => {})
     await expect(page.getByText(originalName)).toBeVisible({ timeout: 15000 })
 
     // Find the row with the original key name and click the edit button (Pencil icon)
@@ -78,7 +84,9 @@ test.describe('Keys', () => {
     await page.locator('input[placeholder="生产环境密钥"]').fill(newName)
     await page.getByRole('button', { name: '保存更改' }).click()
 
-    await page.waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 10000 }).catch(() => {})
+    await page
+      .waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 10000 })
+      .catch(() => {})
     await expect(page.getByText(newName)).toBeVisible({ timeout: 15000 })
   })
 
@@ -92,10 +100,12 @@ test.describe('Keys', () => {
     await page.locator('input[placeholder="生产环境密钥"]').fill(name)
     await page.getByRole('button', { name: '创建密钥' }).click()
     await page.getByRole('button', { name: '关闭' }).click()
-    await page.waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 10000 }).catch(() => {})
+    await page
+      .waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 10000 })
+      .catch(() => {})
     await expect(page.getByText(name)).toBeVisible({ timeout: 15000 })
 
-    page.on('dialog', dialog => dialog.accept())
+    page.on('dialog', (dialog) => dialog.accept())
 
     // Find the row with the key name and click the delete button (Trash2 icon)
     const row = page.locator('table tbody tr').filter({ hasText: name }).first()
@@ -115,7 +125,9 @@ test.describe('Keys', () => {
     await page.locator('input[placeholder="生产环境密钥"]').fill(name)
     await page.getByRole('button', { name: '创建密钥' }).click()
     await page.getByRole('button', { name: '关闭' }).click()
-    await page.waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 10000 }).catch(() => {})
+    await page
+      .waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 10000 })
+      .catch(() => {})
     await expect(page.getByText(name)).toBeVisible({ timeout: 15000 })
 
     // Find the row and verify it's enabled
@@ -130,7 +142,9 @@ test.describe('Keys', () => {
     await switchControl.click()
     await page.getByRole('button', { name: '保存更改' }).click()
 
-    await page.waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 10000 }).catch(() => {})
+    await page
+      .waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 10000 })
+      .catch(() => {})
     await expect(row.getByText('禁用')).toBeVisible({ timeout: 15000 })
 
     // Toggle back to enabled
@@ -139,7 +153,9 @@ test.describe('Keys', () => {
     await switchControl.click()
     await page.getByRole('button', { name: '保存更改' }).click()
 
-    await page.waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 10000 }).catch(() => {})
+    await page
+      .waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 10000 })
+      .catch(() => {})
     await expect(row.getByText('启用')).toBeVisible({ timeout: 15000 })
   })
 })

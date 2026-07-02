@@ -1,143 +1,142 @@
-import { Hono } from 'hono';
-import { serveStatic } from 'hono/bun';
-import { existsSync } from 'fs';
-import { join } from 'path';
+import { Hono } from 'hono'
+import { serveStatic } from 'hono/bun'
+import { existsSync } from 'fs'
+import { join } from 'path'
 
-import { loadConfig, validateConfig, APP_VERSION } from './config';
-import { getDatabase } from './db/client';
-import { rootLogger } from './lib';
-import { createCorsMiddleware } from './middleware/cors';
-import { errorHandler } from './middleware/error';
-import { requestLogger } from './middleware/logger';
-import { registerDefaultTransformers } from './gateway/transformer';
+import { loadConfig, validateConfig, APP_VERSION } from './config'
+import { getDatabase } from './db/client'
+import { rootLogger } from './lib'
+import { createCorsMiddleware } from './middleware/cors'
+import { errorHandler } from './middleware/error'
+import { requestLogger } from './middleware/logger'
+import { registerDefaultTransformers } from './gateway/transformer'
 
-import type { GatewayConfig } from './config';
-import type { Database } from './db/client';
+import type { GatewayConfig } from './config'
+import type { Database } from './db/client'
 
-const logger = rootLogger.child({ module: 'engine' });
+const logger = rootLogger.child({ module: 'engine' })
 
 export interface CreateEngineOptions {
   /** Additional Hono routes to mount (from features not yet migrated to engine) */
   extraRoutes?: Array<{
-    path: string;
-    routes: Hono;
-  }>;
+    path: string
+    routes: Hono
+  }>
   /** Skip config validation (default: false) */
-  skipConfigValidation?: boolean;
+  skipConfigValidation?: boolean
   /** Mount management API routes (default: false) */
-  mountAdminAPI?: boolean;
+  mountAdminAPI?: boolean
   /** Pre-initialized database instance (for testing) */
-  db?: Database;
+  db?: Database
 }
 
 export interface EngineInstance {
-  app: Hono;
-  config: GatewayConfig;
-  db: Database;
+  app: Hono
+  config: GatewayConfig
+  db: Database
 }
 
 export async function createEngine(options: CreateEngineOptions = {}): Promise<EngineInstance> {
   // 1. Load and validate configuration
-  const config = loadConfig();
+  const config = loadConfig()
   if (!options.skipConfigValidation) {
-    validateConfig(config);
+    validateConfig(config)
   }
 
   // 2. Verify database is initialized
-  let db: Database;
+  let db: Database
   if (options.db) {
-    db = options.db;
+    db = options.db
   } else {
     try {
-      db = getDatabase();
+      db = getDatabase()
     } catch (error) {
-      logger.error('Database not initialized. Make sure instrumentation hook is enabled.');
-      throw error;
+      logger.error('Database not initialized. Make sure instrumentation hook is enabled.')
+      throw error
     }
   }
 
   // 3. Create Hono app
-  const app = new Hono();
+  const app = new Hono()
 
   // 4. Register default transformers
-  registerDefaultTransformers();
+  registerDefaultTransformers()
 
   // 5. Global middlewares
-  app.use('*', errorHandler);
-  app.use('*', requestLogger);
-  app.use('*', createCorsMiddleware(config));
+  app.use('*', errorHandler)
+  app.use('*', requestLogger)
+  app.use('*', createCorsMiddleware(config))
 
   // 6. Mount engine-internal routes
   // Gateway API v1 (Anthropic/OpenAI compatible)
-  const { default: gatewayRoutes } = await import('./gateway/api');
-  app.route('/api/v1', gatewayRoutes);
+  const { default: gatewayRoutes } = await import('./gateway/api')
+  app.route('/api/v1', gatewayRoutes)
 
   // 7. Mount management API routes (if enabled)
   if (options.mountAdminAPI) {
-    const { authMiddleware } = await import('./features/auth/middleware');
+    const { authMiddleware } = await import('./features/auth/middleware')
 
     // Apply auth middleware to all admin API routes (except auth/health/gateway)
     app.use('/api/*', async (c, next) => {
-      const path = c.req.path;
+      const path = c.req.path
       if (
         path === '/api' ||
         path.startsWith('/api/v1') ||
         path.startsWith('/api/auth') ||
         path.startsWith('/api/health')
       ) {
-        return next();
+        return next()
       }
-      return authMiddleware(c, next);
-    });
+      return authMiddleware(c, next)
+    })
 
-    const { default: healthRoutes } = await import('./features/health/api');
-    app.route('/api/health', healthRoutes);
+    const { default: healthRoutes } = await import('./features/health/api')
+    app.route('/api/health', healthRoutes)
 
-    const { default: authRoutes } = await import('./features/auth/api');
-    app.route('/api/auth', authRoutes);
+    const { default: authRoutes } = await import('./features/auth/api')
+    app.route('/api/auth', authRoutes)
 
-    const { default: providersRoutes } = await import('./features/providers/api');
-    app.route('/api/providers', providersRoutes);
+    const { default: providersRoutes } = await import('./features/providers/api')
+    app.route('/api/providers', providersRoutes)
 
-    const { default: modelGroupRoutes } = await import('./features/model-groups/api');
-    app.route('/api/model-groups', modelGroupRoutes);
+    const { default: modelGroupRoutes } = await import('./features/model-groups/api')
+    app.route('/api/model-groups', modelGroupRoutes)
 
-    const { default: keysRoutes } = await import('./features/keys/api');
-    app.route('/api/keys', keysRoutes);
+    const { default: keysRoutes } = await import('./features/keys/api')
+    app.route('/api/keys', keysRoutes)
 
-    const { default: logsRoutes } = await import('./features/logs/api');
-    app.route('/api/logs', logsRoutes);
+    const { default: logsRoutes } = await import('./features/logs/api')
+    app.route('/api/logs', logsRoutes)
 
-    const { default: settingsRoutes } = await import('./features/settings/api');
-    app.route('/api/settings', settingsRoutes);
+    const { default: settingsRoutes } = await import('./features/settings/api')
+    app.route('/api/settings', settingsRoutes)
 
-    const { default: accessModelRoutes } = await import('./features/access-models/api');
-    app.route('/api/access-models', accessModelRoutes);
+    const { default: accessModelRoutes } = await import('./features/access-models/api')
+    app.route('/api/access-models', accessModelRoutes)
 
-    const { default: modelRoutesApi } = await import('./features/model-routes/api');
-    app.route('/api/model-routes', modelRoutesApi);
+    const { default: modelRoutesApi } = await import('./features/model-routes/api')
+    app.route('/api/model-routes', modelRoutesApi)
 
-    const { default: configIORoutes } = await import('./features/config-io/api');
-    app.route('/api/config', configIORoutes);
+    const { default: configIORoutes } = await import('./features/config-io/api')
+    app.route('/api/config', configIORoutes)
 
-    const { default: circuitBreakerRoutes } = await import('./features/circuit-breaker/api');
-    app.route('/api/circuit-breaker', circuitBreakerRoutes);
+    const { default: circuitBreakerRoutes } = await import('./features/circuit-breaker/api')
+    app.route('/api/circuit-breaker', circuitBreakerRoutes)
 
-    const { metricsRoutes } = await import('./features/metrics/api');
-    app.route('/api/metrics', metricsRoutes);
+    const { metricsRoutes } = await import('./features/metrics/api')
+    app.route('/api/metrics', metricsRoutes)
 
-    const { aiRoutes } = await import('./features/ai-assist/api');
-    app.route('/api/ai', aiRoutes);
+    const { aiRoutes } = await import('./features/ai-assist/api')
+    app.route('/api/ai', aiRoutes)
 
-    const { default: costRoutes } = await import('./features/costs/api');
-    app.route('/api/costs', costRoutes);
-
+    const { default: costRoutes } = await import('./features/costs/api')
+    app.route('/api/costs', costRoutes)
   }
 
   // 9. Mount extra routes from the consumer app
   if (options.extraRoutes) {
     for (const { path, routes } of options.extraRoutes) {
-      app.route(path, routes);
+      app.route(path, routes)
     }
   }
 
@@ -148,14 +147,14 @@ export async function createEngine(options: CreateEngineOptions = {}): Promise<E
       version: APP_VERSION,
       status: 'running',
       timestamp: new Date().toISOString(),
-    });
-  });
+    })
+  })
 
   // 11. Serve SPA static files (TanStack Router build output)
-  const spaDistPath = join(process.cwd(), 'apps/web/dist');
+  const spaDistPath = join(process.cwd(), 'apps/web/dist')
   if (existsSync(spaDistPath)) {
-    app.use('/*', serveStatic({ root: './apps/web/dist' }));
-    app.use('/*', serveStatic({ root: './apps/web/dist', path: 'index.html' }));
+    app.use('/*', serveStatic({ root: './apps/web/dist' }))
+    app.use('/*', serveStatic({ root: './apps/web/dist', path: 'index.html' }))
   }
 
   // 12. 404 handler
@@ -165,11 +164,11 @@ export async function createEngine(options: CreateEngineOptions = {}): Promise<E
         error: 'API endpoint not found',
         path: c.req.path,
       },
-      404
-    );
-  });
+      404,
+    )
+  })
 
-  logger.info({ port: config.server.port }, 'Engine created successfully');
+  logger.info({ port: config.server.port }, 'Engine created successfully')
 
-  return { app, config, db };
+  return { app, config, db }
 }

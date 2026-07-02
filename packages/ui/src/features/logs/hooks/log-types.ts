@@ -1,77 +1,77 @@
 export interface LogMetadata {
   messageSequence?: {
-    totalCount: number;
+    totalCount: number
     roles: Array<{
-      role: 'user' | 'assistant' | 'system' | 'tool';
-      index: number;
-      contentType?: string[];
-      toolCallCount?: number;
-      toolName?: string;
-      toolCallId?: string;
-      length?: number;
-    }>;
-  };
+      role: 'user' | 'assistant' | 'system' | 'tool'
+      index: number
+      contentType?: string[]
+      toolCallCount?: number
+      toolName?: string
+      toolCallId?: string
+      length?: number
+    }>
+  }
 
   content?: {
-    types?: string[];
-    hasFunctionCalling?: boolean;
-    toolNames?: string[];
-  };
+    types?: string[]
+    hasFunctionCalling?: boolean
+    toolNames?: string[]
+  }
 
   toolCalls?: {
-    pattern?: 'sequential' | 'parallel' | 'single';
-    tools?: string[];
+    pattern?: 'sequential' | 'parallel' | 'single'
+    tools?: string[]
     details?: Array<{
-      name: string;
-      arguments?: unknown;
-      result?: unknown;
-      callId?: string;
-      source?: 'request' | 'response';
-      messageIndex?: number;
-    }>;
-  };
+      name: string
+      arguments?: unknown
+      result?: unknown
+      callId?: string
+      source?: 'request' | 'response'
+      messageIndex?: number
+    }>
+  }
 
   conversation?: {
-    messageId?: string;
-    parentMessageId?: string;
-    turnNumber?: number;
-    role?: string;
-    roleSwitches?: number;
-    hasToolInteraction?: boolean;
-  };
+    messageId?: string
+    parentMessageId?: string
+    turnNumber?: number
+    role?: string
+    roleSwitches?: number
+    hasToolInteraction?: boolean
+  }
 
   request?: {
-    temperature?: number;
-    maxTokens?: number;
-    topP?: number;
-    thinkingMode?: boolean;
-  };
+    temperature?: number
+    maxTokens?: number
+    topP?: number
+    thinkingMode?: boolean
+  }
 
   performance?: {
-    responseTimeTier?: 'fast' | 'normal' | 'slow';
-    gatewayOverheadMs?: number;
-    providerTtfbMs?: number;
-    streamDurationMs?: number;
-    usageEstimated?: boolean;
-    ttfbToFirstThinkingMs?: number;
-    ttfbToFirstTextMs?: number;
-    thinkingDurationMs?: number;
-  };
+    responseTimeTier?: 'fast' | 'normal' | 'slow'
+    gatewayOverheadMs?: number
+    providerTtfbMs?: number
+    streamDurationMs?: number
+    usageEstimated?: boolean
+    ttfbToFirstThinkingMs?: number
+    ttfbToFirstTextMs?: number
+    thinkingDurationMs?: number
+  }
 
   routing?: {
-    requestedModel: string;
-    matchedRuleId?: string;
-    matchedRuleName?: string;
-    matchedRulePriority?: number;
-    modelGroupId?: string;
-    modelGroupName?: string;
-    instanceId?: string;
-    actualModelName?: string;
-    strategy?: string;
-    responseModelName?: string;
-  };
+    requestedModel: string
+    matchedRuleId?: string
+    matchedRuleName?: string
+    matchedRulePriority?: number
+    modelGroupId?: string
+    modelGroupName?: string
+    instanceId?: string
+    actualModelName?: string
+    strategy?: string
+    responseModelName?: string
+  }
 
-  [key: string]: unknown;
+  [key: string]: unknown
 }
 
 export const logKeys = {
@@ -82,7 +82,8 @@ export const logKeys = {
   detail: (id: string) => [...logKeys.details(), id] as const,
   stats: () => [...logKeys.all, 'stats'] as const,
   storage: () => [...logKeys.all, 'storage'] as const,
-  conversation: (conversationId: string) => [...logKeys.all, 'conversation', conversationId] as const,
+  conversation: (conversationId: string) =>
+    [...logKeys.all, 'conversation', conversationId] as const,
 }
 
 export interface LogListItem {
@@ -257,7 +258,6 @@ export interface KeyStat {
   avgResponseTimeMs: number
   lastUsedAt: string | null
 }
-
 
 export interface ConversationAttempt {
   id: string

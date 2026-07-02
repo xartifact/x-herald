@@ -22,8 +22,8 @@ export const diagnoseErrorExecutor: ToolExecutor = {
       .where(
         and(
           eq(requestAttempts.requestLogId, args.logId as string),
-          eq(requestAttempts.candidateIndex, 0)
-        )
+          eq(requestAttempts.candidateIndex, 0),
+        ),
       )
       .limit(1)
 
@@ -40,8 +40,7 @@ export const diagnoseErrorExecutor: ToolExecutor = {
       providerResponseBody: attempt?.providerResponseBody,
       instanceId:
         attempt?.instanceId ??
-        (log?.metadata as { routing?: { instanceId?: string } } | null)
-          ?.routing?.instanceId,
+        (log?.metadata as { routing?: { instanceId?: string } } | null)?.routing?.instanceId,
     }
   },
 }
@@ -60,8 +59,7 @@ export const applyFixExecutor: ToolExecutor = {
       throw new Error('Instance not found')
     }
 
-    const currentConfig =
-      (instanceRows[0].config as Record<string, unknown> | null) ?? {}
+    const currentConfig = (instanceRows[0].config as Record<string, unknown> | null) ?? {}
     const newConfig = { ...currentConfig, ...(args.config as Record<string, unknown>) }
 
     await db

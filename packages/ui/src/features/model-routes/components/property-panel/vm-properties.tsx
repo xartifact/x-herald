@@ -6,18 +6,18 @@ import { Network } from 'lucide-react'
 import { Badge } from '../../../../shared/components/ui/badge'
 
 interface VmNodeData {
-  modelName?: string;
-  label?: string;
-  [key: string]: unknown;
+  modelName?: string
+  label?: string
+  [key: string]: unknown
 }
 
 interface VmPropertiesProps {
-  node: Node<VmNodeData>;
+  node: Node<VmNodeData>
 }
 
 export function VmProperties({ node }: VmPropertiesProps) {
-  const modelName = node.data.modelName ?? '';
-  const label = node.data.label ?? '';
+  const modelName = node.data.modelName ?? ''
+  const label = node.data.label ?? ''
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 text-blue-600 font-semibold text-sm">
@@ -39,10 +39,13 @@ export function VmProperties({ node }: VmPropertiesProps) {
       </div>
 
       <div className="pt-2 border-t">
-        <Badge variant="outline" className="text-xs">只读节点</Badge>
+        <Badge variant="outline" className="text-xs">
+          只读节点
+        </Badge>
         <p className="text-xs text-muted-foreground mt-1.5">
           接入模型节点由系统生成，不可在画布中修改。
-          <br />在"接入模型"管理页面管理。
+          <br />
+          在"接入模型"管理页面管理。
         </p>
       </div>
     </div>

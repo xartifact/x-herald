@@ -1,13 +1,13 @@
-import type { ToolDefinition, StandardRequest } from '@xartifact/x-llm-gateway-shared';
+import type { ToolDefinition, StandardRequest } from '@xartifact/x-llm-gateway-shared'
 
-import type { AnthropicTool, AnthropicRequest } from '../types';
+import type { AnthropicTool, AnthropicRequest } from '../types'
 
 /**
  * Convert Anthropic tool to Standard tool definition
  */
 export function convertAnthropicTool(tool: AnthropicTool): ToolDefinition {
-  const { name, description, input_schema, cache_control, ...rest } = tool;
-  const passthrough = Object.keys(rest).length > 0 ? rest : undefined;
+  const { name, description, input_schema, cache_control, ...rest } = tool
+  const passthrough = Object.keys(rest).length > 0 ? rest : undefined
   return {
     type: 'function',
     function: {
@@ -17,7 +17,7 @@ export function convertAnthropicTool(tool: AnthropicTool): ToolDefinition {
     },
     ...(cache_control && { cache_control }),
     ...(passthrough && { _passthrough: passthrough }),
-  };
+  }
 }
 
 /**
@@ -26,16 +26,16 @@ export function convertAnthropicTool(tool: AnthropicTool): ToolDefinition {
 export function convertToolChoice(
   choice?: AnthropicRequest['tool_choice'],
 ): StandardRequest['tool_choice'] {
-  if (!choice) return undefined;
-  if (choice.type === 'auto') return 'auto';
-  if (choice.type === 'any') return 'required';
+  if (!choice) return undefined
+  if (choice.type === 'auto') return 'auto'
+  if (choice.type === 'any') return 'required'
   if (choice.type === 'tool') {
     return {
       type: 'function',
       function: { name: choice.name },
-    };
+    }
   }
-  return undefined;
+  return undefined
 }
 
 /**
@@ -48,7 +48,7 @@ export function convertToAnthropicTool(tool: ToolDefinition): AnthropicTool {
     input_schema: (tool.function.parameters ?? { type: 'object' }) as AnthropicTool['input_schema'],
     ...(tool.cache_control && { cache_control: tool.cache_control }),
     ...tool._passthrough,
-  };
+  }
 }
 
 /**
@@ -57,11 +57,11 @@ export function convertToAnthropicTool(tool: ToolDefinition): AnthropicTool {
 export function convertToAnthropicToolChoice(
   choice: NonNullable<StandardRequest['tool_choice']>,
 ): AnthropicRequest['tool_choice'] {
-  if (choice === 'auto') return { type: 'auto' };
-  if (choice === 'none') return { type: 'auto' };
-  if (choice === 'required') return { type: 'any' };
+  if (choice === 'auto') return { type: 'auto' }
+  if (choice === 'none') return { type: 'auto' }
+  if (choice === 'required') return { type: 'any' }
   if (typeof choice === 'object' && choice.type === 'function') {
-    return { type: 'tool', name: choice.function.name };
+    return { type: 'tool', name: choice.function.name }
   }
-  return { type: 'auto' };
+  return { type: 'auto' }
 }

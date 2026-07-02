@@ -33,7 +33,10 @@ export interface CostBreakdownItem {
 export function useCostSummary(params?: CostQueryParams) {
   return useQuery({
     queryKey: costKeys.summary(params),
-    queryFn: () => get<CostSummary>('/api/costs/summary', { params: params as Record<string, string | undefined> }),
+    queryFn: () =>
+      get<CostSummary>('/api/costs/summary', {
+        params: params as Record<string, string | undefined>,
+      }),
     refetchInterval: 30_000,
   })
 }
@@ -41,7 +44,10 @@ export function useCostSummary(params?: CostQueryParams) {
 export function useCostByKey(params?: CostQueryParams) {
   return useQuery({
     queryKey: costKeys.byKey(params),
-    queryFn: () => get<CostBreakdownItem[]>('/api/costs/by-key', { params: params as Record<string, string | undefined> }),
+    queryFn: () =>
+      get<CostBreakdownItem[]>('/api/costs/by-key', {
+        params: params as Record<string, string | undefined>,
+      }),
     refetchInterval: 30_000,
   })
 }
@@ -49,7 +55,10 @@ export function useCostByKey(params?: CostQueryParams) {
 export function useCostByProvider(params?: CostQueryParams) {
   return useQuery({
     queryKey: costKeys.byProvider(params),
-    queryFn: () => get<CostBreakdownItem[]>('/api/costs/by-provider', { params: params as Record<string, string | undefined> }),
+    queryFn: () =>
+      get<CostBreakdownItem[]>('/api/costs/by-provider', {
+        params: params as Record<string, string | undefined>,
+      }),
     refetchInterval: 30_000,
   })
 }
@@ -57,7 +66,10 @@ export function useCostByProvider(params?: CostQueryParams) {
 export function useCostByModel(params?: CostQueryParams) {
   return useQuery({
     queryKey: costKeys.byModel(params),
-    queryFn: () => get<CostBreakdownItem[]>('/api/costs/by-model', { params: params as Record<string, string | undefined> }),
+    queryFn: () =>
+      get<CostBreakdownItem[]>('/api/costs/by-model', {
+        params: params as Record<string, string | undefined>,
+      }),
     refetchInterval: 30_000,
   })
 }

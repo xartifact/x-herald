@@ -1,15 +1,15 @@
-import { sql } from '@xartifact/x-llm-gateway-db';
+import { sql } from '@xartifact/x-llm-gateway-db'
 
-import { getDatabase } from '../../db/client';
-import rootLogger from '../../lib/logger';
+import { getDatabase } from '../../db/client'
+import rootLogger from '../../lib/logger'
 
-const logger = rootLogger.child({ module: 'ensure-table' });
+const logger = rootLogger.child({ module: 'ensure-table' })
 
-let ensured = false;
+let ensured = false
 
 export async function ensureMetricsTable(): Promise<void> {
-  if (ensured) return;
-  const db = getDatabase();
+  if (ensured) return
+  const db = getDatabase()
   await db.execute(sql`
     CREATE TABLE IF NOT EXISTS "instance_perf_snapshots" (
       "id" uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -46,10 +46,16 @@ export async function ensureMetricsTable(): Promise<void> {
       PRIMARY KEY ("id"),
       UNIQUE ("instance_id", "bucket_start")
     )
-  `);
-  await db.execute(sql`CREATE INDEX IF NOT EXISTS "idx_ips_instance_bucket" ON "instance_perf_snapshots" ("instance_id", "bucket_start")`);
-  await db.execute(sql`CREATE INDEX IF NOT EXISTS "idx_ips_provider_bucket" ON "instance_perf_snapshots" ("provider_id", "bucket_start")`);
-  await db.execute(sql`CREATE INDEX IF NOT EXISTS "idx_ips_bucket_start" ON "instance_perf_snapshots" ("bucket_start")`);
-  ensured = true;
-  logger.debug('instance_perf_snapshots table ensured');
+  `)
+  await db.execute(
+    sql`CREATE INDEX IF NOT EXISTS "idx_ips_instance_bucket" ON "instance_perf_snapshots" ("instance_id", "bucket_start")`,
+  )
+  await db.execute(
+    sql`CREATE INDEX IF NOT EXISTS "idx_ips_provider_bucket" ON "instance_perf_snapshots" ("provider_id", "bucket_start")`,
+  )
+  await db.execute(
+    sql`CREATE INDEX IF NOT EXISTS "idx_ips_bucket_start" ON "instance_perf_snapshots" ("bucket_start")`,
+  )
+  ensured = true
+  logger.debug('instance_perf_snapshots table ensured')
 }

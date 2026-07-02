@@ -12,15 +12,16 @@ import type { ProtocolsConfig } from './db'
 
 const logger = rootLogger.child({ module: 'providers-service' })
 
-export const ProtocolConfigSchema = z.object({
-  baseUrl: z.string().min(1, 'baseUrl is required'),
-  enabled: z.boolean(),
-}).passthrough()
+export const ProtocolConfigSchema = z
+  .object({
+    baseUrl: z.string().min(1, 'baseUrl is required'),
+    enabled: z.boolean(),
+  })
+  .passthrough()
 
-export const ProtocolsSchema = z.record(z.string(), ProtocolConfigSchema).refine(
-  (p) => Object.keys(p).length > 0,
-  { message: 'At least one protocol must be configured' }
-)
+export const ProtocolsSchema = z
+  .record(z.string(), ProtocolConfigSchema)
+  .refine((p) => Object.keys(p).length > 0, { message: 'At least one protocol must be configured' })
 
 export const CreateProviderSchema = z.object({
   name: z.string().min(1, 'name is required'),
@@ -58,12 +59,15 @@ export async function getProvider(id: string, db?: Database) {
 
 export async function createProvider(data: CreateProviderCommand, db?: Database) {
   const database = db ?? getDatabase()
-  const rows = await database.insert(providers).values({
-    name: data.name,
-    protocols: data.protocols as ProtocolsConfig,
-    apiKey: data.apiKey ?? null,
-    enabled: data.enabled,
-  }).returning()
+  const rows = await database
+    .insert(providers)
+    .values({
+      name: data.name,
+      protocols: data.protocols as ProtocolsConfig,
+      apiKey: data.apiKey ?? null,
+      enabled: data.enabled,
+    })
+    .returning()
   logger.info({ providerId: rows[0].id }, 'Provider created')
   return rows[0]
 }
@@ -72,13 +76,17 @@ export async function updateProvider(id: string, data: UpdateProviderCommand, db
   const database = db ?? getDatabase()
   const existing = await getProvider(id, db)
   if (!existing) return null
-  const rows = await database.update(providers).set({
-    ...(data.name !== undefined && { name: data.name }),
-    ...(data.protocols !== undefined && { protocols: data.protocols as ProtocolsConfig }),
-    ...(data.apiKey !== undefined && { apiKey: data.apiKey }),
-    ...(data.enabled !== undefined && { enabled: data.enabled }),
-    updatedAt: new Date(),
-  }).where(eq(providers.id, id)).returning()
+  const rows = await database
+    .update(providers)
+    .set({
+      ...(data.name !== undefined && { name: data.name }),
+      ...(data.protocols !== undefined && { protocols: data.protocols as ProtocolsConfig }),
+      ...(data.apiKey !== undefined && { apiKey: data.apiKey }),
+      ...(data.enabled !== undefined && { enabled: data.enabled }),
+      updatedAt: new Date(),
+    })
+    .where(eq(providers.id, id))
+    .returning()
   logger.info({ providerId: id }, 'Provider updated')
   return rows[0] ?? null
 }
@@ -96,7 +104,11 @@ export async function toggleProvider(id: string, db?: Database) {
   const database = db ?? getDatabase()
   const existing = await getProvider(id, db)
   if (!existing) return null
-  const rows = await database.update(providers).set({ enabled: !existing.enabled, updatedAt: new Date() }).where(eq(providers.id, id)).returning()
+  const rows = await database
+    .update(providers)
+    .set({ enabled: !existing.enabled, updatedAt: new Date() })
+    .where(eq(providers.id, id))
+    .returning()
   logger.info({ providerId: id, enabled: rows[0].enabled }, 'Provider toggled')
   return rows[0] ?? null
 }
@@ -127,7 +139,8 @@ export async function updateThinkingMappings(id: string, data: ThinkingMappingDa
   for (const m of data.mappings) {
     if (m.from && m.to) mappings[m.from] = m.to
   }
-  const syntheticThinking = data.syntheticThinking === 'inject' ? 'inject' as const : 'strip' as const
+  const syntheticThinking =
+    data.syntheticThinking === 'inject' ? ('inject' as const) : ('strip' as const)
   const currentProtocols = (provider.protocols ?? {}) as ProtocolsConfig
   const currentAnthropic = currentProtocols.anthropic
   const updatedProtocols: ProtocolsConfig = {
@@ -140,12 +153,19 @@ export async function updateThinkingMappings(id: string, data: ThinkingMappingDa
       syntheticThinking,
     },
   }
-  await database.update(providers).set({ protocols: updatedProtocols, updatedAt: new Date() }).where(eq(providers.id, id))
+  await database
+    .update(providers)
+    .set({ protocols: updatedProtocols, updatedAt: new Date() })
+    .where(eq(providers.id, id))
   logger.info({ providerId: id, mappings }, 'Thinking type mappings updated')
   return Object.entries(mappings).map(([from, to]) => ({ from, to }))
 }
 
-type FetchModelsOk = { ok: true; models: Array<{ id: string; name: string; synced: boolean }>; fetchError: string | null }
+type FetchModelsOk = {
+  ok: true
+  models: Array<{ id: string; name: string; synced: boolean }>
+  fetchError: string | null
+}
 type FetchModelsErr = { ok: false; code: 'NOT_FOUND' | 'DISABLED' }
 export type FetchModelsResult = FetchModelsOk | FetchModelsErr
 
@@ -165,19 +185,24 @@ export async function fetchRemoteModels(id: string, db?: Database): Promise<Fetc
       if (provider.apiKey) headers['Authorization'] = `Bearer ${provider.apiKey}`
       const resp = await fetch(url, { headers, signal: AbortSignal.timeout(15000) })
       if (resp.ok) {
-        const body = await resp.json() as { data?: Array<{ id: string }> }
-        if (Array.isArray(body.data)) remoteModels = body.data.map((m) => ({ id: m.id, name: m.id }))
+        const body = (await resp.json()) as { data?: Array<{ id: string }> }
+        if (Array.isArray(body.data))
+          remoteModels = body.data.map((m) => ({ id: m.id, name: m.id }))
       } else {
         fetchError = `OpenAI API returned ${resp.status}`
       }
     } else if (protocols.anthropic?.enabled && protocols.anthropic.baseUrl) {
       const url = `${protocols.anthropic.baseUrl.replace(/\/+$/, '')}/models`
-      const headers: Record<string, string> = { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' }
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'anthropic-version': '2023-06-01',
+      }
       if (provider.apiKey) headers['x-api-key'] = provider.apiKey
       const resp = await fetch(url, { headers, signal: AbortSignal.timeout(15000) })
       if (resp.ok) {
-        const body = await resp.json() as { data?: Array<{ id: string; display_name?: string }> }
-        if (Array.isArray(body.data)) remoteModels = body.data.map((m) => ({ id: m.id, name: m.display_name || m.id }))
+        const body = (await resp.json()) as { data?: Array<{ id: string; display_name?: string }> }
+        if (Array.isArray(body.data))
+          remoteModels = body.data.map((m) => ({ id: m.id, name: m.display_name || m.id }))
       } else {
         fetchError = `Anthropic API returned ${resp.status}`
       }
@@ -190,16 +215,32 @@ export async function fetchRemoteModels(id: string, db?: Database): Promise<Fetc
   }
 
   const database = db ?? getDatabase()
-  const existing = await database.select({ actualModelName: modelInstances.actualModelName }).from(modelInstances).where(eq(modelInstances.providerId, id))
+  const existing = await database
+    .select({ actualModelName: modelInstances.actualModelName })
+    .from(modelInstances)
+    .where(eq(modelInstances.providerId, id))
   const syncedSet = new Set(existing.map((i) => i.actualModelName))
-  return { ok: true, models: remoteModels.map((m) => ({ ...m, synced: syncedSet.has(m.id) })), fetchError }
+  return {
+    ok: true,
+    models: remoteModels.map((m) => ({ ...m, synced: syncedSet.has(m.id) })),
+    fetchError,
+  }
 }
 
-type SyncModelsOk = { ok: true; created: number; skipped: number; details: Array<{ id: string; name: string }> }
+type SyncModelsOk = {
+  ok: true
+  created: number
+  skipped: number
+  details: Array<{ id: string; name: string }>
+}
 type SyncModelsErr = { ok: false; code: 'NOT_FOUND' | 'DISABLED' | 'GROUP_NOT_FOUND' }
 export type SyncModelsResult = SyncModelsOk | SyncModelsErr
 
-export async function syncModels(id: string, data: SyncModelsCommand, db?: Database): Promise<SyncModelsResult> {
+export async function syncModels(
+  id: string,
+  data: SyncModelsCommand,
+  db?: Database,
+): Promise<SyncModelsResult> {
   const provider = await getProvider(id, db)
   if (!provider) return { ok: false, code: 'NOT_FOUND' }
   if (!provider.enabled) return { ok: false, code: 'DISABLED' }
@@ -208,26 +249,50 @@ export async function syncModels(id: string, data: SyncModelsCommand, db?: Datab
 
   if (data.groupId) {
     const { modelGroups } = await import('@xartifact/x-llm-gateway-db')
-    const group = await database.select().from(modelGroups).where(eq(modelGroups.id, data.groupId)).limit(1)
+    const group = await database
+      .select()
+      .from(modelGroups)
+      .where(eq(modelGroups.id, data.groupId))
+      .limit(1)
     if (group.length === 0) return { ok: false, code: 'GROUP_NOT_FOUND' }
   }
 
-  const existing = await database.select({ actualModelName: modelInstances.actualModelName }).from(modelInstances).where(eq(modelInstances.providerId, id))
+  const existing = await database
+    .select({ actualModelName: modelInstances.actualModelName })
+    .from(modelInstances)
+    .where(eq(modelInstances.providerId, id))
   const existingSet = new Set(existing.map((i) => i.actualModelName))
   const toCreate = data.models.filter((m) => !existingSet.has(m.id))
   const skipped = data.models.length - toCreate.length
 
   if (toCreate.length > 0) {
-    const inserted = await database.insert(modelInstances).values(
-      toCreate.map((m) => ({ providerId: id, name: m.name, actualModelName: m.id, weight: 100, priority: 0, enabled: true }))
-    ).returning({ id: modelInstances.id })
+    const inserted = await database
+      .insert(modelInstances)
+      .values(
+        toCreate.map((m) => ({
+          providerId: id,
+          name: m.name,
+          actualModelName: m.id,
+          weight: 100,
+          priority: 0,
+          enabled: true,
+        })),
+      )
+      .returning({ id: modelInstances.id })
 
     if (data.groupId && inserted.length > 0) {
       const { modelGroupMemberships } = await import('@xartifact/x-llm-gateway-db')
-      await database.insert(modelGroupMemberships).values(inserted.map((i) => ({ groupId: data.groupId as string, instanceId: i.id })))
+      await database
+        .insert(modelGroupMemberships)
+        .values(inserted.map((i) => ({ groupId: data.groupId as string, instanceId: i.id })))
     }
   }
 
   logger.info({ providerId: id, created: toCreate.length, skipped }, 'Models synced')
-  return { ok: true, created: toCreate.length, skipped, details: toCreate.map((m) => ({ id: m.id, name: m.name })) }
+  return {
+    ok: true,
+    created: toCreate.length,
+    skipped,
+    details: toCreate.map((m) => ({ id: m.id, name: m.name })),
+  }
 }

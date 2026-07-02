@@ -37,8 +37,10 @@ mock.module('./circuit-breaker-policy', () => ({
   calculateBackoff: mockCalculateBackoff,
   persistEvent: mockPersistEvent,
   getMaxBackoffMs: () => mockRuntimeConfig.maxBackoffMs ?? DEFAULT_MOCK_CONFIG.maxBackoffMs!,
-  getMaxTripsBeforeCooldown: () => mockRuntimeConfig.maxTripsBeforeCooldown ?? DEFAULT_MOCK_CONFIG.maxTripsBeforeCooldown!,
-  getCooldownDurationMs: () => mockRuntimeConfig.cooldownDurationMs ?? DEFAULT_MOCK_CONFIG.cooldownDurationMs!,
+  getMaxTripsBeforeCooldown: () =>
+    mockRuntimeConfig.maxTripsBeforeCooldown ?? DEFAULT_MOCK_CONFIG.maxTripsBeforeCooldown!,
+  getCooldownDurationMs: () =>
+    mockRuntimeConfig.cooldownDurationMs ?? DEFAULT_MOCK_CONFIG.cooldownDurationMs!,
 }))
 
 import { circuitBreakerRegistry } from './circuit-breaker-state'
@@ -46,7 +48,11 @@ import { circuitBreakerRegistry } from './circuit-breaker-state'
 const originalDateNow = Date.now
 let mockNow = 1_000_000_000_000
 
-const META: CircuitBreakerMeta = { instanceName: 'inst-1', groupName: 'group-a', providerName: 'prov-a' }
+const META: CircuitBreakerMeta = {
+  instanceName: 'inst-1',
+  groupName: 'group-a',
+  providerName: 'prov-a',
+}
 
 beforeEach(async () => {
   mockNow = 1_000_000_000_000
@@ -463,7 +469,9 @@ describe('CircuitBreakerRegistry', () => {
       mockNow += 1_800_001
       await circuitBreakerRegistry.isOpen('inst-1')
       expect(mockPersistEvent.mock.calls.length).toBe(persistCount + 1)
-      expect(mockPersistEvent.mock.calls[mockPersistEvent.mock.calls.length - 1][1]).toBe('half_open')
+      expect(mockPersistEvent.mock.calls[mockPersistEvent.mock.calls.length - 1][1]).toBe(
+        'half_open',
+      )
     })
   })
 

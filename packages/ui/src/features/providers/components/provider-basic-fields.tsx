@@ -21,7 +21,11 @@ interface ProviderBasicFieldsProps {
   onToggleShowApiKey: () => void
 }
 
-export function ProviderBasicFields({ form, showApiKey, onToggleShowApiKey }: ProviderBasicFieldsProps) {
+export function ProviderBasicFields({
+  form,
+  showApiKey,
+  onToggleShowApiKey,
+}: ProviderBasicFieldsProps) {
   return (
     <div className="space-y-4">
       <h4 className="text-sm font-medium">基本信息</h4>

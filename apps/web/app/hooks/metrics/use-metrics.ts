@@ -146,7 +146,7 @@ export function useAnomalyEvents(unresolvedOnly = false) {
     queryFn: () =>
       get<{ success: boolean; data: AnomalyEvent[] }>(
         `${API_BASE}/anomalies${unresolvedOnly ? '?unresolved=true' : ''}`,
-        { extractData: false }
+        { extractData: false },
       ),
     refetchInterval: 30_000,
   })
@@ -159,7 +159,7 @@ export function useDetectAnomalies() {
       post<{ success: boolean; data: { newEvents: number } }>(
         `${API_BASE}/anomalies/detect`,
         undefined,
-        { extractData: false }
+        { extractData: false },
       ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['metrics', 'anomalies'] })

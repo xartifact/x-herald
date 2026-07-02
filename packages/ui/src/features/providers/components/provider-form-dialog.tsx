@@ -30,8 +30,15 @@ interface ProviderFormDialogProps {
 }
 
 export function ProviderFormDialog({
-  open, onOpenChange, form, editingId, isPending,
-  showApiKey, onToggleShowApiKey, onSubmit, protocolOptions,
+  open,
+  onOpenChange,
+  form,
+  editingId,
+  isPending,
+  showApiKey,
+  onToggleShowApiKey,
+  onSubmit,
+  protocolOptions,
 }: ProviderFormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -45,11 +52,17 @@ export function ProviderFormDialog({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <ProviderBasicFields form={form} showApiKey={showApiKey} onToggleShowApiKey={onToggleShowApiKey} />
+            <ProviderBasicFields
+              form={form}
+              showApiKey={showApiKey}
+              onToggleShowApiKey={onToggleShowApiKey}
+            />
             <ProviderProtocolFields form={form} protocolOptions={protocolOptions} />
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>取消</Button>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                取消
+              </Button>
               <Button type="submit" disabled={isPending}>
                 {isPending ? '保存中...' : editingId ? '保存更改' : '创建'}
               </Button>

@@ -2,7 +2,18 @@ import { useState, useMemo, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { Plus, Search } from 'lucide-react'
 
-import { useModelGroups, useModelInstances, useCreateModelGroup, useUpdateModelGroup, useDeleteModelGroup, useCreateModelInstance, useUpdateModelInstance, useDeleteModelInstance, useToggleModelInstance, useReorderInstances } from '../../../hooks/model-groups'
+import {
+  useModelGroups,
+  useModelInstances,
+  useCreateModelGroup,
+  useUpdateModelGroup,
+  useDeleteModelGroup,
+  useCreateModelInstance,
+  useUpdateModelInstance,
+  useDeleteModelInstance,
+  useToggleModelInstance,
+  useReorderInstances,
+} from '../../../hooks/model-groups'
 import { useProviders } from '../../../hooks/providers'
 import {
   Button,
@@ -151,7 +162,10 @@ export function ModelGroupsPage() {
 
   const onGroupSubmit = async (data: Record<string, any>) => {
     const aliases = data.aliases
-      ? data.aliases.split(',').map((s: string) => s.trim()).filter(Boolean)
+      ? data.aliases
+          .split(',')
+          .map((s: string) => s.trim())
+          .filter(Boolean)
       : []
     const payload = {
       name: data.name,
@@ -302,9 +316,7 @@ export function ModelGroupsPage() {
               group={group}
               instances={instancesByGroup.get(group.id) || []}
               isExpanded={expandedGroup === group.id}
-              onToggleExpand={() =>
-                setExpandedGroup(expandedGroup === group.id ? null : group.id)
-              }
+              onToggleExpand={() => setExpandedGroup(expandedGroup === group.id ? null : group.id)}
               onEdit={() => handleEditGroup(group)}
               onDelete={() => handleDeleteGroup(group.id, group.name)}
               onAddInstance={handleAddInstance}
@@ -317,7 +329,11 @@ export function ModelGroupsPage() {
               getProviderName={getProviderName}
             />
           ))}
-          <UngroupedInstancesSection instances={ungroupedInstances} groups={groups} getProviderName={getProviderName} />
+          <UngroupedInstancesSection
+            instances={ungroupedInstances}
+            groups={groups}
+            getProviderName={getProviderName}
+          />
         </div>
       )}
 

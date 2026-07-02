@@ -1,43 +1,43 @@
-import path from "path";
-import { fileURLToPath } from "url";
+import path from 'path'
+import { fileURLToPath } from 'url'
 
-import type { DbLogger, Database, DatabaseOptions } from "./types";
-import { createPgliteDatabase } from "./connections/pglite";
-import { createPostgresDatabase } from "./connections/postgres";
+import type { DbLogger, Database, DatabaseOptions } from './types'
+import { createPgliteDatabase } from './connections/pglite'
+import { createPostgresDatabase } from './connections/postgres'
 
 // ─── Global singleton ─────────────────────────────────────────
 
 const g = globalThis as unknown as {
-  __xllm_dbClient?: Database;
-  __xllm_postgresClient?: unknown;
-};
+  __xllm_dbClient?: Database
+  __xllm_postgresClient?: unknown
+}
 
 function getDbClient(): Database | null {
-  return g.__xllm_dbClient ?? null;
+  return g.__xllm_dbClient ?? null
 }
 function setDbClient(client: Database | null) {
-  g.__xllm_dbClient = client ?? undefined;
+  g.__xllm_dbClient = client ?? undefined
 }
 function getPostgresClient(): unknown {
-  return g.__xllm_postgresClient ?? null;
+  return g.__xllm_postgresClient ?? null
 }
 function setPostgresClient(client: unknown) {
-  g.__xllm_postgresClient = client ?? undefined;
+  g.__xllm_postgresClient = client ?? undefined
 }
 
 // ─── Public API ────────────────────────────────────────────────
 
-export { getDbClient, setDbClient, getPostgresClient, setPostgresClient };
+export { getDbClient, setDbClient, getPostgresClient, setPostgresClient }
 
 /**
  * Resolve the migrations folder path.
  * If `migrationsFolder` is provided, use it; otherwise derive from this file's location.
  */
 function resolveMigrationsFolder(provided?: string): string {
-  if (provided) return provided;
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = path.dirname(__filename);
-  return path.join(__dirname, "..", "migrations");
+  if (provided) return provided
+  const __filename = fileURLToPath(import.meta.url)
+  const __dirname = path.dirname(__filename)
+  return path.join(__dirname, '..', 'migrations')
 }
 
 /**
@@ -54,28 +54,28 @@ export async function createDbConnection(
   schema?: Record<string, unknown>,
 ): Promise<Database> {
   if (getDbClient()) {
-    return getDbClient()!;
+    return getDbClient()!
   }
 
-  const migrationsFolder = resolveMigrationsFolder(options.migrationsFolder);
+  const migrationsFolder = resolveMigrationsFolder(options.migrationsFolder)
 
-  if (options.type === "pglite") {
+  if (options.type === 'pglite') {
     const db = await createPgliteDatabase(
-      options.dataDir ?? "./.pglite",
+      options.dataDir ?? './.pglite',
       migrationsFolder,
       options.migrateOnBoot,
       logger,
       schema,
-    );
-    setDbClient(db);
-    return db;
+    )
+    setDbClient(db)
+    return db
   }
 
   // Postgres
-  const { db, client } = await createPostgresDatabase(options, migrationsFolder, logger, schema);
-  setDbClient(db);
-  setPostgresClient(client);
-  return db;
+  const { db, client } = await createPostgresDatabase(options, migrationsFolder, logger, schema)
+  setDbClient(db)
+  setPostgresClient(client)
+  return db
 }
 
 /**
@@ -83,11 +83,11 @@ export async function createDbConnection(
  * Throws if not yet initialized.
  */
 export function getDatabase(): Database {
-  const client = getDbClient();
+  const client = getDbClient()
   if (!client) {
-    throw new Error("Database not initialized. Call createDbConnection() first.");
+    throw new Error('Database not initialized. Call createDbConnection() first.')
   }
-  return client;
+  return client
 }
 
 /**
@@ -95,9 +95,9 @@ export function getDatabase(): Database {
  */
 export async function closeDb(): Promise<void> {
   if (getPostgresClient()) {
-    const pgClient = getPostgresClient() as { end: () => Promise<void> };
-    await pgClient.end();
+    const pgClient = getPostgresClient() as { end: () => Promise<void> }
+    await pgClient.end()
   }
-  setDbClient(null);
-  setPostgresClient(null);
+  setDbClient(null)
+  setPostgresClient(null)
 }

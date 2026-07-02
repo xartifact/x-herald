@@ -1,4 +1,4 @@
-import { decideRateLimit, getNextMidnightMs, shouldResetDaily } from './rate-limit-logic';
+import { decideRateLimit, getNextMidnightMs, shouldResetDaily } from './rate-limit-logic'
 
 export interface RateLimitConfig {
   rpm?: number | null
@@ -56,9 +56,8 @@ export class SlidingWindowCounter {
     const now = this.now()
     this.cleanup(this.windowMs)
     const current = this.entries.reduce((sum, e) => sum + e.count, 0)
-    const resetAt = this.entries.length > 0
-      ? this.entries[0].timestamp + this.windowMs
-      : now + this.windowMs
+    const resetAt =
+      this.entries.length > 0 ? this.entries[0].timestamp + this.windowMs : now + this.windowMs
     return {
       current,
       limit: this.maxRequests,
@@ -73,7 +72,7 @@ export class SlidingWindowCounter {
 
   cleanup(maxAgeMs: number): void {
     const cutoff = this.now() - maxAgeMs
-    const firstValid = this.entries.findIndex(e => e.timestamp > cutoff)
+    const firstValid = this.entries.findIndex((e) => e.timestamp > cutoff)
     if (firstValid > 0) {
       this.entries = this.entries.slice(firstValid)
     } else if (firstValid === -1) {
@@ -256,7 +255,11 @@ export class RateLimitEngine {
 
     if (config.tokenLimitDaily && !counters.token) {
       counters.token = new DailyAccumulator(Number(config.tokenLimitDaily), this.now)
-    } else if (counters.token && config.tokenLimitDaily && counters.token.maxTokens !== config.tokenLimitDaily) {
+    } else if (
+      counters.token &&
+      config.tokenLimitDaily &&
+      counters.token.maxTokens !== config.tokenLimitDaily
+    ) {
       counters.token.maxTokens = config.tokenLimitDaily
     }
 

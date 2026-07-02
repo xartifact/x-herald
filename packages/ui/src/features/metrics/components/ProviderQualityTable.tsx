@@ -1,26 +1,33 @@
-import { RefreshCw, Trophy } from 'lucide-react';
+import { RefreshCw, Trophy } from 'lucide-react'
 
-import { Button } from '../../../shared/components/ui';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/components/ui';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../shared/components/ui';
+import { Button } from '../../../shared/components/ui'
+import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/components/ui'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../../../shared/components/ui'
 
-import { useProviderQuality } from '../hooks/use-metrics';
+import { useProviderQuality } from '../hooks/use-metrics'
 
 function fmtMs(ms: number | null | undefined): string {
-  if (ms == null) return '—';
-  if (ms >= 1000) return `${(ms / 1000).toFixed(1)}s`;
-  return `${Math.round(ms)}ms`;
+  if (ms == null) return '—'
+  if (ms >= 1000) return `${(ms / 1000).toFixed(1)}s`
+  return `${Math.round(ms)}ms`
 }
 
 function fmtPct(v: number | null | undefined): string {
-  if (v == null) return '—';
-  return `${(v * 100).toFixed(1)}%`;
+  if (v == null) return '—'
+  return `${(v * 100).toFixed(1)}%`
 }
 
 function scoreColor(score: number): string {
-  if (score >= 80) return 'text-green-600';
-  if (score >= 60) return 'text-yellow-600';
-  return 'text-red-600';
+  if (score >= 80) return 'text-green-600'
+  if (score >= 60) return 'text-yellow-600'
+  return 'text-red-600'
 }
 
 function ScoreBar({ score }: { score: number }) {
@@ -32,16 +39,14 @@ function ScoreBar({ score }: { score: number }) {
           style={{ width: `${Math.min(score, 100)}%` }}
         />
       </div>
-      <span className={`text-sm font-bold font-mono ${scoreColor(score)}`}>
-        {score.toFixed(0)}
-      </span>
+      <span className={`text-sm font-bold font-mono ${scoreColor(score)}`}>{score.toFixed(0)}</span>
     </div>
-  );
+  )
 }
 
 export function ProviderQualityTable() {
-  const { data, isLoading, refetch } = useProviderQuality();
-  const providers = data?.data ?? [];
+  const { data, isLoading, refetch } = useProviderQuality()
+  const providers = data?.data ?? []
 
   return (
     <Card>
@@ -87,13 +92,13 @@ export function ProviderQualityTable() {
             {providers.map((p, i) => (
               <TableRow key={p.providerId ?? p.providerName ?? i}>
                 <TableCell className="text-muted-foreground font-mono">{i + 1}</TableCell>
-                <TableCell className="font-medium">{p.providerName ?? p.providerId ?? '—'}</TableCell>
+                <TableCell className="font-medium">
+                  {p.providerName ?? p.providerId ?? '—'}
+                </TableCell>
                 <TableCell>
                   <ScoreBar score={p.qualityScore} />
                 </TableCell>
-                <TableCell className="text-right font-mono">
-                  {fmtPct(p.avgSuccessRate)}
-                </TableCell>
+                <TableCell className="text-right font-mono">{fmtPct(p.avgSuccessRate)}</TableCell>
                 <TableCell className="text-right font-mono">{fmtMs(p.avgTtfb)}</TableCell>
                 <TableCell className="text-right font-mono">{fmtMs(p.ttfbP95)}</TableCell>
                 <TableCell className="text-right font-mono">
@@ -111,5 +116,5 @@ export function ProviderQualityTable() {
         </Table>
       </CardContent>
     </Card>
-  );
+  )
 }

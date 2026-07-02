@@ -32,8 +32,16 @@ interface KeyFormDialogProps {
 }
 
 export function KeyFormDialog({
-  open, onOpenChange, form, editingId, isPending,
-  showNewKey, newlyCreatedKey, copiedKey, onSubmit, onCopyNewKey,
+  open,
+  onOpenChange,
+  form,
+  editingId,
+  isPending,
+  showNewKey,
+  newlyCreatedKey,
+  copiedKey,
+  onSubmit,
+  onCopyNewKey,
 }: KeyFormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -55,7 +63,9 @@ export function KeyFormDialog({
             <KeyPermissionFields form={form} />
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>关闭</Button>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                关闭
+              </Button>
               {!showNewKey && (
                 <Button type="submit" disabled={isPending}>
                   {isPending ? '保存中...' : editingId ? '保存更改' : '创建密钥'}

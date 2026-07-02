@@ -1,5 +1,10 @@
 import { useState } from 'react'
-import { useCircuitBreakerStats, useRealtimeStates, useCircuitBreakerEvents, useManualAction } from '../../../hooks/circuit-breaker'
+import {
+  useCircuitBreakerStats,
+  useRealtimeStates,
+  useCircuitBreakerEvents,
+  useManualAction,
+} from '../../../hooks/circuit-breaker'
 import {
   CircuitBreakerStatsCards,
   RealtimeStateTable,
@@ -50,8 +55,17 @@ export function CircuitBreakerPage() {
           <h1 className="text-3xl font-bold tracking-tight">熔断记录</h1>
           <p className="text-muted-foreground">模型实例熔断状态与事件历史</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => { statsQuery.refetch(); eventsQuery.refetch(); realtimeQuery.refetch(); }}>
-          <RefreshCw className="mr-2 h-4 w-4" />刷新
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            statsQuery.refetch()
+            eventsQuery.refetch()
+            realtimeQuery.refetch()
+          }}
+        >
+          <RefreshCw className="mr-2 h-4 w-4" />
+          刷新
         </Button>
       </div>
 
@@ -81,12 +95,18 @@ export function CircuitBreakerPage() {
         loading={eventsQuery.isLoading}
         error={eventsQuery.error}
         filter={eventFilter}
-        onFilterChange={(v) => { setEventFilter(v); setOffset(0) }}
+        onFilterChange={(v) => {
+          setEventFilter(v)
+          setOffset(0)
+        }}
         currentPage={Math.floor(offset / limit) + 1}
         totalPages={totalPages}
         pageSize={limit}
         onPageChange={(page) => setOffset((page - 1) * limit)}
-        onPageSizeChange={(size) => { setLimit(size); setOffset(0) }}
+        onPageSizeChange={(size) => {
+          setLimit(size)
+          setOffset(0)
+        }}
         onRetry={() => eventsQuery.refetch()}
       />
 

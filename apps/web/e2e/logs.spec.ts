@@ -25,7 +25,9 @@ test.describe('Logs', () => {
   test('shows empty state when search has no matches', async ({ page }) => {
     await page.goto('/admin/logs')
     await page.waitForLoadState('domcontentloaded')
-    await page.locator('input[placeholder="搜索模型名称或虚拟密钥..."]').fill('nonexistent-model-xyz-123')
+    await page
+      .locator('input[placeholder="搜索模型名称或虚拟密钥..."]')
+      .fill('nonexistent-model-xyz-123')
     await page.waitForLoadState('domcontentloaded')
     await expect(page.getByText('没有找到匹配的日志记录')).toBeVisible()
   })
@@ -33,8 +35,16 @@ test.describe('Logs', () => {
   test('page has table or empty state for logs', async ({ page }) => {
     await page.goto('/admin/logs')
     await page.waitForLoadState('domcontentloaded')
-    const hasTable = await page.locator('table').first().isVisible().catch(() => false)
-    const hasEmptyState = await page.getByText('还没有请求日志').first().isVisible().catch(() => false)
+    const hasTable = await page
+      .locator('table')
+      .first()
+      .isVisible()
+      .catch(() => false)
+    const hasEmptyState = await page
+      .getByText('还没有请求日志')
+      .first()
+      .isVisible()
+      .catch(() => false)
     expect(hasTable || hasEmptyState).toBe(true)
   })
 
@@ -47,7 +57,9 @@ test.describe('Logs', () => {
       await page.waitForSelector('[role="dialog"]')
       await expect(page.locator('[role="dialog"]')).toBeVisible()
       await page.getByRole('button', { name: '取消' }).click()
-      await page.waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 5000 }).catch(() => {})
+      await page
+        .waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 5000 })
+        .catch(() => {})
     }
   })
 })

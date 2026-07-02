@@ -3,7 +3,14 @@ import { RefreshCw, Loader2 } from 'lucide-react'
 import { Badge } from '../../../shared/components/ui/index'
 import { Button } from '../../../shared/components/ui/index'
 import { Checkbox } from '../../../shared/components/ui/index'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../shared/components/ui/index'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../../../shared/components/ui/index'
 
 interface ProviderModel {
   id: string
@@ -25,7 +32,7 @@ interface SyncModelListProps {
 }
 
 export function SyncModelList({ models, isLoading, onRefetch, selection }: SyncModelListProps) {
-  const unsyncedModels = models.filter(m => !m.synced)
+  const unsyncedModels = models.filter((m) => !m.synced)
 
   if (isLoading) {
     return (
@@ -54,7 +61,9 @@ export function SyncModelList({ models, isLoading, onRefetch, selection }: SyncM
         <TableRow>
           <TableHead className="w-10">
             <Checkbox
-              checked={unsyncedModels.length > 0 && selection.selected.size === unsyncedModels.length}
+              checked={
+                unsyncedModels.length > 0 && selection.selected.size === unsyncedModels.length
+              }
               onCheckedChange={selection.onSelectAll}
               disabled={unsyncedModels.length === 0}
             />
@@ -80,7 +89,11 @@ export function SyncModelList({ models, isLoading, onRefetch, selection }: SyncM
               )}
             </TableCell>
             <TableCell>
-              {model.synced ? <Badge variant="secondary">已同步</Badge> : <Badge variant="outline">未同步</Badge>}
+              {model.synced ? (
+                <Badge variant="secondary">已同步</Badge>
+              ) : (
+                <Badge variant="outline">未同步</Badge>
+              )}
             </TableCell>
           </TableRow>
         ))}

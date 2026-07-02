@@ -1,24 +1,24 @@
 export interface CircuitBreakerDecision {
-  nextState: 'closed' | 'open' | 'half_open' | 'cooldown';
-  openUntil: number;
-  cooldownUntil: number;
-  tripCount: number;
-  reason: string | null;
-  shouldFailover: boolean;
+  nextState: 'closed' | 'open' | 'half_open' | 'cooldown'
+  openUntil: number
+  cooldownUntil: number
+  tripCount: number
+  reason: string | null
+  shouldFailover: boolean
 }
 
 export function decideStateTransition(params: {
-  currentState: 'closed' | 'open' | 'half_open' | 'cooldown';
-  currentFailures: number;
-  currentTripCount: number;
-  currentOpenUntil: number;
-  currentCooldownUntil: number;
-  now: number;
-  failureThreshold: number;
-  openDurationMs: number;
-  maxBackoffMs: number;
-  maxTripsBeforeCooldown: number;
-  cooldownDurationMs: number;
+  currentState: 'closed' | 'open' | 'half_open' | 'cooldown'
+  currentFailures: number
+  currentTripCount: number
+  currentOpenUntil: number
+  currentCooldownUntil: number
+  now: number
+  failureThreshold: number
+  openDurationMs: number
+  maxBackoffMs: number
+  maxTripsBeforeCooldown: number
+  cooldownDurationMs: number
 }): CircuitBreakerDecision {
   const {
     currentState,
@@ -32,7 +32,7 @@ export function decideStateTransition(params: {
     maxBackoffMs,
     maxTripsBeforeCooldown,
     cooldownDurationMs,
-  } = params;
+  } = params
 
   if (currentState === 'open') {
     if (now >= currentOpenUntil) {
@@ -43,7 +43,7 @@ export function decideStateTransition(params: {
         tripCount: currentTripCount,
         reason: null,
         shouldFailover: false,
-      };
+      }
     }
     return {
       nextState: 'open',
@@ -52,7 +52,7 @@ export function decideStateTransition(params: {
       tripCount: currentTripCount,
       reason: null,
       shouldFailover: true,
-    };
+    }
   }
 
   if (currentState === 'cooldown') {
@@ -64,7 +64,7 @@ export function decideStateTransition(params: {
         tripCount: 1,
         reason: null,
         shouldFailover: false,
-      };
+      }
     }
     return {
       nextState: 'cooldown',
@@ -73,7 +73,7 @@ export function decideStateTransition(params: {
       tripCount: currentTripCount,
       reason: null,
       shouldFailover: true,
-    };
+    }
   }
 
   if (currentState === 'half_open') {
@@ -85,9 +85,9 @@ export function decideStateTransition(params: {
         tripCount: currentTripCount,
         reason: 'max_trips_reached',
         shouldFailover: true,
-      };
+      }
     }
-    const backoffMs = calculateBackoffPure(openDurationMs, currentTripCount, maxBackoffMs);
+    const backoffMs = calculateBackoffPure(openDurationMs, currentTripCount, maxBackoffMs)
     return {
       nextState: 'open',
       openUntil: now + backoffMs,
@@ -95,7 +95,7 @@ export function decideStateTransition(params: {
       tripCount: currentTripCount,
       reason: 'probe_failed',
       shouldFailover: true,
-    };
+    }
   }
 
   if (currentFailures >= failureThreshold) {
@@ -106,7 +106,7 @@ export function decideStateTransition(params: {
       tripCount: 1,
       reason: 'failure_threshold_reached',
       shouldFailover: true,
-    };
+    }
   }
 
   return {
@@ -116,10 +116,10 @@ export function decideStateTransition(params: {
     tripCount: currentTripCount,
     reason: null,
     shouldFailover: false,
-  };
+  }
 }
 
 function calculateBackoffPure(baseMs: number, tripCount: number, maxMs: number): number {
-  if (tripCount <= 1) return baseMs;
-  return Math.min(baseMs * Math.pow(2, tripCount - 1), maxMs);
+  if (tripCount <= 1) return baseMs
+  return Math.min(baseMs * Math.pow(2, tripCount - 1), maxMs)
 }

@@ -18,15 +18,16 @@
 
 ### 1.2 限制类型
 
-| 限制类型 | 字段名 | 说明 | 示例 |
-|----------|--------|------|------|
-| **RPM** (Requests Per Minute) | `rate_limit_rpm` | 每分钟最大请求数 | 60 次/分钟 |
-| **RPD** (Requests Per Day) | `rate_limit_rpd` | 每天最大请求数 | 1000 次/天 |
-| **Token 额度** | `token_limit_daily` | 每天最大 Token 消耗量 | 100,000 tokens/天 |
+| 限制类型                      | 字段名              | 说明                  | 示例              |
+| ----------------------------- | ------------------- | --------------------- | ----------------- |
+| **RPM** (Requests Per Minute) | `rate_limit_rpm`    | 每分钟最大请求数      | 60 次/分钟        |
+| **RPD** (Requests Per Day)    | `rate_limit_rpd`    | 每天最大请求数        | 1000 次/天        |
+| **Token 额度**                | `token_limit_daily` | 每天最大 Token 消耗量 | 100,000 tokens/天 |
 
 ### 1.3 用户场景
 
 #### 场景 1：个人开发者控制成本
+
 ```
 用户创建虚拟密钥 → 设置 RPM=10, RPD=100, Token=50000
 → 使用 Cursor 编码 → 达到限额后收到 429 错误
@@ -34,6 +35,7 @@
 ```
 
 #### 场景 2：团队共享密钥
+
 ```
 管理员创建团队密钥 → 设置 RPM=100, RPD=10000, Token=1000000
 → 团队成员共享此密钥 → 所有请求共享限额
@@ -41,6 +43,7 @@
 ```
 
 #### 场景 3：临时访问
+
 ```
 管理员创建临时密钥 → 设置 24 小时过期 + Token 额度=10000
 → 分享给外部顾问 → 顾问使用后自动过期
@@ -67,6 +70,7 @@
 ```
 
 **响应头：**
+
 ```
 X-RateLimit-Limit: 60
 X-RateLimit-Remaining: 0
@@ -77,6 +81,7 @@ Retry-After: 45
 ### 1.5 管理 UI
 
 #### 密钥创建/编辑表单
+
 ```
 ┌─────────────────────────────────────────────┐
 │  速率限制                                    │
@@ -90,6 +95,7 @@ Retry-After: 45
 ```
 
 #### 密钥详情页（使用量展示）
+
 ```
 ┌─────────────────────────────────────────────┐
 │  密钥使用量                                  │
@@ -176,49 +182,55 @@ Retry-After: 45
 
 ```typescript
 interface SlidingWindowEntry {
-  timestamp: number  // 请求时间戳 (ms)
-  count: number      // 请求数量
+  timestamp: number // 请求时间戳 (ms)
+  count: number // 请求数量
 }
 
 class SlidingWindowCounter {
-  private windowMs: number      // 窗口大小 (ms)
-  private maxRequests: number   // 最大请求数
+  private windowMs: number // 窗口大小 (ms)
+  private maxRequests: number // 最大请求数
   private entries: SlidingWindowEntry[]
-  
+
   constructor(windowMs: number, maxRequests: number) {
     this.windowMs = windowMs
     this.maxRequests = maxRequests
     this.entries = []
   }
-  
+
   // 记录一次请求
   record(): { allowed: boolean; remaining: number; resetAt: number } {
     const now = Date.now()
     const windowStart = now - this.windowMs
-    
+
     // 清理过期条目
-    this.entries = this.entries.filter(e => e.timestamp > windowStart)
-    
+    this.entries = this.entries.filter((e) => e.timestamp > windowStart)
+
     // 计算当前窗口内的总请求数
     const currentCount = this.entries.reduce((sum, e) => sum + e.count, 0)
-    
+
     if (currentCount >= this.maxRequests) {
       // 超限：返回拒绝信息
       const oldestEntry = this.entries[0]
       const resetAt = oldestEntry ? oldestEntry.timestamp + this.windowMs : now + this.windowMs
       return { allowed: false, remaining: 0, resetAt }
     }
-    
+
     // 允许：记录请求
     this.entries.push({ timestamp: now, count: 1 })
-    return { allowed: true, remaining: this.maxRequests - currentCount - 1, resetAt: windowStart + this.windowMs }
+    return {
+      allowed: true,
+      remaining: this.maxRequests - currentCount - 1,
+      resetAt: windowStart + this.windowMs,
+    }
   }
-  
+
   // 获取当前状态（不记录请求）
   getStatus(): { current: number; limit: number; remaining: number; resetAt: number } {
     const now = Date.now()
     const windowStart = now - this.windowMs
-    const currentCount = this.entries.filter(e => e.timestamp > windowStart).reduce((sum, e) => sum + e.count, 0)
+    const currentCount = this.entries
+      .filter((e) => e.timestamp > windowStart)
+      .reduce((sum, e) => sum + e.count, 0)
     return {
       current: currentCount,
       limit: this.maxRequests,
@@ -235,26 +247,30 @@ class SlidingWindowCounter {
 class DailyAccumulator {
   private maxTokens: number
   private currentTokens: number
-  private resetAt: number  // 每天 00:00 的时间戳
-  
+  private resetAt: number // 每天 00:00 的时间戳
+
   constructor(maxTokens: number) {
     this.maxTokens = maxTokens
     this.currentTokens = 0
     this.resetAt = this.getNextResetTime()
   }
-  
+
   // 记录 token 消耗
   record(tokens: number): { allowed: boolean; remaining: number; resetAt: number } {
     this.checkAndReset()
-    
+
     if (this.currentTokens + tokens > this.maxTokens) {
-      return { allowed: false, remaining: Math.max(0, this.maxTokens - this.currentTokens), resetAt: this.resetAt }
+      return {
+        allowed: false,
+        remaining: Math.max(0, this.maxTokens - this.currentTokens),
+        resetAt: this.resetAt,
+      }
     }
-    
+
     this.currentTokens += tokens
     return { allowed: true, remaining: this.maxTokens - this.currentTokens, resetAt: this.resetAt }
   }
-  
+
   // 检查是否需要重置
   private checkAndReset() {
     if (Date.now() >= this.resetAt) {
@@ -262,7 +278,7 @@ class DailyAccumulator {
       this.resetAt = this.getNextResetTime()
     }
   }
-  
+
   private getNextResetTime(): number {
     const now = new Date()
     const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
@@ -289,22 +305,25 @@ interface RateLimitResult {
 }
 
 class RateLimitEngine {
-  private counters: Map<string, {
-    rpm: SlidingWindowCounter | null
-    rpd: SlidingWindowCounter | null
-    token: DailyAccumulator | null
-  }>
-  
+  private counters: Map<
+    string,
+    {
+      rpm: SlidingWindowCounter | null
+      rpd: SlidingWindowCounter | null
+      token: DailyAccumulator | null
+    }
+  >
+
   constructor() {
     this.counters = new Map()
     // 每 5 分钟清理过期计数器
     setInterval(() => this.cleanup(), 5 * 60 * 1000)
   }
-  
+
   // 检查速率限制
   check(keyId: string, config: RateLimitConfig, tokens?: number): RateLimitResult {
     const keyCounters = this.getOrCreateCounters(keyId, config)
-    
+
     // 检查 RPM
     if (keyCounters.rpm) {
       const rpmResult = keyCounters.rpm.record()
@@ -312,7 +331,7 @@ class RateLimitEngine {
         return { allowed: false, reason: 'RPM limit exceeded', rpm: rpmResult }
       }
     }
-    
+
     // 检查 RPD
     if (keyCounters.rpd) {
       const rpdResult = keyCounters.rpd.record()
@@ -320,7 +339,7 @@ class RateLimitEngine {
         return { allowed: false, reason: 'RPD limit exceeded', rpd: rpdResult }
       }
     }
-    
+
     // 检查 Token 额度
     if (keyCounters.token && tokens) {
       const tokenResult = keyCounters.token.record(tokens)
@@ -328,16 +347,22 @@ class RateLimitEngine {
         return { allowed: false, reason: 'Token limit exceeded', token: tokenResult }
       }
     }
-    
+
     // 返回状态信息
     return {
       allowed: true,
       rpm: keyCounters.rpm?.getStatus(),
       rpd: keyCounters.rpd?.getStatus(),
-      token: keyCounters.token ? { limit: keyCounters.token['maxTokens'], remaining: keyCounters.token['maxTokens'] - keyCounters.token['currentTokens'], resetAt: keyCounters.token['resetAt'] } : undefined,
+      token: keyCounters.token
+        ? {
+            limit: keyCounters.token['maxTokens'],
+            remaining: keyCounters.token['maxTokens'] - keyCounters.token['currentTokens'],
+            resetAt: keyCounters.token['resetAt'],
+          }
+        : undefined,
     }
   }
-  
+
   // 获取当前状态（不记录请求）
   getStatus(keyId: string, config: RateLimitConfig): RateLimitResult {
     const keyCounters = this.getOrCreateCounters(keyId, config)
@@ -345,10 +370,16 @@ class RateLimitEngine {
       allowed: true,
       rpm: keyCounters.rpm?.getStatus(),
       rpd: keyCounters.rpd?.getStatus(),
-      token: keyCounters.token ? { limit: keyCounters.token['maxTokens'], remaining: keyCounters.token['maxTokens'] - keyCounters.token['currentTokens'], resetAt: keyCounters.token['resetAt'] } : undefined,
+      token: keyCounters.token
+        ? {
+            limit: keyCounters.token['maxTokens'],
+            remaining: keyCounters.token['maxTokens'] - keyCounters.token['currentTokens'],
+            resetAt: keyCounters.token['resetAt'],
+          }
+        : undefined,
     }
   }
-  
+
   private getOrCreateCounters(keyId: string, config: RateLimitConfig) {
     let counters = this.counters.get(keyId)
     if (!counters) {
@@ -361,12 +392,12 @@ class RateLimitEngine {
     }
     return counters
   }
-  
+
   private cleanup() {
     // 清理 1 小时无活动的计数器
     const oneHourAgo = Date.now() - 60 * 60 * 1000
     for (const [keyId, counters] of this.counters) {
-      const hasActivity = 
+      const hasActivity =
         (counters.rpm && counters.rpm['entries'].length > 0) ||
         (counters.rpd && counters.rpd['entries'].length > 0)
       if (!hasActivity) {
@@ -388,7 +419,7 @@ import { rateLimitEngine } from '../services/rate-limit-engine'
 
 export const virtualKeyMiddleware = async (c: Context, next: Next) => {
   // ... 现有的密钥验证逻辑 ...
-  
+
   // 速率限制检查
   if (key.rateLimitRpm || key.rateLimitRpd || key.tokenLimitDaily) {
     const result = rateLimitEngine.check(key.id, {
@@ -396,29 +427,41 @@ export const virtualKeyMiddleware = async (c: Context, next: Next) => {
       rpd: key.rateLimitRpd,
       tokenLimitDaily: key.tokenLimitDaily,
     })
-    
+
     if (!result.allowed) {
-      return c.json({
-        error: {
-          message: `Rate limit exceeded: ${result.reason}`,
-          type: 'rate_limit_error',
-          code: 'RATE_LIMIT_EXCEEDED',
-          limit: {
-            type: result.reason?.includes('RPM') ? 'rpm' : result.reason?.includes('RPD') ? 'rpd' : 'token',
-            limit: result.rpm?.limit || result.rpd?.limit || result.token?.limit,
-            remaining: 0,
-            resetAt: new Date(result.rpm?.resetAt || result.rpd?.resetAt || result.token?.resetAt || Date.now()).toISOString(),
-          }
-        }
-      }, 429)
+      return c.json(
+        {
+          error: {
+            message: `Rate limit exceeded: ${result.reason}`,
+            type: 'rate_limit_error',
+            code: 'RATE_LIMIT_EXCEEDED',
+            limit: {
+              type: result.reason?.includes('RPM')
+                ? 'rpm'
+                : result.reason?.includes('RPD')
+                  ? 'rpd'
+                  : 'token',
+              limit: result.rpm?.limit || result.rpd?.limit || result.token?.limit,
+              remaining: 0,
+              resetAt: new Date(
+                result.rpm?.resetAt || result.rpd?.resetAt || result.token?.resetAt || Date.now(),
+              ).toISOString(),
+            },
+          },
+        },
+        429,
+      )
     }
-    
+
     // 设置响应头
     c.header('X-RateLimit-Limit', String(result.rpm?.limit || result.rpd?.limit || ''))
     c.header('X-RateLimit-Remaining', String(result.rpm?.remaining || result.rpd?.remaining || ''))
-    c.header('X-RateLimit-Reset', String(Math.floor((result.rpm?.resetAt || result.rpd?.resetAt || Date.now()) / 1000)))
+    c.header(
+      'X-RateLimit-Reset',
+      String(Math.floor((result.rpm?.resetAt || result.rpd?.resetAt || Date.now()) / 1000)),
+    )
   }
-  
+
   await next()
 }
 ```
@@ -457,20 +500,23 @@ CREATE TABLE rate_limit_snapshots (
 
 ```typescript
 // 每 5 分钟将计数器快照写入 DB
-setInterval(async () => {
-  for (const [keyId, counters] of rateLimitEngine.counters) {
-    if (counters.rpm) {
-      await db.insert(rateLimitSnapshots).values({
-        keyId,
-        windowType: 'rpm',
-        windowStart: new Date(Date.now() - 60 * 1000),
-        windowEnd: new Date(),
-        count: counters.rpm.getStatus().current,
-      })
+setInterval(
+  async () => {
+    for (const [keyId, counters] of rateLimitEngine.counters) {
+      if (counters.rpm) {
+        await db.insert(rateLimitSnapshots).values({
+          keyId,
+          windowType: 'rpm',
+          windowStart: new Date(Date.now() - 60 * 1000),
+          windowEnd: new Date(),
+          count: counters.rpm.getStatus().current,
+        })
+      }
+      // ... 类似处理 rpd 和 token
     }
-    // ... 类似处理 rpd 和 token
-  }
-}, 5 * 60 * 1000)
+  },
+  5 * 60 * 1000,
+)
 ```
 
 #### 2.4.3 启动时恢复
@@ -482,7 +528,7 @@ export async function recoverRateLimitState(db: Database) {
     .selectFrom('rate_limit_snapshots')
     .where('window_end', '>', new Date(Date.now() - 24 * 60 * 60 * 1000))
     .execute()
-  
+
   // 根据快照恢复计数器状态
   for (const snapshot of recentSnapshots) {
     const counters = rateLimitEngine.getOrCreateCounters(snapshot.keyId, {})
@@ -500,12 +546,18 @@ GET /api/keys/:id/usage
 ```
 
 **响应：**
+
 ```json
 {
   "keyId": "xxx",
   "rpm": { "limit": 60, "current": 45, "remaining": 15, "resetAt": "2026-06-06T10:31:00Z" },
   "rpd": { "limit": 1000, "current": 320, "remaining": 680, "resetAt": "2026-06-07T00:00:00Z" },
-  "token": { "limit": 100000, "current": 65000, "remaining": 35000, "resetAt": "2026-06-07T00:00:00Z" }
+  "token": {
+    "limit": 100000,
+    "current": 65000,
+    "remaining": 35000,
+    "resetAt": "2026-06-07T00:00:00Z"
+  }
 }
 ```
 
@@ -516,6 +568,7 @@ POST /api/keys/:id/reset-usage
 ```
 
 **请求体：**
+
 ```json
 {
   "window": "rpm" | "rpd" | "token" | "all"
@@ -528,43 +581,43 @@ POST /api/keys/:id/reset-usage
 
 ### Phase 1: 核心引擎（2-3 天）
 
-| 任务 | 文件 | 产出 |
-|------|------|------|
-| 实现 SlidingWindowCounter | `apps/gateway/src/gateway/services/rate-limit-engine.ts` | 滑动窗口计数器 |
-| 实现 DailyAccumulator | 同上 | 日累计器 |
-| 实现 RateLimitEngine | 同上 | 速率限制引擎 |
-| 单元测试 | `apps/gateway/src/gateway/services/rate-limit-engine.test.ts` | 测试覆盖 |
+| 任务                      | 文件                                                          | 产出           |
+| ------------------------- | ------------------------------------------------------------- | -------------- |
+| 实现 SlidingWindowCounter | `apps/gateway/src/gateway/services/rate-limit-engine.ts`      | 滑动窗口计数器 |
+| 实现 DailyAccumulator     | 同上                                                          | 日累计器       |
+| 实现 RateLimitEngine      | 同上                                                          | 速率限制引擎   |
+| 单元测试                  | `apps/gateway/src/gateway/services/rate-limit-engine.test.ts` | 测试覆盖       |
 
 ### Phase 2: 中间件集成（1-2 天）
 
-| 任务 | 文件 | 产出 |
-|------|------|------|
-| 修改 virtual-key.ts | `apps/gateway/src/middleware/virtual-key.ts` | 添加速率限制检查 |
-| 添加响应头 | 同上 | X-RateLimit-* 头 |
-| Token 消耗追踪 | `apps/gateway/src/gateway/services/response-handlers/streaming.ts` | 完成后更新 token |
+| 任务                | 文件                                                               | 产出              |
+| ------------------- | ------------------------------------------------------------------ | ----------------- |
+| 修改 virtual-key.ts | `apps/gateway/src/middleware/virtual-key.ts`                       | 添加速率限制检查  |
+| 添加响应头          | 同上                                                               | X-RateLimit-\* 头 |
+| Token 消耗追踪      | `apps/gateway/src/gateway/services/response-handlers/streaming.ts` | 完成后更新 token  |
 
 ### Phase 3: API 扩展（1 天）
 
-| 任务 | 文件 | 产出 |
-|------|------|------|
-| 添加使用量查询 API | `apps/gateway/src/features/keys/api.ts` | GET /:id/usage |
-| 添加计数器重置 API | 同上 | POST /:id/reset-usage |
+| 任务               | 文件                                    | 产出                  |
+| ------------------ | --------------------------------------- | --------------------- |
+| 添加使用量查询 API | `apps/gateway/src/features/keys/api.ts` | GET /:id/usage        |
+| 添加计数器重置 API | 同上                                    | POST /:id/reset-usage |
 
 ### Phase 4: 管理 UI（1-2 天）
 
-| 任务 | 文件 | 产出 |
-|------|------|------|
-| 密钥表单添加速率限制字段 | `apps/web/app/routes/admin/keys/` | 表单更新 |
-| 密钥详情页添加使用量展示 | 同上 | 使用量卡片 |
-| 实时使用量刷新 | 同上 | 轮询或 SSE |
+| 任务                     | 文件                              | 产出       |
+| ------------------------ | --------------------------------- | ---------- |
+| 密钥表单添加速率限制字段 | `apps/web/app/routes/admin/keys/` | 表单更新   |
+| 密钥详情页添加使用量展示 | 同上                              | 使用量卡片 |
+| 实时使用量刷新           | 同上                              | 轮询或 SSE |
 
 ### Phase 5: DB 持久化（可选，1-2 天）
 
-| 任务 | 文件 | 产出 |
-|------|------|------|
-| 创建快照表 | 迁移文件 | rate_limit_snapshots 表 |
-| 定期快照 | `apps/gateway/src/gateway/services/rate-limit-engine.ts` | 快照逻辑 |
-| 启动恢复 | `apps/gateway/src/createEngine.ts` | 恢复逻辑 |
+| 任务       | 文件                                                     | 产出                    |
+| ---------- | -------------------------------------------------------- | ----------------------- |
+| 创建快照表 | 迁移文件                                                 | rate_limit_snapshots 表 |
+| 定期快照   | `apps/gateway/src/gateway/services/rate-limit-engine.ts` | 快照逻辑                |
+| 启动恢复   | `apps/gateway/src/createEngine.ts`                       | 恢复逻辑                |
 
 ---
 

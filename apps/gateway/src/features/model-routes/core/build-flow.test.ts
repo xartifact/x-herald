@@ -9,13 +9,9 @@ const TEST_VMS = [
   { id: 'vm2', name: 'claude-3', displayName: 'Claude 3' },
 ]
 
-const TEST_GROUPS = [
-  { id: 'group1', name: 'PremiumGroup', displayName: 'Premium Models' },
-]
+const TEST_GROUPS = [{ id: 'group1', name: 'PremiumGroup', displayName: 'Premium Models' }]
 
-const TEST_INSTANCES = [
-  { id: 'inst1', name: 'gpt-4-turbo' },
-]
+const TEST_INSTANCES = [{ id: 'inst1', name: 'gpt-4-turbo' }]
 
 const TEST_ROUTES: ModelRoute[] = [
   {
@@ -23,9 +19,7 @@ const TEST_ROUTES: ModelRoute[] = [
     name: 'Premium Route',
     description: null,
     accessModelIds: ['vm1'],
-    conditions: [
-      { field: 'request.model', operator: 'eq' as const, value: 'gpt-4' },
-    ],
+    conditions: [{ field: 'request.model', operator: 'eq' as const, value: 'gpt-4' }],
     action: { type: 'route_to_group', targetId: 'group1' },
     priority: 10,
     enabled: true,
@@ -60,32 +54,28 @@ describe('buildFlowFromData → compileFlowToRoutes integration', () => {
     expect(nodes.length).toBeGreaterThan(0)
 
     // Not all positions should be {x: 0, y: 0} — dagre MUST assign real positions
-    const allZero = nodes.every(
-      n => n.position.x === 0 && n.position.y === 0,
-    )
+    const allZero = nodes.every((n) => n.position.x === 0 && n.position.y === 0)
     expect(allZero).toBe(false)
 
     // At least some nodes must have x > 0 or y > 0
-    const hasNonZeroPosition = nodes.some(
-      n => n.position.x !== 0 || n.position.y !== 0,
-    )
+    const hasNonZeroPosition = nodes.some((n) => n.position.x !== 0 || n.position.y !== 0)
     expect(hasNonZeroPosition).toBe(true)
   })
 
   test('produces VM entry nodes for each virtual model', () => {
     const { nodes } = buildFlowFromData(TEST_ROUTES, TEST_VMS, TEST_GROUPS, TEST_INSTANCES)
 
-    const vmNodes = nodes.filter(n => n.type === 'modelTrigger')
+    const vmNodes = nodes.filter((n) => n.type === 'modelTrigger')
     expect(vmNodes.length).toBe(2)
 
-    const vmIds = vmNodes.map(n => (n.data as any).vmId).sort()
+    const vmIds = vmNodes.map((n) => (n.data as any).vmId).toSorted()
     expect(vmIds).toEqual(['vm1', 'vm2'])
   })
 
   test('produces condition nodes for routes with conditions', () => {
     const { nodes } = buildFlowFromData(TEST_ROUTES, TEST_VMS, TEST_GROUPS, TEST_INSTANCES)
 
-    const condNodes = nodes.filter(n => n.type === 'condition')
+    const condNodes = nodes.filter((n) => n.type === 'condition')
     // Route r1 has 1 condition; r2 has 0
     expect(condNodes.length).toBe(1)
 
@@ -99,7 +89,7 @@ describe('buildFlowFromData → compileFlowToRoutes integration', () => {
   test('produces target node for route_to_group action', () => {
     const { nodes } = buildFlowFromData(TEST_ROUTES, TEST_VMS, TEST_GROUPS, TEST_INSTANCES)
 
-    const targetNodes = nodes.filter(n => n.type === 'target')
+    const targetNodes = nodes.filter((n) => n.type === 'target')
     expect(targetNodes.length).toBe(1)
 
     const targetData = targetNodes[0].data as any
@@ -112,7 +102,7 @@ describe('buildFlowFromData → compileFlowToRoutes integration', () => {
   test('produces fallback node for route with fallback action', () => {
     const { nodes } = buildFlowFromData(TEST_ROUTES, TEST_VMS, TEST_GROUPS, TEST_INSTANCES)
 
-    const fallbackNodes = nodes.filter(n => n.type === 'fallback')
+    const fallbackNodes = nodes.filter((n) => n.type === 'fallback')
     expect(fallbackNodes.length).toBe(1)
 
     const fallbackData = fallbackNodes[0].data as any
@@ -124,7 +114,7 @@ describe('buildFlowFromData → compileFlowToRoutes integration', () => {
 
     // Edges from VM to first condition should NOT have sourceHandle
     const vmToCondEdges = edges.filter(
-      e => e.source.startsWith('vm-') && e.target.startsWith('cond-'),
+      (e) => e.source.startsWith('vm-') && e.target.startsWith('cond-'),
     )
     for (const edge of vmToCondEdges) {
       expect(edge.sourceHandle).toBeUndefined()
@@ -132,7 +122,7 @@ describe('buildFlowFromData → compileFlowToRoutes integration', () => {
 
     // Edges from condition to target (sourceHandle === 'true') should exist
     const condToTargetTrue = edges.filter(
-      e => e.sourceHandle === 'true' && e.source.startsWith('cond-'),
+      (e) => e.sourceHandle === 'true' && e.source.startsWith('cond-'),
     )
     expect(condToTargetTrue.length).toBeGreaterThan(0)
   })
@@ -141,12 +131,12 @@ describe('buildFlowFromData → compileFlowToRoutes integration', () => {
     const { edges } = buildFlowFromData(TEST_ROUTES, TEST_VMS, TEST_GROUPS, TEST_INSTANCES)
 
     const vmToCondEdges = edges.filter(
-      e => e.source.startsWith('vm-') && e.target.startsWith('cond-'),
+      (e) => e.source.startsWith('vm-') && e.target.startsWith('cond-'),
     )
     expect(vmToCondEdges.length).toBeGreaterThan(0)
 
     // Should connect vm-vm1 to cond for route r1
-    const vm1Edges = vmToCondEdges.filter(e => e.source === 'vm-vm1')
+    const vm1Edges = vmToCondEdges.filter((e) => e.source === 'vm-vm1')
     expect(vm1Edges.length).toBe(1)
   })
 
@@ -155,7 +145,7 @@ describe('buildFlowFromData → compileFlowToRoutes integration', () => {
 
     // r2 has no conditions, so vm-vm2 → fallback leaf
     const vmToFallback = edges.filter(
-      e => e.source === 'vm-vm2' && e.target.startsWith('fallback-'),
+      (e) => e.source === 'vm-vm2' && e.target.startsWith('fallback-'),
     )
     expect(vmToFallback.length).toBe(1)
   })
@@ -183,7 +173,7 @@ describe('buildFlowFromData → compileFlowToRoutes integration', () => {
     const { nodes, edges } = buildFlowFromData(TEST_ROUTES, TEST_VMS, TEST_GROUPS, TEST_INSTANCES)
     const routes = compileFlowToRoutes(nodes, edges)
 
-    const actionTypes = routes.map(r => r.action.type)
+    const actionTypes = routes.map((r) => r.action.type)
 
     // Must contain both fallback and route_to_group
     expect(actionTypes).toContain('route_to_group')
@@ -219,7 +209,7 @@ describe('buildFlowFromData → compileFlowToRoutes integration', () => {
   test('node positions have variety (not all on same row or column)', () => {
     const { nodes } = buildFlowFromData(TEST_ROUTES, TEST_VMS, TEST_GROUPS, TEST_INSTANCES)
 
-    const yValues = nodes.map(n => n.position.y)
+    const yValues = nodes.map((n) => n.position.y)
     const uniqueY = new Set(yValues)
 
     // TB layout should have multiple y layers
@@ -229,11 +219,9 @@ describe('buildFlowFromData → compileFlowToRoutes integration', () => {
   test('VM nodes are positioned at the top (smallest y values)', () => {
     const { nodes } = buildFlowFromData(TEST_ROUTES, TEST_VMS, TEST_GROUPS, TEST_INSTANCES)
 
-    const vmNodes = nodes.filter(n => n.type === 'modelTrigger')
-    const vmYValues = vmNodes.map(n => n.position.y)
-    const allOtherY = nodes
-      .filter(n => n.type !== 'modelTrigger')
-      .map(n => n.position.y)
+    const vmNodes = nodes.filter((n) => n.type === 'modelTrigger')
+    const vmYValues = vmNodes.map((n) => n.position.y)
+    const allOtherY = nodes.filter((n) => n.type !== 'modelTrigger').map((n) => n.position.y)
 
     // VM nodes should be at the top (lower y) than non-VM nodes
     if (vmYValues.length > 0 && allOtherY.length > 0) {

@@ -1,1 +1,5 @@
-export { mappingSchema, thinkingMappingFormSchema as formSchema, type MappingFormData } from '@xartifact/x-llm-gateway-shared'
+export {
+  mappingSchema,
+  thinkingMappingFormSchema as formSchema,
+  type MappingFormData,
+} from '@xartifact/x-llm-gateway-shared'

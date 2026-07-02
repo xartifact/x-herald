@@ -1,4 +1,4 @@
-import { pgTable, varchar, timestamp, uuid, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, varchar, timestamp, uuid, jsonb } from 'drizzle-orm/pg-core'
 
 /**
  * 网关配置表
@@ -11,7 +11,7 @@ export const gatewayConfigs = pgTable('gateway_configs', {
   description: varchar('description', { length: 255 }),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+})
 
-export type GatewayConfig = typeof gatewayConfigs.$inferSelect;
-export type NewGatewayConfig = typeof gatewayConfigs.$inferInsert;
+export type GatewayConfig = typeof gatewayConfigs.$inferSelect
+export type NewGatewayConfig = typeof gatewayConfigs.$inferInsert

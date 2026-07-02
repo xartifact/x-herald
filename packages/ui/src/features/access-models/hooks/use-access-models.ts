@@ -56,7 +56,7 @@ export function useCreateAccessModel() {
       const response = await post<ApiResponse<AccessModel>>(
         '/api/access-models',
         data as unknown as Record<string, unknown>,
-        { extractData: false }
+        { extractData: false },
       )
       if (!response.success) {
         throw new Error(response.error || '创建接入模型失败')
@@ -81,7 +81,7 @@ export function useUpdateAccessModel() {
       const response = await put<ApiResponse<AccessModel>>(
         `/api/access-models/${id}`,
         data as unknown as Record<string, unknown>,
-        { extractData: false }
+        { extractData: false },
       )
       if (!response.success) {
         throw new Error(response.error || '更新接入模型失败')
@@ -130,7 +130,7 @@ export function useToggleAccessModel() {
       const response = await patch<ApiResponse<AccessModel>>(
         `/api/access-models/${id}/toggle`,
         undefined,
-        { extractData: false }
+        { extractData: false },
       )
       if (!response.success) {
         throw new Error(response.error || '切换状态失败')

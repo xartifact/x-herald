@@ -3,7 +3,13 @@
 import { Search, RefreshCw } from 'lucide-react'
 import { Button } from '../../../shared/components/ui/button'
 import { Input } from '../../../shared/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../shared/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../../shared/components/ui/select'
 import { Switch } from '../../../shared/components/ui/switch'
 import { Label } from '../../../shared/components/ui/label'
 import { Card, CardContent } from '../../../shared/components/ui/card'
@@ -82,7 +88,9 @@ export function LogSearchFilter({
                   Object.entries(clientTypeOptions)
                     .filter(([type]) => type !== 'unknown')
                     .map(([type, name]) => (
-                      <SelectItem key={type} value={type}>{name}</SelectItem>
+                      <SelectItem key={type} value={type}>
+                        {name}
+                      </SelectItem>
                     ))}
               </SelectContent>
             </Select>

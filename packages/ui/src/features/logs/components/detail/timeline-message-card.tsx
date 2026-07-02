@@ -27,7 +27,13 @@ interface TimelineMessageCardProps {
   onToggleExpand: () => void
 }
 
-export function TimelineMessageCard({ roleInfo, message, displayState, onSelect, onToggleExpand }: TimelineMessageCardProps) {
+export function TimelineMessageCard({
+  roleInfo,
+  message,
+  displayState,
+  onSelect,
+  onToggleExpand,
+}: TimelineMessageCardProps) {
   const [isFullText, setIsFullText] = useState(false)
   const { isExpanded, isSelected } = displayState
 
@@ -36,7 +42,8 @@ export function TimelineMessageCard({ roleInfo, message, displayState, onSelect,
   const rawText = extractMessageText(message)
   const hasContent = rawText.length > 0
   const needsTruncation = rawText.length > PREVIEW_LENGTH
-  const displayText = hasContent && needsTruncation && !isFullText ? rawText.slice(0, PREVIEW_LENGTH) + '…' : rawText
+  const displayText =
+    hasContent && needsTruncation && !isFullText ? rawText.slice(0, PREVIEW_LENGTH) + '…' : rawText
 
   return (
     <Card
@@ -46,23 +53,34 @@ export function TimelineMessageCard({ roleInfo, message, displayState, onSelect,
       <CardHeader className="py-3 px-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <Checkbox checked={isSelected} onCheckedChange={onSelect} onClick={(e) => e.stopPropagation()} className="flex-shrink-0" />
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={onSelect}
+              onClick={(e) => e.stopPropagation()}
+              className="flex-shrink-0"
+            />
             <div className={`p-1.5 rounded-md ${config.color}`}>
               <Icon className={`h-4 w-4 ${config.iconColor}`} />
             </div>
             <div className="flex items-center gap-2">
               <span className="font-medium text-sm">#{roleInfo.index}</span>
-              <Badge variant="outline" className={`text-xs ${config.color}`}>{config.label}</Badge>
+              <Badge variant="outline" className={`text-xs ${config.color}`}>
+                {config.label}
+              </Badge>
             </div>
           </div>
           <div className="flex items-center gap-2">
             {roleInfo.length !== undefined && (
-              <span className="text-xs text-muted-foreground">{roleInfo.length.toLocaleString()} 字符</span>
+              <span className="text-xs text-muted-foreground">
+                {roleInfo.length.toLocaleString()} 字符
+              </span>
             )}
-            {hasContent && (isExpanded
-              ? <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-              : <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-            )}
+            {hasContent &&
+              (isExpanded ? (
+                <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              ) : (
+                <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              ))}
           </div>
         </div>
       </CardHeader>
@@ -74,7 +92,9 @@ export function TimelineMessageCard({ roleInfo, message, displayState, onSelect,
               <span className="text-muted-foreground">内容类型:</span>
               <div className="flex gap-1">
                 {roleInfo.contentType.map((type, i) => (
-                  <Badge key={i} variant="secondary" className="text-xs">{type === 'image_url' ? 'image' : type}</Badge>
+                  <Badge key={i} variant="secondary" className="text-xs">
+                    {type === 'image_url' ? 'image' : type}
+                  </Badge>
                 ))}
               </div>
             </div>
@@ -82,7 +102,10 @@ export function TimelineMessageCard({ roleInfo, message, displayState, onSelect,
           {roleInfo.role === 'assistant' && roleInfo.toolCallCount !== undefined && (
             <div className="flex items-center gap-2">
               <span className="text-muted-foreground">工具调用:</span>
-              <Badge variant="secondary" className="text-xs bg-amber-50 text-amber-700 border-amber-200">
+              <Badge
+                variant="secondary"
+                className="text-xs bg-amber-50 text-amber-700 border-amber-200"
+              >
                 🔧 {roleInfo.toolCallCount} 个
               </Badge>
             </div>
@@ -92,30 +115,45 @@ export function TimelineMessageCard({ roleInfo, message, displayState, onSelect,
               {roleInfo.toolName && (
                 <div className="flex items-center gap-2">
                   <span className="text-muted-foreground">工具名称:</span>
-                  <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">{roleInfo.toolName}</code>
+                  <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">
+                    {roleInfo.toolName}
+                  </code>
                 </div>
               )}
               {roleInfo.toolCallId && (
                 <div className="flex items-center gap-2">
                   <span className="text-muted-foreground">调用 ID:</span>
-                  <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono truncate max-w-[200px]">{roleInfo.toolCallId}</code>
+                  <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono truncate max-w-[200px]">
+                    {roleInfo.toolCallId}
+                  </code>
                 </div>
               )}
             </>
           )}
           {isExpanded && hasContent && (
             <div className="mt-2 pt-2 border-t">
-              <pre className="text-xs whitespace-pre-wrap break-words font-sans text-foreground/80 leading-relaxed">{displayText}</pre>
+              <pre className="text-xs whitespace-pre-wrap break-words font-sans text-foreground/80 leading-relaxed">
+                {displayText}
+              </pre>
               {needsTruncation && (
-                <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setIsFullText(v => !v) }}
-                  className="mt-1 h-6 px-2 text-xs text-muted-foreground hover:text-foreground">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setIsFullText((v) => !v)
+                  }}
+                  className="mt-1 h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+                >
                   {isFullText ? '收起' : `展开全文 (${rawText.length.toLocaleString()} 字符)`}
                 </Button>
               )}
             </div>
           )}
           {isExpanded && !hasContent && (
-            <div className="mt-2 pt-2 border-t text-xs text-muted-foreground">暂无可预览的文本内容</div>
+            <div className="mt-2 pt-2 border-t text-xs text-muted-foreground">
+              暂无可预览的文本内容
+            </div>
           )}
         </div>
       </CardContent>

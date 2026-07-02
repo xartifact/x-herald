@@ -24,7 +24,13 @@ interface ProviderCardBodyProps {
   instanceHandlers: InstanceHandlers
 }
 
-export function ProviderCardBody({ provider, instances, showApiKey, onToggleShowApiKey, instanceHandlers }: ProviderCardBodyProps) {
+export function ProviderCardBody({
+  provider,
+  instances,
+  showApiKey,
+  onToggleShowApiKey,
+  instanceHandlers,
+}: ProviderCardBodyProps) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-4 text-sm">
@@ -35,7 +41,12 @@ export function ProviderCardBody({ provider, instances, showApiKey, onToggleShow
               <code className="text-xs text-muted-foreground">
                 {showApiKey ? provider.apiKey : '•'.repeat(Math.min(provider.apiKey.length, 20))}
               </code>
-              <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={onToggleShowApiKey}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0"
+                onClick={onToggleShowApiKey}
+              >
                 {showApiKey ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
               </Button>
             </>

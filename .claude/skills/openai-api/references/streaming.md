@@ -15,15 +15,17 @@ Server-Sent Events (SSE) format for OpenAI streaming responses.
 When `stream: true` is set in the request, OpenAI returns a stream of Server-Sent Events (SSE) instead of a single JSON response.
 
 **Request:**
+
 ```json
 {
   "model": "gpt-4o",
-  "messages": [{"role": "user", "content": "Hello"}],
+  "messages": [{ "role": "user", "content": "Hello" }],
   "stream": true
 }
 ```
 
 **Response Headers:**
+
 ```http
 Content-Type: text/event-stream
 Cache-Control: no-cache
@@ -44,6 +46,7 @@ data: [DONE]
 ```
 
 Each event:
+
 - Starts with `data: `
 - Contains JSON payload
 - Ends with double newline (`\n\n`)
@@ -53,33 +56,33 @@ Each event:
 
 ```typescript
 interface ChatCompletionChunk {
-  id: string;
-  object: 'chat.completion.chunk';
-  created: number;
-  model: string;
+  id: string
+  object: 'chat.completion.chunk'
+  created: number
+  model: string
   choices: Array<{
-    index: number;
+    index: number
     delta: {
-      role?: 'assistant';
-      content?: string;
+      role?: 'assistant'
+      content?: string
       tool_calls?: Array<{
-        index: number;
-        id?: string;
-        type?: 'function';
+        index: number
+        id?: string
+        type?: 'function'
         function?: {
-          name?: string;
-          arguments?: string;
-        };
-      }>;
-    };
-    finish_reason: string | null;
-    logprobs?: object;
-  }>;
+          name?: string
+          arguments?: string
+        }
+      }>
+    }
+    finish_reason: string | null
+    logprobs?: object
+  }>
   usage?: {
-    prompt_tokens: number;
-    completion_tokens: number;
-    total_tokens: number;
-  };
+    prompt_tokens: number
+    completion_tokens: number
+    total_tokens: number
+  }
 }
 ```
 
@@ -130,6 +133,7 @@ Subsequent chunks contain content fragments:
 ```
 
 Content accumulates across chunks:
+
 ```
 Chunk 1: {"delta": {"content": "Hello"}}
 Chunk 2: {"delta": {"content": " there"}}
@@ -142,6 +146,7 @@ Final: "Hello there!"
 For function calling, chunks contain tool call fragments:
 
 **Tool call start:**
+
 ```json
 {
   "id": "chatcmpl-abc123",
@@ -171,6 +176,7 @@ For function calling, chunks contain tool call fragments:
 ```
 
 **Tool call arguments (spread across chunks):**
+
 ```json
 {
   "choices": [
@@ -180,7 +186,7 @@ For function calling, chunks contain tool call fragments:
           {
             "index": 0,
             "function": {
-              "arguments": '{"lo'
+              "arguments": "{\"lo"
             }
           }
         ]
@@ -199,7 +205,7 @@ For function calling, chunks contain tool call fragments:
           {
             "index": 0,
             "function": {
-              "arguments": 'cation":'
+              "arguments": "cation\":"
             }
           }
         ]
@@ -248,43 +254,43 @@ async function streamChatCompletion(messages: Message[]) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
+      Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
       model: 'gpt-4o',
       messages,
       stream: true,
     }),
-  });
+  })
 
-  const reader = response.body?.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
+  const reader = response.body?.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
 
   while (true) {
-    const { done, value } = await reader!.read();
-    if (done) break;
+    const { done, value } = await reader!.read()
+    if (done) break
 
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop() || '';
+    buffer += decoder.decode(value, { stream: true })
+    const lines = buffer.split('\n')
+    buffer = lines.pop() || ''
 
     for (const line of lines) {
       if (line.startsWith('data: ')) {
-        const data = line.slice(6);
+        const data = line.slice(6)
         if (data === '[DONE]') {
-          console.log('Stream complete');
-          return;
+          console.log('Stream complete')
+          return
         }
 
         try {
-          const chunk = JSON.parse(data);
-          const content = chunk.choices[0]?.delta?.content;
+          const chunk = JSON.parse(data)
+          const content = chunk.choices[0]?.delta?.content
           if (content) {
-            process.stdout.write(content);
+            process.stdout.write(content)
           }
         } catch (error) {
-          console.error('Parse error:', error);
+          console.error('Parse error:', error)
         }
       }
     }
@@ -295,27 +301,27 @@ async function streamChatCompletion(messages: Message[]) {
 ### Node.js
 
 ```typescript
-import { Readable } from 'stream';
+import { Readable } from 'stream'
 
 async function* streamChunks(response: Response): AsyncGenerator<ChatCompletionChunk> {
-  const reader = response.body!.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
+  const reader = response.body!.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
 
   while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
+    const { done, value } = await reader.read()
+    if (done) break
 
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop() || '';
+    buffer += decoder.decode(value, { stream: true })
+    const lines = buffer.split('\n')
+    buffer = lines.pop() || ''
 
     for (const line of lines) {
       if (line.startsWith('data: ')) {
-        const data = line.slice(6);
-        if (data === '[DONE]') continue;
+        const data = line.slice(6)
+        if (data === '[DONE]') continue
 
-        yield JSON.parse(data);
+        yield JSON.parse(data)
       }
     }
   }
@@ -324,31 +330,31 @@ async function* streamChunks(response: Response): AsyncGenerator<ChatCompletionC
 // Usage
 const response = await fetch('https://api.openai.com/v1/chat/completions', {
   method: 'POST',
-  headers: { 'Authorization': `Bearer ${apiKey}` },
+  headers: { Authorization: `Bearer ${apiKey}` },
   body: JSON.stringify({ model: 'gpt-4o', messages, stream: true }),
-});
+})
 
 for await (const chunk of streamChunks(response)) {
-  const content = chunk.choices[0]?.delta?.content;
-  if (content) process.stdout.write(content);
+  const content = chunk.choices[0]?.delta?.content
+  if (content) process.stdout.write(content)
 }
 ```
 
 ### Express.js Server (SSE Endpoint)
 
 ```typescript
-import express from 'express';
+import express from 'express'
 
 app.post('/api/chat', async (req, res) => {
   // Set SSE headers
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Content-Type', 'text/event-stream')
+  res.setHeader('Cache-Control', 'no-cache')
+  res.setHeader('Connection', 'keep-alive')
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
@@ -356,76 +362,76 @@ app.post('/api/chat', async (req, res) => {
       messages: req.body.messages,
       stream: true,
     }),
-  });
+  })
 
-  const reader = response.body!.getReader();
-  const decoder = new TextDecoder();
+  const reader = response.body!.getReader()
+  const decoder = new TextDecoder()
 
   try {
     while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
+      const { done, value } = await reader.read()
+      if (done) break
 
-      const chunk = decoder.decode(value);
-      res.write(chunk); // Forward SSE events
+      const chunk = decoder.decode(value)
+      res.write(chunk) // Forward SSE events
     }
   } finally {
-    res.end();
+    res.end()
   }
-});
+})
 ```
 
 ### React Hook
 
 ```typescript
-import { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react'
 
 export function useChatStream() {
-  const [text, setText] = useState('');
-  const [isStreaming, setIsStreaming] = useState(false);
+  const [text, setText] = useState('')
+  const [isStreaming, setIsStreaming] = useState(false)
 
   const sendMessage = useCallback(async (messages: Message[]) => {
-    setIsStreaming(true);
-    setText('');
+    setIsStreaming(true)
+    setText('')
 
     const response = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ messages }),
-    });
+    })
 
-    const reader = response.body!.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
+    const reader = response.body!.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
 
     try {
       while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+        const { done, value } = await reader.read()
+        if (done) break
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
 
         for (const line of lines) {
           if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            if (data === '[DONE]') continue;
+            const data = line.slice(6)
+            if (data === '[DONE]') continue
 
-            const chunk = JSON.parse(data);
-            const content = chunk.choices[0]?.delta?.content;
+            const chunk = JSON.parse(data)
+            const content = chunk.choices[0]?.delta?.content
             if (content) {
-              setText(prev => prev + content);
+              setText((prev) => prev + content)
             }
           }
         }
       }
     } finally {
-      setIsStreaming(false);
+      setIsStreaming(false)
     }
-  }, []);
+  }, [])
 
-  return { text, isStreaming, sendMessage };
+  return { text, isStreaming, sendMessage }
 }
 ```
 
@@ -436,12 +442,12 @@ export function useChatStream() {
 Always handle partial events in the buffer:
 
 ```typescript
-let buffer = '';
+let buffer = ''
 
 // Incoming data
-buffer += decoder.decode(value, { stream: true });
-const lines = buffer.split('\n');
-buffer = lines.pop() || ''; // Keep incomplete line in buffer
+buffer += decoder.decode(value, { stream: true })
+const lines = buffer.split('\n')
+buffer = lines.pop() || '' // Keep incomplete line in buffer
 
 // Process complete lines
 for (const line of lines) {
@@ -455,10 +461,10 @@ Handle parse errors gracefully:
 
 ```typescript
 try {
-  const chunk = JSON.parse(data);
+  const chunk = JSON.parse(data)
   // Process chunk
 } catch (error) {
-  console.error('Failed to parse chunk:', error);
+  console.error('Failed to parse chunk:', error)
   // Continue processing other chunks
 }
 ```
@@ -468,10 +474,10 @@ try {
 Accumulate tool call arguments across chunks:
 
 ```typescript
-const toolCalls: Map<number, { id: string; name: string; args: string }> = new Map();
+const toolCalls: Map<number, { id: string; name: string; args: string }> = new Map()
 
 for await (const chunk of stream) {
-  const delta = chunk.choices[0]?.delta;
+  const delta = chunk.choices[0]?.delta
 
   if (delta?.tool_calls) {
     for (const tc of delta.tool_calls) {
@@ -480,11 +486,11 @@ for await (const chunk of stream) {
           id: tc.id!,
           name: tc.function?.name!,
           args: '',
-        });
+        })
       }
 
       if (tc.function?.arguments) {
-        toolCalls.get(tc.index)!.args += tc.function.arguments;
+        toolCalls.get(tc.index)!.args += tc.function.arguments
       }
     }
   }
@@ -492,8 +498,8 @@ for await (const chunk of stream) {
 
 // Parse final tool calls
 for (const [index, tc] of toolCalls) {
-  const args = JSON.parse(tc.args);
-  console.log(`Tool ${tc.name} called with:`, args);
+  const args = JSON.parse(tc.args)
+  console.log(`Tool ${tc.name} called with:`, args)
 }
 ```
 
@@ -502,17 +508,17 @@ for (const [index, tc] of toolCalls) {
 Support request cancellation:
 
 ```typescript
-const controller = new AbortController();
+const controller = new AbortController()
 
 const response = await fetch('https://api.openai.com/v1/chat/completions', {
   method: 'POST',
-  headers: { 'Authorization': `Bearer ${apiKey}` },
+  headers: { Authorization: `Bearer ${apiKey}` },
   body: JSON.stringify({ model: 'gpt-4o', messages, stream: true }),
   signal: controller.signal,
-});
+})
 
 // Cancel after 5 seconds
-setTimeout(() => controller.abort(), 5000);
+setTimeout(() => controller.abort(), 5000)
 ```
 
 ### 5. Buffering for UI Performance
@@ -520,27 +526,27 @@ setTimeout(() => controller.abort(), 5000);
 For high-frequency updates, buffer before UI updates:
 
 ```typescript
-let textBuffer = '';
-let lastUpdate = Date.now();
-const UPDATE_INTERVAL = 50; // ms
+let textBuffer = ''
+let lastUpdate = Date.now()
+const UPDATE_INTERVAL = 50 // ms
 
 for await (const chunk of stream) {
-  const content = chunk.choices[0]?.delta?.content;
+  const content = chunk.choices[0]?.delta?.content
   if (content) {
-    textBuffer += content;
+    textBuffer += content
 
-    const now = Date.now();
+    const now = Date.now()
     if (now - lastUpdate > UPDATE_INTERVAL) {
-      updateUI(textBuffer);
-      textBuffer = '';
-      lastUpdate = now;
+      updateUI(textBuffer)
+      textBuffer = ''
+      lastUpdate = now
     }
   }
 }
 
 // Flush remaining buffer
 if (textBuffer) {
-  updateUI(textBuffer);
+  updateUI(textBuffer)
 }
 ```
 
@@ -548,13 +554,13 @@ if (textBuffer) {
 
 ```typescript
 interface StreamOptions {
-  apiKey: string;
-  model?: string;
-  messages: Array<{ role: string; content: string }>;
-  onChunk?: (text: string) => void;
-  onToolCall?: (toolCall: ToolCall) => void;
-  onFinish?: (reason: string) => void;
-  onError?: (error: Error) => void;
+  apiKey: string
+  model?: string
+  messages: Array<{ role: string; content: string }>
+  onChunk?: (text: string) => void
+  onToolCall?: (toolCall: ToolCall) => void
+  onFinish?: (reason: string) => void
+  onError?: (error: Error) => void
 }
 
 async function streamChat({
@@ -571,48 +577,48 @@ async function streamChat({
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({ model, messages, stream: true }),
-    });
+    })
 
-    const reader = response.body!.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
+    const reader = response.body!.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
 
     while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
+      const { done, value } = await reader.read()
+      if (done) break
 
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() || ''
 
       for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
+        if (!line.startsWith('data: ')) continue
 
-        const data = line.slice(6);
-        if (data === '[DONE]') continue;
+        const data = line.slice(6)
+        if (data === '[DONE]') continue
 
         try {
-          const chunk = JSON.parse(data);
-          const delta = chunk.choices[0]?.delta;
-          const finishReason = chunk.choices[0]?.finish_reason;
+          const chunk = JSON.parse(data)
+          const delta = chunk.choices[0]?.delta
+          const finishReason = chunk.choices[0]?.finish_reason
 
           if (delta?.content) {
-            onChunk?.(delta.content);
+            onChunk?.(delta.content)
           }
 
           if (finishReason) {
-            onFinish?.(finishReason);
+            onFinish?.(finishReason)
           }
         } catch (error) {
-          onError?.(error as Error);
+          onError?.(error as Error)
         }
       }
     }
   } catch (error) {
-    onError?.(error as Error);
+    onError?.(error as Error)
   }
 }
 ```

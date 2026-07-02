@@ -28,7 +28,9 @@ export function AccessModelCapabilitiesFields({ form }: AccessModelCapabilitiesF
   return (
     <div className="space-y-4 pt-4 border-t">
       <h4 className="text-sm font-medium">能力配置</h4>
-      <p className="text-xs text-muted-foreground">用于 /v1/models 接口返回，客户端可据此判断模型支持的功能</p>
+      <p className="text-xs text-muted-foreground">
+        用于 /v1/models 接口返回，客户端可据此判断模型支持的功能
+      </p>
       <div className="grid grid-cols-2 gap-3">
         {SWITCH_CAPABILITIES.map(({ name, label }) => (
           <FormField

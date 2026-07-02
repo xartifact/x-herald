@@ -43,10 +43,22 @@ function getEnabledProtocols(protocols: ProtocolsConfig): string[] {
 }
 
 export function ProviderCard({
-  provider, instances, isExpanded, showApiKey,
-  onToggleExpand, onToggleShowApiKey, onToggle, onEdit, onDelete,
-  onSyncModels, onConfigureThinking, onAddInstance,
-  onEditInstance, onDeleteInstance, onToggleInstance, getGroupName,
+  provider,
+  instances,
+  isExpanded,
+  showApiKey,
+  onToggleExpand,
+  onToggleShowApiKey,
+  onToggle,
+  onEdit,
+  onDelete,
+  onSyncModels,
+  onConfigureThinking,
+  onAddInstance,
+  onEditInstance,
+  onDeleteInstance,
+  onToggleInstance,
+  getGroupName,
 }: ProviderCardProps) {
   const enabledProtocols = getEnabledProtocols(provider.protocols)
 
@@ -60,18 +72,35 @@ export function ProviderCard({
               <CardTitle className="text-lg">{provider.name}</CardTitle>
               <div className="flex gap-1">
                 {enabledProtocols.map((protocol) => (
-                  <Badge key={protocol} variant="outline" className="text-xs">{protocol}</Badge>
+                  <Badge key={protocol} variant="outline" className="text-xs">
+                    {protocol}
+                  </Badge>
                 ))}
               </div>
               <StatusToggle enabled={provider.enabled} onToggle={onToggle} />
-              <Badge variant="secondary" className="text-xs">{instances.length} 个实例</Badge>
+              <Badge variant="secondary" className="text-xs">
+                {instances.length} 个实例
+              </Badge>
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="sm" title="同步模型" onClick={onSyncModels}><RefreshCw className="h-4 w-4" /></Button>
-            <Button variant="ghost" size="sm" title="配置 Thinking 映射" onClick={onConfigureThinking}><BrainCircuit className="h-4 w-4" /></Button>
-            <Button variant="ghost" size="sm" onClick={onEdit}><Pencil className="h-4 w-4" /></Button>
-            <Button variant="ghost" size="sm" onClick={onDelete}><Trash2 className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="sm" title="同步模型" onClick={onSyncModels}>
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              title="配置 Thinking 映射"
+              onClick={onConfigureThinking}
+            >
+              <BrainCircuit className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={onEdit}>
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={onDelete}>
+              <Trash2 className="h-4 w-4" />
+            </Button>
             <Button variant="ghost" size="sm" onClick={onToggleExpand}>
               {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </Button>

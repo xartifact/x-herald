@@ -1,4 +1,4 @@
-import type { TransformerContext, StandardResponse } from '@xartifact/x-llm-gateway-shared';
+import type { TransformerContext, StandardResponse } from '@xartifact/x-llm-gateway-shared'
 
 /**
  * Adapt standard response to OpenAI format
@@ -19,25 +19,25 @@ export async function adaptOpenAIResponse(
             content: choice.message.content,
             tool_calls: choice.message.tool_calls,
           }
-        : undefined;
+        : undefined
 
       if (choice.message?.reasoning_content) {
-        message = { ...message, reasoning_content: choice.message.reasoning_content };
+        message = { ...message, reasoning_content: choice.message.reasoning_content }
       }
 
       return {
         index: choice.index,
         message,
         finish_reason: choice.finish_reason,
-      };
+      }
     }),
     usage: response.usage,
-  };
+  }
 
   return new Response(JSON.stringify(openaiResponse), {
     status: 200,
     headers: {
       'Content-Type': 'application/json',
     },
-  });
+  })
 }

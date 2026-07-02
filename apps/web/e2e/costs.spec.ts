@@ -15,7 +15,12 @@ test.describe('Costs', () => {
       await expect(summaryCards).toBeVisible()
     } else {
       // Could be loading — check for loading state
-      await expect(page.getByText('加载中...').or(page.getByText(/暂无|没有数据/i)).first()).toBeVisible()
+      await expect(
+        page
+          .getByText('加载中...')
+          .or(page.getByText(/暂无|没有数据/i))
+          .first(),
+      ).toBeVisible()
     }
   })
 
@@ -23,7 +28,10 @@ test.describe('Costs', () => {
     await page.goto('/admin/costs')
     await page.waitForLoadState('networkidle')
     // Date filter may be a preset dropdown or date picker
-    const dateFilter = page.locator('button, [role="combobox"], select').filter({ hasText: /最近|过去|全部|日期/i }).first()
+    const dateFilter = page
+      .locator('button, [role="combobox"], select')
+      .filter({ hasText: /最近|过去|全部|日期/i })
+      .first()
     if (await dateFilter.isVisible().catch(() => false)) {
       await expect(dateFilter).toBeVisible()
     }
@@ -63,7 +71,7 @@ test.describe('Costs', () => {
     await page.goto('/admin/costs')
     await page.waitForLoadState('networkidle')
     const refreshBtn = page.locator('button').filter({ has: page.locator('svg.lucide-refresh-cw') })
-    if (await refreshBtn.count().then(c => c > 0)) {
+    if (await refreshBtn.count().then((c) => c > 0)) {
       await expect(refreshBtn.first()).toBeVisible()
     } else {
       const iconBtns = page.locator('button[class*="icon"], button svg.lucide-refresh-cw')
@@ -85,9 +93,18 @@ test.describe('Costs', () => {
       await page.getByText(tabLabel).click()
       await page.waitForLoadState('networkidle')
       // Either a table exists or empty state is shown
-      const hasTable = await page.locator('table').isVisible().catch(() => false)
-      const hasEmpty = await page.getByText(/暂无|没有数据|无记录/i).isVisible().catch(() => false)
-      const isLoading = await page.getByText('加载中...').isVisible().catch(() => false)
+      const hasTable = await page
+        .locator('table')
+        .isVisible()
+        .catch(() => false)
+      const hasEmpty = await page
+        .getByText(/暂无|没有数据|无记录/i)
+        .isVisible()
+        .catch(() => false)
+      const isLoading = await page
+        .getByText('加载中...')
+        .isVisible()
+        .catch(() => false)
       // At least one of these should be true (or table within the tab panel)
       expect(hasTable || hasEmpty || isLoading).toBe(true)
     }

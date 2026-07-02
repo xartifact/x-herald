@@ -21,21 +21,21 @@ cd apps/web && bunx @tanstack/router-devtools
 
 ## 管理员页面覆盖情况
 
-| 页面 | 路由 | 状态 |
-|------|------|------|
-| Dashboard（概览统计） | `/admin` | ✅ 已完成 — 接入 3 个实时 API（providers / model-groups / keys） |
-| Providers（服务商管理） | `/admin/providers` | ✅ |
-| Model Groups（模型组管理） | `/admin/model-groups` | ✅ 已完成 — 完整 CRUD（创建/编辑/删除/启用切换），Dialog 表单 |
-| Virtual Models（虚拟模型） | `/admin/model-routes` | ✅ (合并路由) |
-| Model Routes（路由规则） | `/admin/model-routes` | ✅ |
-| Keys（虚拟密钥） | `/admin/keys` | ✅ |
-| Logs（请求日志） | `/admin/logs` | ✅ |
-| Client Models（客户端模型） | `/admin/client-models` | ✅ |
-| Settings（配置导入/导出） | `/admin/settings` | ✅ |
-| Circuit Breaker（熔断器） | `/admin/circuit-breaker` | ✅ |
-| Access Models（访问模型） | `/admin/access-models` | ✅ |
-| Provider Stats（服务商统计） | `/admin/provider-stats` | ✅ |
-| Metrics（性能指标） | `/admin/metrics` | ✅ |
+| 页面                         | 路由                     | 状态                                                             |
+| ---------------------------- | ------------------------ | ---------------------------------------------------------------- |
+| Dashboard（概览统计）        | `/admin`                 | ✅ 已完成 — 接入 3 个实时 API（providers / model-groups / keys） |
+| Providers（服务商管理）      | `/admin/providers`       | ✅                                                               |
+| Model Groups（模型组管理）   | `/admin/model-groups`    | ✅ 已完成 — 完整 CRUD（创建/编辑/删除/启用切换），Dialog 表单    |
+| Virtual Models（虚拟模型）   | `/admin/model-routes`    | ✅ (合并路由)                                                    |
+| Model Routes（路由规则）     | `/admin/model-routes`    | ✅                                                               |
+| Keys（虚拟密钥）             | `/admin/keys`            | ✅                                                               |
+| Logs（请求日志）             | `/admin/logs`            | ✅                                                               |
+| Client Models（客户端模型）  | `/admin/client-models`   | ✅                                                               |
+| Settings（配置导入/导出）    | `/admin/settings`        | ✅                                                               |
+| Circuit Breaker（熔断器）    | `/admin/circuit-breaker` | ✅                                                               |
+| Access Models（访问模型）    | `/admin/access-models`   | ✅                                                               |
+| Provider Stats（服务商统计） | `/admin/provider-stats`  | ✅                                                               |
+| Metrics（性能指标）          | `/admin/metrics`         | ✅                                                               |
 
 ## API 通信
 

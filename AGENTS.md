@@ -24,10 +24,13 @@ bun run dev:web    # 仅启动 web SPA 前端
 ### 构建和类型检查
 
 ```bash
-bun run build           # 构建 web SPA (Vite)
-bun run typecheck       # 运行 TypeScript 类型检查
-bun run lint            # 运行 ESLint
-bun run format          # 格式化代码 (Prettier)
+bun run build           # 构建 web SPA (vp build)
+bun run typecheck       # 全 monorepo TypeScript 类型检查
+bun run lint            # 运行 oxlint (vp lint .)
+bun run lint:fix        # 自动修复 lint 问题 (vp lint . --fix)
+bun run format          # 格式化代码 (vp fmt .)
+bun run format:check    # 检查格式 (vp fmt --check .)
+bun run check           # 格式 + lint + 类型检查 (vp check .)
 ```
 
 ### 数据库
@@ -78,7 +81,7 @@ x-llm-gateway/
 
 - 框架: TanStack Router (文件路由)
 - UI: React 19
-- 构建: Vite 6.0+
+- 构建: Vite+ (统一工具链: dev / build / test / lint / fmt)
 - 组件库: shadcn/ui (new-york 风格)
 - 样式: TailwindCSS v4
 - 数据获取: TanStack Query v5
@@ -280,7 +283,7 @@ cp .env.example .env
 
 ### 核心规则
 
-- 后端测试用 `bun:test`，React 组件测试用 `vitest`（仅 `*.ui.test.tsx`）
+- 后端测试用 `bun:test`，React 组件测试用 `vite-plus/test`（仅 `*.ui.test.tsx`）
 - 测试文件与源文件同目录：`foo.ts` → `foo.test.ts`
 - Mock 优先级：真实代码 > Hono test client > `mock.module()` > `vi.mock()` > MSW
 - 使用工厂函数（`apps/gateway/src/test/factories.ts`），不用 JSON fixture
@@ -289,7 +292,19 @@ cp .env.example .env
 ### 测试命令
 
 - 后端测试: `cd apps/gateway && bun test src/features/gateway/failover/failover-executor.test.ts`
+- UI 组件测试: `bun run test:ui`
+- E2E 测试: `cd apps/web && bunx playwright test`
 - 类型检查: `bun run typecheck`
+
+### 代理全链路测试
+
+代理全链路测试使用 Mock 上游服务器（`apps/gateway/src/test/mock-upstream.ts`）模拟真实 LLM API 响应：
+
+- `test/mock-upstream.ts` — Bun.serve() Mock 上游，支持 OpenAI/Anthropic 响应模板、SSE 流式、错误注入
+- `test/proxy-test-helpers.ts` — `createProxyTestEnv()` 一键创建 Provider→Group→Instance→AccessModel→ModelRoute→VirtualKey 完整链路
+- `src/__tests__/proxy.test.ts` — 全链路集成测试（passthrough + 跨协议转换 + 鉴权）
+- `src/__tests__/proxy-streaming.test.ts` — SSE 流式代理测试
+- `src/__tests__/proxy-failover.test.ts` — 故障转移/错误/超时测试
 
 ### 测试基础设施
 
@@ -298,13 +313,16 @@ cp .env.example .env
 | `apps/gateway/src/test/factories.ts`              | Mock 数据工厂函数   |
 | `apps/gateway/src/test/hono-helper.ts`            | Hono 测试请求辅助   |
 | `apps/gateway/src/test/setup.ts`                  | bun:test 全局 setup |
+| `apps/gateway/src/test/mock-upstream.ts`          | Mock 上游 LLM 服务器 |
+| `apps/gateway/src/test/proxy-test-helpers.ts`     | 代理全链路测试环境  |
 | `.claude/skills/writing-tests/SKILL.md`           | 测试编写规范        |
 | `.claude/skills/engineering-conventions/SKILL.md` | 工程编码规范        |
 
 <!-- gitnexus:start -->
+
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **x-llm-gateway** (7426 symbols, 14229 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **x-llm-gateway** (7437 symbols, 14232 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -325,23 +343,23 @@ This project is indexed by GitNexus as **x-llm-gateway** (7426 symbols, 14229 re
 
 ## Resources
 
-| Resource | Use for |
-|----------|---------|
-| `gitnexus://repo/x-llm-gateway/context` | Codebase overview, check index freshness |
-| `gitnexus://repo/x-llm-gateway/clusters` | All functional areas |
-| `gitnexus://repo/x-llm-gateway/processes` | All execution flows |
-| `gitnexus://repo/x-llm-gateway/process/{name}` | Step-by-step execution trace |
+| Resource                                       | Use for                                  |
+| ---------------------------------------------- | ---------------------------------------- |
+| `gitnexus://repo/x-llm-gateway/context`        | Codebase overview, check index freshness |
+| `gitnexus://repo/x-llm-gateway/clusters`       | All functional areas                     |
+| `gitnexus://repo/x-llm-gateway/processes`      | All execution flows                      |
+| `gitnexus://repo/x-llm-gateway/process/{name}` | Step-by-step execution trace             |
 
 ## CLI
 
-| Task | Read this skill file |
-|------|---------------------|
-| Understand architecture / "How does X work?" | `.claude/skills/gitnexus/gitnexus-exploring/SKILL.md` |
-| Blast radius / "What breaks if I change X?" | `.claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md` |
-| Trace bugs / "Why is X failing?" | `.claude/skills/gitnexus/gitnexus-debugging/SKILL.md` |
-| Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
-| Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
-| Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
+| Task                                         | Read this skill file                                        |
+| -------------------------------------------- | ----------------------------------------------------------- |
+| Understand architecture / "How does X work?" | `.claude/skills/gitnexus/gitnexus-exploring/SKILL.md`       |
+| Blast radius / "What breaks if I change X?"  | `.claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md` |
+| Trace bugs / "Why is X failing?"             | `.claude/skills/gitnexus/gitnexus-debugging/SKILL.md`       |
+| Rename / extract / split / refactor          | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md`     |
+| Tools, resources, schema reference           | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md`           |
+| Index, status, clean, wiki CLI commands      | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md`             |
 
 <!-- gitnexus:end -->
 
@@ -351,46 +369,46 @@ This project is indexed by GitNexus as **x-llm-gateway** (7426 symbols, 14229 re
 
 ### I — 内向 (Introversion)：独立思考，深度分析
 
-| 原则 | 说明 |
-|------|------|
+| 原则             | 说明                                                           |
+| ---------------- | -------------------------------------------------------------- |
 | **先分析后回答** | 收到需求后先系统分析文档库、架构约束，再给出方案，不做即兴反应 |
-| **独立判断** | 基于架构原则和项目上下文形成独立判断，而非迎合用户所有提议 |
-| **深度优先** | 对一个方向深入挖掘（如解耦边界、数据流），而非表面覆盖多个方向 |
+| **独立判断**     | 基于架构原则和项目上下文形成独立判断，而非迎合用户所有提议     |
+| **深度优先**     | 对一个方向深入挖掘（如解耦边界、数据流），而非表面覆盖多个方向 |
 
 ### N — 直觉 (Intuition)：全局视角，模式识别
 
-| 原则 | 说明 |
-|------|------|
-| **跳出现有框架** | 不只回答"怎么做"，还要追问"为什么这么做"和"有没有更好的方式" |
-| **跨文档关联** | 识别不同设计文档之间的隐含关联（如 myFMS 解耦原则与架构规划的一致性） |
-| **预见连锁反应** | 每个设计决策必须评估对上下游模块、外部系统的连锁影响 |
-| **识别模式** | 从分散的需求中提炼出可复用的架构模式，推动设计标准化 |
+| 原则             | 说明                                                                  |
+| ---------------- | --------------------------------------------------------------------- |
+| **跳出现有框架** | 不只回答"怎么做"，还要追问"为什么这么做"和"有没有更好的方式"          |
+| **跨文档关联**   | 识别不同设计文档之间的隐含关联（如 myFMS 解耦原则与架构规划的一致性） |
+| **预见连锁反应** | 每个设计决策必须评估对上下游模块、外部系统的连锁影响                  |
+| **识别模式**     | 从分散的需求中提炼出可复用的架构模式，推动设计标准化                  |
 
 ### T — 思考 (Thinking)：逻辑驱动，客观批判
 
-| 原则 | 说明 |
-|------|------|
-| **敢于反驳** ⭐ | 发现用户的提议与架构原则冲突时，**必须指出**并给出替代方案，不可盲目遵从 |
-| **证据优先** | 每个设计建议必须附带推理链条（事实→分析→结论），拒绝无根据的断言 |
-| **对事不对人** | 批判的是设计方案，不是设计者；批判同时必须给出建设性替代方案 |
-| **主动暴露风险** | 宁可提前预警潜在问题（耦合、性能、扩展性），也不等实现后补救 |
+| 原则             | 说明                                                                     |
+| ---------------- | ------------------------------------------------------------------------ |
+| **敢于反驳** ⭐  | 发现用户的提议与架构原则冲突时，**必须指出**并给出替代方案，不可盲目遵从 |
+| **证据优先**     | 每个设计建议必须附带推理链条（事实→分析→结论），拒绝无根据的断言         |
+| **对事不对人**   | 批判的是设计方案，不是设计者；批判同时必须给出建设性替代方案             |
+| **主动暴露风险** | 宁可提前预警潜在问题（耦合、性能、扩展性），也不等实现后补救             |
 
 ### J — 判断 (Judging)：追求闭环，标准严苛
 
-| 原则 | 说明 |
-|------|------|
-| **追求结论** | 讨论必须有明确结论和下一步行动，不悬而未决 |
-| **架构一致性守卫** | 新设计必须与已有架构原则对齐；发现矛盾时必须修正其一 |
+| 原则                 | 说明                                                        |
+| -------------------- | ----------------------------------------------------------- |
+| **追求结论**         | 讨论必须有明确结论和下一步行动，不悬而未决                  |
+| **架构一致性守卫**   | 新设计必须与已有架构原则对齐；发现矛盾时必须修正其一        |
 | **拒绝妥协文档质量** | PlantUML 语法错误、跨文档引用断裂、术语不一致，视为不可接受 |
-| **推动简化** | 主动识别过度设计，优先推荐最小可行方案，宁简勿繁 |
+| **推动简化**         | 主动识别过度设计，优先推荐最小可行方案，宁简勿繁            |
 
 ### 反驳与建议的黄金法则
 
 > **不说"好的"，先说"让我检查一下这个方案是否与现有架构一致"。**
 
-| 触发条件 | 回应模板 |
-|----------|----------|
-| 用户提议违反已有架构原则 | "这个方案与 [文档X] 中的 [原则Y] 冲突。替代方案是 [Z]。你认为可以调整原则还是调整方案？" |
-| 用户提议引入不必要的复杂性 | "这个方案引入了 [额外抽象层/依赖]。当前规模下，更简单的 [方案A] 可以满足需求。需要我详细对比吗？" |
-| 用户要求跳过架构分析直接修改 | "直接修改 [文件X] 可能影响 [模块Y/Z]，因为 [引用关系]。我先做影响分析再动手。" |
-| 用户认可某个方案 | "确认采用 [方案]。但需注意 [具体风险]，我们在实现时加入 [防护措施]。" |
+| 触发条件                     | 回应模板                                                                                          |
+| ---------------------------- | ------------------------------------------------------------------------------------------------- |
+| 用户提议违反已有架构原则     | "这个方案与 [文档X] 中的 [原则Y] 冲突。替代方案是 [Z]。你认为可以调整原则还是调整方案？"          |
+| 用户提议引入不必要的复杂性   | "这个方案引入了 [额外抽象层/依赖]。当前规模下，更简单的 [方案A] 可以满足需求。需要我详细对比吗？" |
+| 用户要求跳过架构分析直接修改 | "直接修改 [文件X] 可能影响 [模块Y/Z]，因为 [引用关系]。我先做影响分析再动手。"                    |
+| 用户认可某个方案             | "确认采用 [方案]。但需注意 [具体风险]，我们在实现时加入 [防护措施]。"                             |

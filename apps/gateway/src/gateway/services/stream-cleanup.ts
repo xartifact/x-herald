@@ -1,8 +1,8 @@
-import { and, eq, lt, or } from '@xartifact/x-llm-gateway-db';
+import { and, eq, lt, or } from '@xartifact/x-llm-gateway-db'
 
-import { getDatabase } from '../../db/client';
-import logger from '../../lib/logger';
-import { requestLogs } from '@xartifact/x-llm-gateway-db';
+import { getDatabase } from '../../db/client'
+import logger from '../../lib/logger'
+import { requestLogs } from '@xartifact/x-llm-gateway-db'
 
 /**
  * 清理超时的流日志
@@ -10,9 +10,9 @@ import { requestLogs } from '@xartifact/x-llm-gateway-db';
  */
 export async function cleanupStaleStreams(timeoutMinutes: number = 5): Promise<number> {
   try {
-    const db = getDatabase();
-    const timeoutMs = timeoutMinutes * 60 * 1000;
-    const cutoffTime = new Date(Date.now() - timeoutMs);
+    const db = getDatabase()
+    const timeoutMs = timeoutMinutes * 60 * 1000
+    const cutoffTime = new Date(Date.now() - timeoutMs)
 
     const result = await db
       .update(requestLogs)
@@ -27,24 +27,21 @@ export async function cleanupStaleStreams(timeoutMinutes: number = 5): Promise<n
       .where(
         and(
           eq(requestLogs.isComplete, false),
-          or(
-            eq(requestLogs.streamStatus, 'streaming'),
-            eq(requestLogs.streamStatus, 'pending')
-          ),
-          lt(requestLogs.lastUpdatedAt, cutoffTime)
-        )
+          or(eq(requestLogs.streamStatus, 'streaming'), eq(requestLogs.streamStatus, 'pending')),
+          lt(requestLogs.lastUpdatedAt, cutoffTime),
+        ),
       )
-      .returning({ id: requestLogs.id });
+      .returning({ id: requestLogs.id })
 
-    const count = result.length;
+    const count = result.length
     if (count > 0) {
-      logger.info({ count, cutoffTime }, 'Cleaned up stale streams');
+      logger.info({ count, cutoffTime }, 'Cleaned up stale streams')
     }
 
-    return count;
+    return count
   } catch (error) {
-    logger.error({ error }, 'Failed to cleanup stale streams');
-    return 0;
+    logger.error({ error }, 'Failed to cleanup stale streams')
+    return 0
   }
 }
 
@@ -53,7 +50,7 @@ export async function cleanupStaleStreams(timeoutMinutes: number = 5): Promise<n
  */
 export async function getIncompleteStreams() {
   try {
-    const db = getDatabase();
+    const db = getDatabase()
 
     const streams = await db
       .select({
@@ -65,11 +62,11 @@ export async function getIncompleteStreams() {
         chunksProcessed: requestLogs.streamProgress,
       })
       .from(requestLogs)
-      .where(eq(requestLogs.isComplete, false));
+      .where(eq(requestLogs.isComplete, false))
 
-    return streams;
+    return streams
   } catch (error) {
-    logger.error({ error }, 'Failed to query incomplete streams');
-    return [];
+    logger.error({ error }, 'Failed to query incomplete streams')
+    return []
   }
 }

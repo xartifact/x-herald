@@ -1,4 +1,4 @@
-'use client';
+'use client'
 import { useEffect, useRef } from 'react'
 
 import { Bot, Loader2, Sparkles } from 'lucide-react'
@@ -45,13 +45,18 @@ export function ChatMessageList({ messages, loading, onSend }: ChatMessageListPr
         )}
 
         {messages.map((msg, i) => (
-          <div key={i} className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+          <div
+            key={i}
+            className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+          >
             {msg.role === 'assistant' && (
               <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
                 <Sparkles className="h-3 w-3 text-primary" />
               </div>
             )}
-            <div className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+            <div
+              className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}
+            >
               {msg.content}
             </div>
           </div>

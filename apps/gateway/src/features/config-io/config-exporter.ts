@@ -1,19 +1,19 @@
-import { getDatabase } from '../../index';
-import { gatewayConfigs } from '../../index';
-import { virtualKeys } from '../../index';
+import { getDatabase } from '../../index'
+import { gatewayConfigs } from '../../index'
+import { virtualKeys } from '../../index'
 import {
   accessModels,
   modelGroupMemberships,
   modelGroups,
   modelInstances,
   modelRoutes,
-} from '../../index';
-import { providers } from '../../index';
+} from '../../index'
+import { providers } from '../../index'
 
-import { EXPORT_VERSION, type EngineExportFormat, type ExportedModelRoute } from './types';
+import { EXPORT_VERSION, type EngineExportFormat, type ExportedModelRoute } from './types'
 
 export async function exportConfig(): Promise<EngineExportFormat> {
-  const db = getDatabase();
+  const db = getDatabase()
 
   const [
     allProviders,
@@ -33,24 +33,24 @@ export async function exportConfig(): Promise<EngineExportFormat> {
     db.select().from(virtualKeys),
     db.select().from(gatewayConfigs),
     db.select().from(modelGroupMemberships),
-  ]);
+  ])
 
-  const instanceGroupIds = new Map<string, string[]>();
+  const instanceGroupIds = new Map<string, string[]>()
   for (const m of allMemberships) {
-    const arr = instanceGroupIds.get(m.instanceId) ?? [];
-    arr.push(m.groupId);
-    instanceGroupIds.set(m.instanceId, arr);
+    const arr = instanceGroupIds.get(m.instanceId) ?? []
+    arr.push(m.groupId)
+    instanceGroupIds.set(m.instanceId, arr)
   }
 
-  const providerIdToName = new Map(allProviders.map((p) => [p.id, p.name]));
-  const groupIdToName = new Map(allModelGroups.map((g) => [g.id, g.name]));
-  const virtualModelIdToName = new Map(allAccessModels.map((v) => [v.id, v.name]));
+  const providerIdToName = new Map(allProviders.map((p) => [p.id, p.name]))
+  const groupIdToName = new Map(allModelGroups.map((g) => [g.id, g.name]))
+  const virtualModelIdToName = new Map(allAccessModels.map((v) => [v.id, v.name]))
   const instanceIdToRef = new Map(
     allModelInstances.map((i) => [
       i.id,
       `${providerIdToName.get(i.providerId) ?? ''}/${i.actualModelName}`,
     ]),
-  );
+  )
 
   return {
     version: EXPORT_VERSION,
@@ -76,8 +76,8 @@ export async function exportConfig(): Promise<EngineExportFormat> {
       })),
 
       modelInstances: allModelInstances.map((i) => {
-        const gids = instanceGroupIds.get(i.id) ?? [];
-        const groupNames = gids.map((gid) => groupIdToName.get(gid) ?? '').filter(Boolean);
+        const gids = instanceGroupIds.get(i.id) ?? []
+        const groupNames = gids.map((gid) => groupIdToName.get(gid) ?? '').filter(Boolean)
         return {
           name: i.name,
           actualModelName: i.actualModelName,
@@ -92,7 +92,7 @@ export async function exportConfig(): Promise<EngineExportFormat> {
           healthCheckUrl: i.healthCheckUrl,
           enabled: i.enabled,
           metadata: i.metadata,
-        };
+        }
       }),
 
       virtualModels: allAccessModels.map((v) => ({
@@ -103,20 +103,20 @@ export async function exportConfig(): Promise<EngineExportFormat> {
       })),
 
       modelRoutes: allModelRoutes.map((r) => {
-        const action = r.action as { type: string; targetId?: string; reason?: string };
-        let targetRef: string | undefined;
+        const action = r.action as { type: string; targetId?: string; reason?: string }
+        let targetRef: string | undefined
         if (action.targetId) {
           if (action.type === 'route_to_access_model') {
-            targetRef = virtualModelIdToName.get(action.targetId);
+            targetRef = virtualModelIdToName.get(action.targetId)
           } else if (action.type === 'route_to_group') {
-            targetRef = groupIdToName.get(action.targetId);
+            targetRef = groupIdToName.get(action.targetId)
           } else if (action.type === 'route_to_instance') {
-            targetRef = instanceIdToRef.get(action.targetId);
+            targetRef = instanceIdToRef.get(action.targetId)
           }
         }
         const virtualModelNames = (r.accessModelIds ?? [])
           .map((id) => virtualModelIdToName.get(id))
-          .filter((name): name is string => name != null);
+          .filter((name): name is string => name != null)
         return {
           name: r.name,
           description: r.description,
@@ -127,7 +127,7 @@ export async function exportConfig(): Promise<EngineExportFormat> {
           priority: r.priority,
           enabled: r.enabled,
           flowData: r.flowData,
-        } satisfies ExportedModelRoute;
+        } satisfies ExportedModelRoute
       }),
 
       virtualKeys: allVirtualKeys.map((k) => ({
@@ -147,5 +147,5 @@ export async function exportConfig(): Promise<EngineExportFormat> {
         description: c.description,
       })),
     },
-  };
+  }
 }

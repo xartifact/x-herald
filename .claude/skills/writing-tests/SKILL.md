@@ -9,14 +9,15 @@ description: Unit and integration testing conventions for x-llm-gateway. Use whe
 
 **Two runners, one project:**
 
-| Runner | Scope | When |
-|--------|-------|------|
-| `bun:test` | Backend unit/integration tests, pure logic | Default. 95% of tests. |
-| `vitest` | React component tests requiring DOM | Only `*.ui.test.tsx` files |
+| Runner     | Scope                                      | When                       |
+| ---------- | ------------------------------------------ | -------------------------- |
+| `bun:test` | Backend unit/integration tests, pure logic | Default. 95% of tests.     |
+| `vitest`   | React component tests requiring DOM        | Only `*.ui.test.tsx` files |
 
 ### bun:test (default)
 
 No config needed. Run with:
+
 ```bash
 bun test                    # all tests
 bun test src/features/gateway/failover/  # specific directory
@@ -24,6 +25,7 @@ bun test --watch            # watch mode
 ```
 
 Always use explicit imports:
+
 ```typescript
 import { describe, it, expect, beforeEach, afterEach, mock } from 'bun:test'
 ```
@@ -69,23 +71,23 @@ src/
 
 ### Decision rule
 
-| If test imports from... | Place it... |
-|------------------------|-------------|
-| 1 source module | `foo.test.ts` next to `foo.ts` |
-| 2 source modules | Still co-locate with the primary module |
-| 3+ source modules (integration) | `__tests__/` in the parent directory |
-| React component needing DOM | `foo.ui.test.tsx` next to `foo.tsx` |
-| Playwright E2E | `apps/web/tests/*.spec.ts` (unchanged) |
+| If test imports from...         | Place it...                             |
+| ------------------------------- | --------------------------------------- |
+| 1 source module                 | `foo.test.ts` next to `foo.ts`          |
+| 2 source modules                | Still co-locate with the primary module |
+| 3+ source modules (integration) | `__tests__/` in the parent directory    |
+| React component needing DOM     | `foo.ui.test.tsx` next to `foo.tsx`     |
+| Playwright E2E                  | `apps/web/tests/*.spec.ts` (unchanged)  |
 
 ## File Naming Convention
 
-| Test type | Filename | Runner | Example |
-|-----------|----------|--------|---------|
-| Unit | `foo.test.ts` | bun:test | `failover-executor.test.ts` |
-| Integration | `bar.test.ts` | bun:test | `cross-protocol.test.ts` |
-| Adversarial/edge-case | `foo.adversarial.test.ts` | bun:test | `layout-flow.adversarial.test.ts` |
-| React component | `foo.ui.test.tsx` | vitest | `latency-breakdown.ui.test.tsx` |
-| E2E | `feature.spec.ts` | Playwright | `model-routes.spec.ts` |
+| Test type             | Filename                  | Runner     | Example                           |
+| --------------------- | ------------------------- | ---------- | --------------------------------- |
+| Unit                  | `foo.test.ts`             | bun:test   | `failover-executor.test.ts`       |
+| Integration           | `bar.test.ts`             | bun:test   | `cross-protocol.test.ts`          |
+| Adversarial/edge-case | `foo.adversarial.test.ts` | bun:test   | `layout-flow.adversarial.test.ts` |
+| React component       | `foo.ui.test.tsx`         | vitest     | `latency-breakdown.ui.test.tsx`   |
+| E2E                   | `feature.spec.ts`         | Playwright | `model-routes.spec.ts`            |
 
 **Never use `.spec.ts` for unit/integration tests.** That suffix is reserved for Playwright E2E.
 
@@ -101,7 +103,9 @@ import { joinUrl } from '../handlers/shared/join-url'
 
 describe('joinUrl', () => {
   it('deduplicates /v1 path prefix', () => {
-    expect(joinUrl('https://api.example.com/v1', '/v1/chat')).toBe('https://api.example.com/v1/chat')
+    expect(joinUrl('https://api.example.com/v1', '/v1/chat')).toBe(
+      'https://api.example.com/v1/chat',
+    )
   })
 })
 ```
@@ -142,7 +146,7 @@ import { authenticateVirtualKey } from '../virtual-key'
 
 describe('authenticateVirtualKey', () => {
   beforeEach(() => {
-    mock.restore()  // reset all mocks between tests
+    mock.restore() // reset all mocks between tests
   })
 
   it('returns null for unknown key', async () => {
@@ -234,7 +238,7 @@ export function testRequest(
   options?: {
     headers?: Record<string, string>
     body?: unknown
-  }
+  },
 ) {
   const init: RequestInit = {
     method,
@@ -284,12 +288,12 @@ describe('LatencyBreakdown', () => {
 
 ## Coverage Thresholds (Ramp-up)
 
-| Phase | Line | Branch | Scope |
-|-------|------|--------|-------|
-| Current | 0% | 0% | No threshold — establish infrastructure first |
-| Next sprint | 10% | 15% | New/modified files only |
-| +1 sprint | 30% | 25% | Global |
-| Steady state | 50% | 40% | Global; 80% on new files |
+| Phase        | Line | Branch | Scope                                         |
+| ------------ | ---- | ------ | --------------------------------------------- |
+| Current      | 0%   | 0%     | No threshold — establish infrastructure first |
+| Next sprint  | 10%  | 15%    | New/modified files only                       |
+| +1 sprint    | 30%  | 25%    | Global                                        |
+| Steady state | 50%  | 40%    | Global; 80% on new files                      |
 
 ## Priority Test List
 
@@ -303,19 +307,20 @@ Test these in order (highest business impact first):
 
 ## Anti-patterns
 
-| ❌ Don't | ✅ Do |
-|----------|-------|
-| Test implementation details (state, internal methods) | Test behavior (inputs → outputs) |
-| Use `__tests__/` for unit tests | Co-locate `foo.test.ts` next to `foo.ts` |
-| Use snapshot tests for UI | Assert visible text and ARIA roles |
-| Mock everything | Prefer real code + Hono test client |
-| Use `describe('module', () => { it('works', ...) })` | Use descriptive test names: `it('should retry next provider on 429 error', ...)` |
-| Put test data in separate `fixtures/` JSON files | Use factory functions with spread overrides |
-| Use `.spec.ts` for unit tests | Reserve `.spec.ts` for Playwright E2E only |
+| ❌ Don't                                              | ✅ Do                                                                            |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Test implementation details (state, internal methods) | Test behavior (inputs → outputs)                                                 |
+| Use `__tests__/` for unit tests                       | Co-locate `foo.test.ts` next to `foo.ts`                                         |
+| Use snapshot tests for UI                             | Assert visible text and ARIA roles                                               |
+| Mock everything                                       | Prefer real code + Hono test client                                              |
+| Use `describe('module', () => { it('works', ...) })`  | Use descriptive test names: `it('should retry next provider on 429 error', ...)` |
+| Put test data in separate `fixtures/` JSON files      | Use factory functions with spread overrides                                      |
+| Use `.spec.ts` for unit tests                         | Reserve `.spec.ts` for Playwright E2E only                                       |
 
 ## Pre-existing Test Failures
 
 9 Anthropic transformer tests currently fail. Before enabling CI gating:
+
 1. Triage each failure
 2. Either fix the test or `test.skip` with a comment linking to a tracking issue
 3. Ensure `bun test` exits 0 before requiring it in CI

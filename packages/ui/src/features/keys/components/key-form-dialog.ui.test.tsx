@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi } from 'vite-plus/test'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useForm } from 'react-hook-form'
@@ -89,7 +89,7 @@ describe('KeyFormDialog', () => {
         defaultValues={validDefaults}
         showNewKey={true}
         newlyCreatedKey="sk-newly-created-123"
-      />
+      />,
     )
 
     expect(screen.getByText('sk-newly-created-123')).toBeInTheDocument()
@@ -106,7 +106,7 @@ describe('KeyFormDialog', () => {
           enabled: true,
           expiresAt: '',
         }}
-      />
+      />,
     )
 
     const nameInput = screen.getByPlaceholderText('生产环境密钥')
@@ -131,7 +131,7 @@ describe('KeyFormDialog', () => {
           expiresAt: '2025-12-31',
         }}
         editingId="key-123"
-      />
+      />,
     )
 
     expect(screen.getByText('编辑密钥')).toBeInTheDocument()
@@ -180,11 +180,7 @@ describe('KeyFormDialog', () => {
 
   it('hides submit button when showing new key', () => {
     render(
-      <TestWrapper
-        defaultValues={validDefaults}
-        showNewKey={true}
-        newlyCreatedKey="sk-new-key"
-      />
+      <TestWrapper defaultValues={validDefaults} showNewKey={true} newlyCreatedKey="sk-new-key" />,
     )
 
     expect(screen.queryByRole('button', { name: '创建密钥' })).not.toBeInTheDocument()

@@ -14,7 +14,12 @@ test.describe('Provider Stats', () => {
     if (await summary.isVisible().catch(() => false)) {
       await expect(summary).toBeVisible()
     } else {
-      await expect(page.getByText('加载中...').or(page.getByText(/暂无|没有数据/i)).first()).toBeVisible()
+      await expect(
+        page
+          .getByText('加载中...')
+          .or(page.getByText(/暂无|没有数据/i))
+          .first(),
+      ).toBeVisible()
     }
   })
 
@@ -32,7 +37,11 @@ test.describe('Provider Stats', () => {
   test('shows provider ranking section', async ({ page }) => {
     await page.goto('/admin/provider-stats')
     await page.waitForLoadState('networkidle')
-    const rankingVisible = await page.getByText(/供应商排名|排名/i).first().isVisible().catch(() => false)
+    const rankingVisible = await page
+      .getByText(/供应商排名|排名/i)
+      .first()
+      .isVisible()
+      .catch(() => false)
     if (rankingVisible) {
       await expect(page.getByText(/供应商排名|排名/i).first()).toBeVisible()
     } else {
@@ -47,7 +56,10 @@ test.describe('Provider Stats', () => {
     await page.goto('/admin/provider-stats')
     await page.waitForLoadState('networkidle')
     // Badge with provider count
-    const badge = page.locator('[class*="badge"], [class*="Badge"]').filter({ hasText: /个供应商/i }).first()
+    const badge = page
+      .locator('[class*="badge"], [class*="Badge"]')
+      .filter({ hasText: /个供应商/i })
+      .first()
     if (await badge.isVisible().catch(() => false)) {
       await expect(badge).toBeVisible()
     }

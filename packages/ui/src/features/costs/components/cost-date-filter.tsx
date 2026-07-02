@@ -52,22 +52,25 @@ const PRESET_LABELS: Record<DateRangePreset, string> = {
 export function CostDateFilter({ value, onChange }: CostDateFilterProps) {
   const [showCustom, setShowCustom] = useState(false)
 
-  const handlePresetChange = useCallback((preset: DateRangePreset) => {
-    const range = getDateRange(preset)
-    onChange({ preset, ...range })
-    setShowCustom(preset === 'custom')
-  }, [onChange])
+  const handlePresetChange = useCallback(
+    (preset: DateRangePreset) => {
+      const range = getDateRange(preset)
+      onChange({ preset, ...range })
+      setShowCustom(preset === 'custom')
+    },
+    [onChange],
+  )
 
-  const handleCustomDateChange = useCallback((
-    field: 'startDate' | 'endDate',
-    dateValue: string
-  ) => {
-    onChange({
-      ...value,
-      preset: 'custom',
-      [field]: dateValue,
-    })
-  }, [value, onChange])
+  const handleCustomDateChange = useCallback(
+    (field: 'startDate' | 'endDate', dateValue: string) => {
+      onChange({
+        ...value,
+        preset: 'custom',
+        [field]: dateValue,
+      })
+    },
+    [value, onChange],
+  )
 
   return (
     <div className="relative">
@@ -81,11 +84,7 @@ export function CostDateFilter({ value, onChange }: CostDateFilterProps) {
               onClick={() => handlePresetChange(preset)}
               className="rounded-none first:rounded-l-md last:rounded-r-md"
             >
-              {preset === 'custom' ? (
-                <CalendarIcon className="h-4 w-4" />
-              ) : (
-                PRESET_LABELS[preset]
-              )}
+              {preset === 'custom' ? <CalendarIcon className="h-4 w-4" /> : PRESET_LABELS[preset]}
             </Button>
           ))}
         </div>

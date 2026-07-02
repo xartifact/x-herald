@@ -6,7 +6,12 @@ import { useForm } from 'react-hook-form'
 
 import type { GroupFormData } from '@xartifact/x-llm-gateway-ui'
 import type { ModelGroup } from '@xartifact/x-llm-gateway-shared'
-import { useModelGroups, useCreateModelGroup, useUpdateModelGroup, useDeleteModelGroup } from './use-model-groups'
+import {
+  useModelGroups,
+  useCreateModelGroup,
+  useUpdateModelGroup,
+  useDeleteModelGroup,
+} from './use-model-groups'
 
 export function useGroupPageGroups() {
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null)
@@ -59,14 +64,22 @@ export function useGroupPageGroups() {
   }
 
   const handleDeleteGroup = async (id: string, name: string) => {
-    if (!confirm(`确定要删除模型组 "${name}" 吗？
+    if (
+      !confirm(`确定要删除模型组 "${name}" 吗？
 
-此操作不可撤销。`)) return
+此操作不可撤销。`)
+    )
+      return
     await deleteGroup.mutateAsync(id)
   }
 
   const onGroupSubmit = async (data: GroupFormData) => {
-    const aliases = data.aliases ? data.aliases.split(',').map((s) => s.trim()).filter(Boolean) : []
+    const aliases = data.aliases
+      ? data.aliases
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : []
     const payload = {
       name: data.name,
       aliases,

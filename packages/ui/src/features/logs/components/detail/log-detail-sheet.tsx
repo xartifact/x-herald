@@ -3,7 +3,12 @@
 import { useState } from 'react'
 
 import { ScrollArea } from '../../../../shared/components/ui/scroll-area'
-import { Sheet, SheetContent, SheetDescription, SheetTitle } from '../../../../shared/components/ui/sheet'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetTitle,
+} from '../../../../shared/components/ui/sheet'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../../shared/components/ui/tabs'
 import type { Log } from '@xartifact/x-llm-gateway-shared'
 
@@ -44,16 +49,31 @@ export function LogDetailSheet({
 
   const metadataColumn = (
     <>
-      <MetadataBasicSections log={log} isPending={isPending} isSuccess={isSuccess} contentFeatures={contentFeatures} onOpenTrace={log.conversationId ? () => setTraceOpen(true) : undefined} />
+      <MetadataBasicSections
+        log={log}
+        isPending={isPending}
+        isSuccess={isSuccess}
+        contentFeatures={contentFeatures}
+        onOpenTrace={log.conversationId ? () => setTraceOpen(true) : undefined}
+      />
       <MetadataRequestSections log={log} resolveClientType={resolveClientType} />
-      <MetadataPerformanceSections log={log} contentFeatures={contentFeatures} formatDuration={formatDuration} formatTokens={formatTokens} />
+      <MetadataPerformanceSections
+        log={log}
+        contentFeatures={contentFeatures}
+        formatDuration={formatDuration}
+        formatTokens={formatTokens}
+      />
     </>
   )
 
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="right" className="w-full max-w-full md:w-[85vw] md:max-w-[85vw] 2xl:w-[70vw] 2xl:max-w-[70vw] p-0 flex flex-col gap-0" hideCloseButton>
+        <SheetContent
+          side="right"
+          className="w-full max-w-full md:w-[85vw] md:max-w-[85vw] 2xl:w-[70vw] 2xl:max-w-[70vw] p-0 flex flex-col gap-0"
+          hideCloseButton
+        >
           <SheetTitle className="sr-only">日志详情</SheetTitle>
           <SheetDescription className="sr-only">请求日志详细信息</SheetDescription>
           <LogSheetToolbar
@@ -84,8 +104,12 @@ export function LogDetailSheet({
                     <TabsTrigger value="response">Response</TabsTrigger>
                   </TabsList>
                 </div>
-                <TabsContent value="request" className="flex-1 m-0 overflow-hidden"><RequestPanel log={log} className="h-full border-r-0" /></TabsContent>
-                <TabsContent value="response" className="flex-1 m-0 overflow-hidden"><ResponsePanel log={log} className="h-full border-r-0" /></TabsContent>
+                <TabsContent value="request" className="flex-1 m-0 overflow-hidden">
+                  <RequestPanel log={log} className="h-full border-r-0" />
+                </TabsContent>
+                <TabsContent value="response" className="flex-1 m-0 overflow-hidden">
+                  <ResponsePanel log={log} className="h-full border-r-0" />
+                </TabsContent>
               </Tabs>
             </div>
           </div>
@@ -100,13 +124,23 @@ export function LogDetailSheet({
                   <TabsTrigger value="response">响应</TabsTrigger>
                 </TabsList>
               </div>
-              <TabsContent value="overview" className="flex-1 m-0 overflow-hidden"><ScrollArea className="h-full">{metadataColumn}</ScrollArea></TabsContent>
-              <TabsContent value="request" className="flex-1 m-0 overflow-hidden"><RequestPanel log={log} className="h-full border-r-0" /></TabsContent>
-              <TabsContent value="response" className="flex-1 m-0 overflow-hidden"><ResponsePanel log={log} className="h-full border-r-0" /></TabsContent>
+              <TabsContent value="overview" className="flex-1 m-0 overflow-hidden">
+                <ScrollArea className="h-full">{metadataColumn}</ScrollArea>
+              </TabsContent>
+              <TabsContent value="request" className="flex-1 m-0 overflow-hidden">
+                <RequestPanel log={log} className="h-full border-r-0" />
+              </TabsContent>
+              <TabsContent value="response" className="flex-1 m-0 overflow-hidden">
+                <ResponsePanel log={log} className="h-full border-r-0" />
+              </TabsContent>
             </Tabs>
           </div>
 
-          <LogSheetStatusBar log={log} formatDuration={formatDuration} formatTokens={formatTokens} />
+          <LogSheetStatusBar
+            log={log}
+            formatDuration={formatDuration}
+            formatTokens={formatTokens}
+          />
         </SheetContent>
       </Sheet>
 

@@ -4,7 +4,11 @@ import { compileFlowToRoutes, validateFlow } from './compile-flow'
 import { buildFlowFromData } from './build-flow'
 import type { ModelRoute } from '../types'
 
-function createMockNode(id: string, type: string = 'modelTrigger', overrides: Record<string, unknown> = {}): Node {
+function createMockNode(
+  id: string,
+  type: string = 'modelTrigger',
+  overrides: Record<string, unknown> = {},
+): Node {
   return {
     id,
     type,
@@ -14,7 +18,11 @@ function createMockNode(id: string, type: string = 'modelTrigger', overrides: Re
   } as Node
 }
 
-function createMockEdge(source: string, target: string, overrides: Record<string, unknown> = {}): Edge {
+function createMockEdge(
+  source: string,
+  target: string,
+  overrides: Record<string, unknown> = {},
+): Edge {
   return {
     id: `e-${source}-${target}`,
     source,
@@ -85,9 +93,7 @@ describe('validateFlow', () => {
         data: { targetId: 'group1' },
       }),
     ]
-    expect(validateFlow(nodes, [])).toEqual([
-      { nodeId: 't1', message: '目标节点未配置动作或目标' },
-    ])
+    expect(validateFlow(nodes, [])).toEqual([{ nodeId: 't1', message: '目标节点未配置动作或目标' }])
   })
 
   it('returns error when target node lacks targetId', () => {
@@ -96,9 +102,7 @@ describe('validateFlow', () => {
         data: { actionType: 'route_to_group' },
       }),
     ]
-    expect(validateFlow(nodes, [])).toEqual([
-      { nodeId: 't1', message: '目标节点未配置动作或目标' },
-    ])
+    expect(validateFlow(nodes, [])).toEqual([{ nodeId: 't1', message: '目标节点未配置动作或目标' }])
   })
 
   it('returns no errors for reject node (no required data fields)', () => {
@@ -133,16 +137,12 @@ describe('validateFlow', () => {
   })
 
   it('ignores modelTrigger nodes', () => {
-    const nodes = [
-      createMockNode('vm1', 'modelTrigger', { data: {} }),
-    ]
+    const nodes = [createMockNode('vm1', 'modelTrigger', { data: {} })]
     expect(validateFlow(nodes, [])).toEqual([])
   })
 
   it('ignores unknown node types', () => {
-    const nodes = [
-      createMockNode('x1', 'unknown', { data: {} }),
-    ]
+    const nodes = [createMockNode('x1', 'unknown', { data: {} })]
     expect(validateFlow(nodes, [])).toEqual([])
   })
 })
@@ -155,18 +155,20 @@ describe('compileFlowToRoutes', () => {
   it('returns empty array when no VM nodes present', () => {
     const nodes = [
       createMockNode('c1', 'condition', { data: { field: 'request.model', operator: 'eq' } }),
-      createMockNode('t1', 'target', { data: { actionType: 'route_to_group', targetId: 'group1' } }),
+      createMockNode('t1', 'target', {
+        data: { actionType: 'route_to_group', targetId: 'group1' },
+      }),
     ]
-    const edges = [
-      createMockEdge('c1', 't1', { sourceHandle: 'true' }),
-    ]
+    const edges = [createMockEdge('c1', 't1', { sourceHandle: 'true' })]
     expect(compileFlowToRoutes(nodes, edges)).toEqual([])
   })
 
   it('compiles single VM to single target with no conditions', () => {
     const nodes = [
       createMockNode('vm-vm1', 'modelTrigger', { data: { vmId: 'vm1' } }),
-      createMockNode('t1', 'target', { data: { actionType: 'route_to_group', targetId: 'group1', label: 'Group Route' } }),
+      createMockNode('t1', 'target', {
+        data: { actionType: 'route_to_group', targetId: 'group1', label: 'Group Route' },
+      }),
     ]
     const edges = [createMockEdge('vm-vm1', 't1')]
     const routes = compileFlowToRoutes(nodes, edges)
@@ -264,14 +266,11 @@ describe('compileFlowToRoutes', () => {
         data: { actionType: 'route_to_group', targetId: 'group1' },
       }),
     ]
-    const edges = [
-      createMockEdge('vm-vm1', 't1'),
-      createMockEdge('vm-vm2', 't1'),
-    ]
+    const edges = [createMockEdge('vm-vm1', 't1'), createMockEdge('vm-vm2', 't1')]
     const routes = compileFlowToRoutes(nodes, edges)
 
     expect(routes).toHaveLength(1)
-    expect(routes[0].accessModelIds?.sort()).toEqual(['vm1', 'vm2'])
+    expect(routes[0].accessModelIds?.toSorted()).toEqual(['vm1', 'vm2'])
   })
 
   it('produces separate routes for distinct paths from same VM', () => {
@@ -304,10 +303,7 @@ describe('compileFlowToRoutes', () => {
       createMockNode('t1', 'target', { data: { actionType: 'route_to_group', targetId: 'g1' } }),
       createMockNode('t2', 'target', { data: { actionType: 'route_to_group', targetId: 'g2' } }),
     ]
-    const edges = [
-      createMockEdge('vm-vm1', 't1'),
-      createMockEdge('vm-vm1', 't2'),
-    ]
+    const edges = [createMockEdge('vm-vm1', 't1'), createMockEdge('vm-vm1', 't2')]
     const routes = compileFlowToRoutes(nodes, edges)
 
     expect(routes).toHaveLength(2)
@@ -383,9 +379,7 @@ describe('compileFlowToRoutes', () => {
     ]
     const routes = compileFlowToRoutes(nodes, edges)
 
-    expect(routes[0].conditions).toEqual([
-      { field: 'headers.x-custom', operator: 'exists' },
-    ])
+    expect(routes[0].conditions).toEqual([{ field: 'headers.x-custom', operator: 'exists' }])
   })
 
   it('skips paths with unextractable action', () => {
@@ -408,13 +402,9 @@ describe('compileFlowToRoutes round-trip', () => {
     { id: 'vm2', name: 'claude-3', displayName: 'Claude 3' },
   ]
 
-  const TEST_GROUPS = [
-    { id: 'group1', name: 'PremiumGroup', displayName: 'Premium Models' },
-  ]
+  const TEST_GROUPS = [{ id: 'group1', name: 'PremiumGroup', displayName: 'Premium Models' }]
 
-  const TEST_INSTANCES = [
-    { id: 'inst1', name: 'gpt-4-turbo' },
-  ]
+  const TEST_INSTANCES = [{ id: 'inst1', name: 'gpt-4-turbo' }]
 
   const TEST_ROUTES: ModelRoute[] = [
     {
@@ -422,9 +412,7 @@ describe('compileFlowToRoutes round-trip', () => {
       name: 'Premium Route',
       description: null,
       accessModelIds: ['vm1'],
-      conditions: [
-        { field: 'request.model', operator: 'eq', value: 'gpt-4' },
-      ],
+      conditions: [{ field: 'request.model', operator: 'eq', value: 'gpt-4' }],
       action: { type: 'route_to_group', targetId: 'group1' },
       priority: 10,
       enabled: true,

@@ -102,7 +102,10 @@ export function ProviderTable({
                     </div>
                   </TableCell>
                   <TableCell>
-                    <StatusToggle enabled={provider.enabled} onToggle={() => onToggle(provider.id)} />
+                    <StatusToggle
+                      enabled={provider.enabled}
+                      onToggle={() => onToggle(provider.id)}
+                    />
                   </TableCell>
                   <TableCell>
                     <span className="text-sm text-muted-foreground">

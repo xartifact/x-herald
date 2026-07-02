@@ -1,16 +1,16 @@
-import { and, desc, eq, gte } from '@xartifact/x-llm-gateway-db';
+import { and, desc, eq, gte } from '@xartifact/x-llm-gateway-db'
 
-import { getDatabase } from '../../db/client';
+import { getDatabase } from '../../db/client'
 
-import { anomalyEvents, type AnomalyEvent } from '@xartifact/x-llm-gateway-db';
-import { instancePerfSnapshots } from '@xartifact/x-llm-gateway-db';
+import { anomalyEvents, type AnomalyEvent } from '@xartifact/x-llm-gateway-db'
+import { instancePerfSnapshots } from '@xartifact/x-llm-gateway-db'
 
 // Detection rules
 interface DetectionRule {
-  type: string;
-  severity: 'warning' | 'critical';
-  check: (data: Record<string, unknown>) => boolean;
-  describe: (data: Record<string, unknown>) => string;
+  type: string
+  severity: 'warning' | 'critical'
+  check: (data: Record<string, unknown>) => boolean
+  describe: (data: Record<string, unknown>) => string
 }
 
 const rules: DetectionRule[] = [
@@ -24,7 +24,8 @@ const rules: DetectionRule[] = [
     type: 'high_error_rate',
     severity: 'critical',
     check: (data) => typeof data.successRate === 'number' && data.successRate < 0.8, // <80% success
-    describe: (data) => `High error rate: ${((1 - Number(data.successRate)) * 100).toFixed(1)}% failures`,
+    describe: (data) =>
+      `High error rate: ${((1 - Number(data.successRate)) * 100).toFixed(1)}% failures`,
   },
   {
     type: 'high_token_usage',
@@ -32,24 +33,24 @@ const rules: DetectionRule[] = [
     check: (data) => typeof data.avgOutputTokens === 'number' && data.avgOutputTokens > 50_000,
     describe: (data) => `High token usage: avg ${data.avgOutputTokens} output tokens`,
   },
-];
+]
 
 export class AnomalyDetector {
   async detect(): Promise<number> {
-    const db = getDatabase();
-    const now = new Date();
-    const since1h = new Date(now.getTime() - 60 * 60 * 1000);
+    const db = getDatabase()
+    const now = new Date()
+    const since1h = new Date(now.getTime() - 60 * 60 * 1000)
 
     // Get recent snapshots
     const snapshots = await db
       .select()
       .from(instancePerfSnapshots)
-      .where(gte(instancePerfSnapshots.bucketStart, since1h));
+      .where(gte(instancePerfSnapshots.bucketStart, since1h))
 
-    let newEvents = 0;
+    let newEvents = 0
 
     for (const snapshot of snapshots) {
-      const data = snapshot as unknown as Record<string, unknown>;
+      const data = snapshot as unknown as Record<string, unknown>
       for (const rule of rules) {
         if (rule.check(data)) {
           // Check if similar event already exists (dedup)
@@ -60,10 +61,10 @@ export class AnomalyDetector {
               and(
                 eq(anomalyEvents.type, rule.type),
                 eq(anomalyEvents.instanceId, snapshot.instanceId),
-                eq(anomalyEvents.resolved, false)
-              )
+                eq(anomalyEvents.resolved, false),
+              ),
             )
-            .limit(1);
+            .limit(1)
 
           if (existing.length === 0) {
             await db.insert(anomalyEvents).values({
@@ -74,45 +75,41 @@ export class AnomalyDetector {
               instanceId: snapshot.instanceId,
               description: rule.describe(data),
               details: data,
-            });
-            newEvents++;
+            })
+            newEvents++
           }
         }
       }
     }
 
-    return newEvents;
+    return newEvents
   }
 
   async getUnresolved(): Promise<AnomalyEvent[]> {
-    const db = getDatabase();
+    const db = getDatabase()
     return db
       .select()
       .from(anomalyEvents)
       .where(eq(anomalyEvents.resolved, false))
-      .orderBy(desc(anomalyEvents.createdAt));
+      .orderBy(desc(anomalyEvents.createdAt))
   }
 
   async getAll(limit = 100): Promise<AnomalyEvent[]> {
-    const db = getDatabase();
-    return db
-      .select()
-      .from(anomalyEvents)
-      .orderBy(desc(anomalyEvents.createdAt))
-      .limit(limit);
+    const db = getDatabase()
+    return db.select().from(anomalyEvents).orderBy(desc(anomalyEvents.createdAt)).limit(limit)
   }
 
   async resolve(id: string): Promise<void> {
-    const db = getDatabase();
+    const db = getDatabase()
     await db
       .update(anomalyEvents)
       .set({
         resolved: true,
         resolvedAt: new Date(),
       })
-      .where(eq(anomalyEvents.id, id));
+      .where(eq(anomalyEvents.id, id))
   }
 }
 
-export type { AnomalyEvent } from '@xartifact/x-llm-gateway-db';
-export { anomalyEvents } from '@xartifact/x-llm-gateway-db';
+export type { AnomalyEvent } from '@xartifact/x-llm-gateway-db'
+export { anomalyEvents } from '@xartifact/x-llm-gateway-db'

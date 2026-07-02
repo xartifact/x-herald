@@ -3,7 +3,14 @@
 import { useState } from 'react'
 import { Button } from '../../../shared/components/ui/button'
 import { Input } from '../../../shared/components/ui/input'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../../../shared/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '../../../shared/components/ui/dialog'
 import type { LogStorage } from '@xartifact/x-llm-gateway-shared'
 
 interface LogCleanupDialogProps {
@@ -37,16 +44,15 @@ export function LogCleanupDialog({
     }
   }
 
-  const isValid = !error && retentionDays !== '' && Number(retentionDays) >= 1 && Number(retentionDays) <= 365
+  const isValid =
+    !error && retentionDays !== '' && Number(retentionDays) >= 1 && Number(retentionDays) <= 365
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>清理过期日志</DialogTitle>
-          <DialogDescription>
-            设置日志保留天数，系统将删除超过该天数的日志记录。
-          </DialogDescription>
+          <DialogDescription>设置日志保留天数，系统将删除超过该天数的日志记录。</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
@@ -93,11 +99,11 @@ export function LogCleanupDialog({
                     </span>
                   </div>
                 )}
-{storage.estimatedExpiredLogs && storage.estimatedExpiredLogs !== 'undefined' && (
-                <p className="text-sm text-muted-foreground">
-                  预计可清理: {storage.estimatedExpiredLogs} 条
-                </p>
-              )}
+                {storage.estimatedExpiredLogs && storage.estimatedExpiredLogs !== 'undefined' && (
+                  <p className="text-sm text-muted-foreground">
+                    预计可清理: {storage.estimatedExpiredLogs} 条
+                  </p>
+                )}
               </div>
             </div>
           )}

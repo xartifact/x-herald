@@ -27,11 +27,17 @@ function ToolCallCard({ detail, index, isExpanded, onToggle }: ToolCallCardProps
       <CardHeader className="py-2.5 px-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-md bg-amber-50"><Wrench className="h-3.5 w-3.5 text-amber-600" /></div>
+            <div className="p-1.5 rounded-md bg-amber-50">
+              <Wrench className="h-3.5 w-3.5 text-amber-600" />
+            </div>
             <div className="flex items-center gap-2">
-              <span className="font-medium text-sm">{index + 1}. {detail.name}</span>
+              <span className="font-medium text-sm">
+                {index + 1}. {detail.name}
+              </span>
               {detail.source && (
-                <Badge variant="outline" className="text-[10px]">{detail.source === 'request' ? '请求' : '响应'}</Badge>
+                <Badge variant="outline" className="text-[10px]">
+                  {detail.source === 'request' ? '请求' : '响应'}
+                </Badge>
               )}
             </div>
           </div>
@@ -50,13 +56,17 @@ function ToolCallCard({ detail, index, isExpanded, onToggle }: ToolCallCardProps
           {detail.arguments !== undefined && (
             <div>
               <div className="text-xs font-medium text-muted-foreground mb-1.5">参数:</div>
-              <div className="bg-muted/50 rounded-md overflow-hidden text-xs"><JsonViewer data={detail.arguments} height="auto" /></div>
+              <div className="bg-muted/50 rounded-md overflow-hidden text-xs">
+                <JsonViewer data={detail.arguments} height="auto" />
+              </div>
             </div>
           )}
           {detail.result !== undefined && (
             <div>
               <div className="text-xs font-medium text-muted-foreground mb-1.5">结果:</div>
-              <div className="bg-muted/50 rounded-md overflow-hidden text-xs"><JsonViewer data={detail.result} height="auto" /></div>
+              <div className="bg-muted/50 rounded-md overflow-hidden text-xs">
+                <JsonViewer data={detail.result} height="auto" />
+              </div>
             </div>
           )}
           {detail.messageIndex !== undefined && (
@@ -81,7 +91,8 @@ function ToolCallDetailsSection({ toolCalls }: ToolCallDetailsSectionProps) {
 
   const toggle = (index: number) => {
     const next = new Set(expandedItems)
-    if (next.has(index)) next.delete(index); else next.add(index)
+    if (next.has(index)) next.delete(index)
+    else next.add(index)
     setExpandedItems(next)
   }
 
@@ -89,12 +100,32 @@ function ToolCallDetailsSection({ toolCalls }: ToolCallDetailsSectionProps) {
     <div className="space-y-2">
       {toolCalls.details.length > 1 && (
         <div className="flex justify-end gap-2 mb-2">
-          <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setExpandedItems(new Set(toolCalls.details!.map((_, i) => i)))}>展开全部</Button>
-          <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setExpandedItems(new Set())}>折叠全部</Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs"
+            onClick={() => setExpandedItems(new Set(toolCalls.details!.map((_, i) => i)))}
+          >
+            展开全部
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs"
+            onClick={() => setExpandedItems(new Set())}
+          >
+            折叠全部
+          </Button>
         </div>
       )}
       {toolCalls.details.map((detail, index) => (
-        <ToolCallCard key={index} detail={detail} index={index} isExpanded={expandedItems.has(index)} onToggle={toggle} />
+        <ToolCallCard
+          key={index}
+          detail={detail}
+          index={index}
+          isExpanded={expandedItems.has(index)}
+          onToggle={toggle}
+        />
       ))}
     </div>
   )
@@ -113,26 +144,43 @@ export function ToolCallsSection({ log }: ToolCallsSectionProps) {
   return (
     <Section
       title="工具调用"
-      badge={<Badge variant="secondary" className="text-xs">{log.toolCallsCount}</Badge>}
+      badge={
+        <Badge variant="secondary" className="text-xs">
+          {log.toolCallsCount}
+        </Badge>
+      }
     >
       {toolCalls?.pattern && (
-        <InfoRow label="调用模式" value={
-          <Badge variant="outline">
-            {toolCalls.pattern === 'single' ? '单次' :
-             toolCalls.pattern === 'parallel' ? '并行' : '顺序'}
-          </Badge>
-        } />
+        <InfoRow
+          label="调用模式"
+          value={
+            <Badge variant="outline">
+              {toolCalls.pattern === 'single'
+                ? '单次'
+                : toolCalls.pattern === 'parallel'
+                  ? '并行'
+                  : '顺序'}
+            </Badge>
+          }
+        />
       )}
       {tools.length > 0 && (
-        <InfoRow label="工具列表" value={
-          <div className="flex flex-wrap gap-1">
-            {tools.map((tool, idx) => (
-              <Badge key={idx} variant="secondary" className="text-xs font-mono bg-blue-50 text-blue-700 border-blue-200">
-                {tool}
-              </Badge>
-            ))}
-          </div>
-        } />
+        <InfoRow
+          label="工具列表"
+          value={
+            <div className="flex flex-wrap gap-1">
+              {tools.map((tool, idx) => (
+                <Badge
+                  key={idx}
+                  variant="secondary"
+                  className="text-xs font-mono bg-blue-50 text-blue-700 border-blue-200"
+                >
+                  {tool}
+                </Badge>
+              ))}
+            </div>
+          }
+        />
       )}
       {toolCalls?.details && toolCalls.details.length > 0 && (
         <div className="px-3 pb-3">

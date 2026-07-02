@@ -1,17 +1,17 @@
-import { sql } from '@xartifact/x-llm-gateway-db';
-import { Hono } from 'hono';
+import { sql } from '@xartifact/x-llm-gateway-db'
+import { Hono } from 'hono'
 
-import { APP_VERSION } from '../../config';
-import { getDatabase } from '../../db/client';
+import { APP_VERSION } from '../../config'
+import { getDatabase } from '../../db/client'
 
-const health = new Hono();
+const health = new Hono()
 
 // Basic health check
 health.get('/', async (c) => {
   try {
     // Test database connection
-    const db = getDatabase();
-    await db.execute(sql`SELECT 1`);
+    const db = getDatabase()
+    await db.execute(sql`SELECT 1`)
 
     return c.json({
       status: 'healthy',
@@ -19,7 +19,7 @@ health.get('/', async (c) => {
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       database: 'connected',
-    });
+    })
   } catch (error) {
     return c.json(
       {
@@ -27,38 +27,38 @@ health.get('/', async (c) => {
         timestamp: new Date().toISOString(),
         error: error instanceof Error ? error.message : 'Unknown error',
       },
-      503
-    );
+      503,
+    )
   }
-});
+})
 
 // Readiness check
 health.get('/ready', async (c) => {
   try {
-    const db = getDatabase();
-    await db.execute(sql`SELECT 1`);
+    const db = getDatabase()
+    await db.execute(sql`SELECT 1`)
 
     return c.json({
       status: 'ready',
       timestamp: new Date().toISOString(),
-    });
+    })
   } catch (error) {
     return c.json(
       {
         status: 'not_ready',
         timestamp: new Date().toISOString(),
       },
-      503
-    );
+      503,
+    )
   }
-});
+})
 
 // Liveness check
 health.get('/live', (c) => {
   return c.json({
     status: 'alive',
     timestamp: new Date().toISOString(),
-  });
-});
+  })
+})
 
-export default health;
+export default health

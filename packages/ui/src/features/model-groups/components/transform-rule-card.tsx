@@ -7,7 +7,9 @@ import { Label } from '../../../shared/components/ui/label'
 
 // Record<string, any> defined locally // TODO(6): from apps/web
 
-type TransformRule = NonNullable<NonNullable<Record<string, any>['config']>['parameterTransforms']>[0]
+type TransformRule = NonNullable<
+  NonNullable<Record<string, any>['config']>['parameterTransforms']
+>[0]
 
 interface TransformRuleCardProps {
   transform: TransformRule
@@ -16,11 +18,18 @@ interface TransformRuleCardProps {
   onRemove: (index: number) => void
 }
 
-export function TransformRuleCard({ transform, index, onUpdate, onRemove }: TransformRuleCardProps) {
+export function TransformRuleCard({
+  transform,
+  index,
+  onUpdate,
+  onRemove,
+}: TransformRuleCardProps) {
   return (
     <Card className="relative">
       <Button
-        type="button" variant="ghost" size="sm"
+        type="button"
+        variant="ghost"
+        size="sm"
         className="absolute top-2 right-2 h-8 w-8 p-0"
         onClick={() => onRemove(index)}
       >
@@ -36,22 +45,30 @@ export function TransformRuleCard({ transform, index, onUpdate, onRemove }: Tran
             <Input
               placeholder="参数名"
               value={transform.when?.paramName || ''}
-              onChange={(e) => onUpdate(index, {
-                ...transform,
-                when: { ...transform.when, paramName: e.target.value, operator: transform.when?.operator || 'exists' },
-              })}
+              onChange={(e) =>
+                onUpdate(index, {
+                  ...transform,
+                  when: {
+                    ...transform.when,
+                    paramName: e.target.value,
+                    operator: transform.when?.operator || 'exists',
+                  },
+                })
+              }
               className="h-8 text-xs"
             />
             <select
               value={transform.when?.operator || 'exists'}
-              onChange={(e) => onUpdate(index, {
-                ...transform,
-                when: {
-                  paramName: transform.when?.paramName || '',
-                  operator: e.target.value as NonNullable<TransformRule['when']>['operator'],
-                  value: transform.when?.value,
-                },
-              })}
+              onChange={(e) =>
+                onUpdate(index, {
+                  ...transform,
+                  when: {
+                    paramName: transform.when?.paramName || '',
+                    operator: e.target.value as NonNullable<TransformRule['when']>['operator'],
+                    value: transform.when?.value,
+                  },
+                })
+              }
               className="h-8 text-xs rounded-md border border-input bg-background px-2"
             >
               <option value="eq">等于 (eq)</option>
@@ -65,9 +82,23 @@ export function TransformRuleCard({ transform, index, onUpdate, onRemove }: Tran
               onChange={(e) => {
                 try {
                   const val = e.target.value ? JSON.parse(e.target.value) : undefined
-                  onUpdate(index, { ...transform, when: { paramName: transform.when?.paramName || '', operator: transform.when?.operator || 'exists', value: val } })
+                  onUpdate(index, {
+                    ...transform,
+                    when: {
+                      paramName: transform.when?.paramName || '',
+                      operator: transform.when?.operator || 'exists',
+                      value: val,
+                    },
+                  })
                 } catch {
-                  onUpdate(index, { ...transform, when: { paramName: transform.when?.paramName || '', operator: transform.when?.operator || 'exists', value: e.target.value } })
+                  onUpdate(index, {
+                    ...transform,
+                    when: {
+                      paramName: transform.when?.paramName || '',
+                      operator: transform.when?.operator || 'exists',
+                      value: e.target.value,
+                    },
+                  })
                 }
               }}
               className="h-8 text-xs"
@@ -80,7 +111,15 @@ export function TransformRuleCard({ transform, index, onUpdate, onRemove }: Tran
           <div className="grid grid-cols-3 gap-2">
             <select
               value={transform.action?.type || 'add'}
-              onChange={(e) => onUpdate(index, { ...transform, action: { ...transform.action, type: e.target.value as TransformRule['action']['type'] } })}
+              onChange={(e) =>
+                onUpdate(index, {
+                  ...transform,
+                  action: {
+                    ...transform.action,
+                    type: e.target.value as TransformRule['action']['type'],
+                  },
+                })
+              }
               className="h-8 text-xs rounded-md border border-input bg-background px-2"
             >
               <option value="add">添加 (add)</option>
@@ -91,13 +130,23 @@ export function TransformRuleCard({ transform, index, onUpdate, onRemove }: Tran
             <Input
               placeholder="目标参数"
               value={transform.action?.targetParam || ''}
-              onChange={(e) => onUpdate(index, { ...transform, action: { ...transform.action, targetParam: e.target.value } })}
+              onChange={(e) =>
+                onUpdate(index, {
+                  ...transform,
+                  action: { ...transform.action, targetParam: e.target.value },
+                })
+              }
               className="h-8 text-xs"
             />
             <Input
               placeholder="值或表达式"
               value={transform.action?.value !== undefined ? String(transform.action.value) : ''}
-              onChange={(e) => onUpdate(index, { ...transform, action: { ...transform.action, value: e.target.value } })}
+              onChange={(e) =>
+                onUpdate(index, {
+                  ...transform,
+                  action: { ...transform.action, value: e.target.value },
+                })
+              }
               className="h-8 text-xs"
             />
           </div>

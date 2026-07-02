@@ -133,9 +133,7 @@ export function EventHistoryTable({
                     <TableCell className="text-muted-foreground">
                       {relativeTime(evt.createdAt)}
                     </TableCell>
-                    <TableCell>
-                      {evt.instanceName || evt.instanceId.slice(0, 12)}
-                    </TableCell>
+                    <TableCell>{evt.instanceName || evt.instanceId.slice(0, 12)}</TableCell>
                     <TableCell>{evt.groupName}</TableCell>
                     <TableCell>{evt.providerName}</TableCell>
                     <TableCell>

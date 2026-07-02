@@ -1,15 +1,15 @@
-import type { Context, Next } from 'hono';
-import { verify } from 'hono/jwt';
+import type { Context, Next } from 'hono'
+import { verify } from 'hono/jwt'
 
-import { loadConfig, type GatewayConfig } from '../../config';
-import rootLogger from '../../lib/logger';
+import { loadConfig, type GatewayConfig } from '../../config'
+import rootLogger from '../../lib/logger'
 
-const logger = rootLogger.child({ module: 'auth' });
+const logger = rootLogger.child({ module: 'auth' })
 
-let _config: GatewayConfig | null = null;
+let _config: GatewayConfig | null = null
 function getConfig(): GatewayConfig {
-  if (!_config) _config = loadConfig();
-  return _config;
+  if (!_config) _config = loadConfig()
+  return _config
 }
 
 /**
@@ -18,7 +18,7 @@ function getConfig(): GatewayConfig {
 export async function authMiddleware(c: Context, next: Next) {
   try {
     // 从 header 获取 token
-    const authHeader = c.req.header('Authorization');
+    const authHeader = c.req.header('Authorization')
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return c.json(
@@ -26,28 +26,28 @@ export async function authMiddleware(c: Context, next: Next) {
           error: 'Missing or invalid authorization header',
           code: 'UNAUTHORIZED',
         },
-        401
-      );
+        401,
+      )
     }
 
-    const token = authHeader.substring(7);
+    const token = authHeader.substring(7)
 
     // 验证 token
-    const payload = await verify(token, getConfig().admin.password, 'HS256');
+    const payload = await verify(token, getConfig().admin.password, 'HS256')
 
     // 将用户信息存储到 context
-    c.set('user', payload);
+    c.set('user', payload)
 
-    await next();
+    await next()
   } catch (error) {
-    logger.warn({ err: error }, 'Authentication failed');
+    logger.warn({ err: error }, 'Authentication failed')
     return c.json(
       {
         error: 'Invalid or expired token',
         code: 'INVALID_TOKEN',
       },
-      401
-    );
+      401,
+    )
   }
 }
 
@@ -56,18 +56,18 @@ export async function authMiddleware(c: Context, next: Next) {
  */
 export async function optionalAuthMiddleware(c: Context, next: Next) {
   try {
-    const authHeader = c.req.header('Authorization');
+    const authHeader = c.req.header('Authorization')
 
     if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
-      const payload = await verify(token, getConfig().admin.password, 'HS256');
-      c.set('user', payload);
+      const token = authHeader.substring(7)
+      const payload = await verify(token, getConfig().admin.password, 'HS256')
+      c.set('user', payload)
     }
 
-    await next();
+    await next()
   } catch (error) {
     // 验证失败，继续处理（作为未认证用户）
-    logger.warn({ error }, 'Optional auth failed, continuing as unauthenticated');
-    await next();
+    logger.warn({ error }, 'Optional auth failed, continuing as unauthenticated')
+    await next()
   }
 }

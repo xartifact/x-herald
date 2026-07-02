@@ -8,11 +8,7 @@ import { toast } from 'sonner'
 import type { FlowEditorHandle } from '@xartifact/x-llm-gateway-ui'
 import { compileFlowToRoutes, validateFlow } from '@xartifact/x-llm-gateway-ui'
 import type { ModelRoute } from '@xartifact/x-llm-gateway-ui'
-import {
-  useCreateModelRoute,
-  useDeleteModelRoute,
-  useModelRoutes,
-} from './use-model-routes'
+import { useCreateModelRoute, useDeleteModelRoute, useModelRoutes } from './use-model-routes'
 
 export function useModelRoutePage() {
   const { refetch } = useModelRoutes()
@@ -41,7 +37,7 @@ export function useModelRoutePage() {
   // 属性面板更新节点数据
   const handleUpdateNodeData = useCallback((nodeId: string, data: Record<string, unknown>) => {
     flowEditorRef.current?.updateNodeData(nodeId, data)
-    setSelectedNode(prev =>
+    setSelectedNode((prev) =>
       prev?.id === nodeId ? { ...prev, data: { ...prev.data, ...data } } : prev,
     )
     setIsDirty(true)
@@ -72,11 +68,11 @@ export function useModelRoutePage() {
       const existingRoutes: ModelRoute[] = result.data ?? []
 
       // 删除所有现有路由
-      await Promise.all(existingRoutes.map(r => deleteRoute.mutateAsync(r.id)))
+      await Promise.all(existingRoutes.map((r) => deleteRoute.mutateAsync(r.id)))
 
       // 创建编译出的新路由
       if (compiledRoutes.length > 0) {
-        await Promise.all(compiledRoutes.map(r => createRoute.mutateAsync(r)))
+        await Promise.all(compiledRoutes.map((r) => createRoute.mutateAsync(r)))
       }
 
       setIsDirty(false)

@@ -1,7 +1,6 @@
 import { Trash2 } from 'lucide-react'
 import { UseFormReturn } from 'react-hook-form'
 
-
 import { Button } from '../../../shared/components/ui/button'
 import { Card, CardContent } from '../../../shared/components/ui/card'
 import { Input } from '../../../shared/components/ui/input'
@@ -38,7 +37,7 @@ export function MappingRuleRow({ index, form, canRemove, onRemove }: MappingRule
               list="from-types"
             />
             <datalist id="from-types">
-              {PREDEFINED_TYPES.map(t => (
+              {PREDEFINED_TYPES.map((t) => (
                 <option key={t.value} value={t.value} />
               ))}
             </datalist>
@@ -52,7 +51,7 @@ export function MappingRuleRow({ index, form, canRemove, onRemove }: MappingRule
               list="to-types"
             />
             <datalist id="to-types">
-              {PREDEFINED_TYPES.map(t => (
+              {PREDEFINED_TYPES.map((t) => (
                 <option key={t.value} value={t.value} />
               ))}
             </datalist>

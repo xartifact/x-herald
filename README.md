@@ -14,24 +14,25 @@ x-llm-gateway 是一个透明代理网关，统一管理对 LLM 服务商的访�
 
 ## 核心特性
 
-| 特性 | 状态 |
-|------|------|
-| OpenAI / Anthropic 双向协议转换 | ✅ |
-| 同协议透传（passthrough） | ✅ |
-| 虚拟模型 + 路由规则引擎 | ✅ |
-| `__catchall__` 全局兜底路由 | ✅ |
-| 模型组 + 模型实例（优先级路由） | ✅ |
-| 虚拟密钥（速率限制 / Token 额度） | ✅ |
-| 自动重试（指数退避，含 521 错误） | ✅ |
-| Anthropic thinking 块支持 | ✅ |
-| 请求日志（含自动清理） | ✅ |
-| 配置导入 / 导出（JSON v1） | ✅ |
+| 特性                              | 状态 |
+| --------------------------------- | ---- |
+| OpenAI / Anthropic 双向协议转换   | ✅   |
+| 同协议透传（passthrough）         | ✅   |
+| 虚拟模型 + 路由规则引擎           | ✅   |
+| `__catchall__` 全局兜底路由       | ✅   |
+| 模型组 + 模型实例（优先级路由）   | ✅   |
+| 虚拟密钥（速率限制 / Token 额度） | ✅   |
+| 自动重试（指数退避，含 521 错误） | ✅   |
+| Anthropic thinking 块支持         | ✅   |
+| 请求日志（含自动清理）            | ✅   |
+| 配置导入 / 导出（JSON v1）        | ✅   |
 
 ---
 
 ## 技术栈
 
 **后端**
+
 - Runtime: Bun
 - 框架: Hono 4.0+ (轻量级 API 框架)
 - 服务器: Bun.serve() (直接运行 TypeScript)
@@ -40,13 +41,21 @@ x-llm-gateway 是一个透明代理网关，统一管理对 LLM 服务商的访�
 - 日志: Pino
 
 **前端**
+
 - 框架: TanStack Router (文件路由)
 - UI: React 19
-- 构建: Vite 6.0+
+- 构建: Vite+ (统一工具链)
 - 组件库: shadcn/ui (new-york) + TailwindCSS v4
 - TanStack Query v5 + react-hook-form + zod
 
 **工程化**
+
+- 工具链: Vite+ (统一 dev / build / test / lint / format)
+- Linting: oxlint (180 rules, 5 plugins)
+- 格式化: oxfmt
+- 测试: bun:test (后端) + vp test (UI 组件) + Playwright (E2E)
+- 覆盖率: Bun 原生 coverage (lcov + text reporter)
+- Git Hooks: `vp config` 自动配置 pre-commit hooks (替代 husky + lint-staged)
 - Monorepo — Bun workspaces + TypeScript project references
 - 共享包: `@xartifact/x-llm-gateway-shared` (类型/常量), `@xartifact/x-llm-gateway-gateway` (核心层), `@xartifact/x-llm-gateway-ui` (组件)
 
@@ -81,31 +90,43 @@ x-llm-gateway/
 ### 本地开发
 
 ```bash
-# 安装依赖
-bun install
+bun install              # 安装依赖（自动配置 git hooks）
+cp .env.example .env     # 配置环境变量
 
-# 配置环境变量
-cp .env.example .env
-# 编辑 .env，至少配置 DATABASE_URL 和 JWT_SECRET
+cd apps/gateway && bun run db:migrate  # 首次运行数据库迁移
 
-# 运行数据库迁移（首次启动前）
-cd apps/gateway && bun run db:migrate
+bun run dev              # 启动开发服务器 (gateway + web SPA)
+```
 
-# 启动开发服务器
-bun run dev
-# 访问 http://localhost:3000
+### 质量检查
+
+```bash
+bun run lint             # oxlint (vp lint .)
+bun run lint:fix         # 自动修复 (vp lint . --fix)
+bun run format           # 格式化 (vp fmt .)
+bun run format:check     # 检查格式 (vp fmt --check .)
+bun run check            # 格式 + lint + 类型检查 (vp check .)
+bun run typecheck        # 全 monorepo TypeScript 类型检查
+```
+
+### 测试
+
+```bash
+bun run test             # 后端单元/集成测试 (bun:test)
+bun run test:ui          # UI 组件测试 (vp test run)
+bun run test:e2e:ui      # Playwright E2E 测试 (交互式 UI)
 ```
 
 ### 环境变量
 
-| 变量 | 说明 | 默认值 |
-|------|------|--------|
-| `DATABASE_URL` | PostgreSQL 连接字符串 | — |
-| `DB_TYPE` | `postgres` 或 `pglite` | 自动检测 |
-| `JWT_SECRET` | JWT 签名密钥 | — |
-| `ADMIN_PASSWORD` | 管理员初始密码 | `change-me-in-production` |
-| `LOG_LEVEL` | 日志级别（trace/debug/info/warn/error） | `info` |
-| `PROVIDER_SKIP_TLS_VERIFY` | 跳过 TLS 证书验证（容器内使用） | `false` |
+| 变量                       | 说明                                    | 默认值                    |
+| -------------------------- | --------------------------------------- | ------------------------- |
+| `DATABASE_URL`             | PostgreSQL 连接字符串                   | —                         |
+| `DB_TYPE`                  | `postgres` 或 `pglite`                  | 自动检测                  |
+| `JWT_SECRET`               | JWT 签名密钥                            | —                         |
+| `ADMIN_PASSWORD`           | 管理员初始密码                          | `change-me-in-production` |
+| `LOG_LEVEL`                | 日志级别（trace/debug/info/warn/error） | `info`                    |
+| `PROVIDER_SKIP_TLS_VERIFY` | 跳过 TLS 证书验证（容器内使用）         | `false`                   |
 
 ---
 
@@ -113,13 +134,13 @@ bun run dev
 
 所有 Gateway 请求需携带虚拟密钥（`Authorization: Bearer <key>`）。
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| `POST` | `/api/v1/chat/completions` | OpenAI Chat Completions |
-| `POST` | `/api/v1/responses` | OpenAI Responses（兼容） |
-| `POST` | `/api/v1/messages` | Anthropic Messages |
-| `POST` | `/api/v1/messages/count_tokens` | Anthropic Token 计数 |
-| `GET` | `/api/v1/models` | 可用虚拟模型列表 |
+| 方法   | 路径                            | 说明                     |
+| ------ | ------------------------------- | ------------------------ |
+| `POST` | `/api/v1/chat/completions`      | OpenAI Chat Completions  |
+| `POST` | `/api/v1/responses`             | OpenAI Responses（兼容） |
+| `POST` | `/api/v1/messages`              | Anthropic Messages       |
+| `POST` | `/api/v1/messages/count_tokens` | Anthropic Token 计数     |
+| `GET`  | `/api/v1/models`                | 可用虚拟模型列表         |
 
 管理 API（需登录）：`/api/providers`、`/api/model-groups`、`/api/virtual-models`、`/api/model-routes`、`/api/keys`、`/api/logs`、`/api/config`、`/api/settings`
 
@@ -135,24 +156,24 @@ bun run dev
 
 ### 路由规则条件字段
 
-| 字段 | 说明 |
-|------|------|
-| `request.model` | 请求的模型名称 |
-| `context.streaming` | 是否为流式请求 |
+| 字段                 | 说明               |
+| -------------------- | ------------------ |
+| `request.model`      | 请求的模型名称     |
+| `context.streaming`  | 是否为流式请求     |
 | `context.apiKeyName` | 使用的虚拟密钥名称 |
-| `context.hour` | 当前小时（0-23） |
-| `context.clientType` | 客户端类型 |
+| `context.hour`       | 当前小时（0-23）   |
+| `context.clientType` | 客户端类型         |
 
 支持的操作符：`eq`、`ne`、`in`、`starts_with`、`exists`
 
 ### 路由动作
 
-| 动作 | 说明 |
-|------|------|
-| `route_to_group` | 路由到指定模型组（按实例优先级选择） |
-| `route_to_instance` | 路由到指定模型实例 |
-| `reject` | 拒绝请求 |
-| `fallback` | 使用请求模型名透传 |
+| 动作                | 说明                                 |
+| ------------------- | ------------------------------------ |
+| `route_to_group`    | 路由到指定模型组（按实例优先级选择） |
+| `route_to_instance` | 路由到指定模型实例                   |
+| `reject`            | 拒绝请求                             |
+| `fallback`          | 使用请求模型名透传                   |
 
 ### `__catchall__` 虚拟模型
 
@@ -166,20 +187,20 @@ bun run dev
 
 访问 `http://localhost:3000`（开发服务器），包含以下完整页面：
 
-| 页面 | 状态 |
-|------|------|
-| **Dashboard** — 概览统计（接入 3 个实时 API） | ✅ |
-| **Providers** — 服务商管理 | ✅ |
-| **Model Groups** — 模型组 + 模型实例 CRUD | ✅（Dialog 创建/编辑/删除/启用切换） |
-| **Virtual Models + Model Routes** — 虚拟模型 + 路由规则 | ✅ |
-| **Keys** — 虚拟密钥管理 | ✅ |
-| **Logs** — 请求日志查询 | ✅ |
-| **Client Models** — 客户端模型统计 | ✅ |
-| **Settings** — 配置导入 / 导出 | ✅ |
-| **Circuit Breaker** — 熔断器状态监控 | ✅ |
-| **Access Models** — 访问模型白名单/黑名单 | ✅ |
-| **Provider Stats** — 服务商统计面板 | ✅ |
-| **Metrics** — 网关性能指标 | ✅ |
+| 页面                                                    | 状态                                 |
+| ------------------------------------------------------- | ------------------------------------ |
+| **Dashboard** — 概览统计（接入 3 个实时 API）           | ✅                                   |
+| **Providers** — 服务商管理                              | ✅                                   |
+| **Model Groups** — 模型组 + 模型实例 CRUD               | ✅（Dialog 创建/编辑/删除/启用切换） |
+| **Virtual Models + Model Routes** — 虚拟模型 + 路由规则 | ✅                                   |
+| **Keys** — 虚拟密钥管理                                 | ✅                                   |
+| **Logs** — 请求日志查询                                 | ✅                                   |
+| **Client Models** — 客户端模型统计                      | ✅                                   |
+| **Settings** — 配置导入 / 导出                          | ✅                                   |
+| **Circuit Breaker** — 熔断器状态监控                    | ✅                                   |
+| **Access Models** — 访问模型白名单/黑名单               | ✅                                   |
+| **Provider Stats** — 服务商统计面板                     | ✅                                   |
+| **Metrics** — 网关性能指标                              | ✅                                   |
 
 ---
 

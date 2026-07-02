@@ -25,12 +25,8 @@ export function InfoRow({ label, value, copyable = false, mono = false }: InfoRo
 
   return (
     <div className="flex items-start py-2.5 px-4 hover:bg-accent/50 transition-colors group">
-      <div className="w-32 flex-shrink-0 text-sm text-muted-foreground font-medium">
-        {label}
-      </div>
-      <div className={cn('flex-1 text-sm', mono && 'font-mono')}>
-        {value}
-      </div>
+      <div className="w-32 flex-shrink-0 text-sm text-muted-foreground font-medium">{label}</div>
+      <div className={cn('flex-1 text-sm', mono && 'font-mono')}>{value}</div>
       {copyable && typeof value === 'string' && (
         <Button
           variant="ghost"

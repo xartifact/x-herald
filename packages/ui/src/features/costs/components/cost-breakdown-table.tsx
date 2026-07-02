@@ -30,7 +30,7 @@ function formatTokens(tokens: number): string {
 
 export function CostBreakdownTable({ items, totalCost, isLoading }: CostBreakdownTableProps) {
   const sortedItems = useMemo(() => {
-    return [...items].sort((a, b) => b.totalCost - a.totalCost)
+    return [...items].toSorted((a, b) => b.totalCost - a.totalCost)
   }, [items])
 
   if (isLoading) {
@@ -44,11 +44,7 @@ export function CostBreakdownTable({ items, totalCost, isLoading }: CostBreakdow
   }
 
   if (sortedItems.length === 0) {
-    return (
-      <div className="text-center text-muted-foreground py-12">
-        暂无数据
-      </div>
-    )
+    return <div className="text-center text-muted-foreground py-12">暂无数据</div>
   }
 
   return (
@@ -66,9 +62,7 @@ export function CostBreakdownTable({ items, totalCost, isLoading }: CostBreakdow
         </TableHeader>
         <TableBody>
           {sortedItems.map((item) => {
-            const percentage = totalCost > 0
-              ? (item.totalCost / totalCost) * 100
-              : 0
+            const percentage = totalCost > 0 ? (item.totalCost / totalCost) * 100 : 0
 
             return (
               <TableRow key={item.name}>

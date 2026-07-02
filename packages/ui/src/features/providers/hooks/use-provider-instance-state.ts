@@ -59,7 +59,15 @@ export function useProviderInstanceState() {
 
   const handleAddInstance = (providerId: string) => {
     setEditingInstanceId(null)
-    instanceForm.reset({ providerId, name: '', actualModelName: '', description: '', weight: 100, priority: 0, config: undefined })
+    instanceForm.reset({
+      providerId,
+      name: '',
+      actualModelName: '',
+      description: '',
+      weight: 100,
+      priority: 0,
+      config: undefined,
+    })
     setInstanceDialogOpen(true)
   }
 

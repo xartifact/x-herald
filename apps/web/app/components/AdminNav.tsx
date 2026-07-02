@@ -14,7 +14,7 @@ export default function AdminNav() {
   const pathname = typeof window !== 'undefined' ? window.location.pathname : ''
 
   const currentLabel = allNavItems.find(
-    item => pathname === item.href || pathname.startsWith(item.href + '/')
+    (item) => pathname === item.href || pathname.startsWith(item.href + '/'),
   )?.label
 
   return (
@@ -36,7 +36,14 @@ export default function AdminNav() {
                 v{APP_VERSION}
               </span>
             )}
-            <Button variant="ghost" size="sm" onClick={() => { localStorage.removeItem('admin_token'); window.location.href = '/login' }}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                localStorage.removeItem('admin_token')
+                window.location.href = '/login'
+              }}
+            >
               <LogOut className="mr-2 h-4 w-4" />
               退出
             </Button>

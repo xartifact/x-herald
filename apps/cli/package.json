@@ -2,11 +2,11 @@
   "name": "@xartifact/x-llm-gateway-cli",
   "version": "0.1.0",
   "private": true,
-  "type": "module",
-  "main": "./src/index.ts",
   "bin": {
     "xgate": "./src/index.ts"
   },
+  "type": "module",
+  "main": "./src/index.ts",
   "dependencies": {
     "@clack/prompts": "^1.5.1",
     "commander": "^12.0.0"

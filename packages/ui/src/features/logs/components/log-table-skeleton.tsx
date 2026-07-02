@@ -1,6 +1,13 @@
 'use client'
 
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../shared/components/ui/table'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../../../shared/components/ui/table'
 import { Skeleton } from '../../../shared/components/ui/skeleton'
 
 export function LogTableSkeleton() {

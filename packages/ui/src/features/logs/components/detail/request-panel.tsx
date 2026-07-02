@@ -13,10 +13,14 @@ import { MessageAnalysisPanel } from './message-analysis-panel'
 import { MessageTimelineSection } from './message-timeline-section'
 
 const RequestBodySchema = z.object({
-  messages: z.array(z.object({
-    role: z.string(),
-    content: z.unknown(),
-  })).optional(),
+  messages: z
+    .array(
+      z.object({
+        role: z.string(),
+        content: z.unknown(),
+      }),
+    )
+    .optional(),
 })
 
 interface RequestPanelProps {
@@ -34,7 +38,12 @@ export function RequestPanel({ log, className }: RequestPanelProps) {
   const tabCount = hasMessageSequence ? 3 : 2
 
   return (
-    <div className={cn('flex flex-col border-r last:border-r-0 bg-background overflow-hidden', className)}>
+    <div
+      className={cn(
+        'flex flex-col border-r last:border-r-0 bg-background overflow-hidden',
+        className,
+      )}
+    >
       <div className="px-4 py-2.5 border-b bg-muted/20 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">
           <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />
@@ -46,18 +55,31 @@ export function RequestPanel({ log, className }: RequestPanelProps) {
           <TabsList className={cn('grid w-full', tabCount === 3 ? 'grid-cols-3' : 'grid-cols-2')}>
             <TabsTrigger value="body">Body</TabsTrigger>
             <TabsTrigger value="headers">Headers</TabsTrigger>
-            {hasMessageSequence && (
-              <TabsTrigger value="analysis">消息分析</TabsTrigger>
-            )}
+            {hasMessageSequence && <TabsTrigger value="analysis">消息分析</TabsTrigger>}
           </TabsList>
         </div>
 
         <TabsContent value="body" className="flex-1 m-0 flex flex-col min-h-0">
           <BodySubTabs
             tabs={[
-              { key: 'client', label: '客户端', data: log.requestBody, emptyText: '无客户端请求数据' },
-              { key: 'provider', label: 'Provider', data: log.transformedRequestBody ?? null, emptyText: '无 Provider 请求数据' },
-              { key: 'standard', label: '标准格式', data: log.standardRequestBody ?? null, emptyText: '无标准格式请求数据' },
+              {
+                key: 'client',
+                label: '客户端',
+                data: log.requestBody,
+                emptyText: '无客户端请求数据',
+              },
+              {
+                key: 'provider',
+                label: 'Provider',
+                data: log.transformedRequestBody ?? null,
+                emptyText: '无 Provider 请求数据',
+              },
+              {
+                key: 'standard',
+                label: '标准格式',
+                data: log.standardRequestBody ?? null,
+                emptyText: '无标准格式请求数据',
+              },
             ]}
           />
         </TabsContent>

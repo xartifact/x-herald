@@ -14,7 +14,12 @@ interface ProviderPageDialogsProps {
   thinkingMapping: ComponentProps<typeof ThinkingTypeMappingDialog>
 }
 
-export function ProviderPageDialogs({ instance, providerForm, syncModels, thinkingMapping }: ProviderPageDialogsProps) {
+export function ProviderPageDialogs({
+  instance,
+  providerForm,
+  syncModels,
+  thinkingMapping,
+}: ProviderPageDialogsProps) {
   return (
     <>
       <ModelInstanceForm {...instance} />

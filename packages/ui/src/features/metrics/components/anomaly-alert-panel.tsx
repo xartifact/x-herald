@@ -19,11 +19,7 @@ import {
   TableRow,
 } from '../../../shared/components/ui'
 
-import {
-  useAnomalyEvents,
-  useDetectAnomalies,
-  useResolveAnomaly,
-} from '../hooks/use-metrics'
+import { useAnomalyEvents, useDetectAnomalies, useResolveAnomaly } from '../hooks/use-metrics'
 
 const TYPE_LABELS: Record<string, string> = {
   slow_request: '慢请求',
@@ -82,7 +78,9 @@ function AnomalyRow({ event, onResolve, isResolving }: AnomalyRowProps) {
     <TableRow>
       <TableCell>
         <div className="flex items-center gap-2">
-          <Icon className={`h-4 w-4 ${event.severity === 'critical' ? 'text-red-500' : 'text-yellow-500'}`} />
+          <Icon
+            className={`h-4 w-4 ${event.severity === 'critical' ? 'text-red-500' : 'text-yellow-500'}`}
+          />
           <Badge variant="outline" className={severityConfig.badgeClass}>
             {severityConfig.label}
           </Badge>
@@ -91,9 +89,7 @@ function AnomalyRow({ event, onResolve, isResolving }: AnomalyRowProps) {
       <TableCell className="font-medium">{TYPE_LABELS[event.type] ?? event.type}</TableCell>
       <TableCell className="text-muted-foreground">
         {event.providerName ?? '—'}
-        {event.modelName && (
-          <span className="text-xs ml-1">({event.modelName})</span>
-        )}
+        {event.modelName && <span className="text-xs ml-1">({event.modelName})</span>}
       </TableCell>
       <TableCell className="max-w-[300px] truncate" title={event.description ?? ''}>
         {event.description ?? '—'}
@@ -176,9 +172,7 @@ export function AnomalyAlertPanel() {
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        {isLoading && (
-          <div className="text-center text-muted-foreground py-8">加载中…</div>
-        )}
+        {isLoading && <div className="text-center text-muted-foreground py-8">加载中…</div>}
         {!isLoading && events.length === 0 && (
           <div className="text-center text-muted-foreground py-8 flex flex-col items-center gap-2">
             <CheckCircle2 className="h-8 w-8 text-green-500" />

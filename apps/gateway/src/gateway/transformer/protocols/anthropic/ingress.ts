@@ -1,8 +1,8 @@
-import type { TransformerContext, StandardRequest } from '@xartifact/x-llm-gateway-shared';
+import type { TransformerContext, StandardRequest } from '@xartifact/x-llm-gateway-shared'
 
-import { convertMessage } from './converters/message-converter';
-import { convertAnthropicTool, convertToolChoice } from './converters/tool-converter';
-import type { AnthropicRequest } from './types';
+import { convertMessage } from './converters/message-converter'
+import { convertAnthropicTool, convertToolChoice } from './converters/tool-converter'
+import type { AnthropicRequest } from './types'
 
 /**
  * Normalize Anthropic request to standard format (ingress pipeline)
@@ -11,14 +11,14 @@ export function normalizeAnthropicRequest(
   request: unknown,
   ctx: TransformerContext,
 ): StandardRequest {
-  const anthropicReq = request as AnthropicRequest;
+  const anthropicReq = request as AnthropicRequest
 
-  const standardMessages = anthropicReq.messages.map((msg) => convertMessage(msg));
+  const standardMessages = anthropicReq.messages.map((msg) => convertMessage(msg))
 
-  let systemContent: string | { type: 'text'; text: string }[] | undefined;
+  let systemContent: string | { type: 'text'; text: string }[] | undefined
   if (anthropicReq.system) {
     if (typeof anthropicReq.system === 'string') {
-      systemContent = anthropicReq.system;
+      systemContent = anthropicReq.system
     } else if (Array.isArray(anthropicReq.system)) {
       systemContent = anthropicReq.system
         .filter((s) => s.type === 'text')
@@ -26,18 +26,19 @@ export function normalizeAnthropicRequest(
           type: 'text' as const,
           text: s.text,
           ...(s.cache_control && { cache_control: s.cache_control }),
-        }));
+        }))
     }
   }
 
   if (systemContent) {
-    const systemText = typeof systemContent === 'string'
-      ? systemContent
-      : systemContent.map(s => s.text).join('\n');
+    const systemText =
+      typeof systemContent === 'string'
+        ? systemContent
+        : systemContent.map((s) => s.text).join('\n')
     standardMessages.unshift({
       role: 'system',
       content: systemText,
-    });
+    })
   }
 
   return {
@@ -64,5 +65,5 @@ export function normalizeAnthropicRequest(
       userId: anthropicReq.metadata?.user_id,
       ...ctx.metadata,
     },
-  };
+  }
 }

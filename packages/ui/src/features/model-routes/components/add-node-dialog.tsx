@@ -1,5 +1,10 @@
 import { Button } from '../../../shared/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../shared/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '../../../shared/components/ui/dialog'
 
 import type { NodeTemplate } from './flow-editor-constants'
 import { NODE_TEMPLATES } from './flow-editor-constants'
@@ -18,7 +23,7 @@ export function AddNodeDialog({ open, onOpenChange, onAddNode }: AddNodeDialogPr
           <DialogTitle className="text-sm">选择节点类型</DialogTitle>
         </DialogHeader>
         <div className="grid grid-cols-2 gap-2 pt-1">
-          {NODE_TEMPLATES.map(t => {
+          {NODE_TEMPLATES.map((t) => {
             const Icon = t.icon
             return (
               <Button

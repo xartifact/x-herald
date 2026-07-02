@@ -5,7 +5,6 @@ import { useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 
-
 import { cn } from '@xartifact/x-llm-gateway-ui'
 import {
   DropdownMenu,
@@ -18,7 +17,7 @@ import { navGroups } from './admin-nav-config'
 import type { NavGroup } from './admin-nav-config'
 
 function isGroupActive(group: NavGroup, pathname: string): boolean {
-  return group.items.some(item => pathname === item.href || pathname.startsWith(item.href + '/'))
+  return group.items.some((item) => pathname === item.href || pathname.startsWith(item.href + '/'))
 }
 
 function isItemActive(href: string, pathname: string): boolean {
@@ -43,7 +42,7 @@ export function NavDesktopDropdowns() {
                 'inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors',
                 isGroupActive(group, pathname)
                   ? 'text-primary bg-primary/10'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100',
               )}
             >
               {group.icon && <span className="mr-2">{group.icon}</span>}
@@ -56,7 +55,10 @@ export function NavDesktopDropdowns() {
               <DropdownMenuItem key={item.href} asChild>
                 <a
                   href={item.href}
-                  className={cn('flex items-center cursor-pointer', isItemActive(item.href, pathname) && 'bg-primary/10 text-primary')}
+                  className={cn(
+                    'flex items-center cursor-pointer',
+                    isItemActive(item.href, pathname) && 'bg-primary/10 text-primary',
+                  )}
                   onClick={() => setOpenDropdown(null)}
                 >
                   {item.icon && <span className="mr-2">{item.icon}</span>}

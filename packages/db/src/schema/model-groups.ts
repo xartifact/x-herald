@@ -1,8 +1,25 @@
-import { relations } from 'drizzle-orm';
-import { pgTable, varchar, boolean, timestamp, jsonb, uuid, text, integer, primaryKey } from 'drizzle-orm/pg-core';
-import { providers } from './providers';
+import { relations } from 'drizzle-orm'
+import {
+  pgTable,
+  varchar,
+  boolean,
+  timestamp,
+  jsonb,
+  uuid,
+  text,
+  integer,
+  primaryKey,
+} from 'drizzle-orm/pg-core'
+import { providers } from './providers'
 
-import type { ModelCapabilities, RoutingConfig, InstanceConfig, RouteCondition, RouteAction, FlowData } from '@xartifact/x-llm-gateway-shared';
+import type {
+  ModelCapabilities,
+  RoutingConfig,
+  InstanceConfig,
+  RouteCondition,
+  RouteAction,
+  FlowData,
+} from '@xartifact/x-llm-gateway-shared'
 
 export const modelGroups = pgTable('model_groups', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -18,14 +35,16 @@ export const modelGroups = pgTable('model_groups', {
   metadata: jsonb('metadata').$type<Record<string, unknown>>(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+})
 
-export type ModelGroup = typeof modelGroups.$inferSelect;
-export type NewModelGroup = typeof modelGroups.$inferInsert;
+export type ModelGroup = typeof modelGroups.$inferSelect
+export type NewModelGroup = typeof modelGroups.$inferInsert
 
 export const modelInstances = pgTable('model_instances', {
   id: uuid('id').primaryKey().defaultRandom(),
-  providerId: uuid('provider_id').notNull().references(() => providers.id, { onDelete: 'cascade' }),
+  providerId: uuid('provider_id')
+    .notNull()
+    .references(() => providers.id, { onDelete: 'cascade' }),
   name: varchar('name', { length: 255 }).notNull(),
   actualModelName: varchar('actual_model_name', { length: 255 }).notNull(),
   description: text('description'),
@@ -40,21 +59,29 @@ export const modelInstances = pgTable('model_instances', {
   metadata: jsonb('metadata').$type<Record<string, unknown>>(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+})
 
-export type ModelInstance = typeof modelInstances.$inferSelect;
-export type NewModelInstance = typeof modelInstances.$inferInsert;
+export type ModelInstance = typeof modelInstances.$inferSelect
+export type NewModelInstance = typeof modelInstances.$inferInsert
 
-export const modelGroupMemberships = pgTable('model_group_memberships', {
-  groupId: uuid('group_id').notNull().references(() => modelGroups.id, { onDelete: 'cascade' }),
-  instanceId: uuid('instance_id').notNull().references(() => modelInstances.id, { onDelete: 'cascade' }),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-}, (table) => ({
-  pk: primaryKey({ columns: [table.groupId, table.instanceId] }),
-}));
+export const modelGroupMemberships = pgTable(
+  'model_group_memberships',
+  {
+    groupId: uuid('group_id')
+      .notNull()
+      .references(() => modelGroups.id, { onDelete: 'cascade' }),
+    instanceId: uuid('instance_id')
+      .notNull()
+      .references(() => modelInstances.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.groupId, table.instanceId] }),
+  }),
+)
 
-export type ModelGroupMembership = typeof modelGroupMemberships.$inferSelect;
-export type NewModelGroupMembership = typeof modelGroupMemberships.$inferInsert;
+export type ModelGroupMembership = typeof modelGroupMemberships.$inferSelect
+export type NewModelGroupMembership = typeof modelGroupMemberships.$inferInsert
 
 export const modelInstancesRelations = relations(modelInstances, ({ one, many }) => ({
   memberships: many(modelGroupMemberships),
@@ -62,7 +89,7 @@ export const modelInstancesRelations = relations(modelInstances, ({ one, many })
     fields: [modelInstances.providerId],
     references: [providers.id],
   }),
-}));
+}))
 
 export const modelGroupMembershipsRelations = relations(modelGroupMemberships, ({ one }) => ({
   group: one(modelGroups, {
@@ -73,7 +100,7 @@ export const modelGroupMembershipsRelations = relations(modelGroupMemberships, (
     fields: [modelGroupMemberships.instanceId],
     references: [modelInstances.id],
   }),
-}));
+}))
 
 export const accessModels = pgTable('access_models', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -84,10 +111,10 @@ export const accessModels = pgTable('access_models', {
   capabilities: jsonb('capabilities').$type<ModelCapabilities>(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+})
 
-export type AccessModel = typeof accessModels.$inferSelect;
-export type NewAccessModel = typeof accessModels.$inferInsert;
+export type AccessModel = typeof accessModels.$inferSelect
+export type NewAccessModel = typeof accessModels.$inferInsert
 
 export const modelRoutes = pgTable('model_routes', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -101,12 +128,12 @@ export const modelRoutes = pgTable('model_routes', {
   flowData: jsonb('flow_data').$type<FlowData>(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+})
 
 export const modelRoutesRelations = relations(modelRoutes, ({ many }) => ({
   // Note: accessModelIds is a TEXT[] array - no FK relationship
   // Access model lookup is done at application layer
-}));
+}))
 
-export type ModelRoute = typeof modelRoutes.$inferSelect;
-export type NewModelRoute = typeof modelRoutes.$inferInsert;
+export type ModelRoute = typeof modelRoutes.$inferSelect
+export type NewModelRoute = typeof modelRoutes.$inferInsert

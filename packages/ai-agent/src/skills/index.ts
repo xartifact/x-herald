@@ -39,10 +39,7 @@ export const configGenerationSkill: Skill = {
 
 使用 get_config 工具查看现有配置作为参考。
 使用 apply_fix 工具应用新配置。`,
-  tools: [
-    builtInTools.getConfig,
-    builtInTools.applyFix,
-  ],
+  tools: [builtInTools.getConfig, builtInTools.applyFix],
 }
 
 export const allSkills = {

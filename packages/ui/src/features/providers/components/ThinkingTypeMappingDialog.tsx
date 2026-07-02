@@ -8,13 +8,22 @@ import { useForm, useFieldArray } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import { Button } from '../../../shared/components/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../../shared/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '../../../shared/components/ui/dialog'
 import { Label } from '../../../shared/components/ui/label'
 
 import { MappingRuleRow } from './mapping-rule-row'
 import { SyntheticThinkingSelector } from './synthetic-thinking-selector'
 import { formSchema, type MappingFormData } from './thinking-mapping-types'
-import { useProviderThinkingConfig, useUpdateProviderThinkingConfig } from '../hooks/useThinkingTypeMappings'
+import {
+  useProviderThinkingConfig,
+  useUpdateProviderThinkingConfig,
+} from '../hooks/useThinkingTypeMappings'
 
 interface ThinkingTypeMappingDialogProps {
   providerId: string
@@ -23,7 +32,12 @@ interface ThinkingTypeMappingDialogProps {
   onOpenChange: (open: boolean) => void
 }
 
-export function ThinkingTypeMappingDialog({ providerId, providerName, open, onOpenChange }: ThinkingTypeMappingDialogProps) {
+export function ThinkingTypeMappingDialog({
+  providerId,
+  providerName,
+  open,
+  onOpenChange,
+}: ThinkingTypeMappingDialogProps) {
   const { data: config, isLoading } = useProviderThinkingConfig(providerId)
   const updateConfig = useUpdateProviderThinkingConfig()
 
@@ -44,7 +58,7 @@ export function ThinkingTypeMappingDialog({ providerId, providerName, open, onOp
     try {
       await updateConfig.mutateAsync({
         providerId,
-        mappings: data.mappings.filter(m => m.from && m.to),
+        mappings: data.mappings.filter((m) => m.from && m.to),
         syntheticThinking: data.syntheticThinking,
       })
       toast.success('Thinking 配置已更新')
@@ -94,13 +108,20 @@ export function ThinkingTypeMappingDialog({ providerId, providerName, open, onOp
               ))}
             </div>
 
-            <Button type="button" variant="outline" onClick={() => append({ from: '', to: '' })} className="w-full">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => append({ from: '', to: '' })}
+              className="w-full"
+            >
               <Plus className="h-4 w-4 mr-2" />
               添加映射规则
             </Button>
 
             <div className="flex justify-end gap-2 pt-4">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>取消</Button>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                取消
+              </Button>
               <Button type="submit" disabled={updateConfig.isPending}>
                 {updateConfig.isPending ? '保存中...' : '保存配置'}
               </Button>

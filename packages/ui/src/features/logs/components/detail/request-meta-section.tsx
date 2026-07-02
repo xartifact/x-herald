@@ -18,7 +18,11 @@ export function RequestMetaSection({ log, isPending, isSuccess }: RequestMetaSec
         label="状态"
         value={
           <div className="flex items-center gap-2">
-            <span className={isPending ? 'text-amber-600' : isSuccess ? 'text-green-600' : 'text-red-600'}>
+            <span
+              className={
+                isPending ? 'text-amber-600' : isSuccess ? 'text-green-600' : 'text-red-600'
+              }
+            >
               {isPending ? '请求中' : isSuccess ? '成功' : '失败'}
             </span>
             {!isPending && log.statusCode != null && (
@@ -40,9 +44,13 @@ export function RequestMetaSection({ log, isPending, isSuccess }: RequestMetaSec
           label="协议转换"
           value={
             <div className="flex items-center gap-1.5">
-              <Badge variant="outline" className="text-[10px] font-mono">{log.incomingProtocol}</Badge>
+              <Badge variant="outline" className="text-[10px] font-mono">
+                {log.incomingProtocol}
+              </Badge>
               <ChevronRight className="h-3 w-3 text-muted-foreground" />
-              <Badge variant="outline" className="text-[10px] font-mono">{log.targetProtocol}</Badge>
+              <Badge variant="outline" className="text-[10px] font-mono">
+                {log.targetProtocol}
+              </Badge>
             </div>
           }
         />

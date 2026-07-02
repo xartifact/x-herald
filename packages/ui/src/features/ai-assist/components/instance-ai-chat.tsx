@@ -8,7 +8,14 @@ import { toast } from 'sonner'
 
 import type { InstanceConfig } from '@xartifact/x-llm-gateway-shared'
 import { Button } from '../../../shared/components/ui/button'
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '../../../shared/components/ui/sheet'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '../../../shared/components/ui/sheet'
 
 import { ChatInput } from './chat-input'
 import { ChatMessageList } from './chat-message-list'
@@ -39,29 +46,43 @@ export function InstanceAiChat({ instanceId, instanceName }: InstanceAiChatProps
     try {
       const response = await fetch(`/api/ai/agent/instance/${instanceId}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('admin_token') || ''}` },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('admin_token') || ''}`,
+        },
         body: JSON.stringify({ messages: nextMessages }),
       })
-      const result = await response.json() as {
-        success: boolean; error?: string; code?: string
-        data?: { explanation: string; previousConfig: InstanceConfig | null; newConfig: InstanceConfig; instanceName: string }
+      const result = (await response.json()) as {
+        success: boolean
+        error?: string
+        code?: string
+        data?: {
+          explanation: string
+          previousConfig: InstanceConfig | null
+          newConfig: InstanceConfig
+          instanceName: string
+        }
       }
 
       if (!result.success || !result.data) {
-        const errMsg = result.code === 'AI_NOT_CONFIGURED'
-          ? '未配置 AI 功能模型，请先在「设置 → AI 功能模型」中选择一个模型。'
-          : (result.error ?? '请求失败，请重试。')
-        setMessages(prev => [...prev, { role: 'assistant', content: errMsg }])
+        const errMsg =
+          result.code === 'AI_NOT_CONFIGURED'
+            ? '未配置 AI 功能模型，请先在「设置 → AI 功能模型」中选择一个模型。'
+            : (result.error ?? '请求失败，请重试。')
+        setMessages((prev) => [...prev, { role: 'assistant', content: errMsg }])
         return
       }
 
       const { explanation, previousConfig } = result.data
-      setMessages(prev => [...prev, { role: 'assistant', content: explanation }])
-      setUndoStack(prev => [...prev, { instanceId, instanceName, previousConfig, explanation }])
+      setMessages((prev) => [...prev, { role: 'assistant', content: explanation }])
+      setUndoStack((prev) => [...prev, { instanceId, instanceName, previousConfig, explanation }])
       queryClient.invalidateQueries({ queryKey: ['model-instances'] })
       queryClient.invalidateQueries({ queryKey: ['model-groups'] })
     } catch {
-      setMessages(prev => [...prev, { role: 'assistant', content: '网络请求失败，请检查连接后重试。' }])
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', content: '网络请求失败，请检查连接后重试。' },
+      ])
     } finally {
       setLoading(false)
     }
@@ -71,11 +92,14 @@ export function InstanceAiChat({ instanceId, instanceName }: InstanceAiChatProps
     try {
       const response = await fetch(`/api/ai/agent/instance/${record.instanceId}/undo`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('admin_token') || ''}` },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('admin_token') || ''}`,
+        },
         body: JSON.stringify({ previousConfig: record.previousConfig }),
       })
       if (!response.ok) throw new Error('Undo failed')
-      setUndoStack(prev => prev.filter((_, i) => i !== index))
+      setUndoStack((prev) => prev.filter((_, i) => i !== index))
       queryClient.invalidateQueries({ queryKey: ['model-instances'] })
       queryClient.invalidateQueries({ queryKey: ['model-groups'] })
       toast.success('已撤销配置更改')

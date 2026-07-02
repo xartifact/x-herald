@@ -1,8 +1,8 @@
-import { beforeEach, afterEach } from 'bun:test';
-import { getDatabase } from '../db/client';
+import { beforeEach, afterEach } from 'bun:test'
+import { getDatabase } from '../db/client'
 
 export interface TransactionalTest {
-  db: ReturnType<typeof getDatabase>;
+  db: ReturnType<typeof getDatabase>
 }
 
 const TABLE_NAMES = [
@@ -25,22 +25,22 @@ const TABLE_NAMES = [
   'cost_records',
   'access_models',
   'model_routes',
-];
+]
 
 export function transactionalTest() {
-  const db = getDatabase();
+  const db = getDatabase()
 
   beforeEach(async () => {
-    await db.execute('BEGIN');
-  });
+    await db.execute('BEGIN')
+  })
 
   afterEach(async () => {
-    await db.execute('ROLLBACK');
-  });
+    await db.execute('ROLLBACK')
+  })
 }
 
 export async function truncateAllTables(db = getDatabase()) {
   for (const table of TABLE_NAMES) {
-    await db.execute(`TRUNCATE TABLE "${table}" CASCADE`);
+    await db.execute(`TRUNCATE TABLE "${table}" CASCADE`)
   }
 }

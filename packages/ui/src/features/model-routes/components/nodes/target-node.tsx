@@ -26,18 +26,17 @@ function TargetNodeComponent({ data }: NodeProps<Node<TargetData>>) {
           <Server className="h-4 w-4 text-green-600" />
         )}
         <span className="text-xs font-semibold text-green-600 uppercase">
-          {data.targetType === 'virtual_model' ? '虚拟模型' :
-           data.targetType === 'model_group' ? '模型组' : '实例'}
+          {data.targetType === 'virtual_model'
+            ? '虚拟模型'
+            : data.targetType === 'model_group'
+              ? '模型组'
+              : '实例'}
         </span>
       </div>
       {data.ruleName && (
-        <div className="text-xs text-muted-foreground truncate max-w-[180px]">
-          {data.ruleName}
-        </div>
+        <div className="text-xs text-muted-foreground truncate max-w-[180px]">{data.ruleName}</div>
       )}
-      <div className="mt-1 text-sm font-medium text-green-900">
-        {data.targetName || data.label}
-      </div>
+      <div className="mt-1 text-sm font-medium text-green-900">{data.targetName || data.label}</div>
     </div>
   )
 }

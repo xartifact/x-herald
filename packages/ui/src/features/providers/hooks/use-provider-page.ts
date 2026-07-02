@@ -7,9 +7,18 @@ import { useForm } from 'react-hook-form'
 
 import type { ProtocolsConfig } from '@xartifact/x-llm-gateway-shared'
 import { useProviderInstanceState } from './use-provider-instance-state'
-import { useProviders, useCreateProvider, useUpdateProvider, useDeleteProvider, useToggleProvider } from './use-providers'
-import { PROTOCOL_OPTIONS, providerSchema, type ProviderFormData } from '@xartifact/x-llm-gateway-shared'
-
+import {
+  useProviders,
+  useCreateProvider,
+  useUpdateProvider,
+  useDeleteProvider,
+  useToggleProvider,
+} from './use-providers'
+import {
+  PROTOCOL_OPTIONS,
+  providerSchema,
+  type ProviderFormData,
+} from '@xartifact/x-llm-gateway-shared'
 
 type ProtocolType = (typeof PROTOCOL_OPTIONS)[number]['value']
 
@@ -43,7 +52,9 @@ export function useProviderPage() {
     },
   })
 
-  const editingProvider = editingProviderId ? providers.find((p) => p.id === editingProviderId) : null
+  const editingProvider = editingProviderId
+    ? providers.find((p) => p.id === editingProviderId)
+    : null
   const filteredProviders = useMemo(
     () => providers.filter((p) => p.name.toLowerCase().includes(searchQuery.toLowerCase())),
     [providers, searchQuery],
@@ -56,7 +67,12 @@ export function useProviderPage() {
         enabledProtocols[key as ProtocolType] = { baseUrl: value.baseUrl, enabled: true }
       }
     })
-    const payload = { name: data.name, apiKey: data.apiKey || undefined, protocols: enabledProtocols, enabled: data.enabled }
+    const payload = {
+      name: data.name,
+      apiKey: data.apiKey || undefined,
+      protocols: enabledProtocols,
+      enabled: data.enabled,
+    }
     if (editingProviderId) {
       await updateProvider.mutateAsync({ id: editingProviderId, data: payload })
     } else {
@@ -76,9 +92,15 @@ export function useProviderPage() {
       apiKey: provider.apiKey || '',
       enabled: provider.enabled,
       protocols: {
-        openai: provider.protocols.openai ? { enabled: true, baseUrl: provider.protocols.openai.baseUrl } : { enabled: false, baseUrl: 'https://api.openai.com/v1' },
-        anthropic: provider.protocols.anthropic ? { enabled: true, baseUrl: provider.protocols.anthropic.baseUrl } : { enabled: false, baseUrl: 'https://api.anthropic.com/v1' },
-        gemini: provider.protocols.gemini ? { enabled: true, baseUrl: provider.protocols.gemini.baseUrl } : { enabled: false, baseUrl: 'https://generativelanguage.googleapis.com/v1' },
+        openai: provider.protocols.openai
+          ? { enabled: true, baseUrl: provider.protocols.openai.baseUrl }
+          : { enabled: false, baseUrl: 'https://api.openai.com/v1' },
+        anthropic: provider.protocols.anthropic
+          ? { enabled: true, baseUrl: provider.protocols.anthropic.baseUrl }
+          : { enabled: false, baseUrl: 'https://api.anthropic.com/v1' },
+        gemini: provider.protocols.gemini
+          ? { enabled: true, baseUrl: provider.protocols.gemini.baseUrl }
+          : { enabled: false, baseUrl: 'https://generativelanguage.googleapis.com/v1' },
       },
     })
     setShowFormApiKey(false)
@@ -90,7 +112,9 @@ export function useProviderPage() {
     await deleteProvider.mutateAsync(id)
   }
 
-  const handleToggle = (id: string) => { toggleProvider.mutate(id) }
+  const handleToggle = (id: string) => {
+    toggleProvider.mutate(id)
+  }
   const toggleShowApiKey = (providerId: string) => {
     setShowApiKey((prev) => ({ ...prev, [providerId]: !prev[providerId] }))
   }

@@ -1,11 +1,11 @@
-import type { MiddlewareHandler } from 'hono';
-import { cors } from 'hono/cors';
+import type { MiddlewareHandler } from 'hono'
+import { cors } from 'hono/cors'
 
-import type { GatewayConfig } from '../config';
+import type { GatewayConfig } from '../config'
 
 export function createCorsMiddleware(config: GatewayConfig): MiddlewareHandler {
   if (!config.server.cors.enabled) {
-    return async (_c, next) => next();
+    return async (_c, next) => next()
   }
 
   return cors({
@@ -14,5 +14,5 @@ export function createCorsMiddleware(config: GatewayConfig): MiddlewareHandler {
     allowHeaders: ['Content-Type', 'Authorization'],
     exposeHeaders: ['Content-Length'],
     credentials: true,
-  });
+  })
 }

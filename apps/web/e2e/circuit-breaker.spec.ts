@@ -10,7 +10,11 @@ test.describe('Circuit Breaker', () => {
   test('shows stats cards section', async ({ page }) => {
     await page.goto('/admin/circuit-breaker')
     await page.waitForLoadState('networkidle')
-    const statVisible = await page.getByText(/熔断器.*状态|熔断.*次数|健康.*实例/i).first().isVisible({ timeout: 10000 }).catch(() => false)
+    const statVisible = await page
+      .getByText(/熔断器.*状态|熔断.*次数|健康.*实例/i)
+      .first()
+      .isVisible({ timeout: 10000 })
+      .catch(() => false)
     if (statVisible) {
       await expect(page.getByText(/熔断器.*状态|熔断.*次数|健康.*实例/i).first()).toBeVisible()
     }
@@ -20,13 +24,20 @@ test.describe('Circuit Breaker', () => {
     await page.goto('/admin/circuit-breaker')
     await page.waitForLoadState('networkidle')
     // Check for realtime state table or heading
-    const realtimeVisible = await page.getByText(/实时状态|实例状态|当前状态/i).first().isVisible().catch(() => false)
+    const realtimeVisible = await page
+      .getByText(/实时状态|实例状态|当前状态/i)
+      .first()
+      .isVisible()
+      .catch(() => false)
     if (realtimeVisible) {
       await expect(page.getByText(/实时状态|实例状态|当前状态/i).first()).toBeVisible()
     } else {
       // Table headers may vary — check for any table
       const headerCount = await page.locator('th').count()
-      const isLoading = await page.getByText('加载中...').isVisible().catch(() => false)
+      const isLoading = await page
+        .getByText('加载中...')
+        .isVisible()
+        .catch(() => false)
       expect(headerCount > 0 || isLoading).toBe(true)
     }
   })
@@ -34,13 +45,20 @@ test.describe('Circuit Breaker', () => {
   test('shows event history section', async ({ page }) => {
     await page.goto('/admin/circuit-breaker')
     await page.waitForLoadState('networkidle')
-    const eventVisible = await page.getByText(/事件历史|历史事件/i).first().isVisible().catch(() => false)
+    const eventVisible = await page
+      .getByText(/事件历史|历史事件/i)
+      .first()
+      .isVisible()
+      .catch(() => false)
     if (eventVisible) {
       await expect(page.getByText(/事件历史|历史事件/i).first()).toBeVisible()
     } else {
       // Fallback: check for any table or loading state
       const tableCount = await page.locator('table').count()
-      const isLoading = await page.getByText('加载中...').isVisible().catch(() => false)
+      const isLoading = await page
+        .getByText('加载中...')
+        .isVisible()
+        .catch(() => false)
       expect(tableCount > 0 || isLoading).toBe(true)
     }
   })
@@ -54,7 +72,10 @@ test.describe('Circuit Breaker', () => {
   test('event filter dropdown is present', async ({ page }) => {
     await page.goto('/admin/circuit-breaker')
     await page.waitForLoadState('networkidle')
-    const filterCount = await page.locator('button, [role="combobox"], select').filter({ hasText: /全部|事件|类型|filter/i }).count()
+    const filterCount = await page
+      .locator('button, [role="combobox"], select')
+      .filter({ hasText: /全部|事件|类型|filter/i })
+      .count()
     expect(filterCount > 0).toBe(true)
   })
 

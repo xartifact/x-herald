@@ -6,14 +6,24 @@ import { AlertTriangle, Download, RefreshCw, Upload } from 'lucide-react'
 
 import { Alert, AlertDescription, AlertTitle } from '../../../shared/components/ui/alert'
 import { Button } from '../../../shared/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../shared/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '../../../shared/components/ui/card'
 
 import type { ImportResult } from '@xartifact/x-llm-gateway-shared'
 import { useExportConfig, useImportConfig } from '../hooks/use-config-io'
 
 const IMPORT_LABELS = [
-  ['供应商', 'providers'], ['模型组', 'modelGroups'], ['模型实例', 'modelInstances'],
-  ['访问模型', 'accessModels'], ['路由规则', 'modelRoutes'], ['虚拟密钥', 'virtualKeys'],
+  ['供应商', 'providers'],
+  ['模型组', 'modelGroups'],
+  ['模型实例', 'modelInstances'],
+  ['访问模型', 'accessModels'],
+  ['路由规则', 'modelRoutes'],
+  ['虚拟密钥', 'virtualKeys'],
   ['网关配置', 'gatewayConfigs'],
 ] as const
 
@@ -44,15 +54,37 @@ export function ConfigIOSection() {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex gap-3">
-          <Button variant="outline" onClick={() => exportConfig.mutate()} disabled={exportConfig.isPending}>
-            {exportConfig.isPending ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+          <Button
+            variant="outline"
+            onClick={() => exportConfig.mutate()}
+            disabled={exportConfig.isPending}
+          >
+            {exportConfig.isPending ? (
+              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="mr-2 h-4 w-4" />
+            )}
             导出配置
           </Button>
-          <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={importConfig.isPending}>
-            {importConfig.isPending ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+          <Button
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={importConfig.isPending}
+          >
+            {importConfig.isPending ? (
+              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Upload className="mr-2 h-4 w-4" />
+            )}
             导入配置
           </Button>
-          <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={handleImportFile} />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            className="hidden"
+            onChange={handleImportFile}
+          />
         </div>
 
         {importResult && (
@@ -76,7 +108,9 @@ export function ConfigIOSection() {
                 <AlertTitle>部分错误</AlertTitle>
                 <AlertDescription>
                   <ul className="list-disc list-inside space-y-1">
-                    {importResult.errors.map((e, i) => <li key={i}>{e}</li>)}
+                    {importResult.errors.map((e, i) => (
+                      <li key={i}>{e}</li>
+                    ))}
                   </ul>
                 </AlertDescription>
               </Alert>

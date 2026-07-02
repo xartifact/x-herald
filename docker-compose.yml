@@ -7,11 +7,11 @@ services:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
     ports:
-      - "${DB_PORT:-5432}:5432"
+      - '${DB_PORT:-5432}:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER:-postgres}']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -31,17 +31,16 @@ services:
       HOST: 0.0.0.0
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_SSL: "false"
+      DB_SSL: 'false'
       DB_MIGRATIONS_FOLDER: /app/migrations
       PROVIDER_SKIP_TLS_VERIFY: ${PROVIDER_SKIP_TLS_VERIFY:-false}
     ports:
-      - "${HOST_PORT:-3000}:3000"
+      - '${HOST_PORT:-3000}:3000'
     depends_on:
       postgres:
         condition: service_healthy
     healthcheck:
-      test:
-        ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:3000/api/health || exit 1']
       interval: 30s
       timeout: 10s
       retries: 3

@@ -1,73 +1,76 @@
-import { and, gte, lte, sql } from '@xartifact/x-llm-gateway-db';
+import { and, gte, lte, sql } from '@xartifact/x-llm-gateway-db'
 
-import type { Database } from '../../db/client';
-import type { DbClient } from '../../db/client';
-import { getDatabase } from '../../db/client';
-import logger from '../../lib/logger';
-import { costRecords } from '@xartifact/x-llm-gateway-db';
+import type { Database } from '../../db/client'
+import type { DbClient } from '../../db/client'
+import { getDatabase } from '../../db/client'
+import logger from '../../lib/logger'
+import { costRecords } from '@xartifact/x-llm-gateway-db'
 
 export interface ProviderPricing {
-  inputPer1k: number;
-  outputPer1k: number;
+  inputPer1k: number
+  outputPer1k: number
 }
 
 const DEFAULT_PRICING: Record<string, ProviderPricing> = {
   openai: { inputPer1k: 0.005, outputPer1k: 0.015 },
   anthropic: { inputPer1k: 0.003, outputPer1k: 0.015 },
   gemini: { inputPer1k: 0.00125, outputPer1k: 0.005 },
-};
+}
 
 export class CostService {
-  private pricing: Map<string, ProviderPricing>;
+  private pricing: Map<string, ProviderPricing>
 
   constructor() {
-    this.pricing = new Map(Object.entries(DEFAULT_PRICING));
+    this.pricing = new Map(Object.entries(DEFAULT_PRICING))
   }
 
   setPricing(provider: string, pricing: ProviderPricing): void {
-    this.pricing.set(provider, pricing);
+    this.pricing.set(provider, pricing)
   }
 
   getPricing(provider: string): ProviderPricing | undefined {
-    return this.pricing.get(provider);
+    return this.pricing.get(provider)
   }
 
   getAllPricing(): Map<string, ProviderPricing> {
-    return new Map(this.pricing);
+    return new Map(this.pricing)
   }
 
   calculateCost(
     provider: string,
     inputTokens: number,
-    outputTokens: number
+    outputTokens: number,
   ): { inputCost: number; outputCost: number; totalCost: number } {
-    const p = this.pricing.get(provider) || DEFAULT_PRICING.openai;
-    const inputCost = (inputTokens / 1000) * p.inputPer1k;
-    const outputCost = (outputTokens / 1000) * p.outputPer1k;
+    const p = this.pricing.get(provider) || DEFAULT_PRICING.openai
+    const inputCost = (inputTokens / 1000) * p.inputPer1k
+    const outputCost = (outputTokens / 1000) * p.outputPer1k
     return {
       inputCost: Math.round(inputCost * 1_000_000) / 1_000_000,
       outputCost: Math.round(outputCost * 1_000_000) / 1_000_000,
       totalCost: Math.round((inputCost + outputCost) * 1_000_000) / 1_000_000,
-    };
+    }
   }
 
-  async recordCost(params: {
-    requestLogId?: string;
-    keyId?: string;
-    keyName?: string;
-    modelName?: string;
-    providerName: string;
-    inputTokens: number;
-    outputTokens: number;
-  }, db?: DbClient): Promise<void> {
+  async recordCost(
+    params: {
+      requestLogId?: string
+      keyId?: string
+      keyName?: string
+      modelName?: string
+      providerName: string
+      inputTokens: number
+      outputTokens: number
+    },
+    db?: DbClient,
+  ): Promise<void> {
     try {
       const { inputCost, outputCost, totalCost } = this.calculateCost(
         params.providerName,
         params.inputTokens,
-        params.outputTokens
-      );
+        params.outputTokens,
+      )
 
-      const dbInstance = db ?? getDatabase();
+      const dbInstance = db ?? getDatabase()
       await dbInstance.insert(costRecords).values({
         requestLogId: params.requestLogId,
         keyId: params.keyId,
@@ -79,26 +82,29 @@ export class CostService {
         inputCost,
         outputCost,
         totalCost,
-      });
+      })
     } catch (error) {
-      logger.warn({ error, provider: params.providerName }, 'Failed to record cost');
+      logger.warn({ error, provider: params.providerName }, 'Failed to record cost')
     }
   }
 
-  async getCostSummary(params: {
-    startDate?: Date;
-    endDate?: Date;
-    keyId?: string;
-    providerName?: string;
-    modelName?: string;
-  }, db?: Database): Promise<{
-    totalCost: number;
-    totalInputTokens: number;
-    totalOutputTokens: number;
-    requestCount: number;
+  async getCostSummary(
+    params: {
+      startDate?: Date
+      endDate?: Date
+      keyId?: string
+      providerName?: string
+      modelName?: string
+    },
+    db?: Database,
+  ): Promise<{
+    totalCost: number
+    totalInputTokens: number
+    totalOutputTokens: number
+    requestCount: number
   }> {
-    const database = db ?? getDatabase();
-    const conditions = this.buildConditions(params);
+    const database = db ?? getDatabase()
+    const conditions = this.buildConditions(params)
 
     const [result] = await database
       .select({
@@ -108,38 +114,41 @@ export class CostService {
         requestCount: sql<number>`count(*)`,
       })
       .from(costRecords)
-      .where(conditions);
+      .where(conditions)
 
     return {
       totalCost: Math.round(result.totalCost * 1_000_000) / 1_000_000,
       totalInputTokens: result.totalInputTokens,
       totalOutputTokens: result.totalOutputTokens,
       requestCount: result.requestCount,
-    };
+    }
   }
 
-  async getCostByDimension(params: {
-    dimension: 'key' | 'provider' | 'model';
-    startDate?: Date;
-    endDate?: Date;
-  }, db?: Database): Promise<
+  async getCostByDimension(
+    params: {
+      dimension: 'key' | 'provider' | 'model'
+      startDate?: Date
+      endDate?: Date
+    },
+    db?: Database,
+  ): Promise<
     Array<{
-      name: string;
-      totalCost: number;
-      requestCount: number;
-      inputTokens: number;
-      outputTokens: number;
+      name: string
+      totalCost: number
+      requestCount: number
+      inputTokens: number
+      outputTokens: number
     }>
   > {
-    const database = db ?? getDatabase();
-    const conditions = this.buildConditions(params);
+    const database = db ?? getDatabase()
+    const conditions = this.buildConditions(params)
 
     const groupByColumn =
       params.dimension === 'key'
         ? costRecords.keyName
         : params.dimension === 'provider'
           ? costRecords.providerName
-          : costRecords.modelName;
+          : costRecords.modelName
 
     const rows = await database
       .select({
@@ -152,7 +161,7 @@ export class CostService {
       .from(costRecords)
       .where(conditions)
       .groupBy(groupByColumn)
-      .orderBy(sql`sum(${costRecords.totalCost}) desc`);
+      .orderBy(sql`sum(${costRecords.totalCost}) desc`)
 
     return rows.map((r) => ({
       name: r.name,
@@ -160,18 +169,24 @@ export class CostService {
       requestCount: r.requestCount,
       inputTokens: r.inputTokens,
       outputTokens: r.outputTokens,
-    }));
+    }))
   }
 
-  private buildConditions(params: { startDate?: Date; endDate?: Date; keyId?: string; providerName?: string; modelName?: string }) {
-    const conds = [];
-    if (params.startDate) conds.push(gte(costRecords.createdAt, params.startDate));
-    if (params.endDate) conds.push(lte(costRecords.createdAt, params.endDate));
-    if (params.keyId) conds.push(sql`${costRecords.keyId} = ${params.keyId}`);
-    if (params.providerName) conds.push(sql`${costRecords.providerName} = ${params.providerName}`);
-    if (params.modelName) conds.push(sql`${costRecords.modelName} = ${params.modelName}`);
-    return conds.length > 0 ? and(...conds) : undefined;
+  private buildConditions(params: {
+    startDate?: Date
+    endDate?: Date
+    keyId?: string
+    providerName?: string
+    modelName?: string
+  }) {
+    const conds = []
+    if (params.startDate) conds.push(gte(costRecords.createdAt, params.startDate))
+    if (params.endDate) conds.push(lte(costRecords.createdAt, params.endDate))
+    if (params.keyId) conds.push(sql`${costRecords.keyId} = ${params.keyId}`)
+    if (params.providerName) conds.push(sql`${costRecords.providerName} = ${params.providerName}`)
+    if (params.modelName) conds.push(sql`${costRecords.modelName} = ${params.modelName}`)
+    return conds.length > 0 ? and(...conds) : undefined
   }
 }
 
-export const costService = new CostService();
+export const costService = new CostService()

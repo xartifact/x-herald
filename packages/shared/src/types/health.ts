@@ -1,7 +1,7 @@
 export interface HealthStatus {
-  status: 'ok' | 'error';
-  timestamp: string;
+  status: 'ok' | 'error'
+  timestamp: string
   database?: {
-    status: 'connected' | 'disconnected';
-  };
+    status: 'connected' | 'disconnected'
+  }
 }

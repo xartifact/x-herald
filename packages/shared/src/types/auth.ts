@@ -1,10 +1,10 @@
 export interface AuthResponse {
-  token: string;
+  token: string
 }
 
 export interface AuthMeResponse {
-  authenticated: boolean;
+  authenticated: boolean
   user?: {
-    role: string;
-  };
+    role: string
+  }
 }

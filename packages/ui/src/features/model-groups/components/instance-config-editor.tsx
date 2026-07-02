@@ -26,8 +26,14 @@ export function InstanceConfigEditor({ value, onChange }: InstanceConfigEditorPr
   const config: InstanceConfig = value || {}
 
   const addTransform = () => {
-    const newTransform: TransformRule = { when: { paramName: '', operator: 'exists' }, action: { type: 'add', targetParam: '' } }
-    onChange({ ...config, parameterTransforms: [...(config.parameterTransforms || []), newTransform] })
+    const newTransform: TransformRule = {
+      when: { paramName: '', operator: 'exists' },
+      action: { type: 'add', targetParam: '' },
+    }
+    onChange({
+      ...config,
+      parameterTransforms: [...(config.parameterTransforms || []), newTransform],
+    })
   }
 
   const updateTransform = (index: number, transform: TransformRule) => {
@@ -43,18 +49,18 @@ export function InstanceConfigEditor({ value, onChange }: InstanceConfigEditorPr
   }
 
   const addHeader = () => {
-    onChange({ ...config, customHeaders: { ...(config.customHeaders || {}), '': '' } })
+    onChange({ ...config, customHeaders: { ...config.customHeaders, '': '' } })
   }
 
   const updateHeader = (oldKey: string, newKey: string, headerValue: string) => {
-    const next = { ...(config.customHeaders || {}) }
+    const next = { ...config.customHeaders }
     if (oldKey !== newKey) delete next[oldKey]
     next[newKey] = headerValue
     onChange({ ...config, customHeaders: next })
   }
 
   const removeHeader = (key: string) => {
-    const next = { ...(config.customHeaders || {}) }
+    const next = { ...config.customHeaders }
     delete next[key]
     onChange({ ...config, customHeaders: next })
   }
@@ -62,7 +68,11 @@ export function InstanceConfigEditor({ value, onChange }: InstanceConfigEditorPr
   const updateSchemaConfig = (updates: Partial<SchemaConfig>) => {
     onChange({
       ...config,
-      schemaConfig: { cleanEnabled: config.schemaConfig?.cleanEnabled ?? true, ...config.schemaConfig, ...updates },
+      schemaConfig: {
+        cleanEnabled: config.schemaConfig?.cleanEnabled ?? true,
+        ...config.schemaConfig,
+        ...updates,
+      },
     })
   }
 

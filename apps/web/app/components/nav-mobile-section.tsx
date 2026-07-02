@@ -3,7 +3,6 @@
 import { ChevronDown } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 
-
 import { cn } from '@xartifact/x-llm-gateway-ui'
 import {
   DropdownMenu,
@@ -16,7 +15,7 @@ import { navGroups } from './admin-nav-config'
 import type { NavGroup } from './admin-nav-config'
 
 function isGroupActive(group: NavGroup, pathname: string): boolean {
-  return group.items.some(item => pathname === item.href || pathname.startsWith(item.href + '/'))
+  return group.items.some((item) => pathname === item.href || pathname.startsWith(item.href + '/'))
 }
 
 function isItemActive(href: string, pathname: string): boolean {
@@ -38,12 +37,17 @@ export function NavMobileMenu() {
         <DropdownMenuContent align="start" className="w-56">
           {navGroups.map((group) => (
             <div key={group.label}>
-              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">{group.label}</div>
+              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                {group.label}
+              </div>
               {group.items.map((item) => (
                 <DropdownMenuItem key={item.href} asChild>
                   <a
                     href={item.href}
-                    className={cn('flex items-center cursor-pointer', isItemActive(item.href, pathname) && 'bg-primary/10 text-primary')}
+                    className={cn(
+                      'flex items-center cursor-pointer',
+                      isItemActive(item.href, pathname) && 'bg-primary/10 text-primary',
+                    )}
                   >
                     {item.icon && <span className="mr-2">{item.icon}</span>}
                     {item.label}
@@ -66,15 +70,17 @@ export function NavMobileSubnav() {
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex space-x-4 py-2 overflow-x-auto">
           {navGroups
-            .filter(group => isGroupActive(group, pathname))
-            .flatMap(group => group.items)
+            .filter((group) => isGroupActive(group, pathname))
+            .flatMap((group) => group.items)
             .map((item) => (
               <a
                 key={item.href}
                 href={item.href}
                 className={cn(
                   'inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap',
-                  isItemActive(item.href, pathname) ? 'bg-primary text-white' : 'text-gray-600 hover:bg-gray-200'
+                  isItemActive(item.href, pathname)
+                    ? 'bg-primary text-white'
+                    : 'text-gray-600 hover:bg-gray-200',
                 )}
               >
                 {item.label}

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi } from 'vite-plus/test'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useForm } from 'react-hook-form'
@@ -45,7 +45,7 @@ describe('ProviderBasicFields', () => {
         defaultValues={defaultValues}
         showApiKey={false}
         onToggleShowApiKey={() => {}}
-      />
+      />,
     )
 
     expect(screen.getByPlaceholderText('X-AIO API')).toBeInTheDocument()
@@ -62,7 +62,7 @@ describe('ProviderBasicFields', () => {
         defaultValues={defaultValues}
         showApiKey={false}
         onToggleShowApiKey={() => {}}
-      />
+      />,
     )
 
     const apiKeyInput = screen.getByPlaceholderText('sk-...')
@@ -75,7 +75,7 @@ describe('ProviderBasicFields', () => {
         defaultValues={{ ...defaultValues, apiKey: 'secret-key' }}
         showApiKey={true}
         onToggleShowApiKey={() => {}}
-      />
+      />,
     )
 
     const apiKeyInput = screen.getByPlaceholderText('sk-...')
@@ -91,7 +91,7 @@ describe('ProviderBasicFields', () => {
         defaultValues={defaultValues}
         showApiKey={false}
         onToggleShowApiKey={onToggleShowApiKey}
-      />
+      />,
     )
 
     const toggleButton = screen.getByRole('button')
@@ -102,11 +102,7 @@ describe('ProviderBasicFields', () => {
   it('allows typing in name and api key inputs', async () => {
     const user = userEvent.setup()
     render(
-      <TestWrapper
-        defaultValues={defaultValues}
-        showApiKey={true}
-        onToggleShowApiKey={() => {}}
-      />
+      <TestWrapper defaultValues={defaultValues} showApiKey={true} onToggleShowApiKey={() => {}} />,
     )
 
     const nameInput = screen.getByPlaceholderText('X-AIO API')
@@ -124,7 +120,7 @@ describe('ProviderBasicFields', () => {
         defaultValues={defaultValues}
         showApiKey={false}
         onToggleShowApiKey={() => {}}
-      />
+      />,
     )
 
     const switchInput = screen.getByRole('switch')
@@ -137,7 +133,7 @@ describe('ProviderBasicFields', () => {
         defaultValues={{ ...defaultValues, enabled: false }}
         showApiKey={false}
         onToggleShowApiKey={() => {}}
-      />
+      />,
     )
 
     const switchInput = screen.getByRole('switch')

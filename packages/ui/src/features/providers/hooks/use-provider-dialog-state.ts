@@ -23,8 +23,10 @@ export function useProviderDialogState() {
   }
 
   return {
-    thinkingMappingOpen, setThinkingMappingOpen,
-    syncModelsOpen, setSyncModelsOpen,
+    thinkingMappingOpen,
+    setThinkingMappingOpen,
+    syncModelsOpen,
+    setSyncModelsOpen,
     selectedProvider,
     handleConfigureThinkingMapping,
     handleSyncModels,

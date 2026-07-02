@@ -73,11 +73,17 @@ export async function updateKey(id: string, data: UpdateKeyData, db?: Database) 
   if (data.allowedModels !== undefined) update.allowedModels = data.allowedModels
   if (data.rateLimitRpm !== undefined) update.rateLimitRpm = data.rateLimitRpm
   if (data.rateLimitRpd !== undefined) update.rateLimitRpd = data.rateLimitRpd
-  if (data.tokenLimitDaily !== undefined) update.tokenLimitDaily = data.tokenLimitDaily ? BigInt(data.tokenLimitDaily) : null
+  if (data.tokenLimitDaily !== undefined)
+    update.tokenLimitDaily = data.tokenLimitDaily ? BigInt(data.tokenLimitDaily) : null
   if (data.enabled !== undefined) update.enabled = data.enabled
-  if (data.expiresAt !== undefined) update.expiresAt = data.expiresAt ? new Date(data.expiresAt) : null
+  if (data.expiresAt !== undefined)
+    update.expiresAt = data.expiresAt ? new Date(data.expiresAt) : null
 
-  const rows = await database.update(virtualKeys).set(update).where(eq(virtualKeys.id, id)).returning()
+  const rows = await database
+    .update(virtualKeys)
+    .set(update)
+    .where(eq(virtualKeys.id, id))
+    .returning()
   invalidateVirtualKeyCache(existing.key)
   logger.info({ keyId: id }, 'Virtual key updated')
   return rows[0] ?? null
@@ -98,7 +104,11 @@ export async function resetKey(id: string, db?: Database) {
   const existing = await getKey(id, db)
   if (!existing) return null
   const newApiKey = generateApiKey()
-  const rows = await database.update(virtualKeys).set({ key: newApiKey, updatedAt: new Date() }).where(eq(virtualKeys.id, id)).returning()
+  const rows = await database
+    .update(virtualKeys)
+    .set({ key: newApiKey, updatedAt: new Date() })
+    .where(eq(virtualKeys.id, id))
+    .returning()
   invalidateVirtualKeyCache(existing.key)
   logger.info({ keyId: id }, 'Virtual key reset')
   return rows[0] ?? null

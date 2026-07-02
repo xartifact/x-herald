@@ -3,8 +3,11 @@ import {
   AiModelSection,
   CircuitBreakerSection,
   ConfigIOSection,
-  Card, CardContent,
-  Alert, AlertTitle, AlertDescription,
+  Card,
+  CardContent,
+  Alert,
+  AlertTitle,
+  AlertDescription,
 } from '@xartifact/x-llm-gateway-ui'
 import { AlertCircle } from 'lucide-react'
 
@@ -37,9 +40,7 @@ export function SettingsPage() {
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>加载失败</AlertTitle>
-          <AlertDescription>
-            {error instanceof Error ? error.message : '未知错误'}
-          </AlertDescription>
+          <AlertDescription>{error instanceof Error ? error.message : '未知错误'}</AlertDescription>
         </Alert>
       </div>
     )

@@ -16,7 +16,7 @@ import {
 } from '../../../shared/components/ui/table'
 
 interface ModelInstance extends BaseModelInstance {
-  groupIds?: string[];
+  groupIds?: string[]
 }
 
 interface ProviderInstanceTableProps {
@@ -35,11 +35,7 @@ export function ProviderInstanceTable({
   onToggle,
 }: ProviderInstanceTableProps) {
   if (instances.length === 0) {
-    return (
-      <div className="text-center py-6 text-sm text-muted-foreground">
-        暂无实例
-      </div>
-    )
+    return <div className="text-center py-6 text-sm text-muted-foreground">暂无实例</div>
   }
 
   return (
@@ -57,9 +53,7 @@ export function ProviderInstanceTable({
       <TableBody>
         {instances.map((instance, index) => (
           <TableRow key={instance.id}>
-            <TableCell className="text-muted-foreground">
-              {index + 1}
-            </TableCell>
+            <TableCell className="text-muted-foreground">{index + 1}</TableCell>
             <TableCell>
               <div className="font-medium">{instance.name}</div>
             </TableCell>
@@ -86,10 +80,20 @@ export function ProviderInstanceTable({
             </TableCell>
             <TableCell className="text-right">
               <div className="flex justify-end gap-1">
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(instance)}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => onEdit(instance)}
+                >
                   <Pencil className="h-3.5 w-3.5" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onDelete(instance)}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => onDelete(instance)}
+                >
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               </div>

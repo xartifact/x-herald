@@ -10,7 +10,13 @@ import {
   FormMessage,
 } from '../../../shared/components/ui/form'
 import { Input } from '../../../shared/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../shared/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../../shared/components/ui/select'
 
 // Record<string, any> defined locally // TODO(6): from apps/web
 
@@ -36,7 +42,9 @@ export function InstanceBasicFields({ form, providers }: InstanceBasicFieldsProp
               </FormControl>
               <SelectContent>
                 {providers.map((provider) => (
-                  <SelectItem key={provider.id} value={provider.id}>{provider.name}</SelectItem>
+                  <SelectItem key={provider.id} value={provider.id}>
+                    {provider.name}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -83,7 +91,12 @@ export function InstanceBasicFields({ form, providers }: InstanceBasicFieldsProp
             <FormItem>
               <FormLabel>权重</FormLabel>
               <FormControl>
-                <Input type="number" min={0} {...field} onChange={(e) => field.onChange(parseInt(e.target.value))} />
+                <Input
+                  type="number"
+                  min={0}
+                  {...field}
+                  onChange={(e) => field.onChange(parseInt(e.target.value))}
+                />
               </FormControl>
               <FormDescription>用于加权路由</FormDescription>
             </FormItem>
@@ -96,7 +109,12 @@ export function InstanceBasicFields({ form, providers }: InstanceBasicFieldsProp
             <FormItem>
               <FormLabel>优先级</FormLabel>
               <FormControl>
-                <Input type="number" min={0} {...field} onChange={(e) => field.onChange(parseInt(e.target.value))} />
+                <Input
+                  type="number"
+                  min={0}
+                  {...field}
+                  onChange={(e) => field.onChange(parseInt(e.target.value))}
+                />
               </FormControl>
               <FormDescription>数字越小优先级越高</FormDescription>
             </FormItem>

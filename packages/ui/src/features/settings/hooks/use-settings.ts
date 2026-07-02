@@ -1,4 +1,4 @@
-'use client';
+'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -7,7 +7,9 @@ import type { SettingsData, SettingsFormData } from '@xartifact/x-llm-gateway-sh
 import { get, put } from '@xartifact/x-llm-gateway-ui'
 
 async function fetchSettings(): Promise<SettingsData> {
-  const result = await get<{ success: boolean; data: SettingsData }>('/api/settings', { extractData: false })
+  const result = await get<{ success: boolean; data: SettingsData }>('/api/settings', {
+    extractData: false,
+  })
   if (!result.success) throw new Error('Failed to fetch settings')
   return result.data
 }

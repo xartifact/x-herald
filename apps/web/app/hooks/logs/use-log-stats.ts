@@ -15,7 +15,8 @@ export function useLogStats(filters?: Record<string, string>) {
   const queryString = filters ? '?' + new URLSearchParams(filters).toString() : ''
   return useQuery({
     queryKey: [...logKeys.stats(), queryString],
-    queryFn: () => get<LogStatsResponse>(`/api/logs/stats/overview${queryString}`, { extractData: false }),
+    queryFn: () =>
+      get<LogStatsResponse>(`/api/logs/stats/overview${queryString}`, { extractData: false }),
   })
 }
 
@@ -30,7 +31,10 @@ export function useClientModelStats(filters?: Record<string, string>) {
   const queryString = filters ? '?' + new URLSearchParams(filters).toString() : ''
   return useQuery({
     queryKey: [...logKeys.all, 'client-models', queryString],
-    queryFn: () => get<ClientModelStatsResponse>(`/api/logs/client-models${queryString}`, { extractData: false }),
+    queryFn: () =>
+      get<ClientModelStatsResponse>(`/api/logs/client-models${queryString}`, {
+        extractData: false,
+      }),
   })
 }
 
@@ -38,7 +42,8 @@ export function useProviderStats(filters?: Record<string, string>) {
   const queryString = filters ? '?' + new URLSearchParams(filters).toString() : ''
   return useQuery({
     queryKey: [...logKeys.all, 'provider-stats', queryString],
-    queryFn: () => get<ProviderStatsResponse>(`/api/logs/stats/providers${queryString}`, { extractData: false }),
+    queryFn: () =>
+      get<ProviderStatsResponse>(`/api/logs/stats/providers${queryString}`, { extractData: false }),
   })
 }
 
@@ -49,7 +54,7 @@ export function useKeysStats(period?: 'today' | '7d' | '30d' | 'all') {
     queryFn: async () => {
       const res = await get<{ success: boolean; data: KeyStat[] }>(
         `/api/logs/stats/keys?period=${p}`,
-        { extractData: false }
+        { extractData: false },
       )
       return res.data ?? []
     },

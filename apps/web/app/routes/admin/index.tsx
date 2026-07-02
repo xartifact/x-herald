@@ -88,16 +88,34 @@ export function DashboardPage() {
       {/* 资源计数卡片 */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
-          <CardHeader><CardTitle>提供商</CardTitle></CardHeader>
-          <CardContent><p className="text-2xl font-bold" id="provider-count">{providerCount}</p></CardContent>
+          <CardHeader>
+            <CardTitle>提供商</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold" id="provider-count">
+              {providerCount}
+            </p>
+          </CardContent>
         </Card>
         <Card>
-          <CardHeader><CardTitle>模型组</CardTitle></CardHeader>
-          <CardContent><p className="text-2xl font-bold" id="model-group-count">{modelGroupCount}</p></CardContent>
+          <CardHeader>
+            <CardTitle>模型组</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold" id="model-group-count">
+              {modelGroupCount}
+            </p>
+          </CardContent>
         </Card>
         <Card>
-          <CardHeader><CardTitle>API Keys</CardTitle></CardHeader>
-          <CardContent><p className="text-2xl font-bold" id="key-count">{keyCount}</p></CardContent>
+          <CardHeader>
+            <CardTitle>API Keys</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold" id="key-count">
+              {keyCount}
+            </p>
+          </CardContent>
         </Card>
       </div>
 

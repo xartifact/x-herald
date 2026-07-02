@@ -23,7 +23,6 @@ export interface ProtocolsConfig {
   gemini?: ProtocolConfig
 }
 
-
 export interface ThinkingTypeMapping {
   from: string
   to: string
@@ -43,7 +42,6 @@ export interface ExtendedProtocolsConfig {
   anthropic?: ExtendedProtocolConfig
   gemini?: ExtendedProtocolConfig
 }
-
 
 export interface ThinkingTypeMapping {
   from: string

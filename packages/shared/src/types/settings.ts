@@ -1,31 +1,31 @@
 export interface SettingsResponse {
-  success: boolean;
-  data?: Record<string, unknown>;
-  error?: string;
+  success: boolean
+  data?: Record<string, unknown>
+  error?: string
 }
 
 export interface AvailableModelGroup {
-  id: string;
-  name: string;
-  displayName: string;
-  instanceCount: number;
+  id: string
+  name: string
+  displayName: string
+  instanceCount: number
 }
 
 export interface CircuitBreakerConfig {
-  failureThreshold: number;
-  openDurationMs: number;
-  maxBackoffMs?: number;
-  maxTripsBeforeCooldown?: number;
-  cooldownDurationMs?: number;
+  failureThreshold: number
+  openDurationMs: number
+  maxBackoffMs?: number
+  maxTripsBeforeCooldown?: number
+  cooldownDurationMs?: number
 }
 
 export interface SettingsData {
-  aiModelGroupId: string | null;
-  availableModelGroups: AvailableModelGroup[];
-  circuitBreaker: CircuitBreakerConfig;
+  aiModelGroupId: string | null
+  availableModelGroups: AvailableModelGroup[]
+  circuitBreaker: CircuitBreakerConfig
 }
 
 export interface SettingsFormData {
-  aiModelGroupId?: string | null;
-  circuitBreaker?: CircuitBreakerConfig;
+  aiModelGroupId?: string | null
+  circuitBreaker?: CircuitBreakerConfig
 }

@@ -1,1 +1,1 @@
-export { aiRoutes } from './api';
+export { aiRoutes } from './api'

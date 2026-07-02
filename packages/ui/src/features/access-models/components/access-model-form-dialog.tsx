@@ -26,7 +26,14 @@ interface AccessModelFormDialogProps {
   onSubmit: (data: Record<string, any>) => void
 }
 
-export function AccessModelFormDialog({ open, onOpenChange, form, editingId, isPending, onSubmit }: AccessModelFormDialogProps) {
+export function AccessModelFormDialog({
+  open,
+  onOpenChange,
+  form,
+  editingId,
+  isPending,
+  onSubmit,
+}: AccessModelFormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">

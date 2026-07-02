@@ -1,41 +1,45 @@
-import rootLogger from '../../lib/logger';
-import { ensureMetricsTable } from './ensure-table';
-import { aggregateBucket, aggregateRecentBuckets, alignToBucket } from './services/snapshot-aggregator';
+import rootLogger from '../../lib/logger'
+import { ensureMetricsTable } from './ensure-table'
+import {
+  aggregateBucket,
+  aggregateRecentBuckets,
+  alignToBucket,
+} from './services/snapshot-aggregator'
 
-const logger = rootLogger.child({ module: 'snapshot-job' });
+const logger = rootLogger.child({ module: 'snapshot-job' })
 
-const BUCKET_MINUTES = 5;
+const BUCKET_MINUTES = 5
 
 export async function startSnapshotJob(): Promise<NodeJS.Timeout> {
-  logger.info({ bucketMinutes: BUCKET_MINUTES }, 'Starting perf snapshot job');
+  logger.info({ bucketMinutes: BUCKET_MINUTES }, 'Starting perf snapshot job')
 
   try {
-    await ensureMetricsTable();
+    await ensureMetricsTable()
   } catch (err) {
-    logger.error({ err }, 'Failed to ensure instance_perf_snapshots table');
+    logger.error({ err }, 'Failed to ensure instance_perf_snapshots table')
   }
 
   // 补齐最近 1 小时的历史桶
   aggregateRecentBuckets(12, BUCKET_MINUTES).catch((err) => {
-    logger.warn({ err }, 'Failed to backfill perf snapshots');
-  });
+    logger.warn({ err }, 'Failed to backfill perf snapshots')
+  })
 
-  const intervalMs = BUCKET_MINUTES * 60 * 1000;
+  const intervalMs = BUCKET_MINUTES * 60 * 1000
 
   const timer = setInterval(() => {
-    const now = new Date();
-    const aligned = alignToBucket(now, BUCKET_MINUTES);
-    const prevBucket = new Date(aligned.getTime() - intervalMs);
+    const now = new Date()
+    const aligned = alignToBucket(now, BUCKET_MINUTES)
+    const prevBucket = new Date(aligned.getTime() - intervalMs)
 
     aggregateBucket(prevBucket, BUCKET_MINUTES).catch((err) => {
-      logger.warn({ err, prevBucket }, 'Perf snapshot aggregation failed');
-    });
-  }, intervalMs);
+      logger.warn({ err, prevBucket }, 'Perf snapshot aggregation failed')
+    })
+  }, intervalMs)
 
-  return timer;
+  return timer
 }
 
 export function stopSnapshotJob(timer: NodeJS.Timeout): void {
-  clearInterval(timer);
-  logger.info('Perf snapshot job stopped');
+  clearInterval(timer)
+  logger.info('Perf snapshot job stopped')
 }

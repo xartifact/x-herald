@@ -17,7 +17,7 @@ COPY packages/ui/package.json ./packages/ui/
 COPY packages/ai-agent/package.json ./packages/ai-agent/
 COPY apps/cli/package.json ./apps/cli/
 
-RUN bun install
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/* && bun install --ignore-scripts
 
 COPY . .
 

@@ -84,13 +84,18 @@ export function AiAssistPage() {
 
   const { data: patternsData, isLoading: patternsLoading } = useQuery({
     queryKey: ['ai-assist-patterns'],
-    queryFn: () => get<{ success: boolean; data: PatternItem[] }>('/api/ai/patterns', { extractData: false }),
+    queryFn: () =>
+      get<{ success: boolean; data: PatternItem[] }>('/api/ai/patterns', { extractData: false }),
   })
   const patterns = patternsData?.data ?? []
 
   const diagnoseMutation = useMutation({
     mutationFn: (id: string) =>
-      post<{ success: boolean; data: DiagnosisData }>('/api/ai/diagnose', { logId: id }, { extractData: false }),
+      post<{ success: boolean; data: DiagnosisData }>(
+        '/api/ai/diagnose',
+        { logId: id },
+        { extractData: false },
+      ),
     onSuccess: (res) => {
       if (res.success) {
         setDiagnosis(res.data)
@@ -106,8 +111,13 @@ export function AiAssistPage() {
   })
 
   const applyFixMutation = useMutation({
-    mutationFn: (payload: { instanceId: string; suggestion: FixSuggestion; errorType: string; provider: string; model: string }) =>
-      post<{ success: boolean }>('/api/ai/apply-fix', payload, { extractData: false }),
+    mutationFn: (payload: {
+      instanceId: string
+      suggestion: FixSuggestion
+      errorType: string
+      provider: string
+      model: string
+    }) => post<{ success: boolean }>('/api/ai/apply-fix', payload, { extractData: false }),
     onSuccess: () => {
       toast.success('修复已应用')
       queryClient.invalidateQueries({ queryKey: ['ai-assist-patterns'] })
@@ -181,7 +191,11 @@ export function AiAssistPage() {
                       <span className="truncate max-w-[320px]" title={log.errorMessage || log.id}>
                         {log.modelName}
                         {' · '}
-                        {log.errorType || (log.errorMessage ? log.errorMessage.slice(0, 40) + (log.errorMessage.length > 40 ? '...' : '') : 'unknown')}
+                        {log.errorType ||
+                          (log.errorMessage
+                            ? log.errorMessage.slice(0, 40) +
+                              (log.errorMessage.length > 40 ? '...' : '')
+                            : 'unknown')}
                         {' · '}
                         {new Date(log.createdAt).toLocaleString()}
                       </span>
@@ -193,7 +207,11 @@ export function AiAssistPage() {
           </div>
           <div className="flex items-center gap-2">
             <Button onClick={handleDiagnose} disabled={diagnoseMutation.isPending || !logId.trim()}>
-              {diagnoseMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+              {diagnoseMutation.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="mr-2 h-4 w-4" />
+              )}
               AI 诊断
             </Button>
           </div>
@@ -239,7 +257,9 @@ export function AiAssistPage() {
                           disabled={!s.autoApplicable || applyFixMutation.isPending}
                           onClick={() => handleApplyFix(s)}
                         >
-                          {applyFixMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                          {applyFixMutation.isPending ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : null}
                           应用修复
                         </Button>
                       </div>

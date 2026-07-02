@@ -1,9 +1,9 @@
-import logger from '../../../lib/logger';
-import { logEventBus } from '../../services/log-event-bus';
+import logger from '../../../lib/logger'
+import { logEventBus } from '../../services/log-event-bus'
 
 export interface AbortManagerResult {
-  isTimeout: boolean;
-  disconnectReason: 'timeout' | 'client_disconnect' | null;
+  isTimeout: boolean
+  disconnectReason: 'timeout' | 'client_disconnect' | null
 }
 
 /**
@@ -16,21 +16,21 @@ export interface AbortManagerResult {
  * 4. 清理资源
  */
 export class AbortManager {
-  private clientSignal: AbortSignal | undefined;
-  private cleanupAttemptFn: (() => void) | null = null;
-  private timeoutId: ReturnType<typeof setTimeout> | null = null;
+  private clientSignal: AbortSignal | undefined
+  private cleanupAttemptFn: (() => void) | null = null
+  private timeoutId: ReturnType<typeof setTimeout> | null = null
   /** logId → 用于手动取消和 stale cleanup */
-  private logId: string | undefined;
+  private logId: string | undefined
 
-  public isClientDisconnected = false;
+  public isClientDisconnected = false
 
   constructor(clientSignal: AbortSignal | undefined) {
-    this.clientSignal = clientSignal;
+    this.clientSignal = clientSignal
   }
 
   /** 设置 logId（在 logRequestStart 之后调用），用于手动取消和 stale cleanup */
   setLogId(logId: string): void {
-    this.logId = logId;
+    this.logId = logId
   }
 
   /**
@@ -38,8 +38,8 @@ export class AbortManager {
    */
   registerClientDisconnect(): void {
     this.clientSignal?.addEventListener('abort', () => {
-      this.isClientDisconnected = true;
-    });
+      this.isClientDisconnected = true
+    })
   }
 
   /**
@@ -51,41 +51,48 @@ export class AbortManager {
    * @param isStreaming 是否流式（用于日志）
    * @returns { controller, cleanup }
    */
-  createAttempt(ttfbTimeoutMs: number, requestId: string, isStreaming: boolean): {
-    controller: AbortController;
-    cleanup: () => void;
+  createAttempt(
+    ttfbTimeoutMs: number,
+    requestId: string,
+    isStreaming: boolean,
+  ): {
+    controller: AbortController
+    cleanup: () => void
   } {
-    const controller = new AbortController();
+    const controller = new AbortController()
 
     // 注册到 logEventBus 供手动取消使用
     if (this.logId) {
-      logEventBus.registerAbortController(this.logId, controller);
+      logEventBus.registerAbortController(this.logId, controller)
     }
 
     // 客户端断开 → 中止当前尝试
-    const propagateDisconnect = () => controller.abort();
-    this.clientSignal?.addEventListener('abort', propagateDisconnect);
+    const propagateDisconnect = () => controller.abort()
+    this.clientSignal?.addEventListener('abort', propagateDisconnect)
 
     // TTFB 超时 → 中止当前尝试
     this.timeoutId = setTimeout(() => {
-      logger.warn({ requestId, timeout: ttfbTimeoutMs, streaming: isStreaming }, 'Request TTFB timeout, aborting');
-      controller.abort();
-    }, ttfbTimeoutMs);
+      logger.warn(
+        { requestId, timeout: ttfbTimeoutMs, streaming: isStreaming },
+        'Request TTFB timeout, aborting',
+      )
+      controller.abort()
+    }, ttfbTimeoutMs)
 
     const cleanup = () => {
       if (this.timeoutId) {
-        clearTimeout(this.timeoutId);
+        clearTimeout(this.timeoutId)
       }
-      this.timeoutId = null;
-      this.clientSignal?.removeEventListener('abort', propagateDisconnect);
+      this.timeoutId = null
+      this.clientSignal?.removeEventListener('abort', propagateDisconnect)
       if (this.logId) {
         // 注意：只在 fetch 成功后才取消注册（completed/aborted 由 emitLog 处理）
         // 这里不清除 logEventBus 中的映射，保留给手动取消用
       }
-    };
-    this.cleanupAttemptFn = cleanup;
+    }
+    this.cleanupAttemptFn = cleanup
 
-    return { controller, cleanup };
+    return { controller, cleanup }
   }
 
   /**
@@ -93,7 +100,7 @@ export class AbortManager {
    * 在重试循环结束后调用（finally 块）
    */
   dispose(): void {
-    this.cleanupAttemptFn?.();
+    this.cleanupAttemptFn?.()
     // Note: clientSignal abort listener for isClientDisconnected is not removed
     // because it doesn't affect anything after the request completes
   }

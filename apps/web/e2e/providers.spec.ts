@@ -31,7 +31,9 @@ test.describe('Providers', () => {
     await page.getByRole('button', { name: '创建' }).click()
 
     // Wait for dialog to close (or check for success)
-    await page.waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 10000 }).catch(() => {})
+    await page
+      .waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 10000 })
+      .catch(() => {})
     await expect(page.getByText(name)).toBeVisible({ timeout: 15000 })
   })
 
@@ -88,7 +90,7 @@ test.describe('Providers', () => {
     await page.getByRole('button', { name: '创建' }).click()
     await expect(page.getByText(name)).toBeVisible({ timeout: 15000 })
 
-    page.on('dialog', dialog => dialog.accept())
+    page.on('dialog', (dialog) => dialog.accept())
 
     const card = page.locator(`div.rounded-xl.border:has-text("${name}")`).first()
     const actionButtons = card.locator('div.flex.items-center.gap-1 button')

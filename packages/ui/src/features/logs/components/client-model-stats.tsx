@@ -33,7 +33,7 @@ export function ClientModelStats({ stats, isLoading }: ClientModelStatsProps) {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc')
 
   const sortedStats = useMemo(() => {
-    return [...stats].sort((a, b) => {
+    return [...stats].toSorted((a, b) => {
       let comparison = 0
       if (sortField === 'requestCount') comparison = a.requestCount - b.requestCount
       else if (sortField === 'totalTokens') comparison = a.totalTokens - b.totalTokens
@@ -45,13 +45,20 @@ export function ClientModelStats({ stats, isLoading }: ClientModelStatsProps) {
 
   const handleSort = (field: SortField) => {
     if (sortField === field) setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')
-    else { setSortField(field); setSortOrder('desc') }
+    else {
+      setSortField(field)
+      setSortOrder('desc')
+    }
   }
 
   const SortButton = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
     <Button
-      variant="ghost" size="sm"
-      className={cn('h-7 text-xs font-normal', sortField === field && 'bg-accent text-accent-foreground')}
+      variant="ghost"
+      size="sm"
+      className={cn(
+        'h-7 text-xs font-normal',
+        sortField === field && 'bg-accent text-accent-foreground',
+      )}
       onClick={() => handleSort(field)}
     >
       {children}
@@ -81,7 +88,9 @@ export function ClientModelStats({ stats, isLoading }: ClientModelStatsProps) {
       <Card>
         <CardHeader>{EMPTY_CARD_TITLE}</CardHeader>
         <CardContent>
-          <div className="text-center text-muted-foreground py-8 text-sm">暂无客户端模型请求数据</div>
+          <div className="text-center text-muted-foreground py-8 text-sm">
+            暂无客户端模型请求数据
+          </div>
         </CardContent>
       </Card>
     )
@@ -97,15 +106,31 @@ export function ClientModelStats({ stats, isLoading }: ClientModelStatsProps) {
           <CardTitle className="text-sm flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             客户端模型统计
-            <Badge variant="secondary" className="text-xs">{stats.length} 个模型</Badge>
+            <Badge variant="secondary" className="text-xs">
+              {stats.length} 个模型
+            </Badge>
           </CardTitle>
-          <div className="text-xs text-muted-foreground">共 {totalRequests.toLocaleString()} 次请求</div>
+          <div className="text-xs text-muted-foreground">
+            共 {totalRequests.toLocaleString()} 次请求
+          </div>
         </div>
         <div className="flex flex-wrap gap-1 pt-2">
-          <SortButton field="requestCount"><Hash className="mr-1 h-3 w-3" />请求数</SortButton>
-          <SortButton field="lastRequestAt"><Clock className="mr-1 h-3 w-3" />最近请求</SortButton>
-          <SortButton field="totalTokens"><Activity className="mr-1 h-3 w-3" />Token消耗</SortButton>
-          <SortButton field="avgResponseTime"><Activity className="mr-1 h-3 w-3" />平均响应时间</SortButton>
+          <SortButton field="requestCount">
+            <Hash className="mr-1 h-3 w-3" />
+            请求数
+          </SortButton>
+          <SortButton field="lastRequestAt">
+            <Clock className="mr-1 h-3 w-3" />
+            最近请求
+          </SortButton>
+          <SortButton field="totalTokens">
+            <Activity className="mr-1 h-3 w-3" />
+            Token消耗
+          </SortButton>
+          <SortButton field="avgResponseTime">
+            <Activity className="mr-1 h-3 w-3" />
+            平均响应时间
+          </SortButton>
         </div>
       </CardHeader>
       <CardContent className="pt-0">

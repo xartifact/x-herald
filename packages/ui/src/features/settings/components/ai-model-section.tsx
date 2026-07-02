@@ -5,8 +5,20 @@ import { useState } from 'react'
 import { Bot, RefreshCw } from 'lucide-react'
 
 import { Button } from '../../../shared/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../shared/components/ui/card'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../shared/components/ui/select'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '../../../shared/components/ui/card'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../../shared/components/ui/select'
 
 import type { SettingsData } from '@xartifact/x-llm-gateway-shared'
 import { useUpdateSettings } from '../hooks/use-settings'
@@ -22,14 +34,13 @@ export function AiModelSection({ settings, isLoading }: AiModelSectionProps) {
   const updateSettings = useUpdateSettings()
   const [selectedGroupId, setSelectedGroupId] = useState<string | null | undefined>(undefined)
 
-  const currentGroupId = selectedGroupId === undefined
-    ? (settings?.aiModelGroupId ?? null)
-    : selectedGroupId
+  const currentGroupId =
+    selectedGroupId === undefined ? (settings?.aiModelGroupId ?? null) : selectedGroupId
 
   const handleSave = () => {
     updateSettings.mutate(
       { aiModelGroupId: currentGroupId ?? null },
-      { onSuccess: () => setSelectedGroupId(undefined) }
+      { onSuccess: () => setSelectedGroupId(undefined) },
     )
   }
 
@@ -70,7 +81,9 @@ export function AiModelSection({ settings, isLoading }: AiModelSectionProps) {
                   </SelectItem>
                 ))}
                 {settings?.availableModelGroups.length === 0 && (
-                  <SelectItem value={NONE_VALUE} disabled>暂无模型组，请先创建</SelectItem>
+                  <SelectItem value={NONE_VALUE} disabled>
+                    暂无模型组，请先创建
+                  </SelectItem>
                 )}
               </SelectContent>
             </Select>

@@ -78,7 +78,7 @@ test.describe('AI Assist', () => {
 
     // Type a fake log ID
     await page.locator('input[placeholder="输入日志 ID"]').fill('test-log-id')
-    
+
     // Button should now be enabled
     const diagnoseBtn = page.getByRole('button', { name: /AI 诊断/i })
     expect(await diagnoseBtn.isDisabled().catch(() => false)).toBe(false)

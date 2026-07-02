@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'bun:test'
-import { ProtocolConfigSchema, ProtocolsSchema, CreateProviderSchema, UpdateProviderSchema } from './service'
+import {
+  ProtocolConfigSchema,
+  ProtocolsSchema,
+  CreateProviderSchema,
+  UpdateProviderSchema,
+} from './service'
 
 describe('ProtocolConfigSchema', () => {
   it('accepts valid baseUrl with enabled: true', () => {

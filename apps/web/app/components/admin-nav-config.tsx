@@ -1,4 +1,20 @@
-import { LayoutDashboard, Server, Brain, Key, FileText, BarChart3, Settings, Layers, Cog, Network, GitBranch, ShieldAlert, Gauge, DollarSign, Sparkles } from 'lucide-react'
+import {
+  LayoutDashboard,
+  Server,
+  Brain,
+  Key,
+  FileText,
+  BarChart3,
+  Settings,
+  Layers,
+  Cog,
+  Network,
+  GitBranch,
+  ShieldAlert,
+  Gauge,
+  DollarSign,
+  Sparkles,
+} from 'lucide-react'
 
 export interface NavItem {
   href: string
@@ -16,9 +32,7 @@ export const navGroups: NavGroup[] = [
   {
     label: '概览',
     icon: <LayoutDashboard className="h-4 w-4" />,
-    items: [
-      { href: '/admin', label: '控制台', icon: <LayoutDashboard className="h-4 w-4" /> },
-    ],
+    items: [{ href: '/admin', label: '控制台', icon: <LayoutDashboard className="h-4 w-4" /> }],
   },
   {
     label: '配置管理',
@@ -39,8 +53,16 @@ export const navGroups: NavGroup[] = [
       { href: '/admin/logs', label: '请求日志', icon: <FileText className="h-4 w-4" /> },
       { href: '/admin/client-models', label: '模型统计', icon: <Brain className="h-4 w-4" /> },
       { href: '/admin/costs', label: '费用统计', icon: <DollarSign className="h-4 w-4" /> },
-      { href: '/admin/provider-stats', label: '供应商统计', icon: <BarChart3 className="h-4 w-4" /> },
-      { href: '/admin/circuit-breaker', label: '熔断记录', icon: <ShieldAlert className="h-4 w-4" /> },
+      {
+        href: '/admin/provider-stats',
+        label: '供应商统计',
+        icon: <BarChart3 className="h-4 w-4" />,
+      },
+      {
+        href: '/admin/circuit-breaker',
+        label: '熔断记录',
+        icon: <ShieldAlert className="h-4 w-4" />,
+      },
       { href: '/admin/metrics', label: '性能指标', icon: <Gauge className="h-4 w-4" /> },
     ],
   },
@@ -53,4 +75,4 @@ export const navGroups: NavGroup[] = [
   },
 ]
 
-export const allNavItems = navGroups.flatMap(group => group.items)
+export const allNavItems = navGroups.flatMap((group) => group.items)

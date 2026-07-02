@@ -49,6 +49,7 @@ import type { ContentFeatures } from './utils/extract-content-features'
 ### No unused imports
 
 After extracting components, always clean up unused imports. Common forgotten ones:
+
 - `cn` from `@/core/lib/utils`
 - `CLIENT_REGISTRY` from `@/features/gateway/services/client-identifier`
 - `Badge`, `Button`, `Separator` from UI components
@@ -66,7 +67,7 @@ export const STREAM_TIMEOUT_MS = 120_000
 export const CIRCUIT_BREAKER_RESET_MS = 60_000
 
 // ❌ WRONG — hardcoded in handler
-const timeout = 30000  // Don't do this
+const timeout = 30000 // Don't do this
 ```
 
 ### CATCHALL_VM_NAME
@@ -154,7 +155,7 @@ export function handleProviderError(error: any, provider: any, ctx: any): any { 
 ```typescript
 // ✅ CORRECT — globalThis cache with TTL
 const CACHE_KEY = 'virtual-key-cache'
-const CACHE_TTL_MS = 30_000  // 30 seconds
+const CACHE_TTL_MS = 30_000 // 30 seconds
 
 interface CacheEntry<T> {
   data: T
@@ -162,7 +163,9 @@ interface CacheEntry<T> {
 }
 
 function getCache<T>(key: string): T | null {
-  const cache = (globalThis as Record<string, unknown>)[CACHE_KEY] as Map<string, CacheEntry<T>> | undefined
+  const cache = (globalThis as Record<string, unknown>)[CACHE_KEY] as
+    | Map<string, CacheEntry<T>>
+    | undefined
   if (!cache) return null
   const entry = cache.get(key)
   if (!entry || Date.now() > entry.expiresAt) {
@@ -183,7 +186,9 @@ When data changes via API, invalidate the cache:
 ```typescript
 // In PUT/DELETE/reset handlers:
 async function invalidateCache(keyId: string) {
-  const cache = (globalThis as Record<string, unknown>)[CACHE_KEY] as Map<string, CacheEntry<unknown>> | undefined
+  const cache = (globalThis as Record<string, unknown>)[CACHE_KEY] as
+    | Map<string, CacheEntry<unknown>>
+    | undefined
   cache?.delete(keyId)
 }
 ```
@@ -239,8 +244,8 @@ interface MetadataPerformanceSectionsProps {
 // ❌ WRONG — leftover unused props from parent
 interface MetadataPerformanceSectionsProps {
   log: Log
-  isPending: boolean      // unused after extraction
-  isSuccess: boolean      // unused after extraction
+  isPending: boolean // unused after extraction
+  isSuccess: boolean // unused after extraction
   contentFeatures: ContentFeatures | null
   formatDuration: (ms: number) => string
   formatTokens: (tokens: number) => string
@@ -255,7 +260,7 @@ After extraction, remove imports that are no longer needed:
 // ❌ WRONG — leftover from parent
 import { CLIENT_REGISTRY } from '@/features/gateway/services/client-identifier'
 import { BodySubTabs } from './body-sub-tabs'
-import { cn } from '@/core/lib/utils'  // not used in this component
+import { cn } from '@/core/lib/utils' // not used in this component
 
 // ✅ CORRECT — only what's needed
 import { Badge } from '@/components/ui/badge'

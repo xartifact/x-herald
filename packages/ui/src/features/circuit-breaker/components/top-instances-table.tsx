@@ -45,9 +45,7 @@ export function TopInstancesTable({ instances }: Props) {
                 const badge = tripCountBadge(inst.tripCount)
                 return (
                   <TableRow key={inst.instanceId}>
-                    <TableCell>
-                      {inst.instanceName || inst.instanceId.slice(0, 12)}
-                    </TableCell>
+                    <TableCell>{inst.instanceName || inst.instanceId.slice(0, 12)}</TableCell>
                     <TableCell>{inst.groupName}</TableCell>
                     <TableCell>{inst.providerName}</TableCell>
                     <TableCell className="text-right">

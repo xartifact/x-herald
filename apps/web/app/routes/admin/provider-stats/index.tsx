@@ -7,7 +7,11 @@ import {
   ProviderStatsCard,
   ProviderStatsSummary,
   ProviderStatsToolbar,
-  Card, CardContent, CardHeader, CardTitle, Badge,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Badge,
 } from '@xartifact/x-llm-gateway-ui'
 
 interface FilterState {
@@ -28,7 +32,9 @@ function buildQueryParams(timeRange: string): Record<string, string> {
 
 export function ProviderStatsPage() {
   const [filter, setFilter] = useState<FilterState>({
-    sortField: 'avgResponseTime', sortOrder: 'asc', timeRange: '7d',
+    sortField: 'avgResponseTime',
+    sortOrder: 'asc',
+    timeRange: '7d',
   })
 
   const queryParams = useMemo(() => buildQueryParams(filter.timeRange), [filter.timeRange])
@@ -36,16 +42,23 @@ export function ProviderStatsPage() {
   const stats = (data as any)?.data ?? []
 
   const sorted = useMemo(() => {
-    return [...stats].sort((a: any, b: any) => {
+    return [...stats].toSorted((a: any, b: any) => {
       let diff = 0
       switch (filter.sortField) {
-        case 'avgResponseTime': diff = a.avgResponseTime - b.avgResponseTime; break
-        case 'p95ResponseTime': diff = a.p95ResponseTime - b.p95ResponseTime; break
-        case 'requestCount': diff = a.totalRequests - b.totalRequests; break
+        case 'avgResponseTime':
+          diff = a.avgResponseTime - b.avgResponseTime
+          break
+        case 'p95ResponseTime':
+          diff = a.p95ResponseTime - b.p95ResponseTime
+          break
+        case 'requestCount':
+          diff = a.totalRequests - b.totalRequests
+          break
         case 'successRate': {
           const ra = a.totalRequests > 0 ? a.successCount / a.totalRequests : 0
           const rb = b.totalRequests > 0 ? b.successCount / b.totalRequests : 0
-          diff = ra - rb; break
+          diff = ra - rb
+          break
         }
       }
       return filter.sortOrder === 'asc' ? diff : -diff
@@ -66,7 +79,8 @@ export function ProviderStatsPage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-          <Wifi className="h-6 w-6" />供应商统计
+          <Wifi className="h-6 w-6" />
+          供应商统计
         </h2>
         <p className="text-sm text-muted-foreground mt-1">
           按网络质量（平均响应时间 + 成功率）对供应商进行排名分析

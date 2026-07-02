@@ -1,9 +1,24 @@
 import { Activity, ArrowUpDown, BarChart3, Clock, Hash, RefreshCw } from 'lucide-react'
 
 import { cn } from '../../../shared/lib/utils'
-import { Button, Card, CardContent, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../shared/components/ui'
+import {
+  Button,
+  Card,
+  CardContent,
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../../shared/components/ui'
 
-export type SortField = 'requestCount' | 'lastRequestAt' | 'totalTokens' | 'avgResponseTime' | 'successRate'
+export type SortField =
+  | 'requestCount'
+  | 'lastRequestAt'
+  | 'totalTokens'
+  | 'avgResponseTime'
+  | 'successRate'
 export type SortOrder = 'desc' | 'asc'
 
 export interface FilterConfig {
@@ -20,7 +35,12 @@ interface ClientModelFilterProps {
   onRefresh: () => void
 }
 
-export function ClientModelFilter({ config, isLoading, onConfigChange, onRefresh }: ClientModelFilterProps) {
+export function ClientModelFilter({
+  config,
+  isLoading,
+  onConfigChange,
+  onRefresh,
+}: ClientModelFilterProps) {
   const handleSort = (field: SortField) => {
     if (config.sortField === field) {
       onConfigChange({ ...config, sortOrder: config.sortOrder === 'desc' ? 'asc' : 'desc' })
@@ -51,7 +71,10 @@ export function ClientModelFilter({ config, isLoading, onConfigChange, onRefresh
                   className="h-9"
                 />
               </div>
-              <Select value={config.timeRange} onValueChange={(v) => onConfigChange({ ...config, timeRange: v })}>
+              <Select
+                value={config.timeRange}
+                onValueChange={(v) => onConfigChange({ ...config, timeRange: v })}
+              >
                 <SelectTrigger className="w-full md:w-32 h-9">
                   <SelectValue />
                 </SelectTrigger>
@@ -65,7 +88,8 @@ export function ClientModelFilter({ config, isLoading, onConfigChange, onRefresh
               </Select>
             </div>
             <Button variant="outline" size="sm" onClick={onRefresh} disabled={isLoading}>
-              <RefreshCw className={cn("mr-2 h-4 w-4", isLoading && "animate-spin")} />刷新
+              <RefreshCw className={cn('mr-2 h-4 w-4', isLoading && 'animate-spin')} />
+              刷新
             </Button>
           </div>
         </CardContent>
@@ -83,7 +107,9 @@ export function ClientModelFilter({ config, isLoading, onConfigChange, onRefresh
             <Icon className="mr-1 h-4 w-4" />
             {label}
             {config.sortField === field && (
-              <ArrowUpDown className={cn("ml-1 h-3 w-3", config.sortOrder === 'asc' && "rotate-180")} />
+              <ArrowUpDown
+                className={cn('ml-1 h-3 w-3', config.sortOrder === 'asc' && 'rotate-180')}
+              />
             )}
           </Button>
         ))}

@@ -160,9 +160,7 @@
         "model_groups_name_unique": {
           "name": "model_groups_name_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "name"
-          ]
+          "columns": ["name"]
         }
       },
       "policies": {},
@@ -289,12 +287,8 @@
           "name": "model_instances_group_id_model_groups_id_fk",
           "tableFrom": "model_instances",
           "tableTo": "model_groups",
-          "columnsFrom": [
-            "group_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["group_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -302,12 +296,8 @@
           "name": "model_instances_provider_id_providers_id_fk",
           "tableFrom": "model_instances",
           "tableTo": "providers",
-          "columnsFrom": [
-            "provider_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["provider_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -793,12 +783,8 @@
           "name": "request_logs_virtual_key_id_virtual_keys_id_fk",
           "tableFrom": "request_logs",
           "tableTo": "virtual_keys",
-          "columnsFrom": [
-            "virtual_key_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["virtual_key_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -806,12 +792,8 @@
           "name": "request_logs_provider_id_providers_id_fk",
           "tableFrom": "request_logs",
           "tableTo": "providers",
-          "columnsFrom": [
-            "provider_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["provider_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -904,9 +886,7 @@
         "virtual_keys_key_unique": {
           "name": "virtual_keys_key_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "key"
-          ]
+          "columns": ["key"]
         }
       },
       "policies": {},
@@ -968,12 +948,8 @@
           "name": "health_runs_target_id_health_targets_id_fk",
           "tableFrom": "health_runs",
           "tableTo": "health_targets",
-          "columnsFrom": [
-            "target_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["target_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }

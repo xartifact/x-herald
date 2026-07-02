@@ -39,12 +39,18 @@ const FlowCanvas = forwardRef<FlowEditorHandle, FlowEditorProps>(function FlowCa
   const { selectedNode, onUpdateNodeData, ...canvasProps } = props
   const canvas = useFlowCanvas(canvasProps)
 
-  useImperativeHandle(ref, () => ({
-    updateNodeData: (nodeId, data) => {
-      canvas.setNodes(nds => nds.map(n => n.id === nodeId ? { ...n, data: { ...n.data, ...data } } : n))
-    },
-    getState: () => ({ nodes: canvas.nodes, edges: canvas.edges }),
-  }), [canvas.nodes, canvas.edges, canvas.setNodes])
+  useImperativeHandle(
+    ref,
+    () => ({
+      updateNodeData: (nodeId, data) => {
+        canvas.setNodes((nds) =>
+          nds.map((n) => (n.id === nodeId ? { ...n, data: { ...n.data, ...data } } : n)),
+        )
+      },
+      getState: () => ({ nodes: canvas.nodes, edges: canvas.edges }),
+    }),
+    [canvas.nodes, canvas.edges, canvas.setNodes],
+  )
 
   return (
     <div className="h-full w-full flex flex-col">
@@ -78,7 +84,7 @@ const FlowCanvas = forwardRef<FlowEditorHandle, FlowEditorProps>(function FlowCa
             pannable
             zoomable
             className="rounded-lg border shadow-sm"
-            nodeColor={node => {
+            nodeColor={(node) => {
               if (node.type === 'reject') return '#ef4444'
               if (node.type === 'fallback') return '#f97316'
               if (node.type === 'condition') return '#f59e0b'

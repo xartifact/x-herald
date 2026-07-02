@@ -10,31 +10,36 @@
 // 模型能力配置
 export interface ModelCapabilities {
   // 基本能力
-  streaming: boolean;
-  functionCalling: boolean;
-  vision: boolean;
-  jsonMode: boolean;
+  streaming: boolean
+  functionCalling: boolean
+  vision: boolean
+  jsonMode: boolean
 
   // 参数限制
-  maxTokens: number;
-  contextWindow: number;
+  maxTokens: number
+  contextWindow: number
 
   // 特殊能力
-  reasoning?: boolean;
-  codeInterpreter?: boolean;
-  webSearch?: boolean;
+  reasoning?: boolean
+  codeInterpreter?: boolean
+  webSearch?: boolean
 
   // 其他自定义能力
-  [key: string]: unknown;
+  [key: string]: unknown
 }
-
 
 export interface RoutingConfig {
-  strategy: 'round_robin' | 'weighted' | 'least_response_time' | 'priority' | 'cost_optimized' | 'smart';
-  fallbackEnabled: boolean;
+  strategy:
+    | 'round_robin'
+    | 'weighted'
+    | 'least_response_time'
+    | 'priority'
+    | 'cost_optimized'
+    | 'smart'
+  fallbackEnabled: boolean
 }
 
-export type { ModelGroup, NewModelGroup } from '@xartifact/x-llm-gateway-db';
+export type { ModelGroup, NewModelGroup } from '@xartifact/x-llm-gateway-db'
 
 /**
  * 模型实例 (Model Instance)
@@ -47,88 +52,91 @@ export type { ModelGroup, NewModelGroup } from '@xartifact/x-llm-gateway-db';
 export interface InstanceConfig {
   // 该实例特有的参数映射
   // 例如: { temperature: { min: 0, max: 2, default: 1 } }
-  parameterMapping?: Record<string, {
-    min?: number;
-    max?: number;
-    default?: unknown;
-    transform?: string; // 转换函数表达式
-  }>;
+  parameterMapping?: Record<
+    string,
+    {
+      min?: number
+      max?: number
+      default?: unknown
+      transform?: string // 转换函数表达式
+    }
+  >
 
   // 覆盖模型组的能力配置
   capabilityOverrides?: Partial<{
-    streaming: boolean;
-    functionCalling: boolean;
-    vision: boolean;
-    maxTokens: number;
-    contextWindow: number;
-  }>;
+    streaming: boolean
+    functionCalling: boolean
+    vision: boolean
+    maxTokens: number
+    contextWindow: number
+  }>
 
   // 自定义头
-  customHeaders?: Record<string, string>;
+  customHeaders?: Record<string, string>
 
   // 是否支持 thinking/extended thinking（Claude 3.7+/4+）
-  supportsThinking?: boolean;
+  supportsThinking?: boolean
 
   // 当目标模型 thinking 模式开启时，自动为缺少 reasoning_content 的
   // assistant 消息注入空值（兼容 Kimi 等要求 reasoning_content 必须存在的模型）
-  patchMissingReasoningContent?: boolean;
+  patchMissingReasoningContent?: boolean
 
   // 重试配置
   retryConfig?: {
-    maxRetries: number;
-    retryDelay: number;
-    retryableStatusCodes: number[];
-  };
+    maxRetries: number
+    retryDelay: number
+    retryableStatusCodes: number[]
+  }
 
   // 超时配置
   timeoutConfig?: {
-    connectTimeout: number;
-    readTimeout: number;
-  };
+    connectTimeout: number
+    readTimeout: number
+  }
 
   // 供应商特定参数转换规则
   parameterTransforms?: Array<{
     // 匹配条件
     when?: {
-      paramName: string;
-      operator: 'eq' | 'ne' | 'exists' | 'not_exists';
-      value?: unknown;
-    };
+      paramName: string
+      operator: 'eq' | 'ne' | 'exists' | 'not_exists'
+      value?: unknown
+    }
     // 转换操作
     action: {
-      type: 'add' | 'remove' | 'rename' | 'transform';
-      targetParam: string;
-      value?: unknown;
+      type: 'add' | 'remove' | 'rename' | 'transform'
+      targetParam: string
+      value?: unknown
       // 简单表达式支持，如: "${reasoning.enabled} ? true : false"
-      expression?: string;
-    };
-  }>;
+      expression?: string
+    }
+  }>
 
   // Schema处理配置
   schemaConfig?: {
-    cleanEnabled: boolean;
-    preserveFields?: string[];  // 保留的字段（覆盖默认清理）
-    additionalBannedFields?: string[];  // 额外清理的字段
-  };
+    cleanEnabled: boolean
+    preserveFields?: string[] // 保留的字段（覆盖默认清理）
+    additionalBannedFields?: string[] // 额外清理的字段
+  }
 
   // 请求增强：注入到请求体的字段
-  requestInject?: Record<string, unknown>;
+  requestInject?: Record<string, unknown>
 
   // 请求增强：请求体变换表达式
-  requestTransform?: string;
+  requestTransform?: string
 
   // 响应增强：从响应提取字段到标准位置
-  responseExtract?: Record<string, string>;
+  responseExtract?: Record<string, string>
 
   // 响应增强：响应体变换表达式
-  responseTransform?: string;
+  responseTransform?: string
 }
 
-export type { ModelInstance, NewModelInstance } from '@xartifact/x-llm-gateway-db';
+export type { ModelInstance, NewModelInstance } from '@xartifact/x-llm-gateway-db'
 
-export type { ModelGroupMembership, NewModelGroupMembership } from '@xartifact/x-llm-gateway-db';
+export type { ModelGroupMembership, NewModelGroupMembership } from '@xartifact/x-llm-gateway-db'
 
-export type { AccessModel, NewAccessModel } from '@xartifact/x-llm-gateway-db';
+export type { AccessModel, NewAccessModel } from '@xartifact/x-llm-gateway-db'
 
 /**
  * 路由规则 (Model Route)
@@ -139,22 +147,33 @@ export type { AccessModel, NewAccessModel } from '@xartifact/x-llm-gateway-db';
 
 // 路由条件
 export interface RouteCondition {
-  field: string;
-  operator: 'eq' | 'ne' | 'in' | 'starts_with' | 'exists' | 'gt' | 'lt' | 'gte' | 'lte';
-  value?: unknown;
+  field: string
+  operator: 'eq' | 'ne' | 'in' | 'starts_with' | 'exists' | 'gt' | 'lt' | 'gte' | 'lte'
+  value?: unknown
 }
 
 // 路由动作
 export interface RouteAction {
-  type: 'route_to_virtual_model' | 'route_to_group' | 'route_to_instance' | 'reject' | 'fallback';
-  targetId?: string;
-  reason?: string;
+  type: 'route_to_virtual_model' | 'route_to_group' | 'route_to_instance' | 'reject' | 'fallback'
+  targetId?: string
+  reason?: string
 }
 
 // React Flow 序列化数据
 export interface FlowData {
-  nodes: Array<{ id: string; type: string; position: { x: number; y: number }; data: Record<string, unknown> }>;
-  edges: Array<{ id: string; source: string; target: string; sourceHandle?: string; targetHandle?: string }>;
+  nodes: Array<{
+    id: string
+    type: string
+    position: { x: number; y: number }
+    data: Record<string, unknown>
+  }>
+  edges: Array<{
+    id: string
+    source: string
+    target: string
+    sourceHandle?: string
+    targetHandle?: string
+  }>
 }
 
-export type { ModelRoute, NewModelRoute } from '@xartifact/x-llm-gateway-db';
+export type { ModelRoute, NewModelRoute } from '@xartifact/x-llm-gateway-db'

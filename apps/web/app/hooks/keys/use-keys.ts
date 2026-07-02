@@ -73,16 +73,19 @@ export function useUpdateKey() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, data }: {
-      id: string;
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string
       data: {
-        name?: string;
-        allowedModels?: string[] | null;
-        rateLimitRpm?: number | null;
-        rateLimitRpd?: number | null;
-        tokenLimitDaily?: number | null;
-        enabled?: boolean;
-        expiresAt?: string | null;
+        name?: string
+        allowedModels?: string[] | null
+        rateLimitRpm?: number | null
+        rateLimitRpd?: number | null
+        tokenLimitDaily?: number | null
+        enabled?: boolean
+        expiresAt?: string | null
       }
     }) => put<VirtualKey>(`/api/keys/${id}`, data),
     onSuccess: (_, variables) => {

@@ -9,13 +9,13 @@ import { Label } from '../../../../shared/components/ui/label'
 import { Textarea } from '../../../../shared/components/ui/textarea'
 
 interface RejectNodeData {
-  reason?: string;
-  [key: string]: unknown;
+  reason?: string
+  [key: string]: unknown
 }
 
 interface RejectPropertiesProps {
-  node: Node<RejectNodeData>;
-  onUpdate: (nodeId: string, data: Record<string, unknown>) => void;
+  node: Node<RejectNodeData>
+  onUpdate: (nodeId: string, data: Record<string, unknown>) => void
 }
 
 export function RejectProperties({ node, onUpdate }: RejectPropertiesProps) {
@@ -36,7 +36,7 @@ export function RejectProperties({ node, onUpdate }: RejectPropertiesProps) {
         <Label className="text-xs text-muted-foreground">拒绝原因</Label>
         <Textarea
           value={reason}
-          onChange={e => {
+          onChange={(e) => {
             setReason(e.target.value)
             onUpdate(node.id, { ...node.data, reason: e.target.value })
           }}

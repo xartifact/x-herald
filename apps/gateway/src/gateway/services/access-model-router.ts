@@ -3,20 +3,30 @@
  * 通过规则引擎将接入模型请求路由到模型组或模型实例
  */
 
-import { eq, and, sql } from '@xartifact/x-llm-gateway-db';
+import { eq, and, sql } from '@xartifact/x-llm-gateway-db'
 
-import { getDatabase } from '../../db/client';
-import logger from '../../lib/logger';
-import { CATCHALL_VM_NAME } from '../../features/access-models/constants';
-import { fetchPerfContext } from '../../features/metrics/services/perf-context-fetcher';
-import { accessModels, modelInstances, modelGroups, modelGroupMemberships, modelRoutes } from '@xartifact/x-llm-gateway-db';
-import { providers } from '@xartifact/x-llm-gateway-db';
+import { getDatabase } from '../../db/client'
+import logger from '../../lib/logger'
+import { CATCHALL_VM_NAME } from '../../features/access-models/constants'
+import { fetchPerfContext } from '../../features/metrics/services/perf-context-fetcher'
+import {
+  accessModels,
+  modelInstances,
+  modelGroups,
+  modelGroupMemberships,
+  modelRoutes,
+} from '@xartifact/x-llm-gateway-db'
+import { providers } from '@xartifact/x-llm-gateway-db'
 
-
-import { modelGroupRouter, RequestRejectedError, type RouteResult, type RoutingContext } from './model-group-router';
-import { ModelNotFoundError, NoAvailableInstanceError } from './router-selector';
-import type { ModelMappingResult } from './model-mapping';
-import { routeRuleEngine } from './route-rule-engine';
+import {
+  modelGroupRouter,
+  RequestRejectedError,
+  type RouteResult,
+  type RoutingContext,
+} from './model-group-router'
+import { ModelNotFoundError, NoAvailableInstanceError } from './router-selector'
+import type { ModelMappingResult } from './model-mapping'
+import { routeRuleEngine } from './route-rule-engine'
 
 export class AccessModelRouter {
   /**
@@ -24,69 +34,81 @@ export class AccessModelRouter {
    * 第一个为首选，其余为故障转移备选；空数组表示无可用路由
    */
   async routeCandidates(context: RoutingContext): Promise<RouteResult[]> {
-    const db = getDatabase();
+    const db = getDatabase()
 
     const amResult = await db
       .select()
       .from(accessModels)
       .where(and(eq(accessModels.name, context.requestedModel), eq(accessModels.enabled, true)))
-      .limit(1);
+      .limit(1)
 
     if (amResult.length === 0) {
-      return this.routeCandidatesViaDefault(context);
+      return this.routeCandidatesViaDefault(context)
     }
 
-    const am = amResult[0];
+    const am = amResult[0]
 
-    const perf = await this.fetchAmPerfContext(am.id);
+    const perf = await this.fetchAmPerfContext(am.id)
     const ruleMatch = await routeRuleEngine.match(am.id, {
       model: context.requestedModel,
       streaming: context.streaming,
       perf,
-    });
+    })
 
     if (!ruleMatch) {
-      throw new NoAvailableInstanceError(context.requestedModel,
-        `No matching route rule for access model '${am.name}' (requested model: '${context.requestedModel}')`);
+      throw new NoAvailableInstanceError(
+        context.requestedModel,
+        `No matching route rule for access model '${am.name}' (requested model: '${context.requestedModel}')`,
+      )
     }
 
-    const action = ruleMatch.action;
+    const action = ruleMatch.action
     const mappingResult: ModelMappingResult = {
       modelName: am.name,
       isMapped: true,
       originalModel: context.requestedModel,
       mappingType: 'virtual',
-    };
-
-    if (action.type === 'reject') {
-      throw new RequestRejectedError(action.reason || `Request rejected by route rule '${ruleMatch.name}'`);
     }
 
-    if (action.type === 'fallback') return [];
+    if (action.type === 'reject') {
+      throw new RequestRejectedError(
+        action.reason || `Request rejected by route rule '${ruleMatch.name}'`,
+      )
+    }
+
+    if (action.type === 'fallback') return []
 
     if (action.type === 'route_to_group' && action.targetId) {
-      const candidates = await modelGroupRouter.routeCandidatesByGroupId(action.targetId, context);
+      const candidates = await modelGroupRouter.routeCandidatesByGroupId(action.targetId, context)
       if (candidates.length > 0) {
         return candidates.map((r) => ({
           ...r,
           mapping: mappingResult,
           matchedRule: { id: ruleMatch.id, name: ruleMatch.name, priority: ruleMatch.priority },
-        }));
+        }))
       }
       logger.warn(
         { accessModel: am.name, targetGroupId: action.targetId },
-        'Route rule target group returned no candidates'
-      );
-      throw new NoAvailableInstanceError(am.name,
-        `Route rule '${ruleMatch.name}' targeted group but returned no candidates for access model '${am.name}'`);
+        'Route rule target group returned no candidates',
+      )
+      throw new NoAvailableInstanceError(
+        am.name,
+        `Route rule '${ruleMatch.name}' targeted group but returned no candidates for access model '${am.name}'`,
+      )
     }
 
     if (action.type === 'route_to_instance' && action.targetId) {
-      const result = await this.routeToInstance(action.targetId, am, context, mappingResult, ruleMatch);
-      return [result];
+      const result = await this.routeToInstance(
+        action.targetId,
+        am,
+        context,
+        mappingResult,
+        ruleMatch,
+      )
+      return [result]
     }
 
-    return [];
+    return []
   }
 
   /**
@@ -94,39 +116,43 @@ export class AccessModelRouter {
    * 如需故障转移请使用 routeCandidates
    */
   async route(context: RoutingContext): Promise<RouteResult | null> {
-    const candidates = await this.routeCandidates(context);
-    return candidates[0] ?? null;
+    const candidates = await this.routeCandidates(context)
+    return candidates[0] ?? null
   }
 
   /**
    * 兜底路由：当找不到接入模型时，使用 __catchall__ 接入模型处理请求
    */
   private async routeCandidatesViaDefault(context: RoutingContext): Promise<RouteResult[]> {
-    const db = getDatabase();
+    const db = getDatabase()
 
     const defaultAmResult = await db
       .select()
       .from(accessModels)
       .where(and(eq(accessModels.name, CATCHALL_VM_NAME), eq(accessModels.enabled, true)))
-      .limit(1);
+      .limit(1)
 
     if (defaultAmResult.length === 0) {
-      throw new ModelNotFoundError(context.requestedModel,
-        `Access model '${context.requestedModel}' not found and no catchall (__catchall__) configured`);
+      throw new ModelNotFoundError(
+        context.requestedModel,
+        `Access model '${context.requestedModel}' not found and no catchall (__catchall__) configured`,
+      )
     }
 
-    const defaultAm = defaultAmResult[0];
+    const defaultAm = defaultAmResult[0]
 
-    const perf = await this.fetchAmPerfContext(defaultAm.id);
+    const perf = await this.fetchAmPerfContext(defaultAm.id)
     const ruleMatch = await routeRuleEngine.match(defaultAm.id, {
       model: context.requestedModel,
       streaming: context.streaming,
       perf,
-    });
+    })
 
     if (!ruleMatch) {
-      throw new NoAvailableInstanceError(context.requestedModel,
-        `No matching route rule for catchall access model (requested: '${context.requestedModel}')`);
+      throw new NoAvailableInstanceError(
+        context.requestedModel,
+        `No matching route rule for catchall access model (requested: '${context.requestedModel}')`,
+      )
     }
 
     const fallbackMapping: ModelMappingResult = {
@@ -134,31 +160,35 @@ export class AccessModelRouter {
       isMapped: false,
       originalModel: context.requestedModel,
       mappingType: 'fallback',
-    };
-
-    const action = ruleMatch.action;
-
-    if (action.type === 'reject') {
-      throw new RequestRejectedError(action.reason ?? `Rejected by default access model rule '${ruleMatch.name}'`);
     }
 
-    if (action.type === 'fallback') return [];
+    const action = ruleMatch.action
+
+    if (action.type === 'reject') {
+      throw new RequestRejectedError(
+        action.reason ?? `Rejected by default access model rule '${ruleMatch.name}'`,
+      )
+    }
+
+    if (action.type === 'fallback') return []
 
     if (action.type === 'route_to_group' && action.targetId) {
-      const candidates = await modelGroupRouter.routeCandidatesByGroupId(action.targetId, context);
+      const candidates = await modelGroupRouter.routeCandidatesByGroupId(action.targetId, context)
       if (candidates.length > 0) {
         logger.info(
           { requestedModel: context.requestedModel, defaultAm: defaultAm.name },
-          'Request routed via default access model fallback'
-        );
+          'Request routed via default access model fallback',
+        )
         return candidates.map((r) => ({
           ...r,
           mapping: fallbackMapping,
           matchedRule: { id: ruleMatch.id, name: ruleMatch.name, priority: ruleMatch.priority },
-        }));
+        }))
       }
-      throw new NoAvailableInstanceError(context.requestedModel,
-        `Catchall route rule '${ruleMatch.name}' targeted group but returned no candidates (requested: '${context.requestedModel}')`);
+      throw new NoAvailableInstanceError(
+        context.requestedModel,
+        `Catchall route rule '${ruleMatch.name}' targeted group but returned no candidates (requested: '${context.requestedModel}')`,
+      )
     }
 
     if (action.type === 'route_to_instance' && action.targetId) {
@@ -167,12 +197,12 @@ export class AccessModelRouter {
         { name: defaultAm.name, displayName: defaultAm.displayName },
         context,
         fallbackMapping,
-        ruleMatch
-      );
-      return [result];
+        ruleMatch,
+      )
+      return [result]
     }
 
-    return [];
+    return []
   }
 
   /**
@@ -180,22 +210,22 @@ export class AccessModelRouter {
    * 收集该 AM 所有 route_to_group 规则的目标 groupId，查询最近性能快照
    */
   private async fetchAmPerfContext(amId: string): ReturnType<typeof fetchPerfContext> {
-    const db = getDatabase();
+    const db = getDatabase()
     const rules = await db
       .select({ action: modelRoutes.action })
       .from(modelRoutes)
       .where(
         and(
           sql`${modelRoutes.accessModelIds} @> ARRAY[${amId}]::text[]`,
-          eq(modelRoutes.enabled, true)
-        )
-      );
+          eq(modelRoutes.enabled, true),
+        ),
+      )
 
     const groupIds = rules
       .filter((r) => r.action.type === 'route_to_group' && r.action.targetId)
-      .map((r) => r.action.targetId as string);
+      .map((r) => r.action.targetId as string)
 
-    return fetchPerfContext(amId, groupIds);
+    return fetchPerfContext(amId, groupIds)
   }
 
   /**
@@ -206,9 +236,9 @@ export class AccessModelRouter {
     am: { name: string; displayName: string | null },
     context: RoutingContext,
     mappingResult: ModelMappingResult,
-    ruleMatch?: { id: string; name: string; priority: number }
+    ruleMatch?: { id: string; name: string; priority: number },
   ): Promise<RouteResult> {
-    const db = getDatabase();
+    const db = getDatabase()
 
     const instanceResult = await db
       .select({ instance: modelInstances, provider: providers })
@@ -218,31 +248,33 @@ export class AccessModelRouter {
         and(
           eq(modelInstances.id, instanceId),
           eq(modelInstances.enabled, true),
-          eq(providers.enabled, true)
-        )
+          eq(providers.enabled, true),
+        ),
       )
-      .limit(1);
+      .limit(1)
 
     if (instanceResult.length === 0) {
-      throw new NoAvailableInstanceError(am.name,
-        `Target instance not available for access model '${am.name}' (instance or its provider may be disabled)`);
+      throw new NoAvailableInstanceError(
+        am.name,
+        `Target instance not available for access model '${am.name}' (instance or its provider may be disabled)`,
+      )
     }
 
-    const { instance, provider } = instanceResult[0];
+    const { instance, provider } = instanceResult[0]
 
-    let group = null;
+    let group = null
     const membershipResult = await db
       .select({ groupId: modelGroupMemberships.groupId })
       .from(modelGroupMemberships)
       .where(eq(modelGroupMemberships.instanceId, instance.id))
-      .limit(1);
+      .limit(1)
     if (membershipResult.length > 0) {
       const groupResult = await db
         .select()
         .from(modelGroups)
         .where(eq(modelGroups.id, membershipResult[0].groupId))
-        .limit(1);
-      group = groupResult[0] || null;
+        .limit(1)
+      group = groupResult[0] || null
     }
 
     const resolvedGroup = group || {
@@ -266,7 +298,7 @@ export class AccessModelRouter {
       metadata: null,
       createdAt: new Date(),
       updatedAt: new Date(),
-    };
+    }
 
     return {
       instance,
@@ -280,8 +312,8 @@ export class AccessModelRouter {
       },
       mapping: mappingResult,
       matchedRule: ruleMatch,
-    };
+    }
   }
 }
 
-export const accessModelRouter = new AccessModelRouter();
+export const accessModelRouter = new AccessModelRouter()

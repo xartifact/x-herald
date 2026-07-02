@@ -17,7 +17,8 @@ export function JsonEditorTab({ json, onChange, error }: JsonEditorTabProps) {
         <Label className="text-sm">原始 JSON 配置</Label>
         {error && (
           <Badge variant="destructive" className="text-xs">
-            <AlertCircle className="h-3 w-3 mr-1" />格式错误
+            <AlertCircle className="h-3 w-3 mr-1" />
+            格式错误
           </Badge>
         )}
       </div>
@@ -26,9 +27,7 @@ export function JsonEditorTab({ json, onChange, error }: JsonEditorTabProps) {
         onChange={(e) => onChange(e.target.value)}
         className="min-h-[300px] font-mono text-xs"
       />
-      {error && (
-        <p className="text-xs text-destructive">{error}</p>
-      )}
+      {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   )
 }

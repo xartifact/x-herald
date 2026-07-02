@@ -73,11 +73,7 @@ export function ModelGroupCard({
               <Trash2 className="h-4 w-4" />
             </Button>
             <Button variant="ghost" size="sm" onClick={onToggleExpand}>
-              {isExpanded ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-              )}
+              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </Button>
           </div>
         </div>

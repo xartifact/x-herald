@@ -16,4 +16,4 @@ export type {
   UpdateModelGroupPayload,
   CreateModelInstancePayload,
   UpdateModelInstancePayload,
-} from '@xartifact/x-llm-gateway-shared';
+} from '@xartifact/x-llm-gateway-shared'

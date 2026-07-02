@@ -5,7 +5,9 @@ import { Button } from '../../../shared/components/ui/button'
 // Record<string, any> defined locally // TODO(6): from apps/web
 import { TransformRuleCard } from './transform-rule-card'
 
-type TransformRule = NonNullable<NonNullable<Record<string, any>['config']>['parameterTransforms']>[0]
+type TransformRule = NonNullable<
+  NonNullable<Record<string, any>['config']>['parameterTransforms']
+>[0]
 
 interface TransformsTabProps {
   transforms: TransformRule[]
@@ -23,7 +25,8 @@ export function TransformsTab({ transforms, onAdd, onUpdate, onRemove }: Transfo
           <p className="text-xs text-muted-foreground">定义请求参数的转换规则，支持条件判断</p>
         </div>
         <Button type="button" variant="outline" size="sm" onClick={onAdd}>
-          <Plus className="h-4 w-4 mr-1" />添加规则
+          <Plus className="h-4 w-4 mr-1" />
+          添加规则
         </Button>
       </div>
 
@@ -46,8 +49,12 @@ export function TransformsTab({ transforms, onAdd, onUpdate, onRemove }: Transfo
       <div className="text-xs text-muted-foreground">
         <p>支持的表达式格式：</p>
         <ul className="list-disc list-inside mt-1 space-y-1">
-          <li><code>{'${reasoning.enabled} ? true : false'}</code> - 三元表达式</li>
-          <li><code>{'${temperature}'}</code> - 引用请求参数</li>
+          <li>
+            <code>{'${reasoning.enabled} ? true : false'}</code> - 三元表达式
+          </li>
+          <li>
+            <code>{'${temperature}'}</code> - 引用请求参数
+          </li>
         </ul>
       </div>
     </div>

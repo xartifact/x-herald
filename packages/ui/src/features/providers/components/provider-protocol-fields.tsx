@@ -26,7 +26,9 @@ export function ProviderProtocolFields({ form, protocolOptions }: ProviderProtoc
     <div className="space-y-4 pt-4 border-t">
       <div>
         <h4 className="text-sm font-medium">支持的协议 *</h4>
-        <p className="text-sm text-muted-foreground mt-1">选择供应商支持的协议并配置对应的 API 地址</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          选择供应商支持的协议并配置对应的 API 地址
+        </p>
       </div>
 
       {protocolOptions.map((protocol) => {
@@ -77,9 +79,7 @@ export function ProviderProtocolFields({ form, protocolOptions }: ProviderProtoc
       })}
 
       {form.formState.errors.protocols?.message && (
-        <p className="text-sm text-destructive">
-          {form.formState.errors.protocols.message}
-        </p>
+        <p className="text-sm text-destructive">{form.formState.errors.protocols.message}</p>
       )}
     </div>
   )

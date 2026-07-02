@@ -1,17 +1,17 @@
-import { sql } from '@xartifact/x-llm-gateway-db';
+import { sql } from '@xartifact/x-llm-gateway-db'
 
-import { getDatabase } from '../../../db/client';
-import rootLogger from '../../../lib/logger';
+import { getDatabase } from '../../../db/client'
+import rootLogger from '../../../lib/logger'
 
-const logger = rootLogger.child({ module: 'snapshot-aggregator' });
+const logger = rootLogger.child({ module: 'snapshot-aggregator' })
 
 /**
  * 将时间戳对齐到最近的 5 分钟桶起始点
  */
 function alignToBucket(date: Date, bucketMinutes = 5): Date {
-  const ms = date.getTime();
-  const bucketMs = bucketMinutes * 60 * 1000;
-  return new Date(Math.floor(ms / bucketMs) * bucketMs);
+  const ms = date.getTime()
+  const bucketMs = bucketMinutes * 60 * 1000
+  return new Date(Math.floor(ms / bucketMs) * bucketMs)
 }
 
 /**
@@ -19,13 +19,13 @@ function alignToBucket(date: Date, bucketMinutes = 5): Date {
  * bucketStart 必须已对齐到 5 分钟边界
  */
 export async function aggregateBucket(bucketStart: Date, bucketMinutes = 5): Promise<number> {
-  const db = getDatabase();
-  const bucketEnd = new Date(bucketStart.getTime() + bucketMinutes * 60 * 1000);
+  const db = getDatabase()
+  const bucketEnd = new Date(bucketStart.getTime() + bucketMinutes * 60 * 1000)
 
   // 手动序列化 Date 为 ISO 字符串，避免 postgres.js driver 类型错误
   // ("The string argument must be of type string... Received an instance of Date")
-  const bucketStartStr = bucketStart.toISOString();
-  const bucketEndStr = bucketEnd.toISOString();
+  const bucketStartStr = bucketStart.toISOString()
+  const bucketEndStr = bucketEnd.toISOString()
 
   // 使用 percentile_cont 聚合，从 request_logs JSONB 字段中提取指标
   // 仅处理已完成（is_complete=true）且有 instanceId 路由信息的请求
@@ -164,29 +164,29 @@ export async function aggregateBucket(bucketStart: Date, bucketMinutes = 5): Pro
       avg_input_tokens = EXCLUDED.avg_input_tokens,
       avg_output_tokens = EXCLUDED.avg_output_tokens,
       avg_retry_count = EXCLUDED.avg_retry_count
-  `);
+  `)
 
-  const resultRows = Array.isArray(result) ? result : ((result as { rows?: unknown[] })?.rows ?? []);
-  const rowCount = resultRows.length;
-  logger.debug({ bucketStart, bucketEnd, rowCount }, 'Perf snapshot aggregated');
-  return rowCount;
+  const resultRows = Array.isArray(result) ? result : ((result as { rows?: unknown[] })?.rows ?? [])
+  const rowCount = resultRows.length
+  logger.debug({ bucketStart, bucketEnd, rowCount }, 'Perf snapshot aggregated')
+  return rowCount
 }
 
 /**
  * 聚合最近 N 个桶（补齐历史数据，重启时调用）
  */
 export async function aggregateRecentBuckets(bucketCount = 12, bucketMinutes = 5): Promise<void> {
-  const now = new Date();
-  const aligned = alignToBucket(now, bucketMinutes);
+  const now = new Date()
+  const aligned = alignToBucket(now, bucketMinutes)
 
   for (let i = bucketCount; i >= 1; i--) {
-    const bucketStart = new Date(aligned.getTime() - i * bucketMinutes * 60 * 1000);
+    const bucketStart = new Date(aligned.getTime() - i * bucketMinutes * 60 * 1000)
     try {
-      await aggregateBucket(bucketStart, bucketMinutes);
+      await aggregateBucket(bucketStart, bucketMinutes)
     } catch (err) {
-      logger.warn({ err, bucketStart }, 'Failed to aggregate bucket');
+      logger.warn({ err, bucketStart }, 'Failed to aggregate bucket')
     }
   }
 }
 
-export { alignToBucket };
+export { alignToBucket }

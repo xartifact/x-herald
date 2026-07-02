@@ -37,10 +37,14 @@ function getTargetName(
 ): string {
   if (!targetId) return '未指定'
   switch (actionType) {
-    case 'route_to_access_model': return vmMap.get(targetId) || '未指定'
-    case 'route_to_group': return groupMap.get(targetId) || '未指定'
-    case 'route_to_instance': return instanceMap.get(targetId) || '未指定'
-    default: return '未指定'
+    case 'route_to_access_model':
+      return vmMap.get(targetId) || '未指定'
+    case 'route_to_group':
+      return groupMap.get(targetId) || '未指定'
+    case 'route_to_instance':
+      return instanceMap.get(targetId) || '未指定'
+    default:
+      return '未指定'
   }
 }
 
@@ -57,9 +61,9 @@ export function buildFlowFromData(
   const nodes: Node[] = []
   const edges: Edge[] = []
 
-  const vmMap = new Map(vms.map(vm => [vm.id, vm.displayName || vm.name]))
-  const groupMap = new Map(groups.map(g => [g.id, g.displayName || g.name]))
-  const instanceMap = new Map(instances.map(i => [i.id, i.name]))
+  const vmMap = new Map(vms.map((vm) => [vm.id, vm.displayName || vm.name]))
+  const groupMap = new Map(groups.map((g) => [g.id, g.displayName || g.name]))
+  const instanceMap = new Map(instances.map((i) => [i.id, i.name]))
 
   // VM 入口节点（顶部行）
   vms.forEach((vm) => {
@@ -76,7 +80,7 @@ export function buildFlowFromData(
   })
 
   // 按优先级排序路由
-  const sortedRoutes = [...routes].sort((a, b) => a.priority - b.priority)
+  const sortedRoutes = [...routes].toSorted((a, b) => a.priority - b.priority)
 
   sortedRoutes.forEach((route) => {
     const opacityStyle = route.enabled ? undefined : { opacity: 0.4 }
@@ -93,7 +97,7 @@ export function buildFlowFromData(
         type: 'condition',
         position: { x: 0, y: 0 },
         data: {
-          label: i === 0 ? (route.name || '条件') : `条件 ${i + 1}`,
+          label: i === 0 ? route.name || '条件' : `条件 ${i + 1}`,
           field: cond.field,
           operator: cond.operator,
           value: String(cond.value ?? ''),
@@ -104,7 +108,7 @@ export function buildFlowFromData(
       })
 
       if (i === 0) {
-        route.accessModelIds?.forEach(vmId => {
+        route.accessModelIds?.forEach((vmId) => {
           edges.push({
             id: `e-vm-${vmId}-${condNodeId}`,
             source: `vm-${vmId}`,
@@ -136,7 +140,7 @@ export function buildFlowFromData(
           target: leafId,
         })
       } else {
-        route.accessModelIds?.forEach(vmId => {
+        route.accessModelIds?.forEach((vmId) => {
           edges.push({
             id: `e-vm-${vmId}-${leafId}`,
             source: `vm-${vmId}`,
@@ -153,7 +157,12 @@ export function buildFlowFromData(
         id: leafId,
         type: 'reject',
         position: { x: 0, y: 0 },
-        data: { label: '拒绝', strategyType: 'reject', reason: action.reason || '', routeId: route.id },
+        data: {
+          label: '拒绝',
+          strategyType: 'reject',
+          reason: action.reason || '',
+          routeId: route.id,
+        },
         style: opacityStyle,
       })
       connectLeaf(leafId)
@@ -178,8 +187,12 @@ export function buildFlowFromData(
         data: {
           label: typeLabel,
           actionType: action.type,
-          targetType: action.type === 'route_to_group' ? 'model_group' :
-                      action.type === 'route_to_instance' ? 'model_instance' : 'access_model',
+          targetType:
+            action.type === 'route_to_group'
+              ? 'model_group'
+              : action.type === 'route_to_instance'
+                ? 'model_instance'
+                : 'access_model',
           targetName,
           targetId: action.targetId,
           ruleName: route.name || '未命名规则',

@@ -55,11 +55,7 @@ interface RateLimitWindowStatus {
 function ProgressBar({ current, limit }: { current: number; limit: number }) {
   const percentage = limit > 0 ? Math.min(100, (current / limit) * 100) : 0
   const barColor =
-    percentage >= 90
-      ? 'bg-destructive'
-      : percentage >= 70
-        ? 'bg-amber-500'
-        : 'bg-primary'
+    percentage >= 90 ? 'bg-destructive' : percentage >= 70 ? 'bg-amber-500' : 'bg-primary'
 
   return (
     <div className="w-full h-2 rounded-full bg-muted overflow-hidden">

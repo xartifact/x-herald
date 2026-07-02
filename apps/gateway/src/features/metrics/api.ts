@@ -1,49 +1,54 @@
-import { and, desc, eq, gte, lte, sql } from '@xartifact/x-llm-gateway-db';
-import { Hono } from 'hono';
+import { and, desc, eq, gte, lte, sql } from '@xartifact/x-llm-gateway-db'
+import { Hono } from 'hono'
 
-import { getDatabase } from '../../db/client';
+import { getDatabase } from '../../db/client'
 
-import { AnomalyDetector } from './anomaly-detector';
-import { anomalyEvents } from '@xartifact/x-llm-gateway-db';
-import { instancePerfSnapshots } from '@xartifact/x-llm-gateway-db';
+import { AnomalyDetector } from './anomaly-detector'
+import { anomalyEvents } from '@xartifact/x-llm-gateway-db'
+import { instancePerfSnapshots } from '@xartifact/x-llm-gateway-db'
 
-export const metricsRoutes = new Hono();
+export const metricsRoutes = new Hono()
 
 // PGlite 返回 { rows: [...] }，postgres.js 返回 array-like RowList
 function toRows(result: unknown): unknown[] {
-  if (Array.isArray(result)) return result;
+  if (Array.isArray(result)) return result
   if (result && typeof result === 'object' && 'rows' in result) {
-    return (result as { rows: unknown[] }).rows;
+    return (result as { rows: unknown[] }).rows
   }
-  return [];
+  return []
 }
 
 // ─── 工具函数 ────────────────────────────────────────────────────────────────
 
 function periodToMs(period: string): number {
   switch (period) {
-    case '1h': return 60 * 60 * 1000;
-    case '6h': return 6 * 60 * 60 * 1000;
-    case '24h': return 24 * 60 * 60 * 1000;
-    case '7d': return 7 * 24 * 60 * 60 * 1000;
-    default: return 6 * 60 * 60 * 1000;
+    case '1h':
+      return 60 * 60 * 1000
+    case '6h':
+      return 6 * 60 * 60 * 1000
+    case '24h':
+      return 24 * 60 * 60 * 1000
+    case '7d':
+      return 7 * 24 * 60 * 60 * 1000
+    default:
+      return 6 * 60 * 60 * 1000
   }
 }
 
 function anomalyLevel(score: number | null): 'normal' | 'warning' | 'critical' {
-  if (score === null || score < 2.0) return 'normal';
-  if (score < 5.0) return 'warning';
-  return 'critical';
+  if (score === null || score < 2.0) return 'normal'
+  if (score < 5.0) return 'warning'
+  return 'critical'
 }
 
 // ─── GET /api/metrics/instances ──────────────────────────────────────────────
 // 所有实例当前性能摘要（最近一个完整桶 + 24h 基线对比）
 
 metricsRoutes.get('/instances', async (c) => {
-  const db = getDatabase();
-  const now = new Date();
-  const since6hISO = new Date(now.getTime() - 6 * 60 * 60 * 1000).toISOString();
-  const since24hISO = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+  const db = getDatabase()
+  const now = new Date()
+  const since6hISO = new Date(now.getTime() - 6 * 60 * 60 * 1000).toISOString()
+  const since24hISO = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString()
 
   // 查询每个实例：最新桶 + 过去 6h 基线（前 6~24h 的均值作为基线）
   const rows = await db.execute(sql`
@@ -88,11 +93,11 @@ metricsRoutes.get('/instances', async (c) => {
     FROM latest l
     LEFT JOIN baseline b USING (instance_id)
     ORDER BY l.provider_name, l.instance_name
-  `);
+  `)
 
   const data = toRows(rows).map((r: unknown) => {
-    const row = r as Record<string, unknown>;
-    const score = row.anomaly_score != null ? Number(row.anomaly_score) : null;
+    const row = r as Record<string, unknown>
+    const score = row.anomaly_score != null ? Number(row.anomaly_score) : null
     return {
       instanceId: row.instance_id,
       instanceName: row.instance_name,
@@ -115,24 +120,25 @@ metricsRoutes.get('/instances', async (c) => {
       avgInputTokens: row.avg_input_tokens != null ? Number(row.avg_input_tokens) : null,
       avgOutputTokens: row.avg_output_tokens != null ? Number(row.avg_output_tokens) : null,
       baselineTtfbP95: row.baseline_ttfb_p95 != null ? Number(row.baseline_ttfb_p95) : null,
-      baselineSuccessRate: row.baseline_success_rate != null ? Number(row.baseline_success_rate) : null,
+      baselineSuccessRate:
+        row.baseline_success_rate != null ? Number(row.baseline_success_rate) : null,
       totalSamples24h: row.total_samples_24h != null ? Number(row.total_samples_24h) : null,
       anomalyScore: score,
       anomalyLevel: anomalyLevel(score),
-    };
-  });
+    }
+  })
 
-  return c.json({ data });
-});
+  return c.json({ data })
+})
 
 // ─── GET /api/metrics/instances/:instanceId/timeseries ───────────────────────
 // 单实例时序数据，用于折线图
 
 metricsRoutes.get('/instances/:instanceId/timeseries', async (c) => {
-  const { instanceId } = c.req.param();
-  const period = c.req.query('period') ?? '6h';
-  const db = getDatabase();
-  const since = new Date(Date.now() - periodToMs(period));
+  const { instanceId } = c.req.param()
+  const period = c.req.query('period') ?? '6h'
+  const db = getDatabase()
+  const since = new Date(Date.now() - periodToMs(period))
 
   const rows = await db
     .select({
@@ -153,14 +159,14 @@ metricsRoutes.get('/instances/:instanceId/timeseries', async (c) => {
     .where(
       and(
         sql`${instancePerfSnapshots.instanceId} = ${instanceId}`,
-        gte(instancePerfSnapshots.bucketStart, since)
-      )
+        gte(instancePerfSnapshots.bucketStart, since),
+      ),
     )
-    .orderBy(instancePerfSnapshots.bucketStart);
+    .orderBy(instancePerfSnapshots.bucketStart)
 
   // 计算基线：过去 6~24h 的均值
-  const baseline6hStart = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const baseline6hEnd = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
+  const baseline6hStart = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+  const baseline6hEnd = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString()
   const baselineRows = await db.execute(sql`
     SELECT
       avg(ttfb_p95)::real AS baseline_ttfb_p95,
@@ -171,9 +177,9 @@ metricsRoutes.get('/instances/:instanceId/timeseries', async (c) => {
     WHERE instance_id = ${instanceId}
       AND bucket_start >= ${baseline6hStart}
       AND bucket_start < ${baseline6hEnd}
-  `);
+  `)
 
-  const bl = toRows(baselineRows)[0] as Record<string, unknown> | undefined;
+  const bl = toRows(baselineRows)[0] as Record<string, unknown> | undefined
 
   return c.json({
     instanceId,
@@ -187,15 +193,15 @@ metricsRoutes.get('/instances/:instanceId/timeseries', async (c) => {
           successRate: bl.baseline_success_rate != null ? Number(bl.baseline_success_rate) : null,
         }
       : null,
-  });
-});
+  })
+})
 
 // ─── GET /api/metrics/providers/quality ──────────────────────────────────────
 // 供应商质量排名（过去 24h 聚合）
 
 metricsRoutes.get('/providers/quality', async (c) => {
-  const db = getDatabase();
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const db = getDatabase()
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
 
   const rows = await db.execute(sql`
     SELECT
@@ -214,15 +220,15 @@ metricsRoutes.get('/providers/quality', async (c) => {
       AND provider_id IS NOT NULL
     GROUP BY provider_id, provider_name
     ORDER BY avg_success_rate DESC NULLS LAST, avg_ttfb ASC NULLS LAST
-  `);
+  `)
 
   const data = toRows(rows).map((r: unknown) => {
-    const row = r as Record<string, unknown>;
-    const successRate = row.avg_success_rate != null ? Number(row.avg_success_rate) : 0;
-    const ttfb = row.avg_ttfb != null ? Number(row.avg_ttfb) : 0;
+    const row = r as Record<string, unknown>
+    const successRate = row.avg_success_rate != null ? Number(row.avg_success_rate) : 0
+    const ttfb = row.avg_ttfb != null ? Number(row.avg_ttfb) : 0
     // qualityScore: 成功率权重 60%，TTFB 倒数权重 40%（归一化到 1000ms 基准）
-    const ttfbScore = ttfb > 0 ? Math.min(1, 1000 / ttfb) : 0;
-    const qualityScore = Math.round((successRate * 60 + ttfbScore * 40) * 100) / 100;
+    const ttfbScore = ttfb > 0 ? Math.min(1, 1000 / ttfb) : 0
+    const qualityScore = Math.round((successRate * 60 + ttfbScore * 40) * 100) / 100
 
     return {
       providerId: row.provider_id,
@@ -236,20 +242,20 @@ metricsRoutes.get('/providers/quality', async (c) => {
       avgLatency: row.avg_latency != null ? Number(row.avg_latency) : null,
       avgRetryRate: row.avg_retry_rate != null ? Number(row.avg_retry_rate) : null,
       qualityScore,
-    };
-  });
+    }
+  })
 
-  return c.json({ data });
-});
+  return c.json({ data })
+})
 
 // ─── GET /api/metrics/summary ─────────────────────────────────────────────────
 // 全局汇总（顶部 card 数据）
 
 metricsRoutes.get('/summary', async (c) => {
-  const db = getDatabase();
-  const since1h = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-  const since6h = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
-  const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const db = getDatabase()
+  const since1h = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+  const since6h = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString()
+  const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
 
   const [recent, daily] = await Promise.all([
     db.execute(sql`
@@ -268,10 +274,10 @@ metricsRoutes.get('/summary', async (c) => {
       FROM instance_perf_snapshots
       WHERE bucket_start >= ${since24h}
     `),
-  ]);
+  ])
 
-  const r = toRows(recent)[0] as Record<string, unknown> | undefined;
-  const d = toRows(daily)[0] as Record<string, unknown> | undefined;
+  const r = toRows(recent)[0] as Record<string, unknown> | undefined
+  const d = toRows(daily)[0] as Record<string, unknown> | undefined
 
   // 统计当前异常实例数（最新桶 TTFB P95 > 2x 基线）
   const anomalyRows = await db.execute(sql`
@@ -302,9 +308,9 @@ metricsRoutes.get('/summary', async (c) => {
         -- 无基线：TTFB P95 > 30s 视为异常（冷启动场景）
         (b.baseline_ttfb_p95 IS NULL AND l.ttfb_p95 > 30000)
       )
-  `);
+  `)
 
-  const anomaly = toRows(anomalyRows)[0] as Record<string, unknown> | undefined;
+  const anomaly = toRows(anomalyRows)[0] as Record<string, unknown> | undefined
 
   return c.json({
     recentHour: {
@@ -318,41 +324,37 @@ metricsRoutes.get('/summary', async (c) => {
       activeInstances: d?.active_instances_24h != null ? Number(d.active_instances_24h) : 0,
     },
     anomalyCount: anomaly?.anomaly_count != null ? Number(anomaly.anomaly_count) : 0,
-  });
-});
+  })
+})
 
 // ─── GET /api/metrics/anomalies ──────────────────────────────────────────────
 // List anomaly events
 
 metricsRoutes.get('/anomalies', async (c) => {
-  const { unresolved } = c.req.query();
-  const db = getDatabase();
-  const detector = new AnomalyDetector();
+  const { unresolved } = c.req.query()
+  const db = getDatabase()
+  const detector = new AnomalyDetector()
   const events =
     unresolved === 'true'
       ? await detector.getUnresolved()
-      : await db
-          .select()
-          .from(anomalyEvents)
-          .orderBy(desc(anomalyEvents.createdAt))
-          .limit(100);
-  return c.json({ success: true, data: events });
-});
+      : await db.select().from(anomalyEvents).orderBy(desc(anomalyEvents.createdAt)).limit(100)
+  return c.json({ success: true, data: events })
+})
 
 // ─── POST /api/metrics/anomalies/detect ──────────────────────────────────────
 // Run detection
 
 metricsRoutes.post('/anomalies/detect', async (c) => {
-  const detector = new AnomalyDetector();
-  const newEvents = await detector.detect();
-  return c.json({ success: true, data: { newEvents } });
-});
+  const detector = new AnomalyDetector()
+  const newEvents = await detector.detect()
+  return c.json({ success: true, data: { newEvents } })
+})
 
 // ─── PATCH /api/metrics/anomalies/:id/resolve ────────────────────────────────
 // Resolve anomaly
 
 metricsRoutes.patch('/anomalies/:id/resolve', async (c) => {
-  const detector = new AnomalyDetector();
-  await detector.resolve(c.req.param('id'));
-  return c.json({ success: true });
-});
+  const detector = new AnomalyDetector()
+  await detector.resolve(c.req.param('id'))
+  return c.json({ success: true })
+})

@@ -34,9 +34,7 @@ export function CircuitBreakerConfirmDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>
-            {isTrip ? '确认强制熔断' : '确认重置熔断'}
-          </DialogTitle>
+          <DialogTitle>{isTrip ? '确认强制熔断' : '确认重置熔断'}</DialogTitle>
           <DialogDescription>
             {isTrip
               ? `实例 ${displayId} 将被排除在路由之外。`
@@ -44,11 +42,7 @@ export function CircuitBreakerConfirmDialog({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={pending}
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={pending}>
             取消
           </Button>
           <Button

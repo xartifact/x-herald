@@ -1,25 +1,25 @@
-import logger from '../../../lib/logger';
+import logger from '../../../lib/logger'
 
-import { getTransformer } from '../../transformer';
-import { rateLimitEngine } from '../rate-limit-engine';
-import { logEventBus } from '../log-event-bus';
-import { costService } from '../../../features/costs/service';
-import { trackKeyUsage } from '../../../features/keys/usage-tracker';
+import { getTransformer } from '../../transformer'
+import { rateLimitEngine } from '../rate-limit-engine'
+import { logEventBus } from '../log-event-bus'
+import { costService } from '../../../features/costs/service'
+import { trackKeyUsage } from '../../../features/keys/usage-tracker'
 import {
   upgradeToStreamLog,
   finalizeStreamLog as finalizeStreamLogRecord,
   markStreamFailed,
   markStreamAborted,
-} from '../log-service';
-import { extractMetadata } from '../metadata-extractor';
-import type { ResponseHandlerParams } from './params';
+} from '../log-service'
+import { extractMetadata } from '../metadata-extractor'
+import type { ResponseHandlerParams } from './params'
 import {
   StreamResponseCollector,
   createModelRemapStream,
   extractProviderResponseHeaders,
   getClientStreamingHeaders,
   mergeResponseHeaders,
-} from './shared';
+} from './shared'
 
 interface StreamTimings {
   ttfbToFirstThinkingMs?: number
@@ -27,13 +27,25 @@ interface StreamTimings {
   thinkingDurationMs?: number
 }
 
-function buildStreamTimings(providerTtfbTime: number, collector: StreamResponseCollector): StreamTimings {
-  const { firstThinkingChunkTime, firstTextChunkTime } = collector.getFirstChunkTimes();
+function buildStreamTimings(
+  providerTtfbTime: number,
+  collector: StreamResponseCollector,
+): StreamTimings {
+  const { firstThinkingChunkTime, firstTextChunkTime } = collector.getFirstChunkTimes()
   return {
-    ttfbToFirstThinkingMs: firstThinkingChunkTime != null && providerTtfbTime > 0 ? firstThinkingChunkTime - providerTtfbTime : undefined,
-    ttfbToFirstTextMs: firstTextChunkTime != null && providerTtfbTime > 0 ? firstTextChunkTime - providerTtfbTime : undefined,
-    thinkingDurationMs: firstThinkingChunkTime != null && firstTextChunkTime != null ? firstTextChunkTime - firstThinkingChunkTime : undefined,
-  };
+    ttfbToFirstThinkingMs:
+      firstThinkingChunkTime != null && providerTtfbTime > 0
+        ? firstThinkingChunkTime - providerTtfbTime
+        : undefined,
+    ttfbToFirstTextMs:
+      firstTextChunkTime != null && providerTtfbTime > 0
+        ? firstTextChunkTime - providerTtfbTime
+        : undefined,
+    thinkingDurationMs:
+      firstThinkingChunkTime != null && firstTextChunkTime != null
+        ? firstTextChunkTime - firstThinkingChunkTime
+        : undefined,
+  }
 }
 
 interface FinalizeContext {
@@ -53,19 +65,39 @@ interface FinalizeContext {
   incomingProtocol: string
 }
 
-async function finalizeStreamWithLog(ctx: FinalizeContext, status: 'success' | 'failure'): Promise<void> {
-  const { logId, attemptId, clientCollector, providerCollector, standardCollector, needsTransformation, startTime, preprocessEndTime, providerTtfbTime, mergedHeaders, providerResponseHeaders, params, targetProtocol, incomingProtocol } = ctx;
-  const usage = clientCollector.getUsage();
-  const totalTokens = usage.inputTokens + usage.outputTokens;
+async function finalizeStreamWithLog(
+  ctx: FinalizeContext,
+  status: 'success' | 'failure',
+): Promise<void> {
+  const {
+    logId,
+    attemptId,
+    clientCollector,
+    providerCollector,
+    standardCollector,
+    needsTransformation,
+    startTime,
+    preprocessEndTime,
+    providerTtfbTime,
+    mergedHeaders,
+    providerResponseHeaders,
+    params,
+    targetProtocol,
+    incomingProtocol,
+  } = ctx
+  const usage = clientCollector.getUsage()
+  const totalTokens = usage.inputTokens + usage.outputTokens
   if (params.virtualKey?.id && totalTokens > 0) {
-    rateLimitEngine.check(params.virtualKey.id, {}, totalTokens);
+    rateLimitEngine.check(params.virtualKey.id, {}, totalTokens)
   }
-  const fullContent = clientCollector.getFullContent();
-  const providerProgress = providerCollector.getProgress();
-  const progress = { ...clientCollector.getProgress(), lastChunkAt: providerProgress.lastChunkAt };
-  const now = Date.now();
-  const timings = buildStreamTimings(providerTtfbTime, clientCollector);
-  const responseContent = needsTransformation ? standardCollector.getFullContent() : providerCollector.getFullContent();
+  const fullContent = clientCollector.getFullContent()
+  const providerProgress = providerCollector.getProgress()
+  const progress = { ...clientCollector.getProgress(), lastChunkAt: providerProgress.lastChunkAt }
+  const now = Date.now()
+  const timings = buildStreamTimings(providerTtfbTime, clientCollector)
+  const responseContent = needsTransformation
+    ? standardCollector.getFullContent()
+    : providerCollector.getFullContent()
 
   const metadata = extractMetadata({
     requestBody: params.rawBody,
@@ -77,14 +109,15 @@ async function finalizeStreamWithLog(ctx: FinalizeContext, status: 'success' | '
     providerTtfbMs: providerTtfbTime - preprocessEndTime,
     streamDurationMs: now - providerTtfbTime,
     conversationId: params.conversationId,
-  });
+  })
 
   if (params.routingTrace || params.originalModelName) {
     metadata.routing = {
       requestedModel: params.originalModelName,
       ...params.routingTrace,
-      responseModelName: providerCollector.getProviderModel() ?? params.routingTrace?.responseModelName,
-    };
+      responseModelName:
+        providerCollector.getProviderModel() ?? params.routingTrace?.responseModelName,
+    }
   }
 
   await finalizeStreamLogRecord(logId, {
@@ -98,17 +131,33 @@ async function finalizeStreamWithLog(ctx: FinalizeContext, status: 'success' | '
     providerTtfbMs: providerTtfbTime > 0 ? providerTtfbTime - preprocessEndTime : undefined,
     providerResponseHeaders,
     clientResponseHeaders: mergedHeaders,
-    providerResponseBody: { ...(providerCollector.getSummary(targetProtocol) as Record<string, unknown>), streamContent: providerCollector.getFullContent(), streamProgress: providerCollector.getProgress() },
-    responseBody: { ...(clientCollector.getSummary(incomingProtocol) as Record<string, unknown>), streamContent: fullContent, streamProgress: progress },
+    providerResponseBody: {
+      ...(providerCollector.getSummary(targetProtocol) as Record<string, unknown>),
+      streamContent: providerCollector.getFullContent(),
+      streamProgress: providerCollector.getProgress(),
+    },
+    responseBody: {
+      ...(clientCollector.getSummary(incomingProtocol) as Record<string, unknown>),
+      streamContent: fullContent,
+      streamProgress: progress,
+    },
     streamContent: fullContent,
     streamProgress: progress,
     metadata,
     toolCallsCount: metadata.toolCalls?.tools?.length,
     retryCount: params.retryCount,
     ...timings,
-  });
+  })
 
-  logEventBus.emitLog({ event: 'completed', logId, status, inputTokens: usage.inputTokens, outputTokens: usage.outputTokens, responseTimeMs: now - startTime, thinkingDurationMs: timings.thinkingDurationMs });
+  logEventBus.emitLog({
+    event: 'completed',
+    logId,
+    status,
+    inputTokens: usage.inputTokens,
+    outputTokens: usage.outputTokens,
+    responseTimeMs: now - startTime,
+    thinkingDurationMs: timings.thinkingDurationMs,
+  })
 
   if (params.virtualKey?.id && params.provider.name && usage.inputTokens + usage.outputTokens > 0) {
     await costService.recordCost({
@@ -119,7 +168,7 @@ async function finalizeStreamWithLog(ctx: FinalizeContext, status: 'success' | '
       providerName: params.provider.name,
       inputTokens: usage.inputTokens,
       outputTokens: usage.outputTokens,
-    });
+    })
   }
 
   if (params.virtualKey?.id && usage.inputTokens > 0 && usage.outputTokens > 0) {
@@ -127,122 +176,201 @@ async function finalizeStreamWithLog(ctx: FinalizeContext, status: 'success' | '
       keyId: params.virtualKey.id,
       inputTokens: usage.inputTokens,
       outputTokens: usage.outputTokens,
-    }).catch(() => {}); // fire-and-forget, non-blocking
+    }).catch(() => {}) // fire-and-forget, non-blocking
   }
 }
 
 export async function handleStreamingResponse(params: ResponseHandlerParams): Promise<Response> {
-  const { response, ctx, provider, originalModelName, resolvedModelName, isMapped, startTime, preprocessEndTime, providerTtfbTime, incomingProtocol, targetProtocol } = params;
+  const {
+    response,
+    ctx,
+    provider,
+    originalModelName,
+    resolvedModelName,
+    isMapped,
+    startTime,
+    preprocessEndTime,
+    providerTtfbTime,
+    incomingProtocol,
+    targetProtocol,
+  } = params
 
-  const logId = params.logId || 'temp-' + Date.now();
-  const attemptId = params.attemptId || 'temp-' + Date.now();
-  await upgradeToStreamLog(logId);
+  const logId = params.logId || 'temp-' + Date.now()
+  const attemptId = params.attemptId || 'temp-' + Date.now()
+  await upgradeToStreamLog(logId)
 
-  logEventBus.emitLog({ event: 'started', logId, modelName: resolvedModelName || originalModelName || 'unknown', originalModelName: originalModelName ?? undefined, providerName: provider.name, virtualKeyName: params.virtualKey.name ?? undefined, startTime, incomingProtocol });
+  logEventBus.emitLog({
+    event: 'started',
+    logId,
+    modelName: resolvedModelName || originalModelName || 'unknown',
+    originalModelName: originalModelName ?? undefined,
+    providerName: provider.name,
+    virtualKeyName: params.virtualKey.name ?? undefined,
+    startTime,
+    incomingProtocol,
+  })
 
-  const providerCollector = new StreamResponseCollector();
-  const standardCollector = new StreamResponseCollector();
-  const clientCollector = new StreamResponseCollector();
-  let chunkEmitCount = 0;
-  let lastChunkEmitTime = Date.now();
+  const providerCollector = new StreamResponseCollector()
+  const standardCollector = new StreamResponseCollector()
+  const clientCollector = new StreamResponseCollector()
+  let chunkEmitCount = 0
+  let lastChunkEmitTime = Date.now()
 
-  const providerResponseHeaders = extractProviderResponseHeaders(response);
-  const clientResponseHeaders = getClientStreamingHeaders(providerResponseHeaders['content-type']);
-  const needsTransformation = targetProtocol !== incomingProtocol && !params.isPassthroughEnabled;
+  const providerResponseHeaders = extractProviderResponseHeaders(response)
+  const clientResponseHeaders = getClientStreamingHeaders(providerResponseHeaders['content-type'])
+  const needsTransformation = targetProtocol !== incomingProtocol && !params.isPassthroughEnabled
 
-  const makeCollectorTransform = (collector: StreamResponseCollector) => new TransformStream<Uint8Array, Uint8Array>({
-    transform(chunk, controller) {
-      const text = new TextDecoder().decode(chunk);
-      for (const line of text.split('\n')) {
-        if (line.startsWith('data:')) { const d = line.slice(5).trim(); if (d !== '[DONE]') collector.processEvent(d); }
-      }
-      controller.enqueue(chunk);
-    },
-  });
+  const makeCollectorTransform = (collector: StreamResponseCollector) =>
+    new TransformStream<Uint8Array, Uint8Array>({
+      transform(chunk, controller) {
+        const text = new TextDecoder().decode(chunk)
+        for (const line of text.split('\n')) {
+          if (line.startsWith('data:')) {
+            const d = line.slice(5).trim()
+            if (d !== '[DONE]') collector.processEvent(d)
+          }
+        }
+        controller.enqueue(chunk)
+      },
+    })
 
   // Use ReadableStream<Uint8Array> (base type) to avoid ArrayBuffer vs ArrayBufferLike variance
-  let transformedStream: ReadableStream<Uint8Array> | null = response.body as ReadableStream<Uint8Array> | null;
+  let transformedStream: ReadableStream<Uint8Array> | null =
+    response.body as ReadableStream<Uint8Array> | null
   if (needsTransformation && transformedStream) {
-    transformedStream = transformedStream.pipeThrough(makeCollectorTransform(providerCollector));
-    ctx.state.set('streamDirection', 'normalize');
-    const ingressTransformer = getTransformer(targetProtocol);
+    transformedStream = transformedStream.pipeThrough(makeCollectorTransform(providerCollector))
+    ctx.state.set('streamDirection', 'normalize')
+    const ingressTransformer = getTransformer(targetProtocol)
     if (ingressTransformer?.transformStream) {
-      transformedStream = await ingressTransformer.transformStream(transformedStream, ctx) as ReadableStream<Uint8Array>;
+      transformedStream = (await ingressTransformer.transformStream(
+        transformedStream,
+        ctx,
+      )) as ReadableStream<Uint8Array>
     } else {
-      logger.warn({ protocol: targetProtocol }, 'No stream normalizer available, skipping ingress transformation');
+      logger.warn(
+        { protocol: targetProtocol },
+        'No stream normalizer available, skipping ingress transformation',
+      )
     }
-    transformedStream = transformedStream.pipeThrough(makeCollectorTransform(standardCollector));
-    ctx.state.set('streamDirection', 'adapt');
-    const egressTransformer = getTransformer(incomingProtocol);
+    transformedStream = transformedStream.pipeThrough(makeCollectorTransform(standardCollector))
+    ctx.state.set('streamDirection', 'adapt')
+    const egressTransformer = getTransformer(incomingProtocol)
     if (egressTransformer?.transformStream) {
-      transformedStream = await egressTransformer.transformStream(transformedStream, ctx) as ReadableStream<Uint8Array>;
+      transformedStream = (await egressTransformer.transformStream(
+        transformedStream,
+        ctx,
+      )) as ReadableStream<Uint8Array>
     } else {
-      logger.warn({ protocol: incomingProtocol }, 'No stream adapter available, skipping egress transformation');
+      logger.warn(
+        { protocol: incomingProtocol },
+        'No stream adapter available, skipping egress transformation',
+      )
     }
   } else if (transformedStream) {
-    transformedStream = transformedStream.pipeThrough(makeCollectorTransform(providerCollector));
+    transformedStream = transformedStream.pipeThrough(makeCollectorTransform(providerCollector))
   }
 
-  const mergedHeaders = mergeResponseHeaders(clientResponseHeaders, providerResponseHeaders);
-  let isLogFinalized = false;
-  const finalizeCtx: FinalizeContext = { logId, attemptId, clientCollector, providerCollector, standardCollector, needsTransformation, startTime, preprocessEndTime, providerTtfbTime, mergedHeaders, providerResponseHeaders, params, targetProtocol, incomingProtocol };
+  const mergedHeaders = mergeResponseHeaders(clientResponseHeaders, providerResponseHeaders)
+  let isLogFinalized = false
+  const finalizeCtx: FinalizeContext = {
+    logId,
+    attemptId,
+    clientCollector,
+    providerCollector,
+    standardCollector,
+    needsTransformation,
+    startTime,
+    preprocessEndTime,
+    providerTtfbTime,
+    mergedHeaders,
+    providerResponseHeaders,
+    params,
+    targetProtocol,
+    incomingProtocol,
+  }
 
   const finalizeLog = async (status: 'success' | 'failure' = 'success') => {
-    if (isLogFinalized) return;
-    isLogFinalized = true;
+    if (isLogFinalized) return
+    isLogFinalized = true
     try {
-      await finalizeStreamWithLog(finalizeCtx, status);
+      await finalizeStreamWithLog(finalizeCtx, status)
     } catch (error) {
-      logger.error({ error, logId }, 'Failed to finalize stream log');
-      await markStreamFailed(logId, attemptId, { message: error instanceof Error ? error.message : 'Unknown error', type: 'log_finalization_error' });
+      logger.error({ error, logId }, 'Failed to finalize stream log')
+      await markStreamFailed(logId, attemptId, {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        type: 'log_finalization_error',
+      })
     }
-  };
+  }
 
-  const STREAM_IDLE_TIMEOUT_MS = 120000;
-  let streamIdleTimer: ReturnType<typeof setTimeout> | null = null;
+  const STREAM_IDLE_TIMEOUT_MS = 120000
+  let streamIdleTimer: ReturnType<typeof setTimeout> | null = null
   const resetStreamIdleTimer = (controller: TransformStreamDefaultController<Uint8Array>) => {
-    if (streamIdleTimer) clearTimeout(streamIdleTimer);
-    streamIdleTimer = setTimeout(() => { logger.warn({ logId }, `Stream idle timeout after ${STREAM_IDLE_TIMEOUT_MS / 1000}s, terminating`); controller.terminate(); finalizeLog('failure').catch(() => {}); }, STREAM_IDLE_TIMEOUT_MS);
-  };
+    if (streamIdleTimer) clearTimeout(streamIdleTimer)
+    streamIdleTimer = setTimeout(() => {
+      logger.warn(
+        { logId },
+        `Stream idle timeout after ${STREAM_IDLE_TIMEOUT_MS / 1000}s, terminating`,
+      )
+      controller.terminate()
+      finalizeLog('failure').catch(() => {})
+    }, STREAM_IDLE_TIMEOUT_MS)
+  }
 
   const usageExtractor = new TransformStream<Uint8Array, Uint8Array>({
     transform(chunk, controller) {
-      resetStreamIdleTimer(controller);
-      const text = new TextDecoder().decode(chunk);
+      resetStreamIdleTimer(controller)
+      const text = new TextDecoder().decode(chunk)
       for (const line of text.split('\n')) {
-        if (!line.startsWith('data:')) continue;
-        const data = line.slice(5).trim();
-        if (data === '[DONE]') continue;
-        clientCollector.processEvent(data);
-        chunkEmitCount++;
-        const nowEmit = Date.now();
+        if (!line.startsWith('data:')) continue
+        const data = line.slice(5).trim()
+        if (data === '[DONE]') continue
+        clientCollector.processEvent(data)
+        chunkEmitCount++
+        const nowEmit = Date.now()
         if (chunkEmitCount % 10 === 0 || nowEmit - lastChunkEmitTime >= 500) {
-          const usage = clientCollector.getUsage();
-          const fullContent = clientCollector.getFullContent();
-          logEventBus.emitLog({ event: 'chunk', logId, outputTokens: usage.outputTokens, totalChunks: chunkEmitCount, hasThinking: fullContent.thinkingBlocks.length > 0, elapsedMs: nowEmit - startTime });
-          lastChunkEmitTime = nowEmit;
+          const usage = clientCollector.getUsage()
+          const fullContent = clientCollector.getFullContent()
+          logEventBus.emitLog({
+            event: 'chunk',
+            logId,
+            outputTokens: usage.outputTokens,
+            totalChunks: chunkEmitCount,
+            hasThinking: fullContent.thinkingBlocks.length > 0,
+            elapsedMs: nowEmit - startTime,
+          })
+          lastChunkEmitTime = nowEmit
         }
       }
-      controller.enqueue(chunk);
+      controller.enqueue(chunk)
     },
-    async flush() { if (streamIdleTimer) clearTimeout(streamIdleTimer); await finalizeLog('success'); },
-  });
+    async flush() {
+      if (streamIdleTimer) clearTimeout(streamIdleTimer)
+      await finalizeLog('success')
+    },
+  })
 
   if (isMapped && originalModelName && transformedStream) {
-    transformedStream = transformedStream.pipeThrough(createModelRemapStream(originalModelName)) as unknown as ReadableStream<Uint8Array<ArrayBuffer>>;
+    transformedStream = transformedStream.pipeThrough(
+      createModelRemapStream(originalModelName),
+    ) as unknown as ReadableStream<Uint8Array<ArrayBuffer>>
   }
 
-  const finalStream = transformedStream?.pipeThrough(usageExtractor);
+  const finalStream = transformedStream?.pipeThrough(usageExtractor)
 
   if (params.request?.signal) {
-    params.request.signal.addEventListener('abort', async () => {
-      logger.info({ logId }, 'Client disconnected, finalizing stream log');
-      if (streamIdleTimer) clearTimeout(streamIdleTimer);
-      await finalizeLog('failure');
-      await markStreamAborted(logId, attemptId);
-      logEventBus.emitLog({ event: 'aborted', logId });
-    }, { once: true });
+    params.request.signal.addEventListener(
+      'abort',
+      async () => {
+        logger.info({ logId }, 'Client disconnected, finalizing stream log')
+        if (streamIdleTimer) clearTimeout(streamIdleTimer)
+        await finalizeLog('failure')
+        await markStreamAborted(logId, attemptId)
+        logEventBus.emitLog({ event: 'aborted', logId })
+      },
+      { once: true },
+    )
   }
 
-  return new Response(finalStream, { headers: mergedHeaders });
+  return new Response(finalStream, { headers: mergedHeaders })
 }

@@ -14,7 +14,12 @@ interface ResponsePanelProps {
 
 export function ResponsePanel({ log, className }: ResponsePanelProps) {
   return (
-    <div className={cn('flex flex-col border-r last:border-r-0 bg-background overflow-hidden', className)}>
+    <div
+      className={cn(
+        'flex flex-col border-r last:border-r-0 bg-background overflow-hidden',
+        className,
+      )}
+    >
       <div className="px-4 py-2.5 border-b bg-muted/20 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">
           <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
@@ -32,9 +37,24 @@ export function ResponsePanel({ log, className }: ResponsePanelProps) {
         <TabsContent value="body" className="flex-1 m-0 flex flex-col min-h-0">
           <BodySubTabs
             tabs={[
-              { key: 'client', label: '客户端', data: log.responseBody, emptyText: '无客户端响应数据' },
-              { key: 'provider', label: 'Provider', data: log.providerResponseBody ?? null, emptyText: '无 Provider 响应数据' },
-              { key: 'standard', label: '标准格式', data: log.standardResponseBody ?? null, emptyText: '无标准格式数据' },
+              {
+                key: 'client',
+                label: '客户端',
+                data: log.responseBody,
+                emptyText: '无客户端响应数据',
+              },
+              {
+                key: 'provider',
+                label: 'Provider',
+                data: log.providerResponseBody ?? null,
+                emptyText: '无 Provider 响应数据',
+              },
+              {
+                key: 'standard',
+                label: '标准格式',
+                data: log.standardResponseBody ?? null,
+                emptyText: '无标准格式数据',
+              },
             ]}
           />
         </TabsContent>

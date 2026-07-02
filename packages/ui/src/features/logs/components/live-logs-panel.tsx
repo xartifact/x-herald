@@ -1,85 +1,105 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react'
 
-import { Activity, Brain, ChevronDown, Clock, Copy, ExternalLink, Layers, X, Zap } from 'lucide-react';
-import { toast } from 'sonner';
+import {
+  Activity,
+  Brain,
+  ChevronDown,
+  Clock,
+  Copy,
+  ExternalLink,
+  Layers,
+  X,
+  Zap,
+} from 'lucide-react'
+import { toast } from 'sonner'
 
-import { useLiveLogs, type LiveStreamItem } from '../hooks/use-live-logs';
-import { Badge } from '../../../shared/components/ui/badge';
-import { Button } from '../../../shared/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/components/ui/card';
+import { useLiveLogs, type LiveStreamItem } from '../hooks/use-live-logs'
+import { Badge } from '../../../shared/components/ui/badge'
+import { Button } from '../../../shared/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/components/ui/card'
 
-const API_BASE = '/api';
+const API_BASE = '/api'
 
 function authHeaders() {
-  return { Authorization: `Bearer ${localStorage.getItem('admin_token') || ''}` };
+  return { Authorization: `Bearer ${localStorage.getItem('admin_token') || ''}` }
 }
 
 function formatElapsed(ms: number): string {
-  if (ms < 1000) return `${ms}ms`;
-  if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`;
-  return `${Math.floor(ms / 60_000)}分${Math.floor((ms % 60_000) / 1000)}秒`;
+  if (ms < 1000) return `${ms}ms`
+  if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`
+  return `${Math.floor(ms / 60_000)}分${Math.floor((ms % 60_000) / 1000)}秒`
 }
 
-const STUCK_THRESHOLD_MS = 30_000;
+const STUCK_THRESHOLD_MS = 30_000
 
 function CopyButton({ value }: { value: string }) {
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState(false)
   const handleCopy = (e: React.MouseEvent) => {
-    e.stopPropagation();
+    e.stopPropagation()
     navigator.clipboard.writeText(value).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    });
-  };
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    })
+  }
   return (
-    <button onClick={handleCopy} className="text-muted-foreground hover:text-foreground transition-colors" title="复制">
+    <button
+      onClick={handleCopy}
+      className="text-muted-foreground hover:text-foreground transition-colors"
+      title="复制"
+    >
       <Copy className={`h-3 w-3 ${copied ? 'text-green-500' : ''}`} />
     </button>
-  );
+  )
 }
 
-function StreamCard({ item, onViewDetail }: { item: LiveStreamItem; onViewDetail?: (logId: string) => void }) {
-  const [elapsedMs, setElapsedMs] = useState(item.elapsedMs);
-  const [isCancelling, setIsCancelling] = useState(false);
-  const [expanded, setExpanded] = useState(false);
+function StreamCard({
+  item,
+  onViewDetail,
+}: {
+  item: LiveStreamItem
+  onViewDetail?: (logId: string) => void
+}) {
+  const [elapsedMs, setElapsedMs] = useState(item.elapsedMs)
+  const [isCancelling, setIsCancelling] = useState(false)
+  const [expanded, setExpanded] = useState(false)
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setElapsedMs(Date.now() - item.startTime);
-    }, 200);
-    return () => clearInterval(interval);
-  }, [item.startTime]);
+      setElapsedMs(Date.now() - item.startTime)
+    }, 200)
+    return () => clearInterval(interval)
+  }, [item.startTime])
 
-  const displayName = item.originalModelName ?? item.modelName;
-  const isWaiting = item.status === 'waiting';
-  const isStuck = isWaiting && elapsedMs > STUCK_THRESHOLD_MS;
+  const displayName = item.originalModelName ?? item.modelName
+  const isWaiting = item.status === 'waiting'
+  const isStuck = isWaiting && elapsedMs > STUCK_THRESHOLD_MS
 
   const handleCancel = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsCancelling(true);
+    e.stopPropagation()
+    setIsCancelling(true)
     try {
       const res = await fetch(`${API_BASE}/logs/live/${item.logId}/cancel`, {
         method: 'POST',
         headers: authHeaders(),
-      });
-      const data = await res.json();
+      })
+      const data = await res.json()
       if (data.success) {
-        toast.success('已取消请求');
+        toast.success('已取消请求')
       } else {
-        toast.error(data.error || '取消失败');
+        toast.error(data.error || '取消失败')
       }
     } catch {
-      toast.error('取消失败');
+      toast.error('取消失败')
     } finally {
-      setIsCancelling(false);
+      setIsCancelling(false)
     }
-  };
+  }
 
   const borderClass = isStuck
     ? 'border-red-300 bg-red-50/50 dark:border-red-800 dark:bg-red-950/20'
-    : 'bg-card';
+    : 'bg-card'
 
   return (
     <div className={`rounded-lg border text-sm ${borderClass}`}>
@@ -118,9 +138,7 @@ function StreamCard({ item, onViewDetail }: { item: LiveStreamItem; onViewDetail
           </Badge>
         )}
 
-        {item.hasThinking && (
-          <Brain className="h-3.5 w-3.5 shrink-0 text-violet-500" />
-        )}
+        {item.hasThinking && <Brain className="h-3.5 w-3.5 shrink-0 text-violet-500" />}
 
         {isWaiting ? (
           <span className="shrink-0 text-xs text-amber-600 dark:text-amber-400">等待响应</span>
@@ -159,7 +177,9 @@ function StreamCard({ item, onViewDetail }: { item: LiveStreamItem; onViewDetail
               <span className="font-medium">请求 ID</span>
             </div>
             <div className="flex items-center gap-1.5 font-mono text-[11px]">
-              <span className="truncate" title={item.logId}>{item.logId}</span>
+              <span className="truncate" title={item.logId}>
+                {item.logId}
+              </span>
               <CopyButton value={item.logId} />
             </div>
 
@@ -171,7 +191,9 @@ function StreamCard({ item, onViewDetail }: { item: LiveStreamItem; onViewDetail
             {item.modelName !== item.originalModelName && item.originalModelName && (
               <>
                 <span className="text-muted-foreground font-medium">路由模型</span>
-                <span className="truncate text-muted-foreground" title={item.modelName}>{item.modelName}</span>
+                <span className="truncate text-muted-foreground" title={item.modelName}>
+                  {item.modelName}
+                </span>
               </>
             )}
 
@@ -204,7 +226,10 @@ function StreamCard({ item, onViewDetail }: { item: LiveStreamItem; onViewDetail
               variant="ghost"
               size="sm"
               className="h-6 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
-              onClick={(e: React.MouseEvent) => { e.stopPropagation(); onViewDetail?.(item.logId); }}
+              onClick={(e: React.MouseEvent) => {
+                e.stopPropagation()
+                onViewDetail?.(item.logId)
+              }}
             >
               <ExternalLink className="h-3 w-3" />
               查看详情
@@ -213,17 +238,17 @@ function StreamCard({ item, onViewDetail }: { item: LiveStreamItem; onViewDetail
         </div>
       )}
     </div>
-  );
+  )
 }
 
 export interface LiveLogsPanelProps {
-  onViewDetail?: (logId: string) => void;
+  onViewDetail?: (logId: string) => void
 }
 
 export function LiveLogsPanel({ onViewDetail }: LiveLogsPanelProps) {
-  const streams = useLiveLogs();
+  const streams = useLiveLogs()
 
-  if (streams.size === 0) return null;
+  if (streams.size === 0) return null
 
   return (
     <Card className="border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-950/20">
@@ -242,5 +267,5 @@ export function LiveLogsPanel({ onViewDetail }: LiveLogsPanelProps) {
         ))}
       </CardContent>
     </Card>
-  );
+  )
 }

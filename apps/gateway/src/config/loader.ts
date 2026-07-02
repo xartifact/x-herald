@@ -1,8 +1,8 @@
-import rootLogger from '../lib/logger';
+import rootLogger from '../lib/logger'
 
-import type { GatewayConfig } from './schema';
+import type { GatewayConfig } from './schema'
 
-const logger = rootLogger.child({ module: 'config' });
+const logger = rootLogger.child({ module: 'config' })
 
 /**
  * Load configuration from environment variables
@@ -19,7 +19,8 @@ export function loadConfig(): GatewayConfig {
     },
 
     database: {
-      type: (process.env.DB_TYPE as 'postgres' | 'pglite') ||
+      type:
+        (process.env.DB_TYPE as 'postgres' | 'pglite') ||
         (process.env.NODE_ENV === 'production' ? 'postgres' : 'pglite'),
       host: process.env.DB_HOST || 'localhost',
       port: parseInt(process.env.DB_PORT || '5432'),
@@ -62,7 +63,7 @@ export function loadConfig(): GatewayConfig {
       enableRequestLog: process.env.LOG_ENABLE_REQUEST !== 'false',
       enableDebug: process.env.LOG_ENABLE_DEBUG === 'true',
     },
-  };
+  }
 }
 
 /**
@@ -71,26 +72,27 @@ export function loadConfig(): GatewayConfig {
 export function validateConfig(config: GatewayConfig): void {
   // Server validation
   if (config.server.port < 1 || config.server.port > 65535) {
-    throw new Error('Invalid server port');
+    throw new Error('Invalid server port')
   }
 
   // Database validation
   if (config.database.type === 'postgres') {
     if (!config.database.host) {
-      throw new Error('Database host is required');
+      throw new Error('Database host is required')
     }
     if (!config.database.database) {
-      throw new Error('Database name is required');
+      throw new Error('Database name is required')
     }
     if (!config.database.password && process.env.NODE_ENV === 'production') {
-      logger.warn('No database password set in production!');
+      logger.warn('No database password set in production!')
     }
   }
 
   // Admin validation
-  if (config.admin.password === 'change-me-in-production' && process.env.NODE_ENV === 'production') {
-    throw new Error('Admin password must be changed in production');
+  if (
+    config.admin.password === 'change-me-in-production' &&
+    process.env.NODE_ENV === 'production'
+  ) {
+    throw new Error('Admin password must be changed in production')
   }
-
-
 }

@@ -1,1 +1,1 @@
-export { cleanupStaleStreams } from '../src/gateway/services/stream-cleanup';
+export { cleanupStaleStreams } from '../src/gateway/services/stream-cleanup'

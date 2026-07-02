@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect } from 'react'
 
-import { DiffEditor, loader } from "@monaco-editor/react"
-import * as monaco from "monaco-editor"
+import { DiffEditor, loader } from '@monaco-editor/react'
+import * as monaco from 'monaco-editor'
 
 loader.config({ monaco })
 
@@ -12,7 +12,7 @@ interface JsonDiffViewerProps {
   modified: unknown
   originalLabel?: string
   modifiedLabel?: string
-  height?: string | "auto"
+  height?: string | 'auto'
   onlyDiff?: boolean
   inline?: boolean
 }
@@ -20,20 +20,20 @@ interface JsonDiffViewerProps {
 export function JsonDiffViewer({
   original,
   modified,
-  originalLabel = "Original",
-  modifiedLabel = "Modified",
-  height = "400px",
+  originalLabel = 'Original',
+  modifiedLabel = 'Modified',
+  height = '400px',
   onlyDiff = false,
   inline = false,
 }: JsonDiffViewerProps) {
   const [measuredHeight, setMeasuredHeight] = useState(400)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  const originalStr = JSON.stringify(original, null, 2) || ""
-  const modifiedStr = JSON.stringify(modified, null, 2) || ""
+  const originalStr = JSON.stringify(original, null, 2) || ''
+  const modifiedStr = JSON.stringify(modified, null, 2) || ''
 
   useEffect(() => {
-    if (height !== "auto" || !containerRef.current) return
+    if (height !== 'auto' || !containerRef.current) return
     const el = containerRef.current
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
@@ -47,7 +47,7 @@ export function JsonDiffViewer({
     return () => observer.disconnect()
   }, [height])
 
-  const isAuto = height === "auto"
+  const isAuto = height === 'auto'
   const editorHeight = isAuto ? `${measuredHeight}px` : height
 
   return (
@@ -67,11 +67,11 @@ export function JsonDiffViewer({
           minimap: { enabled: false },
           scrollBeyondLastLine: false,
           fontSize: 12,
-          lineNumbers: "on",
-          renderWhitespace: "selection",
+          lineNumbers: 'on',
+          renderWhitespace: 'selection',
           folding: true,
-          wordWrap: "off",
-          diffWordWrap: "off",
+          wordWrap: 'off',
+          diffWordWrap: 'off',
           renderSideBySide: !inline,
           originalAriaLabel: originalLabel,
           modifiedAriaLabel: modifiedLabel,
@@ -88,11 +88,7 @@ interface HeadersViewerProps {
 
 export function HeadersViewer({ headers }: HeadersViewerProps) {
   if (!headers || Object.keys(headers).length === 0) {
-    return (
-      <div className="text-sm text-muted-foreground text-center py-4">
-        无请求头信息
-      </div>
-    )
+    return <div className="text-sm text-muted-foreground text-center py-4">无请求头信息</div>
   }
 
   return (

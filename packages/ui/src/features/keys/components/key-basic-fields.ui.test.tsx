@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'vite-plus/test'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useForm } from 'react-hook-form'
@@ -27,7 +27,7 @@ describe('KeyBasicFields', () => {
           enabled: true,
           expiresAt: '',
         }}
-      />
+      />,
     )
 
     expect(screen.getByPlaceholderText('生产环境密钥')).toBeInTheDocument()
@@ -46,7 +46,7 @@ describe('KeyBasicFields', () => {
           enabled: true,
           expiresAt: '',
         }}
-      />
+      />,
     )
 
     const input = screen.getByPlaceholderText('生产环境密钥')
@@ -63,7 +63,7 @@ describe('KeyBasicFields', () => {
           enabled: true,
           expiresAt: '',
         }}
-      />
+      />,
     )
 
     const switchInput = screen.getByRole('switch')
@@ -79,7 +79,7 @@ describe('KeyBasicFields', () => {
           enabled: false,
           expiresAt: '',
         }}
-      />
+      />,
     )
 
     const switchInput = screen.getByRole('switch')
@@ -95,7 +95,7 @@ describe('KeyBasicFields', () => {
           enabled: true,
           expiresAt: '',
         }}
-      />
+      />,
     )
 
     expect(screen.getByDisplayValue('Existing Key')).toBeInTheDocument()

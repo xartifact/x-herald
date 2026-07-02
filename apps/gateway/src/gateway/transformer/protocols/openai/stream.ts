@@ -1,8 +1,12 @@
-import logger from '../../../../lib/logger';
-import type { TransformerContext, StreamChunk, StandardMessage } from '@xartifact/x-llm-gateway-shared';
+import logger from '../../../../lib/logger'
+import type {
+  TransformerContext,
+  StreamChunk,
+  StandardMessage,
+} from '@xartifact/x-llm-gateway-shared'
 
-import type { OpenAIStreamChunk } from './types';
-import { parseToolArguments } from '../../shared/tool-arguments-parser';
+import type { OpenAIStreamChunk } from './types'
+import { parseToolArguments } from '../../shared/tool-arguments-parser'
 
 /**
  * Convert OpenAI stream chunk to standard format
@@ -29,7 +33,7 @@ export function convertStreamChunkToStandard(chunk: OpenAIStreamChunk): StreamCh
       finish_reason: choice.finish_reason,
     })),
     usage: chunk.usage,
-  };
+  }
 }
 
 /**
@@ -39,69 +43,66 @@ export function transformOpenAIStream(
   stream: ReadableStream,
   ctx: TransformerContext,
 ): ReadableStream {
-  const encoder = new TextEncoder();
-  const decoder = new TextDecoder();
+  const encoder = new TextEncoder()
+  const decoder = new TextDecoder()
 
   return new ReadableStream({
     start: async (controller) => {
-      const reader = stream.getReader();
-      let buffer = '';
-      let errorCount = 0;
-      let hadError = false;
-      const MAX_ERRORS = 5;
-      const errors: Array<{ error: unknown; data: string }> = [];
-      let model = '';
+      const reader = stream.getReader()
+      let buffer = ''
+      let errorCount = 0
+      let hadError = false
+      const MAX_ERRORS = 5
+      const errors: Array<{ error: unknown; data: string }> = []
+      let model = ''
 
       try {
         while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
+          const { done, value } = await reader.read()
+          if (done) break
 
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || '';
+          buffer += decoder.decode(value, { stream: true })
+          const lines = buffer.split('\n')
+          buffer = lines.pop() || ''
 
           for (const line of lines) {
-            if (!line.startsWith('data: ')) continue;
+            if (!line.startsWith('data: ')) continue
 
-            const data = line.slice(6);
+            const data = line.slice(6)
             if (data === '[DONE]') {
-              controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-              continue;
+              controller.enqueue(encoder.encode('data: [DONE]\n\n'))
+              continue
             }
 
             try {
-              const chunk: OpenAIStreamChunk = JSON.parse(data);
+              const chunk: OpenAIStreamChunk = JSON.parse(data)
 
               if (chunk.model && !model) {
-                model = chunk.model;
+                model = chunk.model
               }
 
               if (chunk.choices?.[0]?.finish_reason === 'tool_calls') {
-                chunk.choices.forEach(choice => {
+                chunk.choices.forEach((choice) => {
                   if (choice.delta?.tool_calls) {
-                    choice.delta.tool_calls.forEach(tc => {
+                    choice.delta.tool_calls.forEach((tc) => {
                       if (tc.function?.arguments) {
-                        tc.function.arguments = parseToolArguments(
-                          tc.function.arguments,
-                          logger
-                        );
+                        tc.function.arguments = parseToolArguments(tc.function.arguments, logger)
                       }
-                    });
+                    })
                   }
-                });
+                })
               }
 
-              const standardChunk = convertStreamChunkToStandard(chunk);
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify(standardChunk)}\n\n`));
+              const standardChunk = convertStreamChunkToStandard(chunk)
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify(standardChunk)}\n\n`))
             } catch (error) {
-              errorCount++;
-              errors.push({ error, data });
+              errorCount++
+              errors.push({ error, data })
 
               logger.error(
                 { error, data, errorCount, requestId: ctx.requestId },
-                'Failed to parse stream chunk'
-              );
+                'Failed to parse stream chunk',
+              )
 
               if (errorCount >= MAX_ERRORS) {
                 const errorChunk = {
@@ -109,16 +110,18 @@ export function transformOpenAIStream(
                   object: 'chat.completion.chunk' as const,
                   created: Math.floor(Date.now() / 1000),
                   model: model || 'unknown',
-                  choices: [{
-                    index: 0,
-                    delta: { content: '\n[Stream Error: Multiple parse failures]' },
-                    finish_reason: 'stop' as const
-                  }]
-                };
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify(errorChunk)}\n\n`));
-                controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-                controller.close();
-                return;
+                  choices: [
+                    {
+                      index: 0,
+                      delta: { content: '\n[Stream Error: Multiple parse failures]' },
+                      finish_reason: 'stop' as const,
+                    },
+                  ],
+                }
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify(errorChunk)}\n\n`))
+                controller.enqueue(encoder.encode('data: [DONE]\n\n'))
+                controller.close()
+                return
               }
             }
           }
@@ -126,17 +129,17 @@ export function transformOpenAIStream(
       } catch (error) {
         logger.error(
           { error, errorCount, errors: errors.slice(-3), requestId: ctx.requestId },
-          'Stream transformation failed'
-        );
-        controller.error(error);
-        hadError = true;
-        return;
+          'Stream transformation failed',
+        )
+        controller.error(error)
+        hadError = true
+        return
       } finally {
-        reader.releaseLock();
+        reader.releaseLock()
         if (!hadError && errorCount < MAX_ERRORS) {
-          controller.close();
+          controller.close()
         }
       }
     },
-  });
+  })
 }

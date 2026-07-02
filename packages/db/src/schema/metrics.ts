@@ -1,4 +1,16 @@
-import { index, pgTable, real, integer, timestamp, uuid, varchar, unique, boolean, jsonb, text } from 'drizzle-orm/pg-core';
+import {
+  index,
+  pgTable,
+  real,
+  integer,
+  timestamp,
+  uuid,
+  varchar,
+  unique,
+  boolean,
+  jsonb,
+  text,
+} from 'drizzle-orm/pg-core'
 
 export const instancePerfSnapshots = pgTable(
   'instance_perf_snapshots',
@@ -51,11 +63,11 @@ export const instancePerfSnapshots = pgTable(
     index('idx_ips_instance_bucket').on(table.instanceId, table.bucketStart),
     index('idx_ips_provider_bucket').on(table.providerId, table.bucketStart),
     index('idx_ips_bucket_start').on(table.bucketStart),
-  ]
-);
+  ],
+)
 
-export type InstancePerfSnapshot = typeof instancePerfSnapshots.$inferSelect;
-export type NewInstancePerfSnapshot = typeof instancePerfSnapshots.$inferInsert;
+export type InstancePerfSnapshot = typeof instancePerfSnapshots.$inferSelect
+export type NewInstancePerfSnapshot = typeof instancePerfSnapshots.$inferInsert
 
 export const anomalyEvents = pgTable(
   'anomaly_events',
@@ -77,8 +89,8 @@ export const anomalyEvents = pgTable(
     index('idx_anomaly_events_severity').on(table.severity),
     index('idx_anomaly_events_resolved').on(table.resolved),
     index('idx_anomaly_events_created').on(table.createdAt),
-  ]
-);
+  ],
+)
 
-export type AnomalyEvent = typeof anomalyEvents.$inferSelect;
-export type NewAnomalyEvent = typeof anomalyEvents.$inferInsert;
+export type AnomalyEvent = typeof anomalyEvents.$inferSelect
+export type NewAnomalyEvent = typeof anomalyEvents.$inferInsert

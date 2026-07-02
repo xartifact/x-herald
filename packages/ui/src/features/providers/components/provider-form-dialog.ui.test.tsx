@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi } from 'vite-plus/test'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useForm } from 'react-hook-form'
@@ -97,7 +97,7 @@ describe('ProviderFormDialog', () => {
             gemini: { enabled: false },
           },
         }}
-      />
+      />,
     )
 
     const nameInput = screen.getByPlaceholderText('X-AIO API')
@@ -123,7 +123,7 @@ describe('ProviderFormDialog', () => {
             gemini: { enabled: false },
           },
         }}
-      />
+      />,
     )
 
     const baseUrlInput = screen.getByPlaceholderText('https://api.openai.com/v1')

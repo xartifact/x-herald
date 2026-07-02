@@ -110,10 +110,11 @@ export function extractContentFeatures(log: Log): ContentFeatures | null {
       // 排除 TTFB，优先用 streamDurationMs，回退用总响应时间减去网关和 TTFB
       const perf = log.metadata?.performance
       const streamMs = perf?.streamDurationMs
-      const genMs = streamMs && streamMs > 0
-        ? streamMs
-        : log.responseTimeMs - (perf?.gatewayOverheadMs ?? 0) - (perf?.providerTtfbMs ?? 0)
-      const tokensPerSecond = genMs > 0 ? (log.outputTokens / (genMs / 1000)) : 0
+      const genMs =
+        streamMs && streamMs > 0
+          ? streamMs
+          : log.responseTimeMs - (perf?.gatewayOverheadMs ?? 0) - (perf?.providerTtfbMs ?? 0)
+      const tokensPerSecond = genMs > 0 ? log.outputTokens / (genMs / 1000) : 0
       const tokensPerMessage = features.request?.messageCount
         ? log.inputTokens / features.request.messageCount
         : 0
@@ -151,7 +152,8 @@ export function extractContentFeatures(log: Log): ContentFeatures | null {
       }
 
       // 计算内容密度（字符数 / Token 数）
-      const totalChars = (features.request?.avgMessageLength || 0) * (features.request?.messageCount || 0)
+      const totalChars =
+        (features.request?.avgMessageLength || 0) * (features.request?.messageCount || 0)
       const contentDensity = log.inputTokens > 0 ? totalChars / log.inputTokens : 0
 
       features.complexity = {

@@ -1,4 +1,3 @@
-const ERROR_PATTERNS_CACHE_KEY = 'error-patterns-cache'
 const MIN_COUNT_FOR_AUTO_APPLY = 2
 
 interface PatternEntry {
@@ -20,10 +19,6 @@ interface ErrorPatternRecord extends ErrorPatternKey {
 
 const cache = new Map<string, PatternEntry>()
 
-function getCache(): Map<string, PatternEntry> {
-  return cache
-}
-
 /** Clear the error pattern cache (for testing). */
 export function clearErrorPatternCache(): void {
   cache.clear()
@@ -35,7 +30,6 @@ function buildKey(params: ErrorPatternKey): string {
 
 export class ErrorPatternLearner {
   async recordResolution(params: ErrorPatternKey & { fix: unknown }): Promise<void> {
-    const cache = getCache()
     const key = buildKey(params)
     const existing = cache.get(key)
     cache.set(key, {
@@ -46,7 +40,6 @@ export class ErrorPatternLearner {
   }
 
   async findKnownFix(params: ErrorPatternKey): Promise<unknown | null> {
-    const cache = getCache()
     const key = buildKey(params)
     const pattern = cache.get(key)
 
@@ -58,7 +51,6 @@ export class ErrorPatternLearner {
   }
 
   async getCommonPatterns(limit = 10): Promise<ErrorPatternRecord[]> {
-    const cache = getCache()
     return Array.from(cache.entries())
       .map(([key, value]) => {
         const [errorType, provider, model] = key.split(':')

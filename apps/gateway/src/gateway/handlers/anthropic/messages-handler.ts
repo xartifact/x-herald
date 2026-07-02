@@ -8,7 +8,6 @@ import type { StandardRequest } from '@xartifact/x-llm-gateway-shared'
 import { accessModelRouter } from '../../services/access-model-router'
 import { identifyClient } from '../../services/client-identifier'
 import { handleGatewayError } from '../../services/error-handler'
-import { logEventBus } from '../../services/log-event-bus'
 import { ModelNotFoundError } from '../../services/model-group-router'
 import { getProviderProtocol, getProviderUrl } from '../../services/protocol-detector'
 import {

@@ -12,7 +12,6 @@ import {
   getDatabase as getDbClient,
   closeDb,
 } from '@xartifact/x-llm-gateway-db'
-import type { DatabaseOptions as DbOpts } from '@xartifact/x-llm-gateway-db'
 
 import { MIGRATE_ON_BOOT } from '../config/env'
 import logger from '../lib/logger'

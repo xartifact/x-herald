@@ -15,8 +15,8 @@ export function mapGeminiFinishReason(
 }
 
 export async function normalizeGeminiResponse(
-  response: Response,
-  ctx: TransformerContext,
+  _response: Response,
+  _ctx: TransformerContext,
 ): Promise<StandardResponse> {
   throw new Error('Gemini normalizeResponse not yet implemented')
 }

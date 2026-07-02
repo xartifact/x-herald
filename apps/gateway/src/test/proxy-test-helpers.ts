@@ -18,7 +18,7 @@
 import { Hono } from 'hono'
 
 import { createTestEngine, destroyTestEngine, getAuthToken } from './setup'
-import { createMockUpstream, type MockUpstream, type ReceivedRequest } from './mock-upstream'
+import { createMockUpstream, type MockUpstream } from './mock-upstream'
 
 import { getDatabase } from '../db/client'
 import {

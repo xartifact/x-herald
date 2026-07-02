@@ -20,7 +20,7 @@ export function mapToAnthropicStopReason(reason: string | null): AnthropicRespon
 
 export async function adaptAnthropicResponse(
   response: StandardResponse,
-  ctx: TransformerContext,
+  _ctx: TransformerContext,
 ): Promise<Response> {
   const choice = response.choices?.[0]
   if (!choice) throw new Error('No choices in response')

@@ -130,7 +130,7 @@ export const modelRoutes = pgTable('model_routes', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })
 
-export const modelRoutesRelations = relations(modelRoutes, ({ many }) => ({
+export const modelRoutesRelations = relations(modelRoutes, ({ many: _many }) => ({
   // Note: accessModelIds is a TEXT[] array - no FK relationship
   // Access model lookup is done at application layer
 }))

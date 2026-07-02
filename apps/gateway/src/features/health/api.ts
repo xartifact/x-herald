@@ -42,7 +42,7 @@ health.get('/ready', async (c) => {
       status: 'ready',
       timestamp: new Date().toISOString(),
     })
-  } catch (error) {
+  } catch {
     return c.json(
       {
         status: 'not_ready',

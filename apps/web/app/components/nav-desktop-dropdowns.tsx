@@ -3,7 +3,6 @@
 import { useState } from 'react'
 
 import { ChevronDown } from 'lucide-react'
-import { Link } from '@tanstack/react-router'
 
 import { cn } from '@xartifact/x-llm-gateway-ui'
 import {

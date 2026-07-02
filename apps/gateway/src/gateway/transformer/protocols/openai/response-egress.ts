@@ -5,7 +5,7 @@ import type { TransformerContext, StandardResponse } from '@xartifact/x-llm-gate
  */
 export async function adaptOpenAIResponse(
   response: StandardResponse,
-  ctx: TransformerContext,
+  _ctx: TransformerContext,
 ): Promise<Response> {
   const openaiResponse = {
     id: response.id,

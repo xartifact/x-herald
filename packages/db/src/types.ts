@@ -1,5 +1,4 @@
 import type { drizzle as drizzlePostgres } from 'drizzle-orm/postgres-js'
-import type postgres from 'postgres'
 
 type PostgresDb = ReturnType<typeof drizzlePostgres<Record<string, unknown>>>
 

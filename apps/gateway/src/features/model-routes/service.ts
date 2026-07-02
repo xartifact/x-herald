@@ -22,7 +22,7 @@ const routeSelect = {
   updatedAt: modelRoutes.updatedAt,
 }
 
-function withCompatFields<T extends typeof routeSelect>(r: {
+function withCompatFields(r: {
   id: string
   name: string
   description: string | null

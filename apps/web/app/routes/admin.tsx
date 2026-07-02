@@ -5,7 +5,6 @@ import AdminNav from '../components/AdminNav'
 export function AdminLayout() {
   const [token] = useState(() => localStorage.getItem('admin_token'))
   const [verified, setVerified] = useState(false)
-  const [failed, setFailed] = useState(false)
 
   useEffect(() => {
     if (!token) {

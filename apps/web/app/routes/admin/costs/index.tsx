@@ -33,11 +33,7 @@ export function CostsPage() {
 
   const queryParams = useMemo(() => buildQueryParams(filter), [filter])
 
-  const {
-    data: summaryData,
-    isLoading: summaryLoading,
-    refetch: refetchSummary,
-  } = useCostSummary(queryParams)
+  const { data: summaryData, refetch: refetchSummary } = useCostSummary(queryParams)
   const {
     data: byKeyData,
     isLoading: byKeyLoading,

@@ -16,7 +16,7 @@ costRoutes.get('/summary', async (c) => {
       modelName,
     })
     return c.json({ success: true, data: summary })
-  } catch (error) {
+  } catch {
     return c.json({ error: 'Failed to get cost summary', code: 'COST_SUMMARY_ERROR' }, 500)
   }
 })
@@ -31,7 +31,7 @@ costRoutes.get('/by-key', async (c) => {
       endDate: endDate ? new Date(endDate) : undefined,
     })
     return c.json({ success: true, data })
-  } catch (error) {
+  } catch {
     return c.json({ error: 'Failed to get cost by key', code: 'COST_BY_KEY_ERROR' }, 500)
   }
 })
@@ -46,7 +46,7 @@ costRoutes.get('/by-provider', async (c) => {
       endDate: endDate ? new Date(endDate) : undefined,
     })
     return c.json({ success: true, data })
-  } catch (error) {
+  } catch {
     return c.json({ error: 'Failed to get cost by provider', code: 'COST_BY_PROVIDER_ERROR' }, 500)
   }
 })
@@ -61,7 +61,7 @@ costRoutes.get('/by-model', async (c) => {
       endDate: endDate ? new Date(endDate) : undefined,
     })
     return c.json({ success: true, data })
-  } catch (error) {
+  } catch {
     return c.json({ error: 'Failed to get cost by model', code: 'COST_BY_MODEL_ERROR' }, 500)
   }
 })
@@ -75,7 +75,7 @@ costRoutes.put('/pricing', async (c) => {
     }
     costService.setPricing(provider, { inputPer1k, outputPer1k })
     return c.json({ success: true, message: 'Pricing updated' })
-  } catch (error) {
+  } catch {
     return c.json({ error: 'Failed to update pricing', code: 'PRICING_UPDATE_ERROR' }, 500)
   }
 })
@@ -88,7 +88,7 @@ costRoutes.get('/pricing', async (c) => {
       pricing[provider] = config
     }
     return c.json({ success: true, data: pricing })
-  } catch (error) {
+  } catch {
     return c.json({ error: 'Failed to get pricing', code: 'PRICING_GET_ERROR' }, 500)
   }
 })

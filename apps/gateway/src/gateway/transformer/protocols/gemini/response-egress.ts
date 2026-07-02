@@ -14,8 +14,8 @@ export function mapToGeminiFinishReason(reason: string | null): string {
 }
 
 export async function adaptGeminiResponse(
-  response: StandardResponse,
-  ctx: TransformerContext,
+  _response: StandardResponse,
+  _ctx: TransformerContext,
 ): Promise<Response> {
   throw new Error('Gemini adaptResponse not yet implemented')
 }

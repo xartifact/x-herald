@@ -8,7 +8,6 @@ import * as z from 'zod'
 
 import { useKeysStats } from '@xartifact/x-llm-gateway-ui'
 
-import type { KeyFormData } from '@xartifact/x-llm-gateway-shared'
 import { useKeys, useCreateKey, useUpdateKey, useDeleteKey, useResetKey } from './use-keys'
 
 const keySchema = z.object({

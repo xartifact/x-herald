@@ -1,1 +1,0 @@
-// Table definitions moved to packages/db/src/schema/keys.ts

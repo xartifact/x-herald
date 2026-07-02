@@ -1,4 +1,4 @@
-import { desc, eq, gte, sql, and, count, max } from '@xartifact/x-llm-gateway-db'
+import { desc, eq, gte, sql, and } from '@xartifact/x-llm-gateway-db'
 import { Hono } from 'hono'
 
 import { getDatabase } from '../../db/client'

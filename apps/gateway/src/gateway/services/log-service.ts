@@ -1,7 +1,6 @@
 import { eq } from '@xartifact/x-llm-gateway-db'
 
 import { IS_PRODUCTION } from '../../config/env'
-import type { DbClient } from '../../db/client'
 import { getDatabase } from '../../db/client'
 import logger from '../../lib/logger'
 import type { VirtualKey } from '@xartifact/x-llm-gateway-db'

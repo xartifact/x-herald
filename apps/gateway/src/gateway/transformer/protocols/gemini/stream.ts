@@ -1,15 +1,15 @@
 import type { TransformerContext } from '@xartifact/x-llm-gateway-shared'
 
 export function normalizeGeminiStream(
-  stream: ReadableStream,
-  ctx: TransformerContext,
+  _stream: ReadableStream,
+  _ctx: TransformerContext,
 ): ReadableStream {
   throw new Error('Gemini normalizeStream not yet implemented')
 }
 
 export function adaptStreamToGemini(
-  stream: ReadableStream,
-  ctx: TransformerContext,
+  _stream: ReadableStream,
+  _ctx: TransformerContext,
 ): ReadableStream {
   throw new Error('Gemini adaptStream not yet implemented')
 }

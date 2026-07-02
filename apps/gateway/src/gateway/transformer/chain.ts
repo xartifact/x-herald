@@ -9,7 +9,6 @@ import type {
   StandardResponse,
   Transformer,
   TransformerContext,
-  TransformerChainConfig,
 } from '@xartifact/x-llm-gateway-shared'
 
 import { getTransformer } from './registry'

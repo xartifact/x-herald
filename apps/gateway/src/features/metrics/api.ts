@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, lte, sql } from '@xartifact/x-llm-gateway-db'
+import { and, desc, gte, sql } from '@xartifact/x-llm-gateway-db'
 import { Hono } from 'hono'
 
 import { getDatabase } from '../../db/client'
@@ -254,7 +254,6 @@ metricsRoutes.get('/providers/quality', async (c) => {
 metricsRoutes.get('/summary', async (c) => {
   const db = getDatabase()
   const since1h = new Date(Date.now() - 60 * 60 * 1000).toISOString()
-  const since6h = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString()
   const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
 
   const [recent, daily] = await Promise.all([

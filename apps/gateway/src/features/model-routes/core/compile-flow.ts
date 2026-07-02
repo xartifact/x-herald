@@ -91,7 +91,7 @@ export interface ValidationError {
   message: string
 }
 
-export function validateFlow(nodes: Node[], edges: Edge[]): ValidationError[] {
+export function validateFlow(nodes: Node[], _edges: Edge[]): ValidationError[] {
   const errors: ValidationError[] = []
   for (const node of nodes) {
     if (node.type === 'condition') {

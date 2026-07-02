@@ -13,7 +13,7 @@ function buildConnectionString(options: DatabaseOptions): string {
   return `postgres://${user}:${password}@${host}:${port}/${database}${sslParam}`
 }
 
-async function checkDatabaseExists(options: DatabaseOptions, logger: DbLogger): Promise<boolean> {
+async function checkDatabaseExists(options: DatabaseOptions, _logger: DbLogger): Promise<boolean> {
   const checkConnString = buildConnectionString({ ...options, database: 'postgres' })
   const checkClient = postgres(checkConnString, { max: 1 })
   try {
@@ -139,7 +139,7 @@ export async function createPostgresDatabase(
 
   // Validate connection (runs migrations in a temp connection)
   const validateClient = postgres(connString, { max: 1, onnotice: () => {} })
-  const validateDb = drizzlePostgres(validateClient, { schema })
+  const _validateDb = drizzlePostgres(validateClient, { schema })
   try {
     if (options.migrateOnBoot) {
       await runPostgresMigrations(validateClient, migrationsFolder, logger)

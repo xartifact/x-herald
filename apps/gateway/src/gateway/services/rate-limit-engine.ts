@@ -143,7 +143,6 @@ interface KeyCounters {
   token: DailyAccumulator | null
 }
 
-const CLEANUP_INTERVAL_MS = 60_000 // 1 minute
 const CLEANUP_MAX_AGE_MS = 24 * 60 * 60 * 1000 // 24 hours
 
 export class RateLimitEngine {

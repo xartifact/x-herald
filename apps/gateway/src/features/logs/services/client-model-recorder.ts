@@ -1,4 +1,4 @@
-import { eq, sql } from '@xartifact/x-llm-gateway-db'
+import { sql } from '@xartifact/x-llm-gateway-db'
 
 import { getDatabase } from '../../../db/client'
 import logger from '../../../lib/logger'

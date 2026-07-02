@@ -1,5 +1,3 @@
-import type { Context } from 'hono'
-
 /**
  * 检测请求协议类型
  * @param path 请求路径
@@ -113,7 +111,7 @@ export function getProviderUrl(
 /**
  * 获取协议对应的端点
  */
-export function getEndpoint(protocol: string, isStreaming: boolean): string {
+export function getEndpoint(protocol: string, _isStreaming: boolean): string {
   switch (protocol) {
     case 'openai':
       return '/v1/chat/completions'

@@ -33,7 +33,6 @@ import type {
   LogMetadata,
   FailoverReason,
 } from '../../features/logs/db'
-import { costService } from '../../features/costs/service'
 
 export interface StreamLogParams {
   virtualKey: VirtualKey

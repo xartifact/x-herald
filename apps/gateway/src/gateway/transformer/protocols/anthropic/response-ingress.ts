@@ -25,7 +25,7 @@ export function mapAnthropicFinishReason(
 
 export async function normalizeAnthropicResponse(
   response: Response,
-  ctx: TransformerContext,
+  _ctx: TransformerContext,
 ): Promise<StandardResponse> {
   const data: AnthropicResponse = (await response.json()) as AnthropicResponse
 

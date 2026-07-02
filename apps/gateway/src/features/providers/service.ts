@@ -1,5 +1,4 @@
-import crypto from 'crypto'
-import { desc, eq, inArray } from '@xartifact/x-llm-gateway-db'
+import { desc, eq } from '@xartifact/x-llm-gateway-db'
 import { z } from 'zod'
 
 import type { Database } from '../../db/client'

@@ -3,8 +3,6 @@ BigInt.prototype.toJSON = function () {
   return this.toString()
 }
 
-import { createHash } from 'crypto'
-import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 

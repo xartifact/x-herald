@@ -1,6 +1,5 @@
-import { Hono, type Context } from 'hono'
+import { Hono } from 'hono'
 
-import logger from '../../lib/logger'
 import type { VirtualKey } from '@xartifact/x-llm-gateway-db'
 
 import { handleOpenAIChatCompletion } from '../handlers/openai/chat-completion-handler'

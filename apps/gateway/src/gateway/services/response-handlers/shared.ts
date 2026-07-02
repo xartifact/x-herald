@@ -413,7 +413,7 @@ export function extractUsageFromChunk(
 
     // 调试日志：仅在需要时记录未提取到 usage 的事件类型
     // 已移除：高频 debug 日志，减少日志噪音
-  } catch (error) {
+  } catch {
     // 解析失败，静默处理以避免影响性能
     // 已移除：高频 debug 日志，减少日志噪音
   }

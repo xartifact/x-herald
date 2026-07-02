@@ -1,13 +1,9 @@
-import type {
-  TransformerContext,
-  StreamChunk,
-  StandardMessage,
-} from '@xartifact/x-llm-gateway-shared'
+import type { TransformerContext, StreamChunk } from '@xartifact/x-llm-gateway-shared'
 
 import { mapToAnthropicStopReason } from './response-egress'
 import { mapAnthropicFinishReason } from './response-ingress'
 import { sanitizeContent } from './sanitize'
-import type { AnthropicStreamEvent, AnthropicResponse, AnthropicContentBlock } from './types'
+import type { AnthropicStreamEvent } from './types'
 
 export function convertStreamEventToChunk(event: AnthropicStreamEvent): StreamChunk | null {
   switch (event.type) {
@@ -134,7 +130,7 @@ export function convertStreamEventToChunk(event: AnthropicStreamEvent): StreamCh
 
 export function normalizeAnthropicStream(
   stream: ReadableStream,
-  ctx: TransformerContext,
+  _ctx: TransformerContext,
 ): ReadableStream {
   const encoder = new TextEncoder()
   const decoder = new TextDecoder()
@@ -192,7 +188,7 @@ export function normalizeAnthropicStream(
 
 export function adaptStreamToAnthropic(
   stream: ReadableStream,
-  ctx: TransformerContext,
+  _ctx: TransformerContext,
 ): ReadableStream {
   const encoder = new TextEncoder()
   const decoder = new TextDecoder()

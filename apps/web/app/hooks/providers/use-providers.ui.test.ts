@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { useProviders } from './use-providers'
 
-vi.mock('../../../shared/lib/api-client', () => ({
+vi.mock('@xartifact/x-llm-gateway-ui', () => ({
   get: vi.fn(),
   post: vi.fn(),
   put: vi.fn(),

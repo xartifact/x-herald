@@ -9,3 +9,9 @@ if (g['ResizeObserver'] === undefined) {
     disconnect() {}
   }
 }
+
+// queryCommandSupported polyfill — jsdom does not provide it, but monaco-editor requires it
+const doc = globalThis.document as unknown as Record<string, unknown>
+if (typeof doc.queryCommandSupported !== 'function') {
+  doc.queryCommandSupported = () => false
+}

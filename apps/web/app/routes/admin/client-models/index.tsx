@@ -36,7 +36,7 @@ export function ClientModelsPage() {
 
   const queryParams = useMemo(() => buildQueryParams(filter.timeRange), [filter.timeRange])
   const { data: statsData, isLoading, refetch } = useClientModelStats(queryParams)
-  const stats = (statsData as any)?.data ?? []
+  const stats = useMemo(() => (statsData as any)?.data ?? [], [statsData])
 
   const filteredStats = useMemo(() => {
     const filtered = filter.search

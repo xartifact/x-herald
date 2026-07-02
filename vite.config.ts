@@ -48,7 +48,7 @@ export default defineConfig({
       'react/react-in-jsx-scope': 'off',
       'react/no-array-index-key': 'off',
       'react/no-unstable-nested-components': 'off',
-      'react-hooks/exhaustive-deps': 'off',
+      'react-hooks/exhaustive-deps': 'warn',
       'import/no-default-export': 'off',
       'import/no-named-as-default': 'off',
       'import/no-named-as-default-member': 'off',

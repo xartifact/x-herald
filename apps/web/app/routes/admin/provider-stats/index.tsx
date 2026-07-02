@@ -39,7 +39,7 @@ export function ProviderStatsPage() {
 
   const queryParams = useMemo(() => buildQueryParams(filter.timeRange), [filter.timeRange])
   const { data, isLoading, refetch } = useProviderStats(queryParams)
-  const stats = (data as any)?.data ?? []
+  const stats = useMemo(() => (data as any)?.data ?? [], [data])
 
   const sorted = useMemo(() => {
     return [...stats].toSorted((a: any, b: any) => {

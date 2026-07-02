@@ -49,7 +49,7 @@ const FlowCanvas = forwardRef<FlowEditorHandle, FlowEditorProps>(function FlowCa
       },
       getState: () => ({ nodes: canvas.nodes, edges: canvas.edges }),
     }),
-    [canvas.nodes, canvas.edges, canvas.setNodes],
+    [canvas],
   )
 
   return (

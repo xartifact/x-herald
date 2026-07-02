@@ -71,7 +71,7 @@ export function useFlowCanvas({
         }, 0)
       }
     },
-    [onNodesChange, onNodesEdgesChange, setEdges, fitView],
+    [onNodesChange, onNodesEdgesChange, setNodes, setEdges, fitView],
   )
 
   const handleEdgesChange = useCallback(
@@ -95,7 +95,7 @@ export function useFlowCanvas({
         setEdges(le)
       }, 0)
     },
-    [setEdges, onNodesEdgesChange],
+    [setEdges, setNodes, fitView, onNodesEdgesChange],
   )
 
   const handleNodeClick = useCallback(
@@ -135,7 +135,7 @@ export function useFlowCanvas({
         setEdges(le)
       }, 0)
     },
-    [addPosition, setNodes, onNodesEdgesChange],
+    [addPosition, setNodes, setEdges, fitView, onNodesEdgesChange],
   )
 
   useEffect(() => {

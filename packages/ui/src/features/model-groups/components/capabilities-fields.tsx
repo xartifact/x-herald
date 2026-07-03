@@ -28,7 +28,7 @@ export function CapabilitiesFields({ form }: CapabilitiesFieldsProps) {
               <FormItem className="flex items-center justify-between rounded-lg border p-3">
                 <FormLabel className="mb-0">{label}</FormLabel>
                 <FormControl>
-                  <Switch checked={field.value as boolean} onCheckedChange={field.onChange} />
+                  <Switch checked={!!field.value} onCheckedChange={field.onChange} />
                 </FormControl>
               </FormItem>
             )}

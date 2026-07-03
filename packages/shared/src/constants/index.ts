@@ -42,11 +42,22 @@ export const DEFAULTS = {
   },
 } as const
 export const CATCHALL_VM_NAME = '__catchall__'
+
 // Engine env constants (shared for client use)
-export const APP_VERSION = typeof process !== 'undefined' ? process.env.APP_VERSION || 'dev' : 'dev'
-export const IS_DEVELOPMENT =
-  typeof process !== 'undefined' ? process.env.NODE_ENV !== 'production' : false
-export const IS_PRODUCTION =
-  typeof process !== 'undefined' ? process.env.NODE_ENV === 'production' : false
-export const ENABLE_LOG_CLEANUP =
-  typeof process !== 'undefined' ? process.env.ENABLE_LOG_CLEANUP === 'true' : false
+// Avoid direct `process` global so this file stays typable without @types/node.
+const globalProcess = (globalThis as Record<string, unknown>).process as
+  | Record<string, unknown>
+  | undefined
+
+function getEnv(key: string): string | undefined {
+  if (typeof globalProcess === 'undefined') return undefined
+  const env = globalProcess.env as Record<string, unknown> | undefined
+  if (!env) return undefined
+  const value = env[key]
+  return typeof value === 'string' ? value : undefined
+}
+
+export const APP_VERSION = getEnv('APP_VERSION') || 'dev'
+export const IS_DEVELOPMENT = getEnv('NODE_ENV') !== 'production'
+export const IS_PRODUCTION = getEnv('NODE_ENV') === 'production'
+export const ENABLE_LOG_CLEANUP = getEnv('ENABLE_LOG_CLEANUP') === 'true'

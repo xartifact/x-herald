@@ -19,6 +19,8 @@ function formatTokens(tokens: number): string {
   return tokens.toLocaleString()
 }
 
+const SKELETON_CARDS = ['cost-card-1', 'cost-card-2', 'cost-card-3', 'cost-card-4']
+
 export function CostSummaryCards({ summary }: CostSummaryCardsProps) {
   if (!summary) {
     return (

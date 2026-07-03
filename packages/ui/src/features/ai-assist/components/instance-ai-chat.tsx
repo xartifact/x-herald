@@ -37,7 +37,11 @@ export function InstanceAiChat({ instanceId, instanceName }: InstanceAiChatProps
 
   const sendMessage = async (content: string) => {
     if (!content.trim() || loading) return
-    const userMessage: ChatMessage = { role: 'user', content: content.trim() }
+    const userMessage: ChatMessage = {
+      id: crypto.randomUUID(),
+      role: 'user',
+      content: content.trim(),
+    }
     const nextMessages = [...messages, userMessage]
     setMessages(nextMessages)
     setInput('')
@@ -69,19 +73,29 @@ export function InstanceAiChat({ instanceId, instanceName }: InstanceAiChatProps
           result.code === 'AI_NOT_CONFIGURED'
             ? '未配置 AI 功能模型，请先在「设置 → AI 功能模型」中选择一个模型。'
             : (result.error ?? '请求失败，请重试。')
-        setMessages((prev) => [...prev, { role: 'assistant', content: errMsg }])
+        setMessages((prev) => [
+          ...prev,
+          { id: crypto.randomUUID(), role: 'assistant', content: errMsg } as ChatMessage,
+        ])
         return
       }
 
       const { explanation, previousConfig } = result.data
-      setMessages((prev) => [...prev, { role: 'assistant', content: explanation }])
+      setMessages((prev) => [
+        ...prev,
+        { id: crypto.randomUUID(), role: 'assistant', content: explanation } as ChatMessage,
+      ])
       setUndoStack((prev) => [...prev, { instanceId, instanceName, previousConfig, explanation }])
       queryClient.invalidateQueries({ queryKey: ['model-instances'] })
       queryClient.invalidateQueries({ queryKey: ['model-groups'] })
     } catch {
       setMessages((prev) => [
         ...prev,
-        { role: 'assistant', content: '网络请求失败，请检查连接后重试。' },
+        {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: '网络请求失败，请检查连接后重试。',
+        } as ChatMessage,
       ])
     } finally {
       setLoading(false)

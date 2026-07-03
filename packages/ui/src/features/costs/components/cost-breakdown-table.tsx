@@ -28,6 +28,8 @@ function formatTokens(tokens: number): string {
   return tokens.toLocaleString()
 }
 
+const SKELETON_ROWS = ['cost-row-1', 'cost-row-2', 'cost-row-3', 'cost-row-4', 'cost-row-5']
+
 export function CostBreakdownTable({ items, totalCost, isLoading }: CostBreakdownTableProps) {
   const sortedItems = useMemo(() => {
     return [...items].toSorted((a, b) => b.totalCost - a.totalCost)

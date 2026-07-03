@@ -36,9 +36,9 @@ export function TransformsTab({ transforms, onAdd, onUpdate, onRemove }: Transfo
         </div>
       )}
 
-      {transforms.map((transform) => (
+      {transforms.map((transform, index) => (
         <TransformRuleCard
-          key={transform.id ?? `transform-${transform.name ?? 'unknown'}`}
+          key={`${transform.when?.paramName ?? ''}-${transform.action?.type ?? ''}-${transform.action?.targetParam ?? ''}`}
           transform={transform}
           index={index}
           onUpdate={onUpdate}

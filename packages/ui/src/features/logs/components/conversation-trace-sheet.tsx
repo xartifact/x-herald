@@ -163,7 +163,7 @@ export function ConversationTraceSheet({
           {isLoading ? (
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-14 w-full rounded-lg" />
+                <Skeleton key={`trace-skeleton-${i}`} className="h-14 w-full rounded-lg" />
               ))}
             </div>
           ) : rounds.length === 0 ? (

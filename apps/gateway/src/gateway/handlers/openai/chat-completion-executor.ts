@@ -282,10 +282,12 @@ export class ChatCompletionCandidateExecutor {
     logEventBus.emitLog({ event: 'aborted', logId: id })
   }
 
-  async gatewayError(errorCode: string, message: string): Promise<Response> {
+  async gatewayError(errorOrCode: string | Error, fallbackMessage?: string): Promise<Response> {
     const { c, req, config } = this
+    const error =
+      errorOrCode instanceof Error ? errorOrCode : new Error(fallbackMessage ?? errorOrCode)
     return callGatewayError({
-      error: new Error(message),
+      error,
       c,
       virtualKey: req.virtualKey,
       requestHeaders: req.clientRequestHeaders,

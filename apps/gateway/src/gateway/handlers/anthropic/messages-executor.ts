@@ -313,10 +313,11 @@ export class AnthropicMessagesExecutor {
     logEventBus.emitLog({ event: 'aborted', logId: id })
   }
 
-  async gatewayError(_errorCode: string, message: string): Promise<Response> {
+  async gatewayError(_errorCode: string | Error, message?: string): Promise<Response> {
     const { c, req, config } = this
+    const error = _errorCode instanceof Error ? _errorCode : new Error(message ?? _errorCode)
     return callGatewayError({
-      error: new Error(message),
+      error,
       c,
       virtualKey: req.virtualKey,
       requestHeaders: req.clientRequestHeaders,

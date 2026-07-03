@@ -1,6 +1,7 @@
 import logger from '../../../lib/logger'
 
 import { getTransformer } from '../../transformer'
+import { ProviderInvalidResponseError } from '../model-group-router'
 import { logRequest } from '../log-service'
 import type { ResponseHandlerParams } from './params'
 import {
@@ -74,16 +75,25 @@ async function parseJsonSafely(
   ctx: ResponseHandlerParams['ctx'],
   provider: ResponseHandlerParams['provider'],
 ): Promise<unknown> {
-  const clone = response.clone()
+  // Read the body once: double-reading (e.g. clone.json() then response.text())
+  // fails under Bun's fetch when the first read partially consumes the stream.
+  const bodyText = await response.clone().text()
   try {
-    return await clone.json()
-  } catch {
-    const text = await response.text()
+    return JSON.parse(bodyText) as unknown
+  } catch (parseErr) {
+    const reason = parseErr instanceof Error ? parseErr.message : String(parseErr)
     logger.error(
-      { requestId: ctx.requestId, provider: provider.name, statusCode: response.status },
-      'Failed to parse provider response as JSON',
+      {
+        requestId: ctx.requestId,
+        provider: provider.name,
+        statusCode: response.status,
+        contentType: response.headers.get('content-type'),
+        bodyLength: bodyText.length,
+        bodyPreview: bodyText.slice(0, 512),
+      },
+      'Provider returned non-JSON body for non-streaming request',
     )
-    throw new Error(`Invalid JSON response from provider: ${text}`)
+    throw new ProviderInvalidResponseError(provider.name, response.status, reason)
   }
 }
 
@@ -147,7 +157,30 @@ async function handleTransformed(
       { requestId: ctx.requestId, provider: provider.name },
       'Provider returned response without body',
     )
-    throw new Error('Provider returned empty response body')
+    throw new ProviderInvalidResponseError(
+      provider.name,
+      response.status,
+      'Provider returned empty response body',
+    )
+  }
+
+  const contentType = response.headers.get('content-type') || ''
+  if (!contentType.includes('json')) {
+    logger.warn(
+      {
+        requestId: ctx.requestId,
+        provider: provider.name,
+        statusCode: response.status,
+        contentType,
+        targetProtocol,
+      },
+      'Provider returned non-JSON content-type for non-streaming request',
+    )
+    throw new ProviderInvalidResponseError(
+      provider.name,
+      response.status,
+      `expected JSON content-type for ${targetProtocol}, got "${contentType || 'none'}"`,
+    )
   }
 
   const providerResponseData = (await parseJsonSafely(response, ctx, provider)) as Record<

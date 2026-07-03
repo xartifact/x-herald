@@ -24,6 +24,7 @@ export {
   NoAvailableInstanceError,
   NoSuitableInstanceError,
   RequestRejectedError,
+  ProviderInvalidResponseError,
 } from './router-selector'
 export class ModelGroupRouter {
   async routeCandidatesByGroupId(groupId: string, context: RoutingContext): Promise<RouteResult[]> {

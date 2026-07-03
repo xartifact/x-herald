@@ -233,3 +233,18 @@ export class RequestRejectedError extends Error {
     this.name = 'RequestRejectedError'
   }
 }
+
+/**
+ * Provider returned a 2xx response that is not valid for the requested
+ * protocol. Downstream should report 502 Bad Gateway and may failover.
+ */
+export class ProviderInvalidResponseError extends Error {
+  readonly providerName: string
+  readonly statusCode: number
+  constructor(providerName: string, statusCode: number, detail?: string) {
+    super(detail ?? `Provider '${providerName}' returned an invalid response (HTTP ${statusCode})`)
+    this.name = 'ProviderInvalidResponseError'
+    this.providerName = providerName
+    this.statusCode = statusCode
+  }
+}

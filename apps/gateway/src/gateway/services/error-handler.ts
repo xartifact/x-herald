@@ -15,6 +15,7 @@ import {
   NoAvailableInstanceError,
   NoSuitableInstanceError,
   RequestRejectedError,
+  ProviderInvalidResponseError,
 } from './model-group-router'
 
 export { normalizeProviderErrorMessage } from './error-classifier'
@@ -68,6 +69,10 @@ export type { ProviderErrorParams as ProviderErrorHandlerParams }
 
 function extractDetailedErrorMessage(error: unknown): string {
   if (!(error instanceof Error)) return 'Internal server error'
+  // ProviderInvalidResponseError intentionally carries only a generic
+  // reason (e.g. "expected JSON content-type ...") without the upstream
+  // body, so returning error.message is safe here.
+  if (error instanceof ProviderInvalidResponseError) return error.message
   let msg = error.message
   if (error.cause instanceof Error) msg += `: ${error.cause.message}`
   else if (error.cause != null) msg += `: ${String(error.cause)}`
@@ -168,6 +173,43 @@ export async function handleGatewayError(params: GatewayErrorParams): Promise<Re
       responseTimeMs,
     })
     return c.json({ error: { type: 'service_unavailable', message: error.message } }, 503)
+  }
+
+  if (error instanceof ProviderInvalidResponseError) {
+    await logRequest({
+      virtualKey: params.virtualKey,
+      modelName: requestedModel,
+      status: 'failure',
+      statusCode: 502,
+      responseTimeMs,
+      requestHeaders: params.requestHeaders,
+      providerRequestHeaders: params.providerRequestHeaders,
+      requestBody: params.rawBody,
+      transformedRequestBody: params.transformedBody,
+      errorMessage: error.message,
+      errorType: 'upstream_invalid_response',
+      providerId: undefined,
+      providerName: error.providerName,
+      clientIp: params.clientIp,
+      userAgent: params.userAgent,
+      requestPath: params.requestPath,
+      requestMethod: params.requestMethod,
+      streaming: params.isStreaming,
+      incomingProtocol: params.incomingProtocol,
+      targetProtocol: params.targetProtocol,
+      logId: params.logId,
+      retryCount: params.retryCount,
+    })
+    return c.json(
+      {
+        error: {
+          type: 'upstream_invalid_response',
+          message: error.message,
+          status: error.statusCode,
+        },
+      },
+      502,
+    )
   }
 
   const detailedErrorMessage = extractDetailedErrorMessage(error)

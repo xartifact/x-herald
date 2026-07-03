@@ -23,7 +23,7 @@
     "test:ui": "vp test run",
     "test:ui:watch": "vp test",
     "test:e2e:ui": "cd apps/web && bunx playwright test --ui",
-    "ci": "vp check . && vp run -r typecheck && cd apps/gateway && bun test",
+    "ci": "./scripts/ci.sh",
     "prepare": "vp config",
     "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules"
   },

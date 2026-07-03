@@ -8,13 +8,12 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "bun run dev:gateway & bun run dev:web",
-    "dev:gateway": "cd apps/gateway && bun run dev",
-    "dev:web": "cd apps/web && bun run dev",
+    "dev": "vp dev apps/gateway & vp dev apps/web",
+    "dev:gateway": "vp dev apps/gateway",
+    "dev:web": "vp dev apps/web",
     "start": "cd apps/gateway && bun run start",
-    "build": "bun run build:web",
-    "build:web": "cd apps/web && bun run build",
-    "typecheck": "(cd packages/db && npx tsc --noEmit) && (cd packages/shared && npx tsc --noEmit) && (cd apps/gateway && bun run typecheck) && (cd packages/ui && npx tsc --noEmit) && (cd packages/ui && npx tsc --noEmit -p tsconfig.ui.json) && (cd apps/web && npx tsc --noEmit) && (cd packages/ai-agent && npx tsc --noEmit)",
+    "build": "vp build apps/web",
+    "typecheck": "vp run -r typecheck",
     "lint": "vp lint .",
     "lint:fix": "vp lint . --fix",
     "format": "vp fmt .",
@@ -24,6 +23,7 @@
     "test:ui": "vp test run",
     "test:ui:watch": "vp test",
     "test:e2e:ui": "cd apps/web && bunx playwright test --ui",
+    "ci": "vp check . && vp run -r typecheck && cd apps/gateway && bun test",
     "prepare": "vp config",
     "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules"
   },
@@ -52,8 +52,8 @@
   },
   "packageManager": "bun@1.0.0",
   "catalog": {
-    "vite": "npm:@voidzero-dev/vite-plus-core@latest",
+    "vite": "npm:@voidzero-dev/vite-plus-core@0.2.1",
     "vitest": "4.1.9",
-    "vite-plus": "latest"
+    "vite-plus": "0.2.1"
   }
 }

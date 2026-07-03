@@ -4,6 +4,9 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-hook-form', '@hookform/resolvers/zod'],
+  },
   resolve: {
     dedupe: ['@tanstack/react-query', 'react', 'react-dom'],
     alias: {
@@ -77,7 +80,7 @@ export default defineConfig({
     },
     overrides: [
       {
-        files: ['*.test.ts', '*.test.tsx', '*.spec.ts', '**/__tests__/**/*.ts'],
+        files: ['**/*.test.ts', '**/*.test.tsx', '*.spec.ts', '**/__tests__/**/*.ts'],
         rules: {
           'no-console': 'off',
           'no-unused-vars': 'off',
@@ -104,5 +107,6 @@ export default defineConfig({
   },
   staged: {
     '*.{ts,tsx,js,jsx}': 'vp lint --fix',
+    '*.{ts,tsx,js,jsx,json,css,md,yaml,yml}': 'vp fmt',
   },
 })

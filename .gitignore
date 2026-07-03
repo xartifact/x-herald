@@ -56,7 +56,6 @@ Thumbs.db
 
 # Bun
 .bun/
-bun.lockb
 
 # TanStack Start / Vinxi
 .vinxi/

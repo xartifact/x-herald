@@ -17,7 +17,6 @@ async function verifyTables() {
     'request_logs',
     'health_targets',
     'health_runs',
-    'expert_routing_config',
   ]
 
   const results = await client`

@@ -39,15 +39,18 @@ export default defineConfig({
     {
       command: 'cd ../../apps/gateway && bun run src/server.ts',
       port: 3000,
-      timeout: 15_000,
+      timeout: 60_000,
       reuseExistingServer: !process.env.CI,
       env: {
         ADMIN_PASSWORD: 'test',
         JWT_SECRET: 'e2e-test-secret-key',
         DB_TYPE: 'pglite',
-        DATABASE_URL: 'postgres://test:test@localhost:5432/test',
+        MIGRATE_ON_BOOT: 'true',
         LOG_LEVEL: 'error',
         PORT: '3000',
+        HOST: '127.0.0.1',
+        CORS_ENABLED: 'true',
+        CORS_ORIGINS: 'http://localhost:5173',
       },
     },
     {

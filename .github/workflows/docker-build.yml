@@ -31,6 +31,10 @@ jobs:
         uses: voidzero-dev/setup-vp@v1
         with:
           cache: true
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
       - name: Install dependencies
         run: vp install
       - name: Check (format + lint, full project)

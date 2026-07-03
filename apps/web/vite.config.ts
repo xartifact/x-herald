@@ -1,9 +1,7 @@
 import { defineConfig } from 'vite-plus'
-import react from '@vitejs/plugin-react'
 import path from 'path'
 
 export default defineConfig({
-  plugins: [react()],
   optimizeDeps: { force: true },
   define: {
     global: 'globalThis',

@@ -51,6 +51,7 @@ export default defineConfig({
         HOST: '127.0.0.1',
         CORS_ENABLED: 'true',
         CORS_ORIGINS: 'http://localhost:5173',
+        NODE_ENV: 'development',
       },
     },
     {

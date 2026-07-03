@@ -28,8 +28,8 @@ export function LogTableSkeleton() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {Array.from({ length: 10 }).map((_, i) => (
-            <TableRow key={i} className="hover:bg-transparent">
+          {Array.from({ length: 10 }, (_, index) => `log-skeleton-${index}`).map((key) => (
+            <TableRow key={key} className="hover:bg-transparent">
               <TableCell>
                 <Skeleton className="h-4 w-4 rounded-full" />
               </TableCell>

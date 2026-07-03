@@ -1,6 +1,7 @@
 import type { InstanceConfig } from '@xartifact/x-llm-gateway-shared'
 
 export interface ChatMessage {
+  id: string
   role: 'user' | 'assistant'
   content: string
 }

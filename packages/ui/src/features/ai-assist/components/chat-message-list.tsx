@@ -44,9 +44,9 @@ export function ChatMessageList({ messages, loading, onSend }: ChatMessageListPr
           </div>
         )}
 
-        {messages.map((msg, i) => (
+        {messages.map((msg) => (
           <div
-            key={i}
+            key={`${msg.role}-${msg.content}`}
             className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             {msg.role === 'assistant' && (

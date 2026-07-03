@@ -23,8 +23,8 @@ export function CostSummaryCards({ summary }: CostSummaryCardsProps) {
   if (!summary) {
     return (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Card key={i}>
+        {SKELETON_CARDS.map((key) => (
+          <Card key={key}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">加载中...</CardTitle>
               <div className="h-4 w-4 bg-muted rounded animate-pulse" />

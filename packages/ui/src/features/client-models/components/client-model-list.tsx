@@ -25,6 +25,8 @@ interface ClientModelListProps {
   searchQuery: string
 }
 
+const SKELETON_ROWS = ['row-1', 'row-2', 'row-3', 'row-4', 'row-5']
+
 export function ClientModelList({ stats, total, isLoading, searchQuery }: ClientModelListProps) {
   return (
     <Card>

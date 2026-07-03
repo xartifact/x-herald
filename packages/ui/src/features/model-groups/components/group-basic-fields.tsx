@@ -17,8 +17,6 @@ import {
   SelectValue,
 } from '../../../shared/components/ui/select'
 
-// Record<string, any> defined locally // TODO(6): from apps/web
-
 interface GroupBasicFieldsProps {
   form: UseFormReturn<Record<string, unknown>>
 }

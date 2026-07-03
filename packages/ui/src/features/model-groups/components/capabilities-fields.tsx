@@ -3,10 +3,8 @@ import { UseFormReturn } from 'react-hook-form'
 import { FormControl, FormField, FormItem, FormLabel } from '../../../shared/components/ui/form'
 import { Switch } from '../../../shared/components/ui/switch'
 
-// Record<string, any> defined locally // TODO(6): from apps/web
-
 interface CapabilitiesFieldsProps {
-  form: UseFormReturn<Record<string, any>>
+  form: UseFormReturn<Record<string, unknown>>
 }
 
 const CAPABILITY_FIELDS = [

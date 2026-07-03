@@ -57,9 +57,9 @@ jobs:
         run: vp test run
         continue-on-error: true
       - name: Install Playwright browsers
-        run: cd apps/web && bunx playwright install --with-deps chromium
+        run: cd apps/web && vp exec playwright install --with-deps chromium
       - name: E2E tests
-        run: cd apps/web && bunx playwright test
+        run: cd apps/web && vp exec playwright test
       - name: Web SPA build
         run: vp build apps/web
 

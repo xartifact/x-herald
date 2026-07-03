@@ -2,10 +2,15 @@ import type { Context } from 'hono'
 
 import type { FailoverReason } from '../../../features/logs/db'
 
+import logger from '../../../lib/logger'
+
 import type { AbortManager } from './abort-manager'
 import { CONNECT_TIMEOUT_MS, calculateTtfbTimeout } from './constants'
 import { executeWithRetry } from './retry-executor'
-import { FAILOVER_STATUS_CODES } from '../../services/model-group-router'
+import {
+  FAILOVER_STATUS_CODES,
+  ProviderInvalidResponseError,
+} from '../../services/model-group-router'
 
 export interface PreparedRequest {
   url: string
@@ -34,6 +39,7 @@ export interface FailoverExecutorParams {
   isStreaming: boolean
   isLastCandidate: boolean
   requestId: string
+  providerName?: string
   startTime: number
   getLogId: () => string | undefined
   getAttemptId: () => string | undefined
@@ -56,7 +62,7 @@ export interface FailoverExecutorParams {
   onRecordSuccess: () => void | Promise<void>
   onMarkLogAsFailed: (params: MarkLogFailedParams) => Promise<void>
   onLogEventBusEmitAborted: (logId: string) => void
-  handleGatewayError: (errorCode: string, message: string) => Promise<Response>
+  handleGatewayError: (errorOrCode: string | Error, fallbackMessage?: string) => Promise<Response>
   handleProviderError: (response: Response, rawBody: unknown) => Promise<Response>
   handleProviderErrorPassthrough: (response: Response, rawBody: unknown) => Promise<Response>
 }
@@ -70,6 +76,10 @@ export interface FailoverResult {
 function deriveFailoverReason(statusCode: number): FailoverReason {
   if (statusCode === 429) return 'http_429'
   return 'http_5xx'
+}
+
+function isJsonContentType(ct: string | null): boolean {
+  return !!ct && ct.toLowerCase().includes('application/json')
 }
 
 export async function executeFailoverIteration(
@@ -192,6 +202,45 @@ export async function executeFailoverIteration(
   const response = retryResult.response!
 
   if (response.ok) {
+    // Skip the JSON check on streaming: SSE replies are intentionally non-JSON.
+    if (!params.isStreaming && !isJsonContentType(response.headers.get('content-type'))) {
+      const ttfbDurationEarly = Date.now() - preprocessEndTime
+      logger.warn(
+        {
+          requestId: params.requestId ?? '',
+          statusCode: response.status,
+          contentType: response.headers.get('content-type'),
+          ttfbMs: ttfbDurationEarly,
+        },
+        'Provider returned 2xx with non-JSON content-type, treating as upstream failure',
+      )
+      await response.body?.cancel()
+      await params.onMarkLogAsFailed({
+        logId: logId || '',
+        attemptId: attemptId || '',
+        statusCode: response.status,
+        errorMessage: 'Upstream returned non-JSON body with 2xx status',
+        failoverReason: 'invalid_response',
+        retryCount: retryResult.retryCount,
+        responseTimeMs: ttfbDurationEarly,
+      })
+      if (logId) params.onLogEventBusEmitAborted(logId)
+      await params.onRecordFailure()
+      if (params.isLastCandidate) {
+        return {
+          type: 'error',
+          response: await params.handleGatewayError(
+            new ProviderInvalidResponseError(
+              params.providerName ?? 'unknown',
+              response.status,
+              'Provider returned a non-JSON response body with a 2xx status code',
+            ),
+          ),
+          retryCount: retryResult.retryCount,
+        }
+      }
+      return { type: 'failover', retryCount: retryResult.retryCount }
+    }
     await params.onRecordSuccess()
     return { type: 'success', response, retryCount: retryResult.retryCount }
   }

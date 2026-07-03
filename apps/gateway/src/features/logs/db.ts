@@ -1,4 +1,9 @@
-export type FailoverReason = 'http_429' | 'http_5xx' | 'ttfb_timeout' | 'network_error'
+export type FailoverReason =
+  | 'http_429'
+  | 'http_5xx'
+  | 'ttfb_timeout'
+  | 'network_error'
+  | 'invalid_response'
 
 /**
  * 日志元数据结构

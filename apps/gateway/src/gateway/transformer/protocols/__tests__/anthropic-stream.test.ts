@@ -7,6 +7,37 @@ import { describe, it, expect } from 'bun:test'
 
 import type { TransformerContext } from '@xartifact/x-llm-gateway-shared'
 
+interface ChatCompletionChunk {
+  object?: string
+  id?: string
+  model?: string
+  choices?: Array<{
+    index?: number
+    delta?: { role?: string; content?: string }
+    finish_reason?: string | null
+  }>
+  usage?: {
+    prompt_tokens?: number
+    completion_tokens?: number
+    total_tokens?: number
+  }
+}
+
+interface AnthropicEventData {
+  type?: string
+  message?: {
+    role?: string
+    usage?: { input_tokens?: number }
+  }
+  content_block?: { type?: string }
+  delta?: {
+    type?: string
+    text?: string
+    stop_reason?: string
+  }
+  usage?: { output_tokens?: number }
+}
+
 const { AnthropicTransformer } = await import('../anthropic?v=1')
 
 // 创建模拟的 TransformerContext
@@ -150,8 +181,8 @@ describe('AnthropicTransformer - Stream Transformation', () => {
       expect(firstChunk).toHaveProperty('id', 'msg_123')
       expect(firstChunk).toHaveProperty('model', 'claude-3-5-sonnet-20241022')
       expect(firstChunk).toHaveProperty('choices')
-      expect((firstChunk as any).choices[0].delta).toHaveProperty('role', 'assistant')
-      expect((firstChunk as any).usage).toEqual({
+      expect((firstChunk as ChatCompletionChunk).choices[0].delta).toHaveProperty('role', 'assistant')
+      expect((firstChunk as ChatCompletionChunk).usage).toEqual({
         prompt_tokens: 10,
         completion_tokens: 0,
         total_tokens: 10,
@@ -196,9 +227,9 @@ describe('AnthropicTransformer - Stream Transformation', () => {
       const events = parseSSE(result)
 
       // 找到文本增量事件
-      const textDelta = events.find((e) => (e.data as any).choices?.[0]?.delta?.content === '你好')
+      const textDelta = events.find((e) => (e.data as ChatCompletionChunk).choices?.[0]?.delta?.content === '你好')
       expect(textDelta).toBeDefined()
-      expect((textDelta!.data as any).object).toBe('chat.completion.chunk')
+      expect((textDelta!.data as ChatCompletionChunk).object).toBe('chat.completion.chunk')
     })
 
     it('应该将 message_delta 转换为标准格式（带 finish_reason）', async () => {
@@ -221,8 +252,8 @@ describe('AnthropicTransformer - Stream Transformation', () => {
 
       const deltaEvent = events.find((e) => e.data !== '[DONE]')
       expect(deltaEvent).toBeDefined()
-      expect((deltaEvent!.data as any).choices[0].finish_reason).toBe('stop')
-      expect((deltaEvent!.data as any).usage).toEqual({
+      expect((deltaEvent!.data as ChatCompletionChunk).choices[0].finish_reason).toBe('stop')
+      expect((deltaEvent!.data as ChatCompletionChunk).usage).toEqual({
         prompt_tokens: 0,
         completion_tokens: 20,
         total_tokens: 20,
@@ -262,9 +293,9 @@ describe('AnthropicTransformer - Stream Transformation', () => {
       // 应该包含 message_start 事件
       const messageStart = events.find((e) => e.event === 'message_start')
       expect(messageStart).toBeDefined()
-      expect((messageStart!.data as any).type).toBe('message_start')
-      expect((messageStart!.data as any).message).toHaveProperty('role', 'assistant')
-      expect((messageStart!.data as any).message.usage.input_tokens).toBe(10)
+      expect((messageStart!.data as AnthropicEventData).type).toBe('message_start')
+      expect((messageStart!.data as AnthropicEventData).message).toHaveProperty('role', 'assistant')
+      expect((messageStart!.data as AnthropicEventData).message?.usage?.input_tokens).toBe(10)
     })
 
     it('应该将标准格式文本增量转换为 Anthropic SSE', async () => {
@@ -306,13 +337,13 @@ describe('AnthropicTransformer - Stream Transformation', () => {
       // 应该包含 content_block_start 和 content_block_delta
       const contentStart = events.find((e) => e.event === 'content_block_start')
       expect(contentStart).toBeDefined()
-      expect((contentStart!.data as any).content_block.type).toBe('text')
+      expect((contentStart!.data as AnthropicEventData).content_block?.type).toBe('text')
 
       const contentDelta = events.find(
-        (e) => e.event === 'content_block_delta' && (e.data as any).delta?.type === 'text_delta',
+        (e) => e.event === 'content_block_delta' && (e.data as AnthropicEventData).delta?.type === 'text_delta',
       )
       expect(contentDelta).toBeDefined()
-      expect((contentDelta!.data as any).delta.text).toBe('你好')
+      expect((contentDelta!.data as AnthropicEventData).delta?.text).toBe('你好')
     })
 
     it('应该将 finish_reason 转换为 Anthropic stop_reason', async () => {
@@ -359,8 +390,8 @@ describe('AnthropicTransformer - Stream Transformation', () => {
       // 应该包含 message_delta 事件
       const messageDelta = events.find((e) => e.event === 'message_delta')
       expect(messageDelta).toBeDefined()
-      expect((messageDelta!.data as any).delta.stop_reason).toBe('end_turn')
-      expect((messageDelta!.data as any).usage.output_tokens).toBe(20)
+      expect((messageDelta!.data as AnthropicEventData).delta?.stop_reason).toBe('end_turn')
+      expect((messageDelta!.data as AnthropicEventData).usage?.output_tokens).toBe(20)
 
       // 应该包含 message_stop 事件
       const messageStop = events.find((e) => e.event === 'message_stop')
@@ -412,7 +443,7 @@ describe('AnthropicTransformer - Stream Transformation', () => {
         const events = parseSSE(result)
 
         const messageDelta = events.find((e) => e.event === 'message_delta')
-        expect((messageDelta!.data as any).delta.stop_reason).toBe(expected)
+        expect((messageDelta!.data as AnthropicEventData).delta?.stop_reason).toBe(expected)
       }
     })
   })

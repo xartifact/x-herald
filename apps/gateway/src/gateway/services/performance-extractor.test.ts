@@ -63,7 +63,7 @@ describe('extractPerformanceMetrics', () => {
       gatewayOverheadMs: undefined,
       providerTtfbMs: null,
       streamDurationMs: undefined,
-    } as any)
+    } as unknown)
   })
 })
 

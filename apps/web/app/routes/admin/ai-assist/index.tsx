@@ -242,8 +242,8 @@ export function AiAssistPage() {
               <div className="space-y-2">
                 <h3 className="text-sm font-medium text-muted-foreground">修复建议</h3>
                 <div className="grid gap-3">
-                  {diagnosis.suggestions.map((s, idx) => (
-                    <div key={idx} className="rounded-lg border p-4 space-y-2">
+                  {diagnosis.suggestions.map((s) => (
+                    <div key={`${s.action}-${s.field}`} className="rounded-lg border p-4 space-y-2">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <Wrench className="h-4 w-4 text-muted-foreground" />
@@ -301,8 +301,8 @@ export function AiAssistPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {patterns.map((p, idx) => (
-                  <TableRow key={idx}>
+                {patterns.map((p) => (
+                  <TableRow key={`${p.errorType}-${p.provider}-${p.model}`}>
                     <TableCell>{p.errorType}</TableCell>
                     <TableCell>{p.provider}</TableCell>
                     <TableCell>{p.model}</TableCell>

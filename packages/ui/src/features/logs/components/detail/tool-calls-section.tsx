@@ -120,7 +120,7 @@ function ToolCallDetailsSection({ toolCalls }: ToolCallDetailsSectionProps) {
       )}
       {toolCalls.details.map((detail, index) => (
         <ToolCallCard
-          key={index}
+          key={detail.callId ?? `${detail.name}-${detail.source}`}
           detail={detail}
           index={index}
           isExpanded={expandedItems.has(index)}
@@ -169,9 +169,9 @@ export function ToolCallsSection({ log }: ToolCallsSectionProps) {
           label="工具列表"
           value={
             <div className="flex flex-wrap gap-1">
-              {tools.map((tool, idx) => (
+              {tools.map((tool) => (
                 <Badge
-                  key={idx}
+                  key={tool}
                   variant="secondary"
                   className="text-xs font-mono bg-blue-50 text-blue-700 border-blue-200"
                 >

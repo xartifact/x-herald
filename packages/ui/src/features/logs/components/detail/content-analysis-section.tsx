@@ -40,8 +40,8 @@ export function ContentAnalysisSection({ log, contentFeatures }: ContentAnalysis
           label="内容类型"
           value={
             <div className="flex flex-wrap gap-1">
-              {contentMeta.types.map((type, idx) => (
-                <Badge key={idx} variant="outline" className="text-xs">
+              {contentMeta.types.map((type) => (
+                <Badge key={type} variant="outline" className="text-xs">
                   {type}
                 </Badge>
               ))}

@@ -32,8 +32,8 @@ export function HeadersTab({ headers, onAdd, onUpdate, onRemove }: HeadersTabPro
         </div>
       )}
 
-      {entries.map(([key, headerValue], index) => (
-        <div key={index} className="flex items-center gap-2">
+      {entries.map(([key, headerValue]) => (
+        <div key={key} className="flex items-center gap-2">
           <Input
             placeholder="Header 名称"
             value={key}

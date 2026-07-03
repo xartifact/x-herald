@@ -20,7 +20,7 @@ import {
 // Record<string, any> defined locally // TODO(6): from apps/web
 
 interface GroupBasicFieldsProps {
-  form: UseFormReturn<Record<string, any>>
+  form: UseFormReturn<Record<string, unknown>>
 }
 
 export function GroupBasicFields({ form }: GroupBasicFieldsProps) {
@@ -35,7 +35,7 @@ export function GroupBasicFields({ form }: GroupBasicFieldsProps) {
             <FormItem>
               <FormLabel>模型组名称 *</FormLabel>
               <FormControl>
-                <Input placeholder="gpt-4" {...field} />
+                <Input placeholder="gpt-4" value={field.value as string} onChange={field.onChange} />
               </FormControl>
               <FormDescription>用于 API 调用的唯一标识</FormDescription>
               <FormMessage />
@@ -49,7 +49,7 @@ export function GroupBasicFields({ form }: GroupBasicFieldsProps) {
             <FormItem>
               <FormLabel>显示名称 *</FormLabel>
               <FormControl>
-                <Input placeholder="GPT-4" {...field} />
+                <Input placeholder="GPT-4" value={field.value as string} onChange={field.onChange} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -63,9 +63,9 @@ export function GroupBasicFields({ form }: GroupBasicFieldsProps) {
         render={({ field }) => (
           <FormItem>
             <FormLabel>别名</FormLabel>
-            <FormControl>
-              <Input placeholder="gpt4, openai-gpt-4" {...field} />
-            </FormControl>
+              <FormControl>
+                <Input placeholder="gpt4, openai-gpt-4" value={field.value as string} onChange={field.onChange} />
+              </FormControl>
             <FormDescription>多个别名用逗号分隔，别名和模型名称一样可用于 API 调用</FormDescription>
             <FormMessage />
           </FormItem>
@@ -78,9 +78,9 @@ export function GroupBasicFields({ form }: GroupBasicFieldsProps) {
         render={({ field }) => (
           <FormItem>
             <FormLabel>描述</FormLabel>
-            <FormControl>
-              <Input placeholder="模型组描述..." {...field} />
-            </FormControl>
+              <FormControl>
+                <Input placeholder="模型组描述..." value={field.value as string} onChange={field.onChange} />
+              </FormControl>
           </FormItem>
         )}
       />
@@ -91,7 +91,7 @@ export function GroupBasicFields({ form }: GroupBasicFieldsProps) {
         render={({ field }) => (
           <FormItem>
             <FormLabel>类别</FormLabel>
-            <Select onValueChange={field.onChange} value={field.value}>
+            <Select onValueChange={field.onChange} value={field.value as string}>
               <FormControl>
                 <SelectTrigger>
                   <SelectValue />

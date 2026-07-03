@@ -4,6 +4,17 @@ import { buildFlowFromData } from './build-flow'
 import { compileFlowToRoutes } from './compile-flow'
 import type { ModelRoute } from '../types'
 
+interface FlowNodeData {
+  vmId?: string
+  field?: string
+  operator?: string
+  value?: string
+  routeId?: string
+  actionType?: string
+  targetId?: string
+  targetName?: string
+}
+
 const TEST_VMS = [
   { id: 'vm1', name: 'gpt-4', displayName: 'GPT-4' },
   { id: 'vm2', name: 'claude-3', displayName: 'Claude 3' },
@@ -68,7 +79,7 @@ describe('buildFlowFromData → compileFlowToRoutes integration', () => {
     const vmNodes = nodes.filter((n) => n.type === 'modelTrigger')
     expect(vmNodes.length).toBe(2)
 
-    const vmIds = vmNodes.map((n) => (n.data as any).vmId).toSorted()
+    const vmIds = vmNodes.map((n) => (n.data as FlowNodeData).vmId).toSorted()
     expect(vmIds).toEqual(['vm1', 'vm2'])
   })
 
@@ -79,7 +90,7 @@ describe('buildFlowFromData → compileFlowToRoutes integration', () => {
     // Route r1 has 1 condition; r2 has 0
     expect(condNodes.length).toBe(1)
 
-    const condData = condNodes[0].data as any
+    const condData = condNodes[0].data as FlowNodeData
     expect(condData.field).toBe('request.model')
     expect(condData.operator).toBe('eq')
     expect(condData.value).toBe('gpt-4')
@@ -92,7 +103,7 @@ describe('buildFlowFromData → compileFlowToRoutes integration', () => {
     const targetNodes = nodes.filter((n) => n.type === 'target')
     expect(targetNodes.length).toBe(1)
 
-    const targetData = targetNodes[0].data as any
+    const targetData = targetNodes[0].data as FlowNodeData
     expect(targetData.actionType).toBe('route_to_group')
     expect(targetData.targetId).toBe('group1')
     expect(targetData.targetName).toBe('Premium Models')
@@ -105,7 +116,7 @@ describe('buildFlowFromData → compileFlowToRoutes integration', () => {
     const fallbackNodes = nodes.filter((n) => n.type === 'fallback')
     expect(fallbackNodes.length).toBe(1)
 
-    const fallbackData = fallbackNodes[0].data as any
+    const fallbackData = fallbackNodes[0].data as FlowNodeData
     expect(fallbackData.routeId).toBe('r2')
   })
 

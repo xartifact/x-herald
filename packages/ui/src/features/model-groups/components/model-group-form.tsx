@@ -13,7 +13,6 @@ import {
 } from '../../../shared/components/ui/dialog'
 import { Form } from '../../../shared/components/ui/form'
 
-// Record<string, any> defined locally // TODO(6): from apps/web
 import { CapabilitiesFields } from './capabilities-fields'
 import { GroupBasicFields } from './group-basic-fields'
 import { RoutingConfigFields } from './routing-config-fields'
@@ -21,10 +20,10 @@ import { RoutingConfigFields } from './routing-config-fields'
 interface ModelGroupFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  form: UseFormReturn<Record<string, any>>
+  form: UseFormReturn<Record<string, unknown>>
   editingId: string | null
   isPending: boolean
-  onSubmit: (data: Record<string, any>) => void
+  onSubmit: (data: Record<string, unknown>) => void
 }
 
 export function ModelGroupForm({

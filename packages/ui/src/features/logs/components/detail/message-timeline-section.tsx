@@ -65,9 +65,9 @@ export function MessageTimelineSection({
         </Button>
       </div>
 
-      {roles.map((roleInfo, idx) => (
+      {roles.map((roleInfo) => (
         <TimelineMessageCard
-          key={idx}
+          key={roleInfo.index}
           roleInfo={roleInfo}
           message={messages?.[roleInfo.index - 1]}
           displayState={{

@@ -20,7 +20,7 @@ export function ChatUndoRecords({ records, onUndo }: ChatUndoRecordsProps) {
       <p className="text-xs text-muted-foreground font-medium">操作记录</p>
       {records.map((record, i) => (
         <div
-          key={i}
+          key={`${record.instanceId}-${record.explanation}`}
           className="flex items-center justify-between gap-2 text-xs bg-muted/50 rounded px-2 py-1.5"
         >
           <div className="flex items-center gap-1.5 min-w-0">

@@ -18,7 +18,7 @@ const realRateLimitEngine = await import('../rate-limit-engine')
 // ------------------------------------------------------------------
 //  Mock modules
 // ------------------------------------------------------------------
-const mockGetTransformer = mock((..._args: any[]): any => undefined)
+const mockGetTransformer = mock(() => undefined)
 const mockUpgradeToStreamLog = mock(() => Promise.resolve())
 const mockFinalizeStreamLog = mock(() => Promise.resolve())
 const mockMarkStreamFailed = mock(() => Promise.resolve())
@@ -88,7 +88,7 @@ function createParams(overrides: Partial<ResponseHandlerParams> = {}): ResponseH
         headers: { 'content-type': 'text/event-stream' },
       },
     ),
-    ctx: { requestId: 'test-req', state: new Map() } as any,
+    ctx: { requestId: 'test-req', state: new Map() } as unknown as ResponseHandlerParams['ctx'],
     incomingProtocol: 'openai',
     targetProtocol: 'openai',
     virtualKey: createTestVirtualKey(),
@@ -303,7 +303,7 @@ describe('handleStreamingResponse', () => {
     await new Promise((r) => setTimeout(r, 50))
 
     expect(mockFinalizeStreamLog).toHaveBeenCalledTimes(1)
-    const callArgs = mockFinalizeStreamLog.mock.calls[0] as any[]
+    const callArgs = mockFinalizeStreamLog.mock.calls[0] as unknown[]
     expect(callArgs[0]).toBe('log-123')
     expect(callArgs[1]).toMatchObject({
       attemptId: 'attempt-456',
@@ -339,7 +339,7 @@ describe('handleStreamingResponse', () => {
     await new Promise((r) => setTimeout(r, 50))
 
     expect(mockMarkStreamAborted).toHaveBeenCalledTimes(1)
-    const abortedArgs = mockMarkStreamAborted.mock.calls[0] as any[]
+    const abortedArgs = mockMarkStreamAborted.mock.calls[0] as unknown[]
     expect(abortedArgs[0]).toBe('log-789')
     expect(abortedArgs[1]).toBe('attempt-abc')
   })
@@ -358,8 +358,8 @@ describe('handleStreamingResponse', () => {
     await handleStreamingResponse(params)
 
     expect(mockEmitLog).toHaveBeenCalled()
-    const startedCalls = (mockEmitLog.mock.calls as any[][]).filter(
-      (c: any[]) => c[0].event === 'started',
+    const startedCalls = (mockEmitLog.mock.calls as Record<string, unknown>[][]).filter(
+      (c: Record<string, unknown>[]) => c[0].event === 'started',
     )
     expect(startedCalls.length).toBeGreaterThanOrEqual(1)
     expect(startedCalls[0][0]).toMatchObject({
@@ -390,8 +390,8 @@ describe('handleStreamingResponse', () => {
     // Wait for flush
     await new Promise((r) => setTimeout(r, 50))
 
-    const chunkCalls = (mockEmitLog.mock.calls as any[][]).filter(
-      (c: any[]) => c[0].event === 'chunk',
+    const chunkCalls = (mockEmitLog.mock.calls as Record<string, unknown>[][]).filter(
+      (c: Record<string, unknown>[]) => c[0].event === 'chunk',
     )
     expect(chunkCalls.length).toBeGreaterThanOrEqual(1)
     expect(chunkCalls[0][0]).toMatchObject({

@@ -14,7 +14,7 @@ const realLogService = await import('../log-service')
 //  Mock modules
 // ------------------------------------------------------------------
 const mockLogRequest = mock(() => Promise.resolve())
-const mockGetTransformer = mock((..._args: any[]): any => undefined)
+const mockGetTransformer = mock(() => undefined)
 
 mock.module('../../transformer', () => ({
   getTransformer: mockGetTransformer,
@@ -53,7 +53,7 @@ function createParams(overrides: Partial<ResponseHandlerParams> = {}): ResponseH
         headers: { 'content-type': 'application/json' },
       },
     ),
-    ctx: { requestId: 'test-req', state: new Map() } as any,
+    ctx: { requestId: 'test-req', state: new Map() } as unknown as ResponseHandlerParams['ctx'],
     incomingProtocol: 'openai',
     targetProtocol: 'openai',
     virtualKey: createTestVirtualKey(),
@@ -112,7 +112,7 @@ describe('handleNonStreamingResponse', () => {
     expect(text).toContain('[DONE]')
 
     expect(mockLogRequest).toHaveBeenCalledTimes(1)
-    const logCall = (mockLogRequest.mock.calls as any[][])[0][0] as Record<string, unknown>
+    const logCall = (mockLogRequest.mock.calls as unknown[][])[0][0] as Record<string, unknown>
     expect(logCall.streaming).toBe(true)
   })
 
@@ -318,7 +318,7 @@ describe('handleNonStreamingResponse', () => {
 
     await handleNonStreamingResponse(params)
     expect(mockLogRequest).toHaveBeenCalledTimes(1)
-    expect((mockLogRequest.mock.calls as any[][])[0][0]).toMatchObject({
+    expect((mockLogRequest.mock.calls as unknown[][])[0][0]).toMatchObject({
       streaming: false,
       providerName: 'TestProvider',
     })

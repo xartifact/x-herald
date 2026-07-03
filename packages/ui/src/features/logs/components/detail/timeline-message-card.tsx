@@ -91,8 +91,8 @@ export function TimelineMessageCard({
             <div className="flex items-center gap-2">
               <span className="text-muted-foreground">内容类型:</span>
               <div className="flex gap-1">
-                {roleInfo.contentType.map((type, i) => (
-                  <Badge key={i} variant="secondary" className="text-xs">
+                {roleInfo.contentType.map((type) => (
+                  <Badge key={type} variant="secondary" className="text-xs">
                     {type === 'image_url' ? 'image' : type}
                   </Badge>
                 ))}

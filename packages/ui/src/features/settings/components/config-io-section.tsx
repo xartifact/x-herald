@@ -108,8 +108,8 @@ export function ConfigIOSection() {
                 <AlertTitle>部分错误</AlertTitle>
                 <AlertDescription>
                   <ul className="list-disc list-inside space-y-1">
-                    {importResult.errors.map((e, i) => (
-                      <li key={i}>{e}</li>
+                    {importResult.errors.map((e) => (
+                      <li key={e}>{e}</li>
                     ))}
                   </ul>
                 </AlertDescription>

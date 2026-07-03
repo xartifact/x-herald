@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vite-plus/test'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { useForm } from 'react-hook-form'
+import { useForm, UseFormReturn } from 'react-hook-form'
 import { ModelGroupForm } from './model-group-form'
 
 function TestWrapper({
@@ -16,8 +16,8 @@ function TestWrapper({
   onOpenChange?: (open: boolean) => void
   editingId?: string | null
   isPending?: boolean
-  onSubmit?: (data: Record<string, any>) => void
-  defaultValues: Record<string, any>
+  onSubmit?: (data: Record<string, unknown>) => void
+  defaultValues: Record<string, unknown>
 }) {
   const form = useForm({ defaultValues })
 
@@ -25,7 +25,7 @@ function TestWrapper({
     <ModelGroupForm
       open={open}
       onOpenChange={onOpenChange}
-      form={form as any}
+      form={form as unknown as UseFormReturn<Record<string, unknown>>}
       editingId={editingId}
       isPending={isPending}
       onSubmit={onSubmit}
@@ -34,7 +34,7 @@ function TestWrapper({
 }
 
 describe('ModelGroupForm', () => {
-  const validDefaults: Record<string, any> = {
+  const validDefaults: Record<string, unknown> = {
     name: 'gpt-4',
     aliases: '',
     displayName: 'GPT-4',
@@ -88,7 +88,7 @@ describe('ModelGroupForm', () => {
     await user.click(submitButton)
 
     expect(onSubmit).toHaveBeenCalledTimes(1)
-    const submitted = onSubmit.mock.calls[0][0] as Record<string, any>
+    const submitted = onSubmit.mock.calls[0][0] as Record<string, unknown>
     expect(submitted.name).toBe('claude-3')
     expect(submitted.routingStrategy).toBe('smart')
     expect(submitted.fallbackEnabled).toBe(true)

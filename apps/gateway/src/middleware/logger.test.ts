@@ -13,7 +13,7 @@ describe('requestLogger middleware', () => {
 
   it('uses x-request-id from request header when present', async () => {
     app.get('/test', (c) => {
-      return c.json({ requestId: c.get('requestId' as any) })
+      return c.json({ requestId: c.get('requestId' as string) })
     })
 
     const res = await app.request('/test', {
@@ -26,7 +26,7 @@ describe('requestLogger middleware', () => {
 
   it('generates a UUID when no x-request-id header is sent', async () => {
     app.get('/test', (c) => {
-      return c.json({ requestId: c.get('requestId' as any) })
+      return c.json({ requestId: c.get('requestId' as string) })
     })
 
     const res = await app.request('/test')
@@ -39,7 +39,7 @@ describe('requestLogger middleware', () => {
 
   it('sets requestId via c.set() accessible in downstream handlers', async () => {
     app.get('/echo', (c) => {
-      return c.json({ rid: c.get('requestId' as any) })
+      return c.json({ rid: c.get('requestId' as string) })
     })
 
     const res = await app.request('/echo', {

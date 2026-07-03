@@ -43,7 +43,7 @@ function TestWrapper({
   defaultValues: KeyFormData
 }) {
   const form = useForm<KeyFormSchema>({
-    resolver: zodResolver(keySchema as any),
+    resolver: zodResolver(keySchema),
     defaultValues,
     mode: 'onChange',
   })
@@ -52,7 +52,7 @@ function TestWrapper({
     <KeyFormDialog
       open={open}
       onOpenChange={onOpenChange}
-      form={form as any}
+      form={form}
       editingId={editingId}
       isPending={isPending}
       showNewKey={showNewKey}

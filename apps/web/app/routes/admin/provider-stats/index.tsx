@@ -106,8 +106,8 @@ export function ProviderStatsPage() {
         <CardContent>
           {isLoading ? (
             <div className="space-y-3">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="h-24 bg-muted animate-pulse rounded" />
+              {['provider-skeleton-1', 'provider-skeleton-2', 'provider-skeleton-3'].map((key) => (
+                <div key={key} className="h-24 bg-muted animate-pulse rounded" />
               ))}
             </div>
           ) : sorted.length === 0 ? (

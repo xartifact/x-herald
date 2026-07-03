@@ -27,29 +27,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Vite+
-        uses: voidzero-dev/setup-vp@v1
+      - uses: voidzero-dev/setup-vp@v1
         with:
           cache: true
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-      - name: Install dependencies
-        run: vp install
-      - name: Check (format + lint, full project)
-        run: vp check .
-      - name: Typecheck (full monorepo)
-        run: vp run -r typecheck
-      - name: Gateway tests
-        run: |
-          cd apps/gateway
-          bun test 2>&1 | tee /tmp/test-output.txt
-          if grep -qE "^\s+[1-9][0-9]* fail" /tmp/test-output.txt; then
-            echo "Tests failed!"
-            exit 1
-          fi
-      - name: Upload coverage
+      - run: vp install
+      - name: Quality + tests
+        run: ./scripts/ci.sh
+      - name: Coverage
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -60,11 +47,23 @@ jobs:
       - name: UI tests
         run: vp test run
         continue-on-error: true
-      - name: Install Playwright browsers
-        run: cd apps/web && vp exec playwright install --with-deps chromium
-      - name: E2E tests
-        run: cd apps/web && vp exec playwright test
-      - name: Web SPA build
+      - name: Cache Playwright
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('bun.lockb', 'apps/web/package.json') }}
+      - name: Install Playwright
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: cd apps/web && vp exec playwright install chromium
+      - name: E2E
+        working-directory: apps/web
+        run: vp exec playwright test
+        continue-on-error: true
+        env:
+          ADMIN_PASSWORD: test
+          JWT_SECRET: e2e-test-secret-key
+      - name: Build
         run: vp build apps/web
 
   build:

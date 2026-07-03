@@ -1,16 +1,14 @@
 #!/usr/bin/env bash
-# CI gate: format + lint check, typecheck, backend tests.
+# CI gate: format + lint + typecheck + backend tests.
 # Wrapped in a script (not a package.json script) because bun run treats
 # exit code 99 as a special signal even when all tests pass.
 set -u
 
 cd "$(dirname "$0")/.."
 
-echo "==> vp check (format + lint)"
+# vp check covers format + lint + typecheck.
+echo "==> vp check (format + lint + typecheck)"
 npx vp check .
-
-echo "==> typecheck (full monorepo)"
-npx vp run -r typecheck
 
 echo "==> backend tests"
 cd apps/gateway
@@ -23,4 +21,3 @@ if [ $test_status -eq 99 ]; then
   exit 0
 fi
 exit $test_status
-

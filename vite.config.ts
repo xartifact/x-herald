@@ -1,7 +1,9 @@
 import { defineConfig } from 'vite-plus'
 import path from 'path'
+import react from '@vitejs/plugin-react'
 
 export default defineConfig({
+  plugins: [react()],
   resolve: {
     dedupe: ['@tanstack/react-query', 'react', 'react-dom'],
     alias: {
@@ -46,7 +48,7 @@ export default defineConfig({
       'typescript/no-non-null-assertion': 'off',
       'typescript/no-unused-vars': 'warn',
       'react/react-in-jsx-scope': 'off',
-      'react/no-array-index-key': 'off',
+      'react/no-array-index-key': 'warn',
       'react/no-unstable-nested-components': 'off',
       'react-hooks/exhaustive-deps': 'warn',
       'import/no-default-export': 'off',
@@ -80,7 +82,7 @@ export default defineConfig({
           'no-console': 'off',
           'no-unused-vars': 'off',
           'typescript/no-unused-vars': 'off',
-          'typescript/no-explicit-any': 'off',
+          'typescript/no-explicit-any': 'warn',
           'unicorn/no-empty-file': 'off',
           'no-shadow': 'off',
         },

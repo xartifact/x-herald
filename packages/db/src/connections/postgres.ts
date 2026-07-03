@@ -139,7 +139,6 @@ export async function createPostgresDatabase(
 
   // Validate connection (runs migrations in a temp connection)
   const validateClient = postgres(connString, { max: 1, onnotice: () => {} })
-  const _validateDb = drizzlePostgres(validateClient, { schema })
   try {
     if (options.migrateOnBoot) {
       await runPostgresMigrations(validateClient, migrationsFolder, logger)

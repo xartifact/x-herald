@@ -54,6 +54,7 @@ jobs:
           name: gateway-coverage
           path: apps/gateway/coverage/
           retention-days: 14
+      # TODO: fix react-hook-form@7.80.0 + React 19 vitest module resolution conflict
       - name: UI tests
         run: bun run test:ui
         continue-on-error: true

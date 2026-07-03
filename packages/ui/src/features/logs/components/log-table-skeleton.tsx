@@ -10,6 +10,19 @@ import {
 } from '../../../shared/components/ui/table'
 import { Skeleton } from '../../../shared/components/ui/skeleton'
 
+const SKELETON_ROWS = [
+  'row-1',
+  'row-2',
+  'row-3',
+  'row-4',
+  'row-5',
+  'row-6',
+  'row-7',
+  'row-8',
+  'row-9',
+  'row-10',
+]
+
 export function LogTableSkeleton() {
   return (
     <div className="border rounded-lg">
@@ -28,7 +41,7 @@ export function LogTableSkeleton() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {Array.from({ length: 10 }, (_, index) => `log-skeleton-${index}`).map((key) => (
+          {SKELETON_ROWS.map((key) => (
             <TableRow key={key} className="hover:bg-transparent">
               <TableCell>
                 <Skeleton className="h-4 w-4 rounded-full" />

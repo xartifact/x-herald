@@ -16,8 +16,6 @@ import {
 } from '../../../shared/components/ui/select'
 import { Switch } from '../../../shared/components/ui/switch'
 
-// Record<string, any> defined locally // TODO(6): from apps/web
-
 const ROUTING_STRATEGIES = [
   {
     value: 'priority',
@@ -82,7 +80,7 @@ export function RoutingConfigFields({ form }: RoutingConfigFieldsProps) {
                 </SelectContent>
               </Select>
               <FormDescription className="text-xs">
-                {ROUTING_STRATEGIES.find((s) => s.value === field.value)?.description}
+                {ROUTING_STRATEGIES.find((s) => s.value === (field.value as string))?.description}
               </FormDescription>
             </FormItem>
           )}
@@ -97,7 +95,7 @@ export function RoutingConfigFields({ form }: RoutingConfigFieldsProps) {
                 <FormDescription className="text-xs">主实例失败时自动切换</FormDescription>
               </div>
               <FormControl>
-                <Switch checked={field.value} onCheckedChange={field.onChange} />
+                <Switch checked={field.value as boolean} onCheckedChange={field.onChange} />
               </FormControl>
             </FormItem>
           )}

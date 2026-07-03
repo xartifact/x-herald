@@ -28,6 +28,8 @@ const EMPTY_CARD_TITLE = (
   </CardTitle>
 )
 
+const SKELETON_ROWS = ['row-1', 'row-2', 'row-3', 'row-4', 'row-5']
+
 export function ClientModelStats({ stats, isLoading }: ClientModelStatsProps) {
   const [sortField, setSortField] = useState<SortField>('requestCount')
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc')
@@ -74,8 +76,8 @@ export function ClientModelStats({ stats, isLoading }: ClientModelStatsProps) {
         <CardHeader>{EMPTY_CARD_TITLE}</CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-12 bg-muted animate-pulse rounded" />
+            {SKELETON_ROWS.map((key) => (
+              <div key={key} className="h-12 bg-muted animate-pulse rounded" />
             ))}
           </div>
         </CardContent>

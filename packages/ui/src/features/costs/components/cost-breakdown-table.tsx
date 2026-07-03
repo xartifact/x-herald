@@ -28,6 +28,8 @@ function formatTokens(tokens: number): string {
   return tokens.toLocaleString()
 }
 
+const SKELETON_ROWS = ['cost-row-1', 'cost-row-2', 'cost-row-3', 'cost-row-4', 'cost-row-5']
+
 export function CostBreakdownTable({ items, totalCost, isLoading }: CostBreakdownTableProps) {
   const sortedItems = useMemo(() => {
     return [...items].toSorted((a, b) => b.totalCost - a.totalCost)
@@ -36,8 +38,8 @@ export function CostBreakdownTable({ items, totalCost, isLoading }: CostBreakdow
   if (isLoading) {
     return (
       <div className="space-y-2">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="h-12 bg-muted animate-pulse rounded" />
+        {SKELETON_ROWS.map((key) => (
+          <div key={key} className="h-12 bg-muted animate-pulse rounded" />
         ))}
       </div>
     )

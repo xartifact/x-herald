@@ -41,8 +41,8 @@ export function ClientModelList({ stats, total, isLoading, searchQuery }: Client
       <CardContent>
         {isLoading ? (
           <div className="space-y-2">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-16 bg-muted animate-pulse rounded" />
+            {SKELETON_ROWS.map((id) => (
+              <div key={id} className="h-16 bg-muted animate-pulse rounded" />
             ))}
           </div>
         ) : stats.length === 0 ? (

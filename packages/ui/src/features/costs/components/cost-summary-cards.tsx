@@ -19,12 +19,14 @@ function formatTokens(tokens: number): string {
   return tokens.toLocaleString()
 }
 
+const SKELETON_CARDS = ['cost-card-1', 'cost-card-2', 'cost-card-3', 'cost-card-4']
+
 export function CostSummaryCards({ summary }: CostSummaryCardsProps) {
   if (!summary) {
     return (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {SKELETON_CARDS.map((key) => (
-          <Card key={key}>
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Card key={`cost-skeleton-${i}`}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">加载中...</CardTitle>
               <div className="h-4 w-4 bg-muted rounded animate-pulse" />

@@ -33,7 +33,11 @@ export function GroupBasicFields({ form }: GroupBasicFieldsProps) {
             <FormItem>
               <FormLabel>模型组名称 *</FormLabel>
               <FormControl>
-                <Input placeholder="gpt-4" value={field.value as string} onChange={field.onChange} />
+                <Input
+                  placeholder="gpt-4"
+                  value={field.value as string}
+                  onChange={field.onChange}
+                />
               </FormControl>
               <FormDescription>用于 API 调用的唯一标识</FormDescription>
               <FormMessage />
@@ -47,7 +51,11 @@ export function GroupBasicFields({ form }: GroupBasicFieldsProps) {
             <FormItem>
               <FormLabel>显示名称 *</FormLabel>
               <FormControl>
-                <Input placeholder="GPT-4" value={field.value as string} onChange={field.onChange} />
+                <Input
+                  placeholder="GPT-4"
+                  value={field.value as string}
+                  onChange={field.onChange}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -61,9 +69,13 @@ export function GroupBasicFields({ form }: GroupBasicFieldsProps) {
         render={({ field }) => (
           <FormItem>
             <FormLabel>别名</FormLabel>
-              <FormControl>
-                <Input placeholder="gpt4, openai-gpt-4" value={field.value as string} onChange={field.onChange} />
-              </FormControl>
+            <FormControl>
+              <Input
+                placeholder="gpt4, openai-gpt-4"
+                value={field.value as string}
+                onChange={field.onChange}
+              />
+            </FormControl>
             <FormDescription>多个别名用逗号分隔，别名和模型名称一样可用于 API 调用</FormDescription>
             <FormMessage />
           </FormItem>
@@ -76,9 +88,13 @@ export function GroupBasicFields({ form }: GroupBasicFieldsProps) {
         render={({ field }) => (
           <FormItem>
             <FormLabel>描述</FormLabel>
-              <FormControl>
-                <Input placeholder="模型组描述..." value={field.value as string} onChange={field.onChange} />
-              </FormControl>
+            <FormControl>
+              <Input
+                placeholder="模型组描述..."
+                value={field.value as string}
+                onChange={field.onChange}
+              />
+            </FormControl>
           </FormItem>
         )}
       />

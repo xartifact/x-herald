@@ -181,7 +181,10 @@ describe('AnthropicTransformer - Stream Transformation', () => {
       expect(firstChunk).toHaveProperty('id', 'msg_123')
       expect(firstChunk).toHaveProperty('model', 'claude-3-5-sonnet-20241022')
       expect(firstChunk).toHaveProperty('choices')
-      expect((firstChunk as ChatCompletionChunk).choices[0].delta).toHaveProperty('role', 'assistant')
+      expect((firstChunk as ChatCompletionChunk).choices[0].delta).toHaveProperty(
+        'role',
+        'assistant',
+      )
       expect((firstChunk as ChatCompletionChunk).usage).toEqual({
         prompt_tokens: 10,
         completion_tokens: 0,
@@ -227,7 +230,9 @@ describe('AnthropicTransformer - Stream Transformation', () => {
       const events = parseSSE(result)
 
       // 找到文本增量事件
-      const textDelta = events.find((e) => (e.data as ChatCompletionChunk).choices?.[0]?.delta?.content === '你好')
+      const textDelta = events.find(
+        (e) => (e.data as ChatCompletionChunk).choices?.[0]?.delta?.content === '你好',
+      )
       expect(textDelta).toBeDefined()
       expect((textDelta!.data as ChatCompletionChunk).object).toBe('chat.completion.chunk')
     })
@@ -340,7 +345,9 @@ describe('AnthropicTransformer - Stream Transformation', () => {
       expect((contentStart!.data as AnthropicEventData).content_block?.type).toBe('text')
 
       const contentDelta = events.find(
-        (e) => e.event === 'content_block_delta' && (e.data as AnthropicEventData).delta?.type === 'text_delta',
+        (e) =>
+          e.event === 'content_block_delta' &&
+          (e.data as AnthropicEventData).delta?.type === 'text_delta',
       )
       expect(contentDelta).toBeDefined()
       expect((contentDelta!.data as AnthropicEventData).delta?.text).toBe('你好')

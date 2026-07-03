@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vite-plus/test'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { useForm } from 'react-hook-form'
+import { useForm, UseFormReturn } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { KeyFormDialog } from './key-form-dialog'
@@ -52,7 +52,7 @@ function TestWrapper({
     <KeyFormDialog
       open={open}
       onOpenChange={onOpenChange}
-      form={form}
+      form={form as unknown as UseFormReturn<KeyFormData>}
       editingId={editingId}
       isPending={isPending}
       showNewKey={showNewKey}

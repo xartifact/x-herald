@@ -104,9 +104,10 @@ export default defineConfig({
     semi: false,
     singleQuote: true,
     printWidth: 100,
+    ignorePatterns: ['.claude/skills/**', 'AGENTS.md', 'CLAUDE.md', 'README.md'],
   },
   staged: {
     '*.{ts,tsx,js,jsx}': 'vp lint --fix',
-    '*.{ts,tsx,js,jsx,json,css,md,yaml,yml}': 'vp fmt',
+    '*.{ts,tsx,js,jsx,json,yaml,yml}': 'vp fmt',
   },
 })

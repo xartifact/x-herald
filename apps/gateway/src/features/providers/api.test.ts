@@ -228,3 +228,75 @@ describe('providers API', () => {
     expect(toggleBody2.data.enabled).toBe(true)
   })
 })
+
+describe('providers API - POST / (create)', () => {
+  beforeAll(async () => {
+    ctx = await setupCrudTest()
+  })
+
+  afterAll(async () => {
+    await teardownCrudTest()
+  })
+
+  it('creates a provider with valid data and returns 201', async () => {
+    const res = await authPost(ctx, '/api/providers', {
+      ...validProvider,
+      name: uniqueName('create'),
+    })
+    const { status, body } = await parseJson<{ id: string; name: string }>(res)
+    expect(status).toBe(201)
+    expect(body.success).toBe(true)
+    expect(body.data.name).toMatch(/^create-/)
+  })
+})
+
+describe('providers API - PUT /:id (update)', () => {
+  let createdId: string
+
+  beforeAll(async () => {
+    ctx = await setupCrudTest()
+    const res = await authPost(ctx, '/api/providers', {
+      ...validProvider,
+      name: uniqueName('upd'),
+    })
+    const { body } = await parseJson<{ id: string }>(res)
+    createdId = body.data.id
+  })
+
+  afterAll(async () => {
+    await teardownCrudTest()
+  })
+
+  it('updates an existing provider', async () => {
+    const res = await authPut(ctx, `/api/providers/${createdId}`, {
+      name: 'updated-name',
+    })
+    const { status, body } = await parseJson<{ name: string }>(res)
+    expect(status).toBe(200)
+    expect(body.success).toBe(true)
+    expect(body.data.name).toBe('updated-name')
+  })
+})
+
+describe('providers API - DELETE /:id', () => {
+  let createdId: string
+
+  beforeAll(async () => {
+    ctx = await setupCrudTest()
+    const res = await authPost(ctx, '/api/providers', {
+      ...validProvider,
+      name: uniqueName('del'),
+    })
+    const { body } = await parseJson<{ id: string }>(res)
+    createdId = body.data.id
+  })
+
+  afterAll(async () => {
+    await teardownCrudTest()
+  })
+
+  it('deletes an existing provider', async () => {
+    const res = await authDelete(ctx, `/api/providers/${createdId}`)
+    expect(res.status).toBe(200)
+  })
+})

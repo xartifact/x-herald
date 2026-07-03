@@ -23,8 +23,9 @@ COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+ENV PATH="/app/node_modules/.bin:${PATH}"
 
-RUN cd apps/web && bun run build
+RUN vp build apps/web
 
 # ---- 生产运行 ----
 FROM oven/bun:1 AS runner

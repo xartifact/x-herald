@@ -102,9 +102,13 @@ program
     const client = new GatewayClient({ baseUrl: program.opts().url, apiKey: program.opts().apiKey })
     const status = await client.getHealth()
     console.log(`Status: ${status.status}`)
-    if (status.status) {
+    if (Array.isArray(status.status)) {
       console.table(
-        status.status.map((c) => ({ Name: c.name, Status: c.status, Message: c.message || '' })),
+        status.status.map((c: { name: string; status: string; message?: string }) => ({
+          Name: c.name,
+          Status: c.status,
+          Message: c.message || '',
+        })),
       )
     }
   })

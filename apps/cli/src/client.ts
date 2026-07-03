@@ -52,12 +52,12 @@ export class GatewayClient {
       const body = await res.text()
       throw new Error(`API error ${res.status}: ${body}`)
     }
-    const json = await res.json()
+    const json = (await res.json()) as Record<string, unknown>
     // Handle { success: true, data: ... } wrapper
     if (json && typeof json === 'object' && 'success' in json && 'data' in json) {
-      return json.data
+      return json.data as T
     }
-    return json
+    return json as T
   }
 
   async listProviders(): Promise<Provider[]> {

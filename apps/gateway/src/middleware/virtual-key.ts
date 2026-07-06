@@ -9,26 +9,30 @@ import { virtualKeys, type VirtualKey } from '@xartifact/x-llm-gateway-db'
 const logger = rootLogger.child({ module: 'gateway.auth' })
 
 type VKCacheEntry = { value: VirtualKey; expiresAt: number }
-const cache: Map<string, VKCacheEntry> =
-  ((globalThis as Record<string, unknown>)._vkCache as Map<string, VKCacheEntry> | undefined) ??
-  new Map<string, VKCacheEntry>()
 const CACHE_TTL_MS = 30_000
+function getCache(): Map<string, VKCacheEntry> {
+  const g = globalThis as Record<string, unknown>
+  if (!g._vkCache) {
+    g._vkCache = new Map()
+  }
+  return g._vkCache as Map<string, VKCacheEntry>
+}
 
 function getCachedVirtualKey(key: string): VirtualKey | undefined {
-  const entry = cache.get(key)
+  const entry = getCache().get(key)
   if (!entry || Date.now() > entry.expiresAt) {
-    cache.delete(key)
+    getCache().delete(key)
     return undefined
   }
   return entry.value
 }
 
 function setCachedVirtualKey(key: string, value: VirtualKey): void {
-  cache.set(key, { value, expiresAt: Date.now() + CACHE_TTL_MS })
+  getCache().set(key, { value, expiresAt: Date.now() + CACHE_TTL_MS })
 }
 
 export function invalidateVirtualKeyCache(key: string): void {
-  cache.delete(key)
+  getCache().delete(key)
 }
 
 function checkRateLimit(c: Context, key: VirtualKey): Response | null {

@@ -13,7 +13,7 @@
     "dev:web": "cd apps/web && bun run dev",
     "start": "cd apps/gateway && bun run start",
     "build": "cd apps/web && bun run build",
-    "typecheck": "bun --filter '*' run typecheck",
+    "typecheck": "for d in apps/* packages/*; do if [ -f \"$d/package.json\" ] && grep -q '\"typecheck\"' \"$d/package.json\"; then (cd \"$d\" && bun run typecheck); fi; done",
     "lint": "bunx oxlint@1.72.0 .",
     "lint:fix": "bunx oxlint@1.72.0 . --fix",
     "format": "bunx oxfmt@0.57.0 .",

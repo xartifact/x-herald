@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { render, screen, cleanup, waitFor } from '@testing-library/react'
+import { render, screen, cleanup } from '@testing-library/react'
+import { waitFor } from '@testing-library/dom'
 import React from 'react'
 import userEvent from '@testing-library/user-event'
 import { useForm } from 'react-hook-form'

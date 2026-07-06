@@ -31,17 +31,7 @@ function createRateLimitResult() {
   return { allowed: true, rpm: null, rpd: null, token: null }
 }
 
-// ─── Capture real modules before mocking ──────────────────────────────────
-const realDbClient = await import('../db/client')
-const originalGetDatabase = realDbClient.getDatabase
-const realRateLimitEngine = await import('../gateway/services/rate-limit-engine')
-const originalRateLimitEngine = realRateLimitEngine.rateLimitEngine
-const originalRateLimitEngineCheck = originalRateLimitEngine.check.bind(originalRateLimitEngine)
-const realLogger = await import('../lib/logger')
-const originalDefaultLogger = realLogger.default
-const originalChildMethod = originalDefaultLogger.child.bind(originalDefaultLogger)
-
-// ─── Mock modules ───────────────────────────────────────────────────────────
+// ─── Mock modules FIRST (prevents middleware caching un-mocked refs) ─────
 mock.module('../db/client', () => ({
   getDatabase: () => currentMockDb ?? createMockDb(),
 }))
@@ -71,6 +61,16 @@ mock.module('../lib/logger', () => ({
 
 // ─── Import module under test (dynamic import after mocks) ──────────────────
 const { virtualKeyMiddleware, invalidateVirtualKeyCache } = await import('./virtual-key')
+
+// Capture real modules for afterAll cleanup
+const realDbClient = await import('../db/client')
+const originalGetDatabase = realDbClient.getDatabase
+const realRateLimitEngine = await import('../gateway/services/rate-limit-engine')
+const originalRateLimitEngine = realRateLimitEngine.rateLimitEngine
+const originalRateLimitEngineCheck = originalRateLimitEngine.check.bind(originalRateLimitEngine)
+const realLogger = await import('../lib/logger')
+const originalDefaultLogger = realLogger.default
+const originalChildMethod = originalDefaultLogger.child.bind(originalDefaultLogger)
 
 // ─── Import factories ───────────────────────────────────────────────────────
 import { createTestVirtualKey } from '../test/factories'
@@ -159,14 +159,6 @@ describe('virtualKeyMiddleware', () => {
     clearCache()
     currentMockDb = createMockDb()
     currentRateLimitResult = createRateLimitResult()
-    mock.module('../db/client', () => ({
-      getDatabase: () => currentMockDb ?? createMockDb(),
-    }))
-    mock.module('../gateway/services/rate-limit-engine', () => ({
-      rateLimitEngine: {
-        check: () => currentRateLimitResult ?? createRateLimitResult(),
-      },
-    }))
   })
 
   // ══════════════════════════════════════════════════════════════════════════

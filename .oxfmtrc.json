@@ -1,0 +1,19 @@
+{
+  "semi": false,
+  "singleQuote": true,
+  "printWidth": 100,
+  "ignorePatterns": [
+    "node_modules/**",
+    "dist/**",
+    "build/**",
+    ".next/**",
+    "coverage/**",
+    ".claude/skills/**",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "README.md",
+    "**/*.snap",
+    "**/*.lockb",
+    "bun.lockb"
+  ]
+}

@@ -8,23 +8,22 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "vp dev apps/gateway & vp dev apps/web",
-    "dev:gateway": "vp dev apps/gateway",
-    "dev:web": "vp dev apps/web",
+    "dev": "bun run dev:gateway & bun run dev:web",
+    "dev:gateway": "cd apps/gateway && bun run dev",
+    "dev:web": "cd apps/web && bun run dev",
     "start": "cd apps/gateway && bun run start",
-    "build": "vp build apps/web",
-    "typecheck": "vp run -r typecheck",
-    "lint": "vp lint .",
-    "lint:fix": "vp lint . --fix",
-    "format": "vp fmt .",
-    "format:check": "vp fmt --check .",
-    "check": "vp check .",
+    "build": "cd apps/web && bun run build",
+    "typecheck": "bun --filter '*' run typecheck",
+    "lint": "bunx oxlint@1.72.0 .",
+    "lint:fix": "bunx oxlint@1.72.0 . --fix",
+    "format": "bunx oxfmt@0.57.0 .",
+    "format:check": "bunx oxfmt@0.57.0 --check .",
+    "check": "bun run lint && bun run format:check && bun run typecheck",
     "test": "cd apps/gateway && bun test",
-    "test:ui": "vp test run",
-    "test:ui:watch": "vp test",
+    "test:ui": "cd apps/web && bun test --reporter=dots",
+    "test:ui:watch": "cd apps/web && bun test",
     "test:e2e:ui": "cd apps/web && bunx playwright test --ui",
     "ci": "./scripts/ci.sh",
-    "prepare": "vp config",
     "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules"
   },
   "dependencies": {
@@ -41,19 +40,16 @@
     "@types/bun": "latest",
     "@vitejs/plugin-react": "^6.0.3",
     "jsdom": "^29.1.1",
-    "typescript": "^5.3.3",
-    "vite-plus": "^0.2.1"
+    "lint-staged": "^15.2.0",
+    "oxfmt": "^0.55.0",
+    "oxlint": "^1.70.0",
+    "typescript": "^5.3.3"
   },
   "overrides": {
-    "vite": "catalog:",
-    "vitest": "catalog:"
+    "vite": "npm:@voidzero-dev/vite-plus-core@0.2.1",
+    "vitest": "4.1.9"
   },
   "engines": {
     "bun": ">=1.0.0"
-  },
-  "catalog": {
-    "vite": "npm:@voidzero-dev/vite-plus-core@0.2.1",
-    "vitest": "4.1.9",
-    "vite-plus": "0.2.1"
   }
 }

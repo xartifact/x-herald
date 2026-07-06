@@ -1,18 +1,16 @@
 #!/usr/bin/env bash
 # CI gate: format + lint + typecheck + backend tests.
-# Wrapped in a script (not a package.json script) because bun run treats
-# exit code 99 as a special signal even when all tests pass.
 set -u
 
-cd "$(dirname "$0")/.."
+PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$PROJECT_ROOT"
 
-# vp check covers format + lint + typecheck.
-echo "==> vp check (format + lint + typecheck)"
-npx vp check .
+echo "==> format + lint + typecheck"
+bun run check
 
 echo "==> backend tests"
-cd apps/gateway
-bun test --no-coverage --reporter=dots
+cd "$PROJECT_ROOT/apps/gateway"
+bun test --reporter=dots
 test_status=$?
 
 # bun test 1.3.14 sometimes exits 99 on subprocess teardown even when
@@ -21,3 +19,4 @@ if [ $test_status -eq 99 ]; then
   exit 0
 fi
 exit $test_status
+

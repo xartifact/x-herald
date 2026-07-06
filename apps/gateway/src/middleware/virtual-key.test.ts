@@ -156,7 +156,14 @@ describe('virtualKeyMiddleware', () => {
   })
 
   afterEach(() => {
-    mock.restore()
+    mock.module('../db/client', () => ({
+      getDatabase: () => currentMockDb ?? createMockDb(),
+    }))
+    mock.module('../gateway/services/rate-limit-engine', () => ({
+      rateLimitEngine: {
+        check: () => currentRateLimitResult ?? createRateLimitResult(),
+      },
+    }))
   })
 
   // ══════════════════════════════════════════════════════════════════════════

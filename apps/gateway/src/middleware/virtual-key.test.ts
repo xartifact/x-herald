@@ -155,7 +155,10 @@ describe('virtualKeyMiddleware', () => {
     currentRateLimitResult = createRateLimitResult()
   })
 
-  afterEach(() => {
+  beforeEach(() => {
+    clearCache()
+    currentMockDb = createMockDb()
+    currentRateLimitResult = createRateLimitResult()
     mock.module('../db/client', () => ({
       getDatabase: () => currentMockDb ?? createMockDb(),
     }))

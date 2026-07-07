@@ -5,16 +5,21 @@
 最简单的方式，自动启动 PostgreSQL 和应用：
 
 \`\`\`bash
+
 # 1. 复制环境变量模板
+
 cp .env.example .env
 
 # 2. 启动所有服务（PostgreSQL + 应用）
+
 docker-compose up -d
 
 # 3. 查看日志
+
 docker-compose logs -f
 
 # 4. 停止服务
+
 docker-compose down
 \`\`\`
 
@@ -27,30 +32,39 @@ docker-compose down
 使用 Docker 只启动数据库：
 
 \`\`\`bash
+
 # 启动 PostgreSQL
+
 docker-compose up -d postgres
 
 # 查看数据库日志
+
 docker-compose logs -f postgres
 \`\`\`
 
 或者使用本地 PostgreSQL：
 
 \`\`\`bash
+
 # macOS
+
 brew services start postgresql@16
 
 # Linux
+
 sudo systemctl start postgresql
 \`\`\`
 
 ### 2. 配置环境变量
 
 \`\`\`bash
+
 # 复制模板
+
 cp .env.example .env
 
 # 编辑配置（如果需要）
+
 vim .env
 \`\`\`
 
@@ -63,7 +77,9 @@ bun install
 ### 4. 启动开发服务器
 
 \`\`\`bash
+
 # 启动 Next.js 开发服务器
+
 bun dev
 \`\`\`
 
@@ -95,16 +111,21 @@ bun dev
 连接到数据库查看表：
 
 \`\`\`bash
+
 # 使用 Docker
+
 docker-compose exec postgres psql -U postgres -d llm_gateway
 
 # 或使用本地 psql
+
 psql -h localhost -U postgres -d llm_gateway
 
 # 查看所有表
+
 \dt
 
 # 查看 providers 表结构
+
 \d providers
 \`\`\`
 
@@ -116,7 +137,9 @@ psql -h localhost -U postgres -d llm_gateway
 
 **解决**:
 \`\`\`bash
+
 # 修改 .env 中的端口
+
 PORT=3001
 \`\`\`
 
@@ -125,6 +148,7 @@ PORT=3001
 **错误**: `FATAL: database "llm_gateway" does not exist`
 
 **解决**:
+
 1. 确保 PostgreSQL 正在运行
 2. 检查 `.env` 中的数据库配置
 3. 应用会自动创建数据库，等待几秒钟
@@ -158,13 +182,17 @@ ALTER USER postgres CREATEDB;
 如果需要重新开始：
 
 \`\`\`bash
+
 # 停止服务
+
 docker-compose down
 
 # 删除数据卷
+
 docker volume rm x-llm-gateway_postgres_data
 
 # 重新启动
+
 docker-compose up -d
 \`\`\`
 
@@ -211,10 +239,9 @@ docker-compose -f docker-compose.external-db.yml logs -f
 
 ### 文件说明
 
-| 文件 | 用途 |
-|------|------|
-| `docker-compose.yml` | 默认配置，包含 PostgreSQL + 应用 |
-| `docker-compose.external-db.yml` | 外部数据库配置，只启动应用 |
-| `.env.local` | 本地开发环境变量（默认使用内置数据库） |
-| `.env.external.example` | 外部数据库配置模板 |
-
+| 文件                             | 用途                                   |
+| -------------------------------- | -------------------------------------- |
+| `docker-compose.yml`             | 默认配置，包含 PostgreSQL + 应用       |
+| `docker-compose.external-db.yml` | 外部数据库配置，只启动应用             |
+| `.env.local`                     | 本地开发环境变量（默认使用内置数据库） |
+| `.env.external.example`          | 外部数据库配置模板                     |

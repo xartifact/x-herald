@@ -16,28 +16,28 @@ const response = await fetch('https://api.openai.com/v1/chat/completions', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${apiKey}`,
+    Authorization: `Bearer ${apiKey}`,
   },
   body: JSON.stringify({
     model: 'gpt-4o',
-    messages: [
-      { role: 'user', content: 'Hello!' }
-    ],
+    messages: [{ role: 'user', content: 'Hello!' }],
     max_tokens: 1024,
   }),
-});
+})
 
-const data = await response.json();
-console.log(data.choices[0].message.content);
+const data = await response.json()
+console.log(data.choices[0].message.content)
 ```
 
 ### Key Concepts
 
 **Required Parameters:**
+
 - `model`: Model identifier (e.g., 'gpt-4o', 'gpt-4o-mini')
 - `messages`: Array of message objects with `role` ('system'/'developer', 'user', 'assistant', 'tool') and `content`
 
 **Optional Parameters:**
+
 - `max_tokens`: Maximum tokens to generate
 - `temperature`: Sampling randomness (0-2, default 1)
 - `top_p`: Nucleus sampling (0-1)
@@ -52,6 +52,7 @@ console.log(data.choices[0].message.content);
 ### 1. Non-Streaming Request/Response
 
 **Request:**
+
 ```http
 POST /v1/chat/completions
 Content-Type: application/json
@@ -68,6 +69,7 @@ Authorization: Bearer {api_key}
 ```
 
 **Response:**
+
 ```json
 {
   "id": "chatcmpl-123",
@@ -101,33 +103,33 @@ const response = await fetch('https://api.openai.com/v1/chat/completions', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${apiKey}`,
+    Authorization: `Bearer ${apiKey}`,
   },
   body: JSON.stringify({
     model: 'gpt-4o',
     messages: [{ role: 'user', content: 'Write a haiku' }],
-    stream: true,  // Enable streaming
+    stream: true, // Enable streaming
   }),
-});
+})
 
-const reader = response.body?.getReader();
-const decoder = new TextDecoder();
+const reader = response.body?.getReader()
+const decoder = new TextDecoder()
 
 while (true) {
-  const { done, value } = await reader!.read();
-  if (done) break;
+  const { done, value } = await reader!.read()
+  if (done) break
 
-  const chunk = decoder.decode(value);
-  const lines = chunk.split('\n');
+  const chunk = decoder.decode(value)
+  const lines = chunk.split('\n')
 
   for (const line of lines) {
     if (line.startsWith('data: ')) {
-      const data = line.slice(6);
-      if (data === '[DONE]') break;
+      const data = line.slice(6)
+      if (data === '[DONE]') break
 
-      const event = JSON.parse(data);
-      const content = event.choices[0]?.delta?.content;
-      if (content) process.stdout.write(content);
+      const event = JSON.parse(data)
+      const content = event.choices[0]?.delta?.content
+      if (content) process.stdout.write(content)
     }
   }
 }
@@ -151,24 +153,24 @@ const tools = [
         properties: {
           location: {
             type: 'string',
-            description: 'City and state, e.g., San Francisco, CA'
+            description: 'City and state, e.g., San Francisco, CA',
           },
           unit: {
             type: 'string',
-            enum: ['celsius', 'fahrenheit']
-          }
+            enum: ['celsius', 'fahrenheit'],
+          },
         },
-        required: ['location']
-      }
-    }
-  }
-];
+        required: ['location'],
+      },
+    },
+  },
+]
 
 const response = await fetch('https://api.openai.com/v1/chat/completions', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${apiKey}`,
+    Authorization: `Bearer ${apiKey}`,
   },
   body: JSON.stringify({
     model: 'gpt-4o',
@@ -176,25 +178,25 @@ const response = await fetch('https://api.openai.com/v1/chat/completions', {
     tools,
     tool_choice: 'auto',
   }),
-});
+})
 
-const data = await response.json();
+const data = await response.json()
 
 // Check if model wants to use a tool
 if (data.choices[0].finish_reason === 'tool_calls') {
-  const toolCall = data.choices[0].message.tool_calls[0];
-  const functionName = toolCall.function.name;
-  const functionArgs = JSON.parse(toolCall.function.arguments);
+  const toolCall = data.choices[0].message.tool_calls[0]
+  const functionName = toolCall.function.name
+  const functionArgs = JSON.parse(toolCall.function.arguments)
 
   // Execute the function
-  const result = await executeFunction(functionName, functionArgs);
+  const result = await executeFunction(functionName, functionArgs)
 
   // Send the result back
   const finalResponse = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
+      Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
       model: 'gpt-4o',
@@ -204,12 +206,12 @@ if (data.choices[0].finish_reason === 'tool_calls') {
         {
           role: 'tool',
           tool_call_id: toolCall.id,
-          content: JSON.stringify(result)
-        }
+          content: JSON.stringify(result),
+        },
       ],
       tools,
     }),
-  });
+  })
 }
 ```
 
@@ -222,23 +224,23 @@ const response = await fetch('https://api.openai.com/v1/chat/completions', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${apiKey}`,
+    Authorization: `Bearer ${apiKey}`,
   },
   body: JSON.stringify({
     model: 'gpt-4o',
     messages: [
       {
         role: 'system',
-        content: 'You are a helpful assistant that outputs JSON.'
+        content: 'You are a helpful assistant that outputs JSON.',
       },
       {
         role: 'user',
-        content: 'List 3 popular programming languages'
-      }
+        content: 'List 3 popular programming languages',
+      },
     ],
     response_format: { type: 'json_object' },
   }),
-});
+})
 ```
 
 ## Message Format
@@ -253,6 +255,7 @@ const response = await fetch('https://api.openai.com/v1/chat/completions', {
 ### Message Content Types
 
 **Text-only:**
+
 ```json
 {
   "role": "user",
@@ -261,6 +264,7 @@ const response = await fetch('https://api.openai.com/v1/chat/completions', {
 ```
 
 **Multi-modal (text + images):**
+
 ```json
 {
   "role": "user",
@@ -277,6 +281,7 @@ const response = await fetch('https://api.openai.com/v1/chat/completions', {
 ```
 
 **Tool calls:**
+
 ```json
 {
   "role": "assistant",
@@ -295,6 +300,7 @@ const response = await fetch('https://api.openai.com/v1/chat/completions', {
 ```
 
 **Tool results:**
+
 ```json
 {
   "role": "tool",
@@ -309,31 +315,31 @@ const response = await fetch('https://api.openai.com/v1/chat/completions', {
 
 ```typescript
 interface ChatCompletionResponse {
-  id: string;                    // Unique identifier
-  object: 'chat.completion';
-  created: number;               // Unix timestamp
-  model: string;                 // Model used
+  id: string // Unique identifier
+  object: 'chat.completion'
+  created: number // Unix timestamp
+  model: string // Model used
   choices: Array<{
-    index: number;
+    index: number
     message: {
-      role: 'assistant';
-      content: string | null;
+      role: 'assistant'
+      content: string | null
       tool_calls?: Array<{
-        id: string;
-        type: 'function';
+        id: string
+        type: 'function'
         function: {
-          name: string;
-          arguments: string;
-        };
-      }>;
-    };
-    finish_reason: 'stop' | 'length' | 'tool_calls' | 'content_filter' | null;
-  }>;
+          name: string
+          arguments: string
+        }
+      }>
+    }
+    finish_reason: 'stop' | 'length' | 'tool_calls' | 'content_filter' | null
+  }>
   usage?: {
-    prompt_tokens: number;
-    completion_tokens: number;
-    total_tokens: number;
-  };
+    prompt_tokens: number
+    completion_tokens: number
+    total_tokens: number
+  }
 }
 ```
 
@@ -341,27 +347,27 @@ interface ChatCompletionResponse {
 
 ```typescript
 interface ChatCompletionChunk {
-  id: string;
-  object: 'chat.completion.chunk';
-  created: number;
-  model: string;
+  id: string
+  object: 'chat.completion.chunk'
+  created: number
+  model: string
   choices: Array<{
-    index: number;
+    index: number
     delta: {
-      role?: 'assistant';
-      content?: string;
+      role?: 'assistant'
+      content?: string
       tool_calls?: Array<{
-        index: number;
-        id?: string;
-        type?: 'function';
+        index: number
+        id?: string
+        type?: 'function'
         function?: {
-          name?: string;
-          arguments?: string;
-        };
-      }>;
-    };
-    finish_reason: string | null;
-  }>;
+          name?: string
+          arguments?: string
+        }
+      }>
+    }
+    finish_reason: string | null
+  }>
 }
 ```
 
@@ -393,23 +399,23 @@ interface ChatCompletionChunk {
 async function requestWithRetry(
   url: string,
   options: RequestInit,
-  maxRetries = 3
+  maxRetries = 3,
 ): Promise<Response> {
   for (let attempt = 0; attempt < maxRetries; attempt++) {
-    const response = await fetch(url, options);
+    const response = await fetch(url, options)
 
-    if (response.ok) return response;
+    if (response.ok) return response
 
     if (response.status === 429 || response.status >= 500) {
-      const delay = Math.pow(2, attempt) * 1000;
-      await new Promise(resolve => setTimeout(resolve, delay));
-      continue;
+      const delay = Math.pow(2, attempt) * 1000
+      await new Promise((resolve) => setTimeout(resolve, delay))
+      continue
     }
 
-    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+    throw new Error(`HTTP ${response.status}: ${await response.text()}`)
   }
 
-  throw new Error('Max retries exceeded');
+  throw new Error('Max retries exceeded')
 }
 ```
 

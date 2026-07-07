@@ -1,0 +1,9 @@
+[test]
+# Coverage thresholds — ramp-up per SKILL.md roadmap
+# Phase 2: 15% line, 20% branch (post proxy integration tests)
+coverage = true
+coverageThreshold = { line = 0.15, branch = 0.20 }
+coverageReporter = ["text", "lcov"]
+
+# Preload test setup (PGlite, env vars, BigInt polyfill)
+preload = ["./src/test/setup.ts"]

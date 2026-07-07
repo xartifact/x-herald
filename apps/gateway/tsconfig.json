@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "lib": ["ESNext"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "types": ["@types/bun"],
+    "paths": {
+      "@xartifact/x-llm-gateway-shared": ["../../packages/shared/src"],
+      "@xartifact/x-llm-gateway-db": ["../../packages/db/src"],
+      "@xartifact/x-llm-gateway-sdk": ["../../packages/ai-agent/src"],
+      "@xartifact/x-tinker-sdk": ["./node_modules/@xartifact/x-tinker-sdk/dist"],
+      "@xartifact/x-tinker-shared": ["./node_modules/@xartifact/x-tinker-shared/dist"]
+    }
+  },
+  "include": ["src"],
+  "exclude": ["src/**/__tests__", "src/**/*.test.ts", "src/**/*.test.tsx"]
+}

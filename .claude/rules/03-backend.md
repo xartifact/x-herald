@@ -1,16 +1,19 @@
 # 后端开发规范
 
 ## 技术栈
+
 - 框架：Hono (v4.11.6)
 - 运行环境：Bun.sh
 - 集成：Hono 接管 Next.js API 路由
 
 ## API 规范
+
 - 遵循 RESTful API 设计规范
 - 路由组织按功能模块划分
 - 统一错误处理和响应格式
 
 ## 数据库
+
 - ORM：Drizzle ORM
 - 数据库：PostgreSQL / PGlite
 - 所有数据库操作使用类型安全的查询
@@ -24,11 +27,11 @@
 ```typescript
 // ✅ Handler 标准结构
 app.post('/orders', async (c): Promise<Response> => {
-  const body = CreateOrderBody.parse(await c.req.json()); // ① 校验（Zod）
-  const userId = c.get('userId');
-  const order = await orderService.create({ userId, ...body }); // ② 委托
-  return c.json({ success: true, data: order }, 201); // ③ 响应
-});
+  const body = CreateOrderBody.parse(await c.req.json()) // ① 校验（Zod）
+  const userId = c.get('userId')
+  const order = await orderService.create({ userId, ...body }) // ② 委托
+  return c.json({ success: true, data: order }, 201) // ③ 响应
+})
 ```
 
 ## 分层隔离
@@ -62,6 +65,7 @@ app.post('/orders', async (c): Promise<Response> => {
 - 所有环境变量必须在 `src/core/config/` 下统一读取、校验（使用 Zod）并导出
 
 ## 架构原则
+
 - 遵循 Clean Architecture
 - 业务逻辑与框架解耦
 - 使用中间件处理横切关注点（认证、日志、错误处理）

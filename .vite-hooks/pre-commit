@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Pre-commit hook: run lint-staged on changed files.
+# Wrapped in a script (not a package.json script) because bun run treats
+# exit code 99 as a special signal even when all tests pass.
+set -u
+
+cd "$(dirname "$0")/.."
+
+PATH="$PWD/node_modules/.bin:$PATH" bunx lint-staged

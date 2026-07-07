@@ -15,28 +15,26 @@ This guide covers streaming responses with the Anthropic API for real-time outpu
 ### Simple Streaming
 
 ```typescript
-import Anthropic from '@anthropic-ai/sdk';
+import Anthropic from '@anthropic-ai/sdk'
 
-const client = new Anthropic();
+const client = new Anthropic()
 
 const stream = client.messages.stream({
   model: 'claude-sonnet-4-5-20250929',
   max_tokens: 1024,
-  messages: [
-    { role: 'user', content: 'Write a short story about a robot' }
-  ],
-});
+  messages: [{ role: 'user', content: 'Write a short story about a robot' }],
+})
 
 // Iterate through stream events
 for await (const event of stream) {
   if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-    process.stdout.write(event.delta.text);
+    process.stdout.write(event.delta.text)
   }
 }
 
 // Get the complete message
-const finalMessage = await stream.finalMessage();
-console.log('\n\nFinal message:', finalMessage);
+const finalMessage = await stream.finalMessage()
+console.log('\n\nFinal message:', finalMessage)
 ```
 
 ### Alternative: Raw Streaming
@@ -49,11 +47,11 @@ const stream = await client.messages.create({
   max_tokens: 1024,
   messages: [{ role: 'user', content: 'Hello' }],
   stream: true,
-});
+})
 
 for await (const chunk of stream) {
   if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
-    process.stdout.write(chunk.delta.text);
+    process.stdout.write(chunk.delta.text)
   }
 }
 ```
@@ -160,52 +158,52 @@ const stream = client.messages.stream({
   model: 'claude-sonnet-4-5-20250929',
   max_tokens: 1024,
   messages: [{ role: 'user', content: 'Tell me a joke' }],
-});
+})
 
 stream
   .on('text', (text) => {
     // Emitted for each text delta
-    process.stdout.write(text);
+    process.stdout.write(text)
   })
   .on('contentBlock', (contentBlock) => {
     // Emitted when a content block completes
-    console.log('\nContent block:', contentBlock);
+    console.log('\nContent block:', contentBlock)
   })
   .on('message', (message) => {
     // Emitted when the full message completes
-    console.log('\nFull message:', message);
+    console.log('\nFull message:', message)
   })
   .on('error', (error) => {
     // Emitted on errors
-    console.error('Stream error:', error);
+    console.error('Stream error:', error)
   })
   .on('end', () => {
     // Emitted when stream ends
-    console.log('\nStream ended');
-  });
+    console.log('\nStream ended')
+  })
 
 // Wait for completion
-const finalMessage = await stream.finalMessage();
+const finalMessage = await stream.finalMessage()
 ```
 
 ### Accumulating Text
 
 ```typescript
-let accumulatedText = '';
+let accumulatedText = ''
 
 const stream = client.messages.stream({
   model: 'claude-sonnet-4-5-20250929',
   max_tokens: 1024,
   messages: [{ role: 'user', content: 'Write a haiku' }],
-});
+})
 
 stream.on('text', (text) => {
-  accumulatedText += text;
-  console.log('Current text:', accumulatedText);
-});
+  accumulatedText += text
+  console.log('Current text:', accumulatedText)
+})
 
-await stream.finalMessage();
-console.log('Final text:', accumulatedText);
+await stream.finalMessage()
+console.log('Final text:', accumulatedText)
 ```
 
 ### Cancelling Streams
@@ -215,13 +213,13 @@ const stream = client.messages.stream({
   model: 'claude-sonnet-4-5-20250929',
   max_tokens: 1024,
   messages: [{ role: 'user', content: 'Write a long essay' }],
-});
+})
 
 // Cancel after 5 seconds
 setTimeout(() => {
-  stream.abort();
-  console.log('Stream cancelled');
-}, 5000);
+  stream.abort()
+  console.log('Stream cancelled')
+}, 5000)
 
 try {
   for await (const event of stream) {
@@ -229,7 +227,7 @@ try {
   }
 } catch (error) {
   if (error.name === 'AbortError') {
-    console.log('Stream was aborted');
+    console.log('Stream was aborted')
   }
 }
 ```
@@ -243,21 +241,21 @@ const stream = client.messages.stream({
   model: 'claude-sonnet-4-5-20250929',
   max_tokens: 1024,
   messages: [{ role: 'user', content: 'Hello' }],
-});
+})
 
 try {
   for await (const event of stream) {
     if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-      process.stdout.write(event.delta.text);
+      process.stdout.write(event.delta.text)
     }
   }
 
-  const finalMessage = await stream.finalMessage();
+  const finalMessage = await stream.finalMessage()
 } catch (error) {
   if (error instanceof Anthropic.APIError) {
-    console.error('API Error:', error.status, error.message);
+    console.error('API Error:', error.status, error.message)
   } else {
-    console.error('Unexpected error:', error);
+    console.error('Unexpected error:', error)
   }
 }
 ```
@@ -267,27 +265,27 @@ try {
 ```typescript
 async function streamWithRetry(
   params: Anthropic.MessageCreateParams,
-  maxRetries = 3
+  maxRetries = 3,
 ): Promise<Anthropic.Message> {
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      const stream = client.messages.stream(params);
+      const stream = client.messages.stream(params)
 
       for await (const event of stream) {
         // Process events
       }
 
-      return await stream.finalMessage();
+      return await stream.finalMessage()
     } catch (error) {
-      if (attempt === maxRetries - 1) throw error;
+      if (attempt === maxRetries - 1) throw error
 
       // Exponential backoff
-      const delay = Math.pow(2, attempt) * 1000;
-      await new Promise(resolve => setTimeout(resolve, delay));
+      const delay = Math.pow(2, attempt) * 1000
+      await new Promise((resolve) => setTimeout(resolve, delay))
     }
   }
 
-  throw new Error('Max retries exceeded');
+  throw new Error('Max retries exceeded')
 }
 ```
 
@@ -336,58 +334,58 @@ function ChatComponent() {
 For high-frequency updates, buffer text:
 
 ```typescript
-let buffer = '';
-let lastUpdate = Date.now();
-const UPDATE_INTERVAL = 50; // ms
+let buffer = ''
+let lastUpdate = Date.now()
+const UPDATE_INTERVAL = 50 // ms
 
 const stream = client.messages.stream({
   model: 'claude-sonnet-4-5-20250929',
   max_tokens: 1024,
   messages: [{ role: 'user', content: 'Write a story' }],
-});
+})
 
 stream.on('text', (text) => {
-  buffer += text;
+  buffer += text
 
-  const now = Date.now();
+  const now = Date.now()
   if (now - lastUpdate > UPDATE_INTERVAL) {
-    updateUI(buffer);
-    buffer = '';
-    lastUpdate = now;
+    updateUI(buffer)
+    buffer = ''
+    lastUpdate = now
   }
-});
+})
 
 stream.on('end', () => {
   if (buffer) {
-    updateUI(buffer);
+    updateUI(buffer)
   }
-});
+})
 
-await stream.finalMessage();
+await stream.finalMessage()
 ```
 
 ### 3. Track Token Usage
 
 ```typescript
-let inputTokens = 0;
-let outputTokens = 0;
+let inputTokens = 0
+let outputTokens = 0
 
 const stream = client.messages.stream({
   model: 'claude-sonnet-4-5-20250929',
   max_tokens: 1024,
   messages: [{ role: 'user', content: 'Hello' }],
-});
+})
 
 for await (const event of stream) {
   if (event.type === 'message_start') {
-    inputTokens = event.message.usage.input_tokens;
+    inputTokens = event.message.usage.input_tokens
   } else if (event.type === 'message_delta') {
-    outputTokens = event.usage.output_tokens;
+    outputTokens = event.usage.output_tokens
   }
 }
 
-console.log('Total tokens:', inputTokens + outputTokens);
-console.log('Cost estimate:', calculateCost(inputTokens, outputTokens));
+console.log('Total tokens:', inputTokens + outputTokens)
+console.log('Cost estimate:', calculateCost(inputTokens, outputTokens))
 ```
 
 ### 4. Handle Tool Use in Streams
@@ -398,23 +396,23 @@ const stream = client.messages.stream({
   max_tokens: 1024,
   messages: [{ role: 'user', content: 'What is the weather?' }],
   tools: [weatherTool],
-});
+})
 
-let toolUseBlock: Anthropic.ToolUseBlock | null = null;
+let toolUseBlock: Anthropic.ToolUseBlock | null = null
 
 for await (const event of stream) {
   if (event.type === 'content_block_start' && event.content_block.type === 'tool_use') {
-    toolUseBlock = event.content_block;
+    toolUseBlock = event.content_block
   } else if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-    process.stdout.write(event.delta.text);
+    process.stdout.write(event.delta.text)
   }
 }
 
-const finalMessage = await stream.finalMessage();
+const finalMessage = await stream.finalMessage()
 
 if (finalMessage.stop_reason === 'tool_use' && toolUseBlock) {
   // Execute tool and continue conversation
-  const toolResult = await executeToolFunction(toolUseBlock.name, toolUseBlock.input);
+  const toolResult = await executeToolFunction(toolUseBlock.name, toolUseBlock.input)
   // ... continue with tool result
 }
 ```
@@ -424,32 +422,32 @@ if (finalMessage.stop_reason === 'tool_use' && toolUseBlock) {
 ```typescript
 // Express.js example
 app.post('/api/chat', async (req, res) => {
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Content-Type', 'text/event-stream')
+  res.setHeader('Cache-Control', 'no-cache')
+  res.setHeader('Connection', 'keep-alive')
 
   const stream = client.messages.stream({
     model: 'claude-sonnet-4-5-20250929',
     max_tokens: 1024,
     messages: req.body.messages,
-  });
+  })
 
   stream.on('text', (text) => {
-    res.write(`data: ${JSON.stringify({ type: 'text', text })}\n\n`);
-  });
+    res.write(`data: ${JSON.stringify({ type: 'text', text })}\n\n`)
+  })
 
   stream.on('end', () => {
-    res.write('data: [DONE]\n\n');
-    res.end();
-  });
+    res.write('data: [DONE]\n\n')
+    res.end()
+  })
 
   stream.on('error', (error) => {
-    res.write(`data: ${JSON.stringify({ type: 'error', error: error.message })}\n\n`);
-    res.end();
-  });
+    res.write(`data: ${JSON.stringify({ type: 'error', error: error.message })}\n\n`)
+    res.end()
+  })
 
-  await stream.finalMessage();
-});
+  await stream.finalMessage()
+})
 ```
 
 ## Common Patterns
@@ -457,77 +455,77 @@ app.post('/api/chat', async (req, res) => {
 ### Progress Indicator
 
 ```typescript
-let wordCount = 0;
+let wordCount = 0
 
 const stream = client.messages.stream({
   model: 'claude-sonnet-4-5-20250929',
   max_tokens: 1024,
   messages: [{ role: 'user', content: 'Write an essay' }],
-});
+})
 
 stream.on('text', (text) => {
-  wordCount += text.split(/\s+/).length;
-  console.log(`Words generated: ${wordCount}`);
-});
+  wordCount += text.split(/\s+/).length
+  console.log(`Words generated: ${wordCount}`)
+})
 
-await stream.finalMessage();
+await stream.finalMessage()
 ```
 
 ### Streaming to File
 
 ```typescript
-import { createWriteStream } from 'fs';
+import { createWriteStream } from 'fs'
 
-const fileStream = createWriteStream('output.txt');
+const fileStream = createWriteStream('output.txt')
 
 const stream = client.messages.stream({
   model: 'claude-sonnet-4-5-20250929',
   max_tokens: 1024,
   messages: [{ role: 'user', content: 'Write a report' }],
-});
+})
 
 stream.on('text', (text) => {
-  fileStream.write(text);
-});
+  fileStream.write(text)
+})
 
 stream.on('end', () => {
-  fileStream.end();
-  console.log('File written successfully');
-});
+  fileStream.end()
+  console.log('File written successfully')
+})
 
-await stream.finalMessage();
+await stream.finalMessage()
 ```
 
 ### Multi-User Streaming
 
 ```typescript
-const activeStreams = new Map<string, Anthropic.MessageStream>();
+const activeStreams = new Map<string, Anthropic.MessageStream>()
 
 function startStreamForUser(userId: string, message: string) {
   const stream = client.messages.stream({
     model: 'claude-sonnet-4-5-20250929',
     max_tokens: 1024,
     messages: [{ role: 'user', content: message }],
-  });
+  })
 
-  activeStreams.set(userId, stream);
+  activeStreams.set(userId, stream)
 
   stream.on('text', (text) => {
-    sendToUser(userId, text);
-  });
+    sendToUser(userId, text)
+  })
 
   stream.on('end', () => {
-    activeStreams.delete(userId);
-  });
+    activeStreams.delete(userId)
+  })
 
-  return stream.finalMessage();
+  return stream.finalMessage()
 }
 
 function cancelStreamForUser(userId: string) {
-  const stream = activeStreams.get(userId);
+  const stream = activeStreams.get(userId)
   if (stream) {
-    stream.abort();
-    activeStreams.delete(userId);
+    stream.abort()
+    activeStreams.delete(userId)
   }
 }
 ```

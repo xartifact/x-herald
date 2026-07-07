@@ -12,7 +12,13 @@
     "allowSyntheticDefaultImports": true,
     "isolatedModules": true,
     "noEmit": true,
-    "types": ["bun-types"]
+    "types": ["bun"],
+    "paths": {
+      "@xartifact/x-llm-gateway-shared": ["./packages/shared/src"],
+      "@xartifact/x-llm-gateway-core": ["./apps/gateway/src"],
+      "@xartifact/x-llm-gateway-ui": ["./packages/ui/src"],
+      "@xartifact/x-llm-gateway-db": ["./packages/db/src"]
+    }
   },
   "exclude": ["node_modules", "dist", "build"]
 }

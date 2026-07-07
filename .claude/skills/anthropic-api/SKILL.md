@@ -12,32 +12,32 @@ This skill provides guidance for integrating with the Anthropic API (Claude AI) 
 ### Basic Message Creation
 
 ```typescript
-import Anthropic from '@anthropic-ai/sdk';
+import Anthropic from '@anthropic-ai/sdk'
 
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
-});
+})
 
 const message = await client.messages.create({
   model: 'claude-sonnet-4-5-20250929',
   max_tokens: 1024,
-  messages: [
-    { role: 'user', content: 'Hello, Claude!' }
-  ],
-});
+  messages: [{ role: 'user', content: 'Hello, Claude!' }],
+})
 
-console.log(message.content[0].text);
-console.log('Usage:', message.usage); // { input_tokens: 10, output_tokens: 20 }
+console.log(message.content[0].text)
+console.log('Usage:', message.usage) // { input_tokens: 10, output_tokens: 20 }
 ```
 
 ### Key Concepts
 
 **Required Parameters:**
+
 - `model`: Model identifier (e.g., 'claude-sonnet-4-5-20250929', 'claude-opus-4-5-20251101')
 - `max_tokens`: Maximum tokens to generate (required, no default)
 - `messages`: Array of message objects with `role` ('user' or 'assistant') and `content`
 
 **Optional Parameters:**
+
 - `system`: System prompt for instructions and context
 - `temperature`: Randomness (0-1, default 1)
 - `top_p`: Nucleus sampling (0-1)
@@ -56,13 +56,13 @@ const messages: Anthropic.MessageParam[] = [
   { role: 'user', content: 'What is 2+2?' },
   { role: 'assistant', content: '2+2 equals 4.' },
   { role: 'user', content: 'What about 3+3?' },
-];
+]
 
 const response = await client.messages.create({
   model: 'claude-sonnet-4-5-20250929',
   max_tokens: 1024,
   messages,
-});
+})
 ```
 
 ### 2. System Prompts
@@ -74,10 +74,8 @@ const message = await client.messages.create({
   model: 'claude-sonnet-4-5-20250929',
   max_tokens: 1024,
   system: 'You are a helpful coding assistant. Provide concise, accurate answers.',
-  messages: [
-    { role: 'user', content: 'How do I reverse a string in JavaScript?' }
-  ],
-});
+  messages: [{ role: 'user', content: 'How do I reverse a string in JavaScript?' }],
+})
 ```
 
 ### 3. Streaming Responses
@@ -89,15 +87,15 @@ const stream = client.messages.stream({
   model: 'claude-sonnet-4-5-20250929',
   max_tokens: 1024,
   messages: [{ role: 'user', content: 'Write a poem' }],
-});
+})
 
 for await (const event of stream) {
   if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-    process.stdout.write(event.delta.text);
+    process.stdout.write(event.delta.text)
   }
 }
 
-const finalMessage = await stream.finalMessage();
+const finalMessage = await stream.finalMessage()
 ```
 
 **See [STREAMING.md](references/streaming.md) for detailed streaming patterns.**
@@ -120,23 +118,23 @@ const tools: Anthropic.Tool[] = [
       required: ['location'],
     },
   },
-];
+]
 
 const message = await client.messages.create({
   model: 'claude-sonnet-4-5-20250929',
   max_tokens: 1024,
   messages: [{ role: 'user', content: 'What is the weather in SF?' }],
   tools,
-});
+})
 
 // Check if Claude wants to use a tool
 if (message.stop_reason === 'tool_use') {
   const toolUse = message.content.find(
-    (block): block is Anthropic.ToolUseBlock => block.type === 'tool_use'
-  );
+    (block): block is Anthropic.ToolUseBlock => block.type === 'tool_use',
+  )
 
   // Execute tool and return result
-  const toolResult = executeYourTool(toolUse.name, toolUse.input);
+  const toolResult = executeYourTool(toolUse.name, toolUse.input)
 
   const finalResponse = await client.messages.create({
     model: 'claude-sonnet-4-5-20250929',
@@ -156,7 +154,7 @@ if (message.stop_reason === 'tool_use') {
       },
     ],
     tools,
-  });
+  })
 }
 ```
 
@@ -186,17 +184,17 @@ const batch = await client.messages.batches.create({
       },
     },
   ],
-});
+})
 
 // Poll for completion
-const batchStatus = await client.messages.batches.retrieve(batch.id);
+const batchStatus = await client.messages.batches.retrieve(batch.id)
 
 if (batchStatus.processing_status === 'ended') {
-  const results = await client.messages.batches.results(batch.id);
+  const results = await client.messages.batches.results(batch.id)
 
   for await (const entry of results) {
     if (entry.result.type === 'succeeded') {
-      console.log(entry.custom_id, entry.result.message.content);
+      console.log(entry.custom_id, entry.result.message.content)
     }
   }
 }
@@ -232,9 +230,9 @@ Count tokens before making requests:
 const tokenCount = await client.messages.countTokens({
   model: 'claude-sonnet-4-5-20250929',
   messages: [{ role: 'user', content: 'Your message here' }],
-});
+})
 
-console.log('Estimated tokens:', tokenCount.input_tokens);
+console.log('Estimated tokens:', tokenCount.input_tokens)
 ```
 
 ## Best Practices

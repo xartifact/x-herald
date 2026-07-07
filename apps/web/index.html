@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>x-llm-gateway</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      globalThis.Buffer = class {
+        static alloc(s, f) {
+          const b = new Uint8Array(s)
+          if (f !== void 0) b.fill(f)
+          return b
+        }
+        static allocUnsafe(s) {
+          return new Uint8Array(s)
+        }
+        static from(d, e) {
+          if (typeof d === 'string') {
+            if (e === 'hex')
+              return new Uint8Array((d.match(/{.1,2}/g) || []).map((b) => parseInt(b, 16)))
+            return new TextEncoder().encode(d)
+          }
+          if (ArrayBuffer.isView(d)) return new Uint8Array(d.buffer, d.byteOffset, d.byteLength)
+          return new Uint8Array(d)
+        }
+        static concat(l) {
+          const t = l.reduce((a, b) => a + b.length, 0),
+            r = new Uint8Array(t)
+          let o = 0
+          for (const b of l) {
+            r.set(b, o)
+            o += b.length
+          }
+          return r
+        }
+        static isBuffer() {
+          return !1
+        }
+        static byteLength(s) {
+          return new TextEncoder().encode(s).length
+        }
+      }
+      Uint8Array.prototype.toString = function (e, s, n) {
+        const sl = s || n !== void 0 ? this.slice(s || 0, n || this.length) : this
+        if (e === 'hex')
+          return Array.from(sl)
+            .map((b) => b.toString(16).padStart(2, '0'))
+            .join('')
+        return new TextDecoder().decode(sl)
+      }
+      Uint8Array.prototype.write = function (s, o) {
+        const b = new TextEncoder().encode(s)
+        this.set(b, o || 0)
+        return b.length
+      }
+      Uint8Array.prototype.writeUInt32BE = function (v, o) {
+        this[o] = (v >> 24) & 255
+        this[o + 1] = (v >> 16) & 255
+        this[o + 2] = (v >> 8) & 255
+        this[o + 3] = v & 255
+      }
+      Uint8Array.prototype.readUInt32BE = function (o) {
+        return ((this[o] << 24) | (this[o + 1] << 16) | (this[o + 2] << 8) | this[o + 3]) >>> 0
+      }
+      Uint8Array.prototype.writeUInt16BE = function (v, o) {
+        this[o] = (v >> 8) & 255
+        this[o + 1] = v & 255
+      }
+      Uint8Array.prototype.readUInt16BE = function (o) {
+        return ((this[o] << 8) | this[o + 1]) >>> 0
+      }
+    </script>
+    <script type="module" src="./app/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,1 @@
+bun run scripts/commit-msg.mjs "$1"

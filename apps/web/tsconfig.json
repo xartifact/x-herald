@@ -1,23 +1,20 @@
 {
-  "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "jsx": "preserve",
+    "target": "ESNext",
+    "jsx": "react-jsx",
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
-    "baseUrl": ".",
-    "incremental": true,
-    "types": [],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
     "paths": {
-      "@/*": ["./src/*"],
-      "@/features/*": ["./src/features/*"],
-      "@/core/*": ["./src/core/*"],
-      "@/ui/*": ["./src/ui/*"]
-    },
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ]
+      "@xartifact/x-llm-gateway-shared": ["../../packages/shared/src"],
+      "@xartifact/x-llm-gateway-ui": ["../../packages/ui/src"]
+    }
   },
-  "include": ["src/**/*", "next-env.d.ts", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "dist", ".vinxi", ".next", "src/**/*.test.ts", "src/**/*.test.tsx", "src/**/__tests__/**/*", "src/test-react-ssr.ts", "src/mock-ssr.test.ts"]
+  "include": ["app", "vite.config.ts"]
 }

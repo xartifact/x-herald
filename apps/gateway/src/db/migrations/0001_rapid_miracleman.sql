@@ -1,0 +1,2 @@
+ALTER TABLE "request_logs" ADD COLUMN IF NOT EXISTS "original_model_name" varchar(255);--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_request_logs_original_model_name" ON "request_logs" USING btree ("original_model_name");

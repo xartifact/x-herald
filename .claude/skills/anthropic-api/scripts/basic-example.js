@@ -4,14 +4,14 @@
  * Usage: node basic-example.js
  */
 
-import Anthropic from '@anthropic-ai/sdk';
+import Anthropic from '@anthropic-ai/sdk'
 
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
-});
+})
 
 async function main() {
-  console.log('Creating a basic message...\n');
+  console.log('Creating a basic message...\n')
 
   const message = await client.messages.create({
     model: 'claude-sonnet-4-5-20250929',
@@ -22,11 +22,11 @@ async function main() {
         content: 'Explain quantum computing in simple terms.',
       },
     ],
-  });
+  })
 
-  console.log('Response:', message.content[0].text);
-  console.log('\nUsage:', message.usage);
-  console.log('Stop reason:', message.stop_reason);
+  console.log('Response:', message.content[0].text)
+  console.log('\nUsage:', message.usage)
+  console.log('Stop reason:', message.stop_reason)
 }
 
-main().catch(console.error);
+main().catch(console.error)

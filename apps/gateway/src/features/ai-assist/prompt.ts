@@ -55,8 +55,10 @@ interface InstanceConfig {
 
   // 超时配置（毫秒）
   timeoutConfig?: {
-    connectTimeout: number; // 连接超时
-    readTimeout: number;    // 读取超时
+    connectTimeoutMs?: number; // TCP/TLS 建连超时
+    ttfbTimeoutMs?: number;    // 单次 attempt TTFB 超时
+    connectTimeout?: number;   // 兼容旧字段 → connectTimeoutMs
+    readTimeout?: number;      // 兼容旧字段 → ttfbTimeoutMs
   };
 
   // 参数转换规则（条件化，按顺序执行）

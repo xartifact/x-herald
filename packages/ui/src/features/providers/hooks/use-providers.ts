@@ -7,7 +7,12 @@ import { toast } from 'sonner'
 
 import { get, post, put, del, patch } from '@xartifact/x-llm-gateway-ui'
 
-import type { Provider, ProtocolsConfig } from '@xartifact/x-llm-gateway-shared'
+import type {
+  InstanceCost,
+  Provider,
+  ProviderModelInfo,
+  ProtocolsConfig,
+} from '@xartifact/x-llm-gateway-shared'
 
 // Query Keys
 export const providerKeys = {
@@ -90,8 +95,7 @@ export function useUpdateProvider() {
 export function useProviderModels(providerId: string, enabled = false) {
   return useQuery({
     queryKey: [...providerKeys.detail(providerId), 'models'] as const,
-    queryFn: () =>
-      get<{ id: string; name: string; synced: boolean }[]>(`/api/providers/${providerId}/models`),
+    queryFn: () => get<ProviderModelInfo[]>(`/api/providers/${providerId}/models`),
     enabled: !!providerId && enabled,
   })
 }
@@ -109,7 +113,21 @@ export function useSyncProviderModels() {
       groupId,
     }: {
       providerId: string
-      models: Array<{ id: string; name: string }>
+      models: Array<{
+        id: string
+        name: string
+        description?: string
+        contextWindow?: number
+        maxOutputTokens?: number
+        cost?: InstanceCost
+        capabilities?: {
+          streaming?: boolean
+          functionCalling?: boolean
+          vision?: boolean
+          jsonMode?: boolean
+          reasoning?: boolean
+        }
+      }>
       groupId?: string
     }) =>
       post<{ created: number; skipped: number }>(`/api/providers/${providerId}/sync-models`, {

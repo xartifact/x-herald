@@ -1,16 +1,10 @@
 import { getDatabase } from '../../index'
 import { gatewayConfigs } from '../../index'
 import { virtualKeys } from '../../index'
-import {
-  accessModels,
-  modelGroupMemberships,
-  modelGroups,
-  modelInstances,
-  modelRoutes,
-} from '../../index'
+import { accessModels, modelGroupMemberships, modelGroups, modelInstances } from '../../index'
 import { providers } from '../../index'
 
-import { EXPORT_VERSION, type EngineExportFormat, type ExportedModelRoute } from './types'
+import { EXPORT_VERSION, type EngineExportFormat } from './types'
 
 export async function exportConfig(): Promise<EngineExportFormat> {
   const db = getDatabase()
@@ -20,7 +14,6 @@ export async function exportConfig(): Promise<EngineExportFormat> {
     allModelGroups,
     allModelInstances,
     allAccessModels,
-    allModelRoutes,
     allVirtualKeys,
     allGatewayConfigs,
     allMemberships,
@@ -29,7 +22,6 @@ export async function exportConfig(): Promise<EngineExportFormat> {
     db.select().from(modelGroups),
     db.select().from(modelInstances),
     db.select().from(accessModels),
-    db.select().from(modelRoutes),
     db.select().from(virtualKeys),
     db.select().from(gatewayConfigs),
     db.select().from(modelGroupMemberships),
@@ -44,13 +36,6 @@ export async function exportConfig(): Promise<EngineExportFormat> {
 
   const providerIdToName = new Map(allProviders.map((p) => [p.id, p.name]))
   const groupIdToName = new Map(allModelGroups.map((g) => [g.id, g.name]))
-  const virtualModelIdToName = new Map(allAccessModels.map((v) => [v.id, v.name]))
-  const instanceIdToRef = new Map(
-    allModelInstances.map((i) => [
-      i.id,
-      `${providerIdToName.get(i.providerId) ?? ''}/${i.actualModelName}`,
-    ]),
-  )
 
   return {
     version: EXPORT_VERSION,
@@ -101,34 +86,6 @@ export async function exportConfig(): Promise<EngineExportFormat> {
         description: v.description,
         enabled: v.enabled,
       })),
-
-      modelRoutes: allModelRoutes.map((r) => {
-        const action = r.action as { type: string; targetId?: string; reason?: string }
-        let targetRef: string | undefined
-        if (action.targetId) {
-          if (action.type === 'route_to_access_model') {
-            targetRef = virtualModelIdToName.get(action.targetId)
-          } else if (action.type === 'route_to_group') {
-            targetRef = groupIdToName.get(action.targetId)
-          } else if (action.type === 'route_to_instance') {
-            targetRef = instanceIdToRef.get(action.targetId)
-          }
-        }
-        const virtualModelNames = (r.accessModelIds ?? [])
-          .map((id) => virtualModelIdToName.get(id))
-          .filter((name): name is string => name != null)
-        return {
-          name: r.name,
-          description: r.description,
-          virtualModelNames,
-          virtualModelName: virtualModelNames[0] ?? null,
-          conditions: (r.conditions as unknown[]) ?? [],
-          action: { type: action.type, targetRef, reason: action.reason },
-          priority: r.priority,
-          enabled: r.enabled,
-          flowData: r.flowData,
-        } satisfies ExportedModelRoute
-      }),
 
       virtualKeys: allVirtualKeys.map((k) => ({
         name: k.name,

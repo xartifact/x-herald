@@ -1,6 +1,8 @@
 export type { ExportFormat, ImportResult } from '@xartifact/x-llm-gateway-shared'
 
-export const EXPORT_VERSION = '1' as const
+// v2: 移除 modelRoutes 段 —— 路由规则的单一事实源已迁移到 canvas_states，
+// model_routes 表本身也已删除，导出/导入不再涉及路由规则。
+export const EXPORT_VERSION = '2' as const
 
 export interface ExportedProvider {
   name: string
@@ -47,30 +49,6 @@ export interface ExportedAccessModel {
   enabled: boolean
 }
 
-export interface ExportedModelRoute {
-  name: string
-  description: string | null
-  /** 用于导入时解析 accessModelIds（完整列表） */
-  virtualModelNames: string[]
-  /** @deprecated use virtualModelNames */
-  virtualModelName: string | null
-  conditions: unknown[]
-  action: {
-    type: string
-    /**
-     * 用于导入时解析 targetId：
-     * - route_to_virtual_model: virtual_model.name
-     * - route_to_group: model_group.name
-     * - route_to_instance: "{providerName}/{actualModelName}"
-     */
-    targetRef?: string
-    reason?: string
-  }
-  priority: number
-  enabled: boolean
-  flowData: unknown
-}
-
 export interface ExportedVirtualKey {
   name: string
   key: string
@@ -103,7 +81,6 @@ export interface EngineExportFormat {
     modelInstances: ExportedModelInstance[]
     accessModels?: ExportedAccessModel[]
     virtualModels: ExportedAccessModel[]
-    modelRoutes: ExportedModelRoute[]
     virtualKeys: ExportedVirtualKey[]
     gatewayConfigs: ExportedGatewayConfig[]
   }
@@ -117,7 +94,6 @@ export interface EngineImportResult {
     modelInstances: ImportSummaryItem
     accessModels: ImportSummaryItem
     virtualModels: ImportSummaryItem
-    modelRoutes: ImportSummaryItem
     virtualKeys: ImportSummaryItem
     gatewayConfigs: ImportSummaryItem
   }

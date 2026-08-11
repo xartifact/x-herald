@@ -46,36 +46,7 @@ export interface InstanceFormData {
   description: string
   weight: number
   priority: number
-  config?: {
-    parameterTransforms?: Array<{
-      when?: {
-        paramName: string
-        operator: 'eq' | 'ne' | 'exists' | 'not_exists'
-        value?: unknown
-      }
-      action: {
-        type: 'add' | 'remove' | 'rename' | 'transform'
-        targetParam: string
-        value?: unknown
-        expression?: string
-      }
-    }>
-    schemaConfig?: {
-      cleanEnabled: boolean
-      preserveFields?: string[]
-      additionalBannedFields?: string[]
-    }
-    customHeaders?: Record<string, string>
-    parameterMapping?: Record<
-      string,
-      {
-        min?: number
-        max?: number
-        default?: unknown
-        transform?: string
-      }
-    >
-  }
+  config?: InstanceConfig
 }
 
 export interface ModelCapabilities {
@@ -89,6 +60,61 @@ export interface ModelCapabilities {
   codeInterpreter?: boolean
   webSearch?: boolean
   [key: string]: unknown
+}
+
+/**
+ * 模型实例计费信息（USD per 1M tokens）。
+ *
+ * 与 v1-models.schema.json 中的 `Cost` 定义对齐。
+ * `input` / `output` 为必填（与旧版 `{ input: number; output: number }` 兼容），
+ * `cache_read` / `cache_write` / `tiers` 为可选扩展。
+ */
+export interface InstanceCost {
+  input: number
+  output: number
+  cache_read?: number
+  cache_write?: number
+  tiers?: InstanceCostTier[]
+}
+
+/** 阶梯定价：当总输入 tokens 超过 `input_tokens_above` 时切换到该档价格 */
+export interface InstanceCostTier {
+  input_tokens_above: number
+  input: number
+  output: number
+  cache_read?: number
+  cache_write?: number
+}
+
+/**
+ * 供应商 `/models` 端点返回的单个模型信息（归一化后）。
+ *
+ * `fetchRemoteModels` 抓取供应商响应后，将各供应商可能返回的额外字段
+ * 归一化为 camelCase 并填充到对应属性。供应商未提供的字段留空（undefined）。
+ */
+export interface ProviderModelInfo {
+  /** 模型 ID（供应商原始标识，如 `gpt-4o`、`claude-sonnet-4-5-20250929`） */
+  id: string
+  /** 展示名称 */
+  name: string
+  /** 是否已同步为 model_instance */
+  synced: boolean
+  /** 模型描述（如有） */
+  description?: string
+  /** 上下文窗口大小（tokens） */
+  contextWindow?: number
+  /** 最大输出 tokens */
+  maxOutputTokens?: number
+  /** 计费信息 */
+  cost?: InstanceCost
+  /** 能力标记 */
+  capabilities?: {
+    streaming?: boolean
+    functionCalling?: boolean
+    vision?: boolean
+    jsonMode?: boolean
+    reasoning?: boolean
+  }
 }
 
 export interface InstanceConfig {
@@ -122,9 +148,19 @@ export interface InstanceConfig {
     retryableStatusCodes: number[]
   }
 
+  /**
+   * 实例级超时覆盖。
+   * - connectTimeoutMs：TCP/TLS 建连超时（缺省用全局 CONNECT_TIMEOUT）
+   * - ttfbTimeoutMs：单次 attempt TTFB 覆盖（缺省用全局 attempt*）
+   * - connectTimeout / readTimeout：历史字段，分别映射到 connect / ttfb
+   */
   timeoutConfig?: {
-    connectTimeout: number
-    readTimeout: number
+    connectTimeoutMs?: number
+    ttfbTimeoutMs?: number
+    /** @deprecated 使用 connectTimeoutMs */
+    connectTimeout?: number
+    /** @deprecated 历史误用为 read，现映射为 ttfbTimeoutMs */
+    readTimeout?: number
   }
 
   parameterTransforms?: Array<{
@@ -182,7 +218,7 @@ export interface ModelInstance {
   config: InstanceConfig | null
   weight: number
   priority: number
-  costPer1kTokens: { input: number; output: number } | null
+  costPer1kTokens: InstanceCost | null
   healthCheckUrl: string | null
   enabled: boolean
   status: string
@@ -233,10 +269,7 @@ export interface CreateModelInstancePayload {
   description?: string
   weight?: number
   priority?: number
-  costPer1kTokens?: {
-    input: number
-    output: number
-  }
+  costPer1kTokens?: InstanceCost
   config?: InstanceConfig
 }
 
@@ -246,9 +279,25 @@ export interface UpdateModelInstancePayload {
   description?: string
   weight?: number
   priority?: number
-  costPer1kTokens?: {
-    input: number
-    output: number
-  }
-  config?: InstanceConfig
+  costPer1kTokens?: InstanceCost | null
+  config?: InstanceConfig | null
+}
+
+/**
+ * 模型实例连通性测试结果 —— 由实例清单上的"测试"按钮触发（POST /instances/:id/test）。
+ * ok=true 表示上游可达且返回了正常响应；其余情况 ok=false，message 说明原因。
+ */
+export interface InstanceTestResult {
+  /** 连通且响应正常 */
+  ok: boolean
+  /** 上游返回的 HTTP 状态码（网络错误时为 null） */
+  statusCode: number | null
+  /** 探测耗时（ms） */
+  latencyMs: number
+  /** 探测时使用的实例实际模型名 */
+  model: string | null
+  /** 给用户看的结论文案（成功/失败原因） */
+  message: string
+  /** 上游返回的简短响应片段（成功时，便于确认可用性） */
+  snippet: string | null
 }

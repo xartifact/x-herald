@@ -1,5 +1,6 @@
 import { Outlet } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
+import { Loader2 } from 'lucide-react'
 import AdminNav from '../components/AdminNav'
 
 export function AdminLayout() {
@@ -30,10 +31,10 @@ export function AdminLayout() {
 
   if (!token || !verified) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4" />
-          <p className="text-gray-600">正在验证身份...</p>
+          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">正在验证身份...</p>
         </div>
       </div>
     )

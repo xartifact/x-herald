@@ -1,5 +1,3 @@
-'use client'
-
 import { ChevronRight } from 'lucide-react'
 import { Badge } from '../../../../shared/components/ui/badge'
 import type { Log } from '@xartifact/x-llm-gateway-shared'
@@ -20,7 +18,7 @@ export function RequestMetaSection({ log, isPending, isSuccess }: RequestMetaSec
           <div className="flex items-center gap-2">
             <span
               className={
-                isPending ? 'text-amber-600' : isSuccess ? 'text-green-600' : 'text-red-600'
+                isPending ? 'text-warning' : isSuccess ? 'text-success' : 'text-destructive'
               }
             >
               {isPending ? '请求中' : isSuccess ? '成功' : '失败'}

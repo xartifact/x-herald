@@ -176,12 +176,8 @@ export interface LogStorage {
 export interface LogsListResponse {
   success: boolean
   data: LogListItem[]
-  pagination: {
-    page: number
-    pageSize: number
-    total: number
-    totalPages: number
-  }
+  nextCursor: string | null
+  hasMore: boolean
 }
 
 export interface LogResponse {

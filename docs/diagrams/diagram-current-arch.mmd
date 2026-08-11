@@ -1,0 +1,59 @@
+---
+config:
+  theme: neutral
+---
+block-beta
+columns 1
+
+T1["表现层 (Web SPA)"]
+block:L1
+  columns 3
+  W1["路由规则画布"] W2["接入模型管理"] W3["服务/组/密钥/日志"]
+end
+
+T2["API 网关层 (apps/gateway)"]
+block:L2
+  columns 3
+  A1["model-routes CRUD<br/>(POST/PUT/DELETE)"] A2["canvas-state<br/>(GET/PUT)"] A3["access-models / providers / keys / logs"]
+end
+
+T3["路由引擎层 (运行时热路径)"]
+block:L3
+  columns 3
+  E1["RouteRuleEngine<br/>(active, SQL 查询)"] E2["CanvasRouteEngine<br/>(dormant, 内存索引)"] E3["shadow-compare<br/>(差异日志)"]
+end
+
+T4["数据层"]
+block:L4
+  columns 4
+  D1[("model_routes<br/>(活跃读写)")] D2[("canvas_states<br/>(持久化 + 内存缓存)")] D3[("access_models / providers / groups")] D4[("PGlite / Postgres")]
+end
+
+T5["启动迁移"]
+block:L5
+  columns 1
+  M1["migrate-canvas-state<br/>: model_routes → canvas_states.graph (每次启动)"]
+end
+
+classDef hdr1 fill:#EAF1FB,stroke:#3B6FB6,font-weight:bold
+classDef hdr2 fill:#FFF3DC,stroke:#C8862C,font-weight:bold
+classDef hdr3 fill:#FCE4E4,stroke:#B33A3A,font-weight:bold
+classDef hdr4 fill:#EFEFEF,stroke:#808080,font-weight:bold
+classDef hdr5 fill:#FFF7E6,stroke:#C8862C,font-weight:bold
+classDef band1 fill:#EAF1FB,stroke:#3B6FB6
+classDef band2 fill:#FFF3DC,stroke:#C8862C
+classDef band3 fill:#FCE4E4,stroke:#B33A3A
+classDef band4 fill:#EFEFEF,stroke:#808080
+classDef band5 fill:#FFF7E6,stroke:#C8862C
+classDef box fill:#FFFFFF,stroke:#666666
+classDef bad fill:#FFD6D6,stroke:#B33A3A
+
+class T1,T2,T3,T4,T5 hdr1,hdr2,hdr3,hdr4,hdr5
+class L1,L2,L3,L4,L5 band1,band2,band3,band4,band5
+class W1,W2,W3,A3,E3,D3,D4,M1 box
+class A1 bad
+class A2 box
+class E1 bad
+class E2 box
+class D1 bad
+class D2 box

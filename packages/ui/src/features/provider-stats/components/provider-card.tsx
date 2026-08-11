@@ -64,11 +64,11 @@ export function ProviderCard({ stat, rank }: ProviderCardProps) {
       </div>
 
       <div className="grid grid-cols-3 md:grid-cols-4 gap-3 text-sm">
-        <div className="bg-blue-50/50 dark:bg-blue-950/20 rounded-lg px-3 py-2 border border-blue-100 dark:border-blue-900">
+        <div className="bg-info/10 border border-info/20 rounded-lg px-3 py-2">
           <div className="text-xs text-muted-foreground">
             TTFB 均值
             {stat.ttfbCount > 0 && (
-              <span className="ml-1 text-blue-500">
+              <span className="ml-1 text-info">
                 ({stat.ttfbCount}/{stat.totalRequests})
               </span>
             )}
@@ -82,7 +82,7 @@ export function ProviderCard({ stat, rank }: ProviderCardProps) {
             {stat.avgTtfb != null ? formatMs(stat.avgTtfb) : '—'}
           </div>
         </div>
-        <div className="bg-blue-50/50 dark:bg-blue-950/20 rounded-lg px-3 py-2 border border-blue-100 dark:border-blue-900">
+        <div className="bg-info/10 border border-info/20 rounded-lg px-3 py-2">
           <div className="text-xs text-muted-foreground">TTFB P95</div>
           <div
             className={cn(
@@ -95,13 +95,13 @@ export function ProviderCard({ stat, rank }: ProviderCardProps) {
         </div>
         <div className="bg-muted/50 rounded-lg px-3 py-2">
           <div className="text-xs text-muted-foreground">最快</div>
-          <div className="font-semibold text-base text-green-600">
+          <div className="font-semibold text-base text-success">
             {formatMs(stat.minResponseTime)}
           </div>
         </div>
         <div className="bg-muted/50 rounded-lg px-3 py-2">
           <div className="text-xs text-muted-foreground">最慢</div>
-          <div className="font-semibold text-base text-red-600">
+          <div className="font-semibold text-base text-destructive">
             {formatMs(stat.maxResponseTime)}
           </div>
         </div>
@@ -112,10 +112,10 @@ export function ProviderCard({ stat, rank }: ProviderCardProps) {
           className={cn(
             'h-full rounded-full transition-all',
             successRate >= 0.95
-              ? 'bg-green-500'
+              ? 'bg-success'
               : successRate >= 0.8
-                ? 'bg-yellow-500'
-                : 'bg-red-500',
+                ? 'bg-warning'
+                : 'bg-destructive',
           )}
           style={{ width: `${(successRate * 100).toFixed(1)}%` }}
         />

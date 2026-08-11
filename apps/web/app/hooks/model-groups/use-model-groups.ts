@@ -1,11 +1,10 @@
-'use client'
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import { get, post, put, del as deleteRequest, patch } from '@xartifact/x-llm-gateway-ui'
 
 import type {
+  InstanceCost,
   ModelGroup,
   ModelGroupDetail,
   ApiResponse,
@@ -201,7 +200,7 @@ export interface CreateInstanceData {
   description?: string
   weight?: number
   priority?: number
-  costPer1kTokens?: { input: number; output: number }
+  costPer1kTokens?: InstanceCost
   config?: ModelInstance['config']
 }
 

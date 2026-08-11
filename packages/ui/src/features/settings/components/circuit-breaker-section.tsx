@@ -1,5 +1,3 @@
-'use client'
-
 import { useState } from 'react'
 
 import { RefreshCw, ShieldAlert } from 'lucide-react'

@@ -23,6 +23,7 @@ export type SyntheticThinkingStrategy = 'strip' | 'inject'
 export interface ExtendedProtocolConfig extends ProtocolConfig {
   thinkingMapping?: ThinkingMappingConfig
   syntheticThinking?: SyntheticThinkingStrategy
+  toolSchemaSanitization?: boolean
 }
 
 export type ProtocolsConfig = Partial<Record<string, ExtendedProtocolConfig>>

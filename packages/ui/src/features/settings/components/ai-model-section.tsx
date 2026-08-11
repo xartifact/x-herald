@@ -1,5 +1,3 @@
-'use client'
-
 import { useState } from 'react'
 
 import { Bot, RefreshCw } from 'lucide-react'

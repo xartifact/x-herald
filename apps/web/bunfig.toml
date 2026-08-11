@@ -1,0 +1,4 @@
+[test]
+# Preload test setup — jsdom + monaco polyfills (see test/setup.ts)
+# Excludes Playwright e2e tests via --path-ignore-patterns in package.json
+preload = ["./test/setup.ts"]

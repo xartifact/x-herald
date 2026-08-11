@@ -1,4 +1,4 @@
-import { eq, and, asc } from '@xartifact/x-llm-gateway-db'
+import { and, asc, eq, isNull } from '@xartifact/x-llm-gateway-db'
 
 import { getDatabase } from '../../db/client'
 import logger from '../../lib/logger'
@@ -33,7 +33,7 @@ export class ModelGroupRouter {
     const groupResult = await db
       .select()
       .from(modelGroups)
-      .where(eq(modelGroups.id, groupId))
+      .where(and(eq(modelGroups.id, groupId), isNull(modelGroups.deletedAt)))
       .limit(1)
     if (groupResult.length === 0) {
       throw new ModelNotFoundError(
@@ -58,7 +58,9 @@ export class ModelGroupRouter {
         and(
           eq(modelGroupMemberships.groupId, group.id),
           eq(modelInstances.enabled, true),
+          isNull(modelInstances.deletedAt),
           eq(providers.enabled, true),
+          isNull(providers.deletedAt),
         ),
       )
       .orderBy(asc(modelInstances.priority), asc(modelInstances.createdAt))
@@ -114,9 +116,11 @@ export class ModelGroupRouter {
     const candidates = await this.routeCandidatesByGroupId(groupId, context)
     return candidates[0] ?? null
   }
-
   async listModelGroups(): Promise<ModelGroup[]> {
-    return getDatabase().select().from(modelGroups).where(eq(modelGroups.enabled, true))
+    return getDatabase()
+      .select()
+      .from(modelGroups)
+      .where(and(eq(modelGroups.enabled, true), isNull(modelGroups.deletedAt)))
   }
 
   async getModelGroupDetail(groupId: string): Promise<{
@@ -124,7 +128,11 @@ export class ModelGroupRouter {
     instances: Array<{ instance: ModelInstance; provider: typeof providers.$inferSelect }>
   } | null> {
     const db = getDatabase()
-    const group = await db.select().from(modelGroups).where(eq(modelGroups.id, groupId)).limit(1)
+    const group = await db
+      .select()
+      .from(modelGroups)
+      .where(and(eq(modelGroups.id, groupId), isNull(modelGroups.deletedAt)))
+      .limit(1)
     if (group.length === 0) return null
 
     const instances = await db

@@ -1,5 +1,3 @@
-'use client'
-
 import { useState, useMemo } from 'react'
 
 import { useGroupPageGroups } from './use-group-page-groups'

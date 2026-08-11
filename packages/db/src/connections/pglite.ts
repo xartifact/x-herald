@@ -1,3 +1,4 @@
+import { execSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
 
@@ -6,8 +7,29 @@ import type { DbLogger, Database } from '../types'
 const PGLITE_LOCK_FILE = '.xllm.pid'
 
 /**
+ * Inspect the process holding the .xllm.pid lock so the error message
+ * can identify which PID/command to kill.
+ */
+function describeLockHolder(pid: number): { command: string; elapsed: string } | null {
+  try {
+    const out = execSync(`ps -p ${pid} -o pid=,command=,etime=`, {
+      encoding: 'utf-8',
+      timeout: 1000,
+    }).trim()
+    if (!out) return null
+    const trimmed = out.replace(/^\s+/, '')
+    const match = trimmed.match(/^\d+\s+(.+?)\s+(\d{2}:\d{2}:\d{2}|\d+:\d{2})\s*$/)
+    if (!match) return { command: trimmed, elapsed: 'unknown' }
+    return { command: match[1]!.trim(), elapsed: match[2]! }
+  } catch {
+    return null
+  }
+}
+
+/**
  * Acquire an exclusive lock for the PGlite data directory.
- * Prevents multiple Bun/worker instances from opening the same dir.
+ * Throws a descriptive Error when the lock is held by another live process,
+ * including the holder's PID, command, elapsed time, and lock file path.
  */
 function acquirePgliteLock(dataDir: string, logger: DbLogger): boolean {
   const lockPath = path.join(dataDir, PGLITE_LOCK_FILE)
@@ -15,13 +37,40 @@ function acquirePgliteLock(dataDir: string, logger: DbLogger): boolean {
     if (fs.existsSync(lockPath)) {
       const existingPid = parseInt(fs.readFileSync(lockPath, 'utf-8').trim(), 10)
       if (existingPid === process.pid) return true
+
+      let holderAlive = false
       try {
         process.kill(existingPid, 0)
-        logger.warn({ existingPid }, '[DB] PGlite already in use by another process')
-        return false
+        holderAlive = true
       } catch {
-        fs.unlinkSync(lockPath)
+        // process exited — stale lock will be cleaned up below
       }
+
+      if (holderAlive) {
+        const info = describeLockHolder(existingPid)
+        logger.error(
+          {
+            existingPid,
+            command: info?.command,
+            elapsed: info?.elapsed,
+            lockPath,
+            dataDir,
+          },
+          '[DB] PGlite data directory is locked by another process',
+        )
+        const cmdSuffix = info?.command ? ` "${info.command}"` : ''
+        const elapsedSuffix = info?.elapsed ? ` (running for ${info.elapsed})` : ''
+        throw new Error(
+          `[DB] PGlite data directory ${dataDir} is locked by PID ${existingPid}${cmdSuffix}${elapsedSuffix}. ` +
+            `Lock file: ${lockPath}. ` +
+            `Stop the holder with: kill ${existingPid}` +
+            (info?.command
+              ? ''
+              : ` (or delete the lock file manually if the process has already exited).`),
+        )
+      }
+
+      fs.unlinkSync(lockPath)
     }
     fs.mkdirSync(dataDir, { recursive: true })
     fs.writeFileSync(lockPath, String(process.pid))
@@ -43,6 +92,7 @@ function acquirePgliteLock(dataDir: string, logger: DbLogger): boolean {
     })
     return true
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('[DB]')) throw err
     logger.warn({ err }, '[DB] PGlite lock operation failed, proceeding anyway')
     return true
   }
@@ -51,7 +101,7 @@ function acquirePgliteLock(dataDir: string, logger: DbLogger): boolean {
 /**
  * Run pending SQL migrations against a PGlite instance.
  */
-async function runPgliteMigrations(
+export async function runPgliteMigrations(
   pgliteClient: {
     exec: (sql: string) => Promise<unknown>
     query: (sql: string, params?: unknown[]) => Promise<{ rows: Array<{ hash: string }> }>
@@ -145,7 +195,7 @@ export async function createPgliteDatabase(
   logger.trace({ dataDir }, '[DB] Using PGlite')
 
   if (!acquirePgliteLock(dataDir, logger)) {
-    throw new Error('[DB] Timeout waiting for PGlite lock (another process holds it)')
+    throw new Error('[DB] Failed to acquire PGlite lock')
   }
 
   const pgliteClient = new PGlite(dataDir)

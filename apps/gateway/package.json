@@ -16,7 +16,8 @@
     "start": "bun run --env-file=../../.env.local --env-file=../../.env src/server.ts",
     "typecheck": "tsc --noEmit",
     "test": "bun test --no-coverage --reporter=dots",
-    "db:migrate": "cd ../../packages/db && bun run db:migrate"
+    "db:migrate": "cd ../../packages/db && bun run db:migrate",
+    "tool-schema:diff": "DB_TYPE=postgres bun run --env-file=../../.env.local --env-file=../../.env scripts/replay-tool-schema.ts"
   },
   "dependencies": {
     "@dagrejs/dagre": "^3.0.0",

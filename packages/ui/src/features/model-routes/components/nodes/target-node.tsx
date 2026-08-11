@@ -1,5 +1,3 @@
-'use client'
-
 import { memo } from 'react'
 
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
@@ -7,14 +5,14 @@ import { Layers, Server } from 'lucide-react'
 
 interface TargetData {
   label: string
-  targetType: 'virtual_model' | 'model_group' | 'model_instance'
+  targetType: 'access_model' | 'model_group' | 'model_instance'
   targetName: string
   ruleName?: string
   [key: string]: unknown
 }
 
 function TargetNodeComponent({ data }: NodeProps<Node<TargetData>>) {
-  const isGroup = data.targetType === 'model_group' || data.targetType === 'virtual_model'
+  const isGroup = data.targetType === 'model_group' || data.targetType === 'access_model'
 
   return (
     <div className="rounded-lg border-2 border-green-500 bg-green-50 px-4 py-3 shadow-sm min-w-[160px]">
@@ -26,8 +24,8 @@ function TargetNodeComponent({ data }: NodeProps<Node<TargetData>>) {
           <Server className="h-4 w-4 text-green-600" />
         )}
         <span className="text-xs font-semibold text-green-600 uppercase">
-          {data.targetType === 'virtual_model'
-            ? '虚拟模型'
+          {data.targetType === 'access_model'
+            ? '接入模型'
             : data.targetType === 'model_group'
               ? '模型组'
               : '实例'}

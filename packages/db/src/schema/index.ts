@@ -1,6 +1,9 @@
 export { providers } from './providers'
 export type { Provider, NewProvider } from './providers'
 
+export { classifierPrompts } from './classifier-prompts'
+export type { ClassifierPrompt, NewClassifierPrompt } from './classifier-prompts'
+
 export { virtualKeys, keyUsageDaily } from './keys'
 export type { VirtualKey, NewVirtualKey, KeyUsageDaily, NewKeyUsageDaily } from './keys'
 
@@ -23,8 +26,6 @@ export {
   modelInstancesRelations,
   modelGroupMembershipsRelations,
   accessModels,
-  modelRoutes,
-  modelRoutesRelations,
 } from './model-groups'
 export type {
   ModelGroup,
@@ -35,8 +36,6 @@ export type {
   NewModelGroupMembership,
   AccessModel,
   NewAccessModel,
-  ModelRoute,
-  NewModelRoute,
 } from './model-groups'
 
 export { requestLogs, requestAttempts, clientRequestedModels, modelRequestStats } from './logs'
@@ -51,6 +50,9 @@ export type {
   NewModelRequestStat,
 } from './logs'
 
+export { intentLogs, INTENT_SOURCE_VALUES } from './intent-logs'
+export type { IntentLog, NewIntentLog, IntentSource } from './intent-logs'
+
 export { instancePerfSnapshots, anomalyEvents } from './metrics'
 export type {
   InstancePerfSnapshot,
@@ -58,3 +60,9 @@ export type {
   AnomalyEvent,
   NewAnomalyEvent,
 } from './metrics'
+
+export { potentialModels, POTENTIAL_MODEL_ACTIONS } from './potential-models'
+export type { PotentialModel, NewPotentialModel, PotentialModelAction } from './potential-models'
+
+export { routeRules } from './route-rules'
+export type { RouteRule, NewRouteRule } from './route-rules'

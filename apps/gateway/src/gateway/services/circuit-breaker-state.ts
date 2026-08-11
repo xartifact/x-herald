@@ -31,9 +31,39 @@ const EMPTY_META: CircuitBreakerMeta = { instanceName: '', groupName: '', provid
 class CircuitBreakerRegistry {
   private readonly states = new Map<string, InstanceState>()
   private now: () => number
+  private readonly subscribers = new Set<
+    (instanceId: string, state: 'closed' | 'open' | 'half_open' | 'cooldown') => void
+  >()
 
   constructor(now?: () => number) {
     this.now = now ?? (() => Date.now())
+  }
+
+  /**
+   * Subscribe to state transitions. Callback fires after every state change
+   * (including → closed when entries are deleted by recordSuccess / manualReset).
+   * Used by metrics integrations — see features/metrics/prometheus-circuit-breaker.ts.
+   */
+  subscribe(
+    cb: (instanceId: string, state: 'closed' | 'open' | 'half_open' | 'cooldown') => void,
+  ): () => void {
+    this.subscribers.add(cb)
+    return () => {
+      this.subscribers.delete(cb)
+    }
+  }
+
+  private notifyStateChange(
+    instanceId: string,
+    state: 'closed' | 'open' | 'half_open' | 'cooldown',
+  ): void {
+    for (const cb of this.subscribers) {
+      try {
+        cb(instanceId, state)
+      } catch (err) {
+        logger.warn({ err, instanceId }, '[CircuitBreaker] state-change subscriber threw')
+      }
+    }
   }
 
   async isOpen(instanceId: string): Promise<boolean> {
@@ -66,6 +96,7 @@ class CircuitBreakerRegistry {
         s.failures = 0
       }
       await persistEvent(instanceId, 'half_open', s.failures, null, s.meta, s.tripCount)
+      this.notifyStateChange(instanceId, s.state)
       return false
     }
 
@@ -81,6 +112,7 @@ class CircuitBreakerRegistry {
       )
       await persistEvent(instanceId, 'closed', s.failures, null, meta ?? s.meta, s.tripCount)
       this.states.delete(instanceId)
+      this.notifyStateChange(instanceId, 'closed')
     }
   }
 
@@ -148,6 +180,7 @@ class CircuitBreakerRegistry {
         )
         await persistEvent(instanceId, 'cooldown', s.failures, null, s.meta, s.tripCount)
       }
+      this.notifyStateChange(instanceId, s.state)
       return
     }
 
@@ -187,6 +220,7 @@ class CircuitBreakerRegistry {
         s.tripCount,
       )
     }
+    this.notifyStateChange(instanceId, s.state)
   }
 
   restoreOpenState(
@@ -205,6 +239,7 @@ class CircuitBreakerRegistry {
       pendingProbe: null,
       meta: meta ?? EMPTY_META,
     })
+    this.notifyStateChange(instanceId, 'open')
     logger.info(
       { instanceId, openUntil: openUntil.toISOString(), failureCount, tripCount },
       '[CircuitBreaker] Restored open state from DB',
@@ -227,6 +262,7 @@ class CircuitBreakerRegistry {
       pendingProbe: null,
       meta: meta ?? EMPTY_META,
     })
+    this.notifyStateChange(instanceId, 'cooldown')
     logger.info(
       { instanceId, cooldownUntil: cooldownUntil.toISOString(), failureCount, tripCount },
       '[CircuitBreaker] Restored cooldown state from DB',
@@ -242,6 +278,7 @@ class CircuitBreakerRegistry {
     if (s) {
       await persistEvent(instanceId, 'reset', s.failures, null, s.meta, s.tripCount)
       this.states.delete(instanceId)
+      this.notifyStateChange(instanceId, 'closed')
       logger.info({ instanceId }, '[CircuitBreaker] Manual reset')
     } else {
       logger.info({ instanceId }, '[CircuitBreaker] Manual reset (no state to reset)')
@@ -303,6 +340,7 @@ class CircuitBreakerRegistry {
       s.openUntil = 0
       await persistEvent(instanceId, 'manual_trip', s.failures, null, s.meta, s.tripCount)
     }
+    this.notifyStateChange(instanceId, s.state)
     logger.warn({ instanceId, tripCount: s.tripCount }, '[CircuitBreaker] Manual trip')
   }
 
@@ -319,6 +357,9 @@ class CircuitBreakerRegistry {
       remainingMs: number
       openUntil: number
       cooldownUntil: number
+      instanceName: string
+      providerName: string
+      groupName: string
     }>
   > {
     await refreshConfigIfStale(this.now)
@@ -336,6 +377,9 @@ class CircuitBreakerRegistry {
         remainingMs,
         openUntil: s.openUntil,
         cooldownUntil: s.cooldownUntil,
+        instanceName: s.meta.instanceName,
+        providerName: s.meta.providerName,
+        groupName: s.meta.groupName,
       })
     }
     return result

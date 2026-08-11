@@ -1,5 +1,3 @@
-'use client'
-
 import { GitBranch } from 'lucide-react'
 
 import { Badge } from '../../../../shared/components/ui/badge'
@@ -71,7 +69,7 @@ export function MetadataBasicSections({
           }
         >
           <div className="p-4 space-y-2">
-            <div className="text-sm font-medium text-red-600">{log.errorMessage}</div>
+            <div className="text-sm font-medium text-destructive">{log.errorMessage}</div>
             {log.errorType && (
               <div className="text-xs text-muted-foreground font-mono">类型: {log.errorType}</div>
             )}

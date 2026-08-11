@@ -1,11 +1,24 @@
 import { eq, sql } from '@xartifact/x-llm-gateway-db'
 import { Hono } from 'hono'
 
+import type { TtfbTimeoutConfig } from '@xartifact/x-llm-gateway-shared'
+
 import { getDatabase } from '../../db/client'
 import { rootLogger } from '../../lib'
-import { CB_CONFIG_KEY, configureCircuitBreaker } from '../../gateway/services'
+import {
+  CB_CONFIG_KEY,
+  configureCircuitBreaker,
+  TTFB_TIMEOUT_CONFIG_KEY,
+  DEFAULT_TTFB_CONFIG,
+  configureTtfbTimeout,
+  validateTtfbTimeoutConfig,
+} from '../../gateway/services'
 import { getConfig, setConfig } from '../gateway-config/service'
 import { modelGroups, modelGroupMemberships } from '@xartifact/x-llm-gateway-db'
+import {
+  getActiveClassifierPrompt,
+  updateClassifierPrompt,
+} from './services/classifier-prompt-service'
 
 const logger = rootLogger.child({ module: 'settings' })
 
@@ -27,7 +40,7 @@ settingsRoutes.get('/', async (c) => {
   try {
     const db = getDatabase()
 
-    const [defaultGroupId, groups, cbConfig] = await Promise.all([
+    const [defaultGroupId, groups, cbConfig, ttfbTimeout] = await Promise.all([
       getConfig<string | null>('AI_MODEL_GROUP_ID', null),
       db
         .select({
@@ -43,7 +56,11 @@ settingsRoutes.get('/', async (c) => {
         .groupBy(modelGroups.id, modelGroups.name, modelGroups.displayName)
         .orderBy(modelGroups.name),
       getConfig(CB_CONFIG_KEY, DEFAULT_CB_CONFIG),
+      getConfig<TtfbTimeoutConfig | null>(TTFB_TIMEOUT_CONFIG_KEY, null),
     ])
+
+    const ttfbValidated = validateTtfbTimeoutConfig(ttfbTimeout ?? DEFAULT_TTFB_CONFIG)
+    const ttfbNormalized = ttfbValidated.ok ? ttfbValidated.value : DEFAULT_TTFB_CONFIG
 
     return c.json({
       success: true,
@@ -51,6 +68,7 @@ settingsRoutes.get('/', async (c) => {
         aiModelGroupId: defaultGroupId,
         availableModelGroups: groups,
         circuitBreaker: cbConfig,
+        ttfbTimeout: ttfbNormalized,
       },
     })
   } catch (error) {
@@ -73,6 +91,7 @@ settingsRoutes.put('/', async (c) => {
         maxTripsBeforeCooldown?: number
         cooldownDurationMs?: number
       }
+      ttfbTimeout?: Partial<TtfbTimeoutConfig>
     }
 
     if ('aiModelGroupId' in body) {
@@ -162,13 +181,82 @@ settingsRoutes.put('/', async (c) => {
         ...(cooldownDurationMs !== undefined && { cooldownDurationMs }),
       }
       await setConfig(CB_CONFIG_KEY, cbConfig, '熔断器配置：失败阈值和熔断持续时间')
-      // 立即应用到运行时（无需重启）
       configureCircuitBreaker(cbConfig)
+    }
+
+    if ('ttfbTimeout' in body && body.ttfbTimeout) {
+      // 与当前已存配置合并，避免 partial body 把未传字段打回默认值
+      const current = await getConfig<TtfbTimeoutConfig | null>(TTFB_TIMEOUT_CONFIG_KEY, null)
+      const validated = validateTtfbTimeoutConfig({
+        ...(current ?? DEFAULT_TTFB_CONFIG),
+        ...body.ttfbTimeout,
+      })
+      if (!validated.ok) {
+        return c.json({ success: false, error: validated.error }, 400)
+      }
+      await setConfig(
+        TTFB_TIMEOUT_CONFIG_KEY,
+        validated.value,
+        'TTFB 超时配置：全局预算与单次 attempt 基准',
+      )
+      configureTtfbTimeout(validated.value)
     }
 
     return c.json({ success: true })
   } catch (error) {
     logger.warn({ err: error }, 'Failed to update settings')
+    return c.json(
+      { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
+      500,
+    )
+  }
+})
+
+settingsRoutes.get('/classifier-prompt', async (c) => {
+  try {
+    const prompt = await getActiveClassifierPrompt()
+    return c.json({
+      success: true,
+      data: {
+        content: prompt.content,
+        version: prompt.version,
+        updatedAt: prompt.updatedAt.toISOString(),
+        updatedBy: prompt.updatedBy,
+      },
+    })
+  } catch (error) {
+    logger.warn({ err: error }, 'Failed to get classifier prompt')
+    return c.json(
+      { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
+      500,
+    )
+  }
+})
+
+settingsRoutes.put('/classifier-prompt', async (c) => {
+  try {
+    const body = (await c.req.json()) as { content?: unknown; updatedBy?: string | null }
+    if (typeof body.content !== 'string' || body.content.trim().length === 0) {
+      return c.json({ success: false, error: 'content 不能为空' }, 400)
+    }
+    if (body.content.length > 32_000) {
+      return c.json({ success: false, error: 'content 长度不能超过 32000 字符' }, 400)
+    }
+    const updated = await updateClassifierPrompt(
+      body.content,
+      typeof body.updatedBy === 'string' ? body.updatedBy : null,
+    )
+    return c.json({
+      success: true,
+      data: {
+        content: updated.content,
+        version: updated.version,
+        updatedAt: updated.updatedAt.toISOString(),
+        updatedBy: updated.updatedBy,
+      },
+    })
+  } catch (error) {
+    logger.warn({ err: error }, 'Failed to update classifier prompt')
     return c.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       500,

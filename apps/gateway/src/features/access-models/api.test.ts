@@ -85,6 +85,22 @@ describe('access-models API', () => {
     expect(isIsoString(body.data.updatedAt)).toBe(true)
   })
 
+  it('POST /api/access-models without capabilities defaults to all switches ON and 1M context window', async () => {
+    const name = uniqueName('am-defaults')
+    const res = await authPost(ctx, '/api/access-models', { name })
+    const { status, body } = await parseJson<AccessModel>(res)
+    expect(status).toBe(201)
+    expect(body.success).toBe(true)
+    const caps = body.data.capabilities as Record<string, unknown>
+    expect(caps).not.toBeNull()
+    expect(caps.streaming).toBe(true)
+    expect(caps.functionCalling).toBe(true)
+    expect(caps.vision).toBe(true)
+    expect(caps.jsonMode).toBe(true)
+    expect(caps.reasoning).toBe(true)
+    expect(caps.contextWindow).toBe(1_000_000)
+  })
+
   it('POST /api/access-models with duplicate name returns error', async () => {
     const name = uniqueName('am-dup')
     await authPost(ctx, '/api/access-models', { name })

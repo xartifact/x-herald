@@ -1,11 +1,11 @@
 export {
   type RouteCondition,
   type RouteAction,
-  type FlowNodeData,
-  type FlowEdgeData,
-  type FlowData,
-  type ModelRoute,
-  type CreateModelRoutePayload,
-  type UpdateModelRoutePayload,
-  type SyncResult,
+  type IntentActionConfig,
+  type CapabilityActionConfig,
+  type IntentClassifierConfig,
+  type RouteActionType,
+  type CanvasGraph,
+  type GraphNode,
+  type GraphEdge,
 } from '@xartifact/x-llm-gateway-shared'

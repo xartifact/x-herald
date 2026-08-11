@@ -21,6 +21,6 @@
       "@xartifact/x-tinker-shared": ["./node_modules/@xartifact/x-tinker-shared/dist"]
     }
   },
-  "include": ["src"],
+  "include": ["src", "scripts"],
   "exclude": ["src/**/__tests__", "src/**/*.test.ts", "src/**/*.test.tsx"]
 }

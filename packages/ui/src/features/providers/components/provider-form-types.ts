@@ -9,8 +9,8 @@ export interface ProviderFormData {
   apiKey?: string
   enabled: boolean
   protocols: {
-    openai?: { enabled: boolean; baseUrl?: string }
-    anthropic?: { enabled: boolean; baseUrl?: string }
-    gemini?: { enabled: boolean; baseUrl?: string }
+    openai?: { enabled: boolean; baseUrl?: string; toolSchemaSanitization?: boolean }
+    anthropic?: { enabled: boolean; baseUrl?: string; toolSchemaSanitization?: boolean }
+    gemini?: { enabled: boolean; baseUrl?: string; toolSchemaSanitization?: boolean }
   }
 }

@@ -12,6 +12,8 @@ import {
   CardHeader,
   CardTitle,
   Badge,
+  PageHeader,
+  EmptyState,
 } from '@xartifact/x-llm-gateway-ui'
 
 interface FilterState {
@@ -77,15 +79,11 @@ export function ProviderStatsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-          <Wifi className="h-6 w-6" />
-          供应商统计
-        </h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          按网络质量（平均响应时间 + 成功率）对供应商进行排名分析
-        </p>
-      </div>
+      <PageHeader
+        title="供应商统计"
+        description="按网络质量（平均响应时间 + 成功率）对供应商进行排名分析"
+        icon={<Wifi className="h-5 w-5 text-muted-foreground" />}
+      />
 
       <ProviderStatsSummary summary={summary} />
 
@@ -111,7 +109,7 @@ export function ProviderStatsPage() {
               ))}
             </div>
           ) : sorted.length === 0 ? (
-            <div className="text-center text-muted-foreground py-12">暂无供应商请求数据</div>
+            <EmptyState title="暂无供应商请求数据" />
           ) : (
             <div className="space-y-3">
               {sorted.map((stat: any, index: number) => (

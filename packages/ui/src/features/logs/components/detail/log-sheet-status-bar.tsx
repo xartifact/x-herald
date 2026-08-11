@@ -1,5 +1,3 @@
-'use client'
-
 import { Separator } from '../../../../shared/components/ui/separator'
 import { cn } from '../../../../shared/lib/utils'
 import type { Log } from '@xartifact/x-llm-gateway-shared'
@@ -24,7 +22,7 @@ export function LogSheetStatusBar({ log, formatDuration, formatTokens }: LogShee
         <span
           className={cn(
             'hidden md:inline',
-            isPending ? 'text-amber-600' : isSuccess ? 'text-green-600' : 'text-red-600',
+            isPending ? 'text-warning' : isSuccess ? 'text-success' : 'text-destructive',
           )}
         >
           {isPending ? '请求中' : isSuccess ? '成功' : '失败'}

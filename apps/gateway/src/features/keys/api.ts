@@ -4,7 +4,7 @@ import { rootLogger } from '../../lib'
 
 import { rateLimitEngine } from '../../gateway/services/rate-limit-engine'
 
-import { createKey, deleteKey, getKey, listKeys, resetKey, updateKey } from './service'
+import { countKeys, createKey, deleteKey, getKey, listKeys, resetKey, updateKey } from './service'
 
 const logger = rootLogger.child({ module: 'keys' })
 
@@ -12,8 +12,19 @@ const keysRoutes = new Hono()
 
 keysRoutes.get('/', async (c) => {
   try {
-    const data = await listKeys()
-    return c.json({ success: true, data, total: data.length })
+    const page = Math.max(1, parseInt(c.req.query('page') || '1'))
+    const pageSize = Math.min(Math.max(1, parseInt(c.req.query('pageSize') || '50')), 200)
+    const search = c.req.query('search') || undefined
+    const [data, total] = await Promise.all([
+      listKeys({ search, limit: pageSize, offset: (page - 1) * pageSize }),
+      countKeys(search),
+    ])
+    const totalPages = Math.max(1, Math.ceil(total / pageSize))
+    return c.json({
+      success: true,
+      data,
+      pagination: { page, pageSize, total, totalPages },
+    })
   } catch (error) {
     logger.warn({ err: error }, 'Failed to list virtual keys')
     return c.json({ error: 'Failed to list virtual keys', code: 'KEYS_LIST_ERROR' }, 500)

@@ -1,6 +1,8 @@
 /** 应用版本，构建时注入，默认 'dev' */
 export const APP_VERSION = process.env.APP_VERSION ?? 'dev'
 
+export const GIT_COMMIT_HASH = process.env.GIT_COMMIT_HASH ?? 'unknown'
+
 /** Cron 任务鉴权密钥，未配置则为空字符串 */
 export const CRON_SECRET = process.env.CRON_SECRET ?? ''
 

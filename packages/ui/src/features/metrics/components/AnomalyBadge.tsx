@@ -6,9 +6,12 @@ interface Props {
 }
 
 const LEVEL_CONFIG = {
-  normal: { label: '正常', className: 'bg-green-50 text-green-700 border-green-200' },
-  warning: { label: '异常', className: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
-  critical: { label: '严重', className: 'bg-red-50 text-red-700 border-red-200' },
+  normal: { label: '正常', className: 'bg-success/10 text-success border-success/20' },
+  warning: { label: '异常', className: 'bg-warning/10 text-warning border-warning/20' },
+  critical: {
+    label: '严重',
+    className: 'bg-destructive/10 text-destructive border-destructive/20',
+  },
 }
 
 export function AnomalyBadge({ level, score }: Props) {

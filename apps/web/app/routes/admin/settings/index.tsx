@@ -3,13 +3,15 @@ import {
   AiModelSection,
   CircuitBreakerSection,
   ConfigIOSection,
+  TtfbTimeoutSection,
   Card,
   CardContent,
   Alert,
   AlertTitle,
   AlertDescription,
+  PageHeader,
 } from '@xartifact/x-llm-gateway-ui'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, Loader2 } from 'lucide-react'
 
 export function SettingsPage() {
   const { data: settings, isLoading, error } = useSettings()
@@ -17,13 +19,13 @@ export function SettingsPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">系统设置</h1>
-          <p className="text-muted-foreground">管理全局配置与熔断器参数</p>
-        </div>
+        <PageHeader title="系统设置" description="管理全局配置、熔断器与 TTFB 超时" />
         <Card>
           <CardContent className="p-6">
-            <p className="text-sm text-muted-foreground text-center">加载中...</p>
+            <p className="text-sm text-muted-foreground text-center flex items-center justify-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              加载中...
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -33,10 +35,7 @@ export function SettingsPage() {
   if (error) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">系统设置</h1>
-          <p className="text-muted-foreground">管理全局配置与熔断器参数</p>
-        </div>
+        <PageHeader title="系统设置" description="管理全局配置、熔断器与 TTFB 超时" />
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>加载失败</AlertTitle>
@@ -48,12 +47,10 @@ export function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">系统设置</h1>
-        <p className="text-muted-foreground">管理全局配置与熔断器参数</p>
-      </div>
+      <PageHeader title="系统设置" description="管理全局配置、熔断器与 TTFB 超时" />
 
       <AiModelSection settings={settings} isLoading={isLoading} />
+      <TtfbTimeoutSection settings={settings} isLoading={isLoading} />
       <CircuitBreakerSection settings={settings} isLoading={isLoading} />
       <ConfigIOSection />
     </div>

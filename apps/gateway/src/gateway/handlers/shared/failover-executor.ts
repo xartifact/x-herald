@@ -3,14 +3,26 @@ import type { Context } from 'hono'
 import type { FailoverReason } from '../../../features/logs/db'
 
 import logger from '../../../lib/logger'
+import { gatewayBusinessMetrics } from '../../../features/metrics/gateway-business-metrics'
 
 import type { AbortManager } from './abort-manager'
-import { CONNECT_TIMEOUT_MS, calculateTtfbTimeout } from './constants'
+import {
+  calculateTtfbTimeout,
+  resolveConnectTimeoutMs,
+  resolveInstanceAttemptTimeoutMs,
+  type InstanceTimeoutConfigLike,
+} from './constants'
 import { executeWithRetry } from './retry-executor'
 import {
   FAILOVER_STATUS_CODES,
   ProviderInvalidResponseError,
 } from '../../services/model-group-router'
+import {
+  getTtfbTimeoutConfig,
+  refreshTtfbConfigIfStale,
+  resolveAttemptBaseMs,
+  resolveTotalLimitMs,
+} from '../../services/ttfb-timeout-policy'
 
 export interface PreparedRequest {
   url: string
@@ -40,6 +52,8 @@ export interface FailoverExecutorParams {
   isLastCandidate: boolean
   requestId: string
   providerName?: string
+  instanceName?: string
+  modelName?: string
   startTime: number
   getLogId: () => string | undefined
   getAttemptId: () => string | undefined
@@ -56,6 +70,8 @@ export interface FailoverExecutorParams {
     retryableStatusCodes: number[]
   }
   baselineTtfbP95?: number
+  /** 实例级 timeoutConfig（connect / ttfb override） */
+  instanceTimeoutConfig?: InstanceTimeoutConfigLike | null
   onBeforeFetch?: () => void
   onRetry?: (attempt: number, delay: number, lastResponse?: Response) => void
   onRecordFailure: () => void | Promise<void>
@@ -91,14 +107,51 @@ export async function executeFailoverIteration(
   const preprocessEndTime = params.getPreprocessEndTime()
   params.onBeforeFetch?.()
 
-  const totalLimit = params.isStreaming ? 90_000 : 60_000
+  // 多进程：TTL 内从 DB 刷新（与熔断器策略一致）
+  await refreshTtfbConfigIfStale()
+
+  const ttfbCfg = getTtfbTimeoutConfig()
+  const totalLimit = resolveTotalLimitMs(params.isStreaming, ttfbCfg)
   const elapsed = Date.now() - params.startTime
   const remainingBudget = Math.max(0, totalLimit - elapsed)
-  const ttfbTimeout = calculateTtfbTimeout(
-    params.baselineTtfbP95,
-    params.isStreaming ? 60_000 : 30_000,
+
+  const globalAttempt = resolveAttemptBaseMs(params.isStreaming, ttfbCfg)
+  const instanceAttempt = resolveInstanceAttemptTimeoutMs(params.instanceTimeoutConfig)
+  const configuredTimeout = instanceAttempt ?? globalAttempt
+  const connectTimeout = resolveConnectTimeoutMs(params.instanceTimeoutConfig)
+
+  const ttfbTimeout = calculateTtfbTimeout({
+    baselineTtfbP95: params.baselineTtfbP95,
+    configuredTimeout,
     remainingBudget,
-  )
+    minAttemptMs: ttfbCfg.minAttemptMs,
+    baselineMultiplier: ttfbCfg.baselineMultiplier,
+  })
+
+  // 全局预算已耗尽：不再发上游请求，直接 504
+  if (remainingBudget <= 0 || ttfbTimeout <= 0) {
+    const ttfbDuration = Date.now() - preprocessEndTime
+    if (logId) params.onLogEventBusEmitAborted(logId)
+    await params.onRecordFailure()
+    await params.onMarkLogAsFailed({
+      logId: logId || '',
+      attemptId: attemptId || '',
+      statusCode: 0,
+      errorMessage: `TTFB timeout all candidates exceeded ${totalLimit}ms total budget`,
+      failoverReason: 'ttfb_timeout',
+      retryCount: 0,
+      responseTimeMs: ttfbDuration,
+      providerTtfbMs: ttfbDuration,
+    })
+    return {
+      type: 'error',
+      response: await params.handleGatewayError(
+        'ttfb_timeout',
+        `Provider response timeout: TTFB not received within ${Math.round(totalLimit / 1000)}s total budget`,
+      ),
+      retryCount: 0,
+    }
+  }
 
   const retryResult = await executeWithRetry({
     abortManager: params.abortManager,
@@ -108,7 +161,7 @@ export async function executeFailoverIteration(
         headers: prepared.headers,
         body: prepared.body,
         signal,
-        connectTimeout: CONNECT_TIMEOUT_MS,
+        connectTimeout,
       } as RequestInit)
     },
     timeout: ttfbTimeout,
@@ -128,12 +181,22 @@ export async function executeFailoverIteration(
 
   if ((retryResult.networkError || retryResult.aborted === 'timeout') && !retryResult.response) {
     const totalWait = Date.now() - params.startTime
-    const overTotal = totalWait > totalLimit
+    const overTotal = totalWait >= totalLimit
     const ttfbDuration = Date.now() - preprocessEndTime
+    if (params.modelName && params.providerName) {
+      gatewayBusinessMetrics.firstByteDuration.observe(
+        {
+          provider: params.providerName,
+          model: params.modelName,
+          stream: String(params.isStreaming),
+        },
+        ttfbDuration / 1000,
+      )
+    }
     const isTimeout = retryResult.aborted === 'timeout'
     const failoverReason: FailoverReason = isTimeout ? 'ttfb_timeout' : 'network_error'
     const errorMessage = isTimeout
-      ? `TTFB timeout after ${ttfbDuration}ms`
+      ? `TTFB timeout after ${ttfbDuration}ms (limit=${ttfbTimeout}ms)`
       : 'Network error: connection failed'
 
     if (overTotal) {
@@ -143,7 +206,7 @@ export async function executeFailoverIteration(
         logId: logId || '',
         attemptId: attemptId || '',
         statusCode: 0,
-        errorMessage: `TTFB timeout all candidates exceeded ${totalLimit / 1000}s total`,
+        errorMessage: `TTFB timeout all candidates exceeded ${totalLimit}ms total budget`,
         failoverReason,
         retryCount: retryResult.retryCount,
         responseTimeMs: ttfbDuration,
@@ -153,7 +216,7 @@ export async function executeFailoverIteration(
         type: 'error',
         response: await params.handleGatewayError(
           'ttfb_timeout',
-          `Provider response timeout: TTFB not received within configured time limit (${totalLimit / 1000}s total)`,
+          `Provider response timeout: TTFB not received within ${Math.round(totalLimit / 1000)}s total budget`,
         ),
         retryCount: retryResult.retryCount,
       }
@@ -172,6 +235,11 @@ export async function executeFailoverIteration(
         providerTtfbMs: isTimeout ? ttfbDuration : undefined,
       })
       if (logId) params.onLogEventBusEmitAborted(logId)
+      gatewayBusinessMetrics.failovers.inc({
+        provider: params.providerName ?? 'unknown',
+        instance: params.instanceName ?? 'unknown',
+        reason: failoverReason,
+      })
       return { type: 'failover', retryCount: retryResult.retryCount }
     }
 
@@ -192,7 +260,7 @@ export async function executeFailoverIteration(
       response: await params.handleGatewayError(
         isTimeout ? 'ttfb_timeout' : 'network_error',
         isTimeout
-          ? 'Provider response timeout: TTFB not received within configured time limit'
+          ? `Provider response timeout: TTFB not received within ${Math.round(ttfbTimeout / 1000)}s`
           : 'Connection to provider failed: TLS handshake or network error',
       ),
       retryCount: retryResult.retryCount,
@@ -239,6 +307,11 @@ export async function executeFailoverIteration(
           retryCount: retryResult.retryCount,
         }
       }
+      gatewayBusinessMetrics.failovers.inc({
+        provider: params.providerName ?? 'unknown',
+        instance: params.instanceName ?? 'unknown',
+        reason: 'invalid_response',
+      })
       return { type: 'failover', retryCount: retryResult.retryCount }
     }
     await params.onRecordSuccess()
@@ -264,6 +337,11 @@ export async function executeFailoverIteration(
       providerResponseBody: failoverRespBody,
     })
     if (logId) params.onLogEventBusEmitAborted(logId)
+    gatewayBusinessMetrics.failovers.inc({
+      provider: params.providerName ?? 'unknown',
+      instance: params.instanceName ?? 'unknown',
+      reason: deriveFailoverReason(response.status),
+    })
     return { type: 'failover', retryCount: retryResult.retryCount }
   }
 

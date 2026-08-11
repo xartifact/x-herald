@@ -1,6 +1,6 @@
 import crypto from 'crypto'
 
-import { desc, eq } from '@xartifact/x-llm-gateway-db'
+import { and, desc, eq, ilike, isNull, sql } from '@xartifact/x-llm-gateway-db'
 
 import type { Database } from '../../db/client'
 import { getDatabase } from '../../db/client'
@@ -15,9 +15,40 @@ function generateApiKey(): string {
   return `xg_${crypto.randomBytes(32).toString('hex')}`
 }
 
-export async function listKeys(db?: Database) {
+export interface ListKeysOptions {
+  search?: string
+  limit?: number
+  offset?: number
+}
+
+export async function listKeys(options: ListKeysOptions = {}, db?: Database) {
   const database = db ?? getDatabase()
-  return database.select().from(virtualKeys).orderBy(desc(virtualKeys.createdAt))
+  const conditions = [isNull(virtualKeys.deletedAt)]
+  if (options.search) {
+    conditions.push(ilike(virtualKeys.name, `%${options.search}%`))
+  }
+  const where = and(...conditions)
+  return database
+    .select()
+    .from(virtualKeys)
+    .where(where)
+    .orderBy(desc(virtualKeys.createdAt))
+    .limit(options.limit ?? 100)
+    .offset(options.offset ?? 0)
+}
+
+export async function countKeys(search?: string, db?: Database) {
+  const database = db ?? getDatabase()
+  const conditions = [isNull(virtualKeys.deletedAt)]
+  if (search) {
+    conditions.push(ilike(virtualKeys.name, `%${search}%`))
+  }
+  const where = and(...conditions)
+  const rows = await database
+    .select({ total: sql<number>`count(*)`.mapWith(Number) })
+    .from(virtualKeys)
+    .where(where)
+  return rows[0]?.total ?? 0
 }
 
 export async function getKey(id: string, db?: Database) {
@@ -92,10 +123,15 @@ export async function updateKey(id: string, data: UpdateKeyData, db?: Database) 
 export async function deleteKey(id: string, db?: Database): Promise<boolean> {
   const database = db ?? getDatabase()
   const existing = await getKey(id, db)
-  if (!existing) return false
+  if (!existing || existing.deletedAt) return false
+  // 逻辑删除：标记 deletedAt 而非物理删除。
+  // 保留行以维持 request_logs 的外键引用完整性。
   invalidateVirtualKeyCache(existing.key)
-  await database.delete(virtualKeys).where(eq(virtualKeys.id, id))
-  logger.info({ keyId: id }, 'Virtual key deleted')
+  await database
+    .update(virtualKeys)
+    .set({ deletedAt: new Date(), updatedAt: new Date() })
+    .where(eq(virtualKeys.id, id))
+  logger.info({ keyId: id }, 'Virtual key soft-deleted')
   return true
 }
 

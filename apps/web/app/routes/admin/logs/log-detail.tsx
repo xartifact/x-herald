@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from '@tanstack/react-router'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, GitBranch, Loader2 } from 'lucide-react'
 import { useLog } from '../../../hooks/logs'
-import { LogDetailContent, Button } from '@xartifact/x-llm-gateway-ui'
+import { LogDetailContent, Button, EmptyState } from '@xartifact/x-llm-gateway-ui'
 
 const CLIENT_REGISTRY: Record<string, string> = {
   'claude-code': 'Claude Code',
@@ -40,14 +40,17 @@ export function LogDetailPage() {
 
   const log = (data as { data?: any } | undefined)?.data ?? null
 
+  const hasRouteChain = !!(log?.metadata as { routing?: { routeChain?: unknown } } | null)?.routing
+    ?.routeChain
+
   if (isLoading) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-6">
         <Button variant="ghost" size="sm" onClick={() => navigate({ to: '/admin/logs' })}>
           <ArrowLeft className="h-4 w-4 mr-1" /> 返回日志列表
         </Button>
         <div className="flex items-center justify-center py-16">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       </div>
     )
@@ -55,22 +58,33 @@ export function LogDetailPage() {
 
   if (isError || !log) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-6">
         <Button variant="ghost" size="sm" onClick={() => navigate({ to: '/admin/logs' })}>
           <ArrowLeft className="h-4 w-4 mr-1" /> 返回日志列表
         </Button>
-        <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-          <p>日志不存在或加载失败</p>
-        </div>
+        <EmptyState title="日志不存在或加载失败" />
       </div>
     )
   }
 
   return (
-    <div className="space-y-4">
-      <Button variant="ghost" size="sm" onClick={() => navigate({ to: '/admin/logs' })}>
-        <ArrowLeft className="h-4 w-4 mr-1" /> 返回日志列表
-      </Button>
+    <div className="space-y-6">
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="sm" onClick={() => navigate({ to: '/admin/logs' })}>
+          <ArrowLeft className="h-4 w-4 mr-1" /> 返回日志列表
+        </Button>
+        {hasRouteChain && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() =>
+              navigate({ to: '/admin/routing-traces/$logId', params: { logId: log!.id } })
+            }
+          >
+            <GitBranch className="h-4 w-4 mr-1" /> 路由链路
+          </Button>
+        )}
+      </div>
       <LogDetailContent
         log={log}
         onClose={() => navigate({ to: '/admin/logs' })}

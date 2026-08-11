@@ -1,4 +1,3 @@
-'use client'
 import { useEffect, useRef } from 'react'
 
 import { Bot, Loader2, Sparkles } from 'lucide-react'

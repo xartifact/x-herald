@@ -1,5 +1,3 @@
-'use client'
-
 import { useState, useMemo } from 'react'
 
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -64,7 +62,11 @@ export function useProviderPage() {
     const enabledProtocols: ProtocolsConfig = {}
     Object.entries(data.protocols).forEach(([key, value]) => {
       if (value?.enabled && value.baseUrl) {
-        enabledProtocols[key as ProtocolType] = { baseUrl: value.baseUrl, enabled: true }
+        enabledProtocols[key as ProtocolType] = {
+          baseUrl: value.baseUrl,
+          enabled: true,
+          ...(value.toolSchemaSanitization && { toolSchemaSanitization: true }),
+        }
       }
     })
     const payload = {
@@ -93,13 +95,25 @@ export function useProviderPage() {
       enabled: provider.enabled,
       protocols: {
         openai: provider.protocols.openai
-          ? { enabled: true, baseUrl: provider.protocols.openai.baseUrl }
+          ? {
+              enabled: true,
+              baseUrl: provider.protocols.openai.baseUrl,
+              toolSchemaSanitization: provider.protocols.openai.toolSchemaSanitization ?? false,
+            }
           : { enabled: false, baseUrl: 'https://api.openai.com/v1' },
         anthropic: provider.protocols.anthropic
-          ? { enabled: true, baseUrl: provider.protocols.anthropic.baseUrl }
+          ? {
+              enabled: true,
+              baseUrl: provider.protocols.anthropic.baseUrl,
+              toolSchemaSanitization: provider.protocols.anthropic.toolSchemaSanitization ?? false,
+            }
           : { enabled: false, baseUrl: 'https://api.anthropic.com/v1' },
         gemini: provider.protocols.gemini
-          ? { enabled: true, baseUrl: provider.protocols.gemini.baseUrl }
+          ? {
+              enabled: true,
+              baseUrl: provider.protocols.gemini.baseUrl,
+              toolSchemaSanitization: provider.protocols.gemini.toolSchemaSanitization ?? false,
+            }
           : { enabled: false, baseUrl: 'https://generativelanguage.googleapis.com/v1' },
       },
     })

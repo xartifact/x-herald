@@ -20,13 +20,12 @@ const emptyExportData = {
   modelInstances: [],
   accessModels: [],
   virtualModels: [],
-  modelRoutes: [],
   virtualKeys: [],
   gatewayConfigs: [],
 }
 
 function makeImportBody(data: Record<string, unknown> = emptyExportData) {
-  return { version: '1', data }
+  return { version: '2', data }
 }
 
 describe('config-io API', () => {
@@ -54,7 +53,7 @@ describe('config-io API', () => {
         data: Record<string, unknown[]>
       }
 
-      expect(body.version).toBe('1')
+      expect(body.version).toBe('2')
       expect(typeof body.exportedAt).toBe('string')
       expect(new Date(body.exportedAt).toISOString()).toBe(body.exportedAt)
 
@@ -62,14 +61,12 @@ describe('config-io API', () => {
       expect(Array.isArray(data.providers)).toBe(true)
       expect(Array.isArray(data.modelGroups)).toBe(true)
       expect(Array.isArray(data.modelInstances)).toBe(true)
-      expect(Array.isArray(data.modelRoutes)).toBe(true)
       expect(Array.isArray(data.virtualKeys)).toBe(true)
       expect(Array.isArray(data.gatewayConfigs)).toBe(true)
 
       expect(data.providers).toHaveLength(0)
       expect(data.modelGroups).toHaveLength(0)
       expect(data.modelInstances).toHaveLength(0)
-      expect(data.modelRoutes).toHaveLength(0)
       expect(data.virtualKeys).toHaveLength(0)
       expect(data.gatewayConfigs).toHaveLength(0)
     })
@@ -178,7 +175,7 @@ describe('config-io API', () => {
 
     it('returns 400 when data field is missing', async () => {
       const res = await authPost(ctx, '/api/config/import', {
-        version: '1',
+        version: '2',
       })
       expect(res.status).toBe(400)
       const body = (await res.json()) as { error: string }
@@ -187,7 +184,7 @@ describe('config-io API', () => {
 
     it('returns 400 when data field is null', async () => {
       const res = await authPost(ctx, '/api/config/import', {
-        version: '1',
+        version: '2',
         data: null,
       })
       expect(res.status).toBe(400)
@@ -212,7 +209,7 @@ describe('config-io API', () => {
     it('imports a provider and shows created count in summary', async () => {
       const providerName = uniqueName('import-provider')
       const res = await authPost(ctx, '/api/config/import', {
-        version: '1',
+        version: '2',
         data: {
           ...emptyExportData,
           providers: [
@@ -241,7 +238,7 @@ describe('config-io API', () => {
     it('importing same config twice shows updated (not created)', async () => {
       const providerName = uniqueName('import-dup-provider')
       const importBody = {
-        version: '1',
+        version: '2',
         data: {
           ...emptyExportData,
           providers: [

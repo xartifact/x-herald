@@ -39,21 +39,6 @@ export interface ExportedAccessModel {
   enabled: boolean
 }
 
-export interface ExportedModelRoute {
-  name: string
-  description: string | null
-  virtualModelNames: string[]
-  conditions: unknown[]
-  action: {
-    type: string
-    targetRef?: string
-    reason?: string
-  }
-  priority: number
-  enabled: boolean
-  flowData: unknown
-}
-
 export interface ExportedVirtualKey {
   name: string
   key: string
@@ -72,14 +57,13 @@ export interface ExportedGatewayConfig {
 }
 
 export interface ExportFormat {
-  version: '1'
+  version: '2'
   exportedAt: string
   data: {
     providers: ExportedProvider[]
     modelGroups: ExportedModelGroup[]
     modelInstances: ExportedModelInstance[]
     accessModels?: ExportedAccessModel[]
-    modelRoutes: ExportedModelRoute[]
     virtualKeys: ExportedVirtualKey[]
     gatewayConfigs: ExportedGatewayConfig[]
   }
@@ -98,7 +82,6 @@ export interface ImportResult {
     modelGroups: ImportSummaryItem
     modelInstances: ImportSummaryItem
     accessModels: ImportSummaryItem
-    modelRoutes: ImportSummaryItem
     virtualKeys: ImportSummaryItem
     gatewayConfigs: ImportSummaryItem
   }

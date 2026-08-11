@@ -1,7 +1,7 @@
 import { sql } from '@xartifact/x-llm-gateway-db'
 import { Hono } from 'hono'
 
-import { APP_VERSION } from '../../config'
+import { APP_VERSION, GIT_COMMIT_HASH } from '../../config'
 import { getDatabase } from '../../db/client'
 
 const health = new Hono()
@@ -16,6 +16,7 @@ health.get('/', async (c) => {
     return c.json({
       status: 'healthy',
       version: APP_VERSION,
+      commitHash: GIT_COMMIT_HASH,
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       database: 'connected',

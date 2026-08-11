@@ -1,5 +1,3 @@
-'use client'
-
 import { useState } from 'react'
 
 import { useForm } from 'react-hook-form'
@@ -31,11 +29,11 @@ export interface AccessModelFormData {
 
 const DEFAULT_CAPABILITIES: AccessModelFormData['capabilities'] = {
   streaming: true,
-  functionCalling: false,
-  vision: false,
-  jsonMode: false,
-  reasoning: false,
-  contextWindow: 0,
+  functionCalling: true,
+  vision: true,
+  jsonMode: true,
+  reasoning: true,
+  contextWindow: 1_000_000,
   maxTokens: 0,
 }
 

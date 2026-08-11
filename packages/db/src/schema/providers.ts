@@ -8,6 +8,7 @@ export const providers = pgTable('providers', {
   apiKey: text('api_key'),
   protocols: jsonb('protocols').$type<ProtocolsConfig>().notNull(),
   enabled: boolean('enabled').default(true).notNull(),
+  deletedAt: timestamp('deleted_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })

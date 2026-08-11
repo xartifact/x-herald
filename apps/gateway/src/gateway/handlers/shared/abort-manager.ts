@@ -46,7 +46,7 @@ export class AbortManager {
    * 为当前尝试创建 AbortController（含 TTFB 超时）
    * 返回 cleanup 函数，调用后清除超时 + 移除 propagateDisconnect 监听
    *
-   * @param ttfbTimeoutMs TTFB 超时毫秒（流式 600000，非流式 300000）
+   * @param ttfbTimeoutMs 本次 attempt 的 TTFB 超时毫秒（由 policy + baseline 计算）
    * @param requestId 请求 ID（用于日志）
    * @param isStreaming 是否流式（用于日志）
    * @returns { controller, cleanup }

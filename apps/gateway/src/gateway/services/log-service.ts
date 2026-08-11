@@ -8,10 +8,12 @@ import { trackKeyUsage } from '../../features/keys/usage-tracker'
 import { requestLogs, requestAttempts } from '@xartifact/x-llm-gateway-db'
 import type { FailoverReason } from '../../features/logs/db'
 import { costService } from '../../features/costs/service'
+import type { InstanceCost } from '@xartifact/x-llm-gateway-shared'
 
 import { extractMetadata } from './metadata-extractor'
 import { rateLimitEngine } from './rate-limit-engine'
 import { estimateUsageFromContent } from './token-estimator'
+import type { RouteChainSnapshot } from './routing-trace-recorder'
 
 // ─── x-tinker reporter (lazily initialized) ─────────────────
 let xTinkerReporter: import('@xartifact/x-tinker-sdk').ErrorReporter | null = null
@@ -100,6 +102,9 @@ export interface LogRequestParams {
     actualModelName?: string
     strategy?: string
     responseModelName?: string
+    instanceCost?: InstanceCost | null
+    /** 完整的路由链路（routeCandidates 成功或失败都会填入，由 query API 重组详情） */
+    routeChain?: RouteChainSnapshot
   }
 }
 
@@ -282,6 +287,7 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
               providerName: params.providerName,
               inputTokens,
               outputTokens,
+              instanceCost: params.routingTrace?.instanceCost,
             },
             trx,
           )
@@ -387,6 +393,7 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
             providerName: params.providerName,
             inputTokens,
             outputTokens,
+            instanceCost: params.routingTrace?.instanceCost,
           },
           trx,
         )

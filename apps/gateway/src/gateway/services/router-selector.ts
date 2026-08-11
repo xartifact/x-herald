@@ -5,9 +5,11 @@ import {
 } from '../../features/metrics/services/instance-perf-cache'
 import type { ModelGroup, ModelInstance } from '@xartifact/x-llm-gateway-db'
 import { providers } from '@xartifact/x-llm-gateway-db'
+import type { RouteCondition, StandardRequest } from '@xartifact/x-llm-gateway-shared'
 
 import { circuitBreakerRegistry } from './circuit-breaker'
 import type { ModelMappingResult } from './model-mapping'
+import type { RouteChainSnapshot } from './routing-trace-recorder'
 
 export interface RouteResult {
   instance: ModelInstance
@@ -24,8 +26,22 @@ export interface RouteResult {
     id: string
     name: string
     priority: number
+    /** 命中该规则时经过的条件链（供 routing-trace 展示"为什么走这条规则"） */
+    conditions?: RouteCondition[]
   }
   perf?: InstancePerfData
+  /**
+   * 「主备链」路由时标记来自哪一步：
+   *   - 'primary'：主出口
+   *   - 'backup'： 备出口
+   *   - undefined：非链式路由（单出口 route_to_group / intent / capability 等）
+   */
+  chainStep?: 'primary' | 'backup'
+  /** 意图路由特有：分类结果与来源（供 routing-trace 展示决策细节） */
+  intentName?: string
+  intentSource?: string
+  /** 能力路由特有：命中的能力列表（供 routing-trace 展示决策细节） */
+  capabilities?: string[]
 }
 
 export interface RoutingContext {
@@ -35,6 +51,7 @@ export interface RoutingContext {
   hasVision: boolean
   virtualKeyId: string
   preferredProvider?: string
+  request?: StandardRequest
   maxResponseTime?: number
   maxCost?: number
 }
@@ -200,37 +217,52 @@ export async function filterCandidates(
 }
 
 export class ModelNotFoundError extends Error {
-  constructor(modelName: string, detail?: string) {
+  /**
+   * 路由追踪快照。构造时可选传入；也可能是 model-group-router.ts 内部先抛出
+   * 后，被 access-model-router.ts 捕获时事后补上（这类错误不知道调用方的
+   * matchedRule/conditions 上下文），所以不能是 readonly。
+   */
+  routeChain?: RouteChainSnapshot
+  constructor(modelName: string, detail?: string, routeChain?: RouteChainSnapshot) {
     super(detail ?? `Model '${modelName}' not found`)
     this.name = 'ModelNotFoundError'
+    this.routeChain = routeChain
   }
 }
 
 export class ModelDisabledError extends Error {
-  constructor(modelName: string, detail?: string) {
+  routeChain?: RouteChainSnapshot
+  constructor(modelName: string, detail?: string, routeChain?: RouteChainSnapshot) {
     super(detail ?? `Model '${modelName}' is disabled`)
     this.name = 'ModelDisabledError'
+    this.routeChain = routeChain
   }
 }
 
 export class NoAvailableInstanceError extends Error {
-  constructor(modelName: string, detail?: string) {
+  routeChain?: RouteChainSnapshot
+  constructor(modelName: string, detail?: string, routeChain?: RouteChainSnapshot) {
     super(detail ?? `No available instances for model '${modelName}'`)
     this.name = 'NoAvailableInstanceError'
+    this.routeChain = routeChain
   }
 }
 
 export class NoSuitableInstanceError extends Error {
-  constructor(modelName: string, detail?: string) {
+  routeChain?: RouteChainSnapshot
+  constructor(modelName: string, detail?: string, routeChain?: RouteChainSnapshot) {
     super(detail ?? `No suitable instance found for model '${modelName}' with given constraints`)
     this.name = 'NoSuitableInstanceError'
+    this.routeChain = routeChain
   }
 }
 
 export class RequestRejectedError extends Error {
-  constructor(reason: string) {
+  routeChain?: RouteChainSnapshot
+  constructor(reason: string, routeChain?: RouteChainSnapshot) {
     super(reason)
     this.name = 'RequestRejectedError'
+    this.routeChain = routeChain
   }
 }
 

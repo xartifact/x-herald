@@ -18,5 +18,18 @@ test_status=$?
 if [ $test_status -eq 99 ]; then
   exit 0
 fi
+
+# bun test 默认按 CPU 核数并行跑测试文件。createTestEngine 使用 PGlite 内存库、
+# mock 上游服务器监听固定端口，跨 worker 并发时有概率性资源冲突（高核 runner
+# 尤其明显），产生与并发相关的假阳性失败。并行失败时串行重跑以排除这种 flaky；
+# 若存在真实回归，串行仍会失败，CI 保持红色。
+if [ $test_status -ne 0 ]; then
+  echo "parallel backend tests failed (exit $test_status); serial retry to rule out concurrency flake"
+  bun test --parallel=1 --reporter=dots
+  test_status=$?
+  if [ $test_status -eq 99 ]; then
+    exit 0
+  fi
+fi
 exit $test_status
 

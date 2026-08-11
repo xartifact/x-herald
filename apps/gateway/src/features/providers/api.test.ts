@@ -300,3 +300,43 @@ describe('providers API - DELETE /:id', () => {
     expect(res.status).toBe(200)
   })
 })
+
+describe('providers API - DELETE soft-delete behavior', () => {
+  let createdId: string
+  beforeAll(async () => {
+    ctx = await setupCrudTest()
+    const res = await authPost(ctx, '/api/providers', {
+      ...validProvider,
+      name: uniqueName('soft-del'),
+    })
+    const { body } = await parseJson<{ id: string }>(res)
+    createdId = body.data.id
+  })
+
+  afterAll(async () => {
+    await teardownCrudTest()
+  })
+
+  it('soft-deletes: provider still accessible via GET /:id but excluded from list', async () => {
+    // Delete
+    const delRes = await authDelete(ctx, `/api/providers/${createdId}`)
+    expect(delRes.status).toBe(200)
+
+    // GET /:id still returns the provider (preserved for FK integrity)
+    const getRes = await authGet(ctx, `/api/providers/${createdId}`)
+    const { status: getStatus, body: getBody } = await parseJson<{ id: string }>(getRes)
+    expect(getStatus).toBe(200)
+    expect(getBody.data.id).toBe(createdId)
+
+    // GET / list excludes soft-deleted providers
+    const listRes = await authGet(ctx, '/api/providers')
+    const { body: listBody } = await parseJson<{ id: string }>(listRes)
+    const ids = listBody.data.map((p: { id: string }) => p.id)
+    expect(ids).not.toContain(createdId)
+  })
+
+  it('double-delete returns 404 (deleted provider treated as not found)', async () => {
+    const res = await authDelete(ctx, `/api/providers/${createdId}`)
+    expect(res.status).toBe(404)
+  })
+})

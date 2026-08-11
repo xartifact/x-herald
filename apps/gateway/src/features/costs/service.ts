@@ -1,3 +1,4 @@
+import type { InstanceCost } from '@xartifact/x-llm-gateway-shared'
 import { and, gte, lte, sql } from '@xartifact/x-llm-gateway-db'
 
 import type { Database } from '../../db/client'
@@ -5,7 +6,6 @@ import type { DbClient } from '../../db/client'
 import { getDatabase } from '../../db/client'
 import logger from '../../lib/logger'
 import { costRecords } from '@xartifact/x-llm-gateway-db'
-
 export interface ProviderPricing {
   inputPer1k: number
   outputPer1k: number
@@ -40,10 +40,22 @@ export class CostService {
     provider: string,
     inputTokens: number,
     outputTokens: number,
+    instanceCost?: InstanceCost | null,
   ): { inputCost: number; outputCost: number; totalCost: number } {
-    const p = this.pricing.get(provider) || DEFAULT_PRICING.openai
-    const inputCost = (inputTokens / 1000) * p.inputPer1k
-    const outputCost = (outputTokens / 1000) * p.outputPer1k
+    let inputPer1k: number
+    let outputPer1k: number
+
+    if (instanceCost) {
+      inputPer1k = instanceCost.input
+      outputPer1k = instanceCost.output
+    } else {
+      const p = this.pricing.get(provider) || DEFAULT_PRICING.openai
+      inputPer1k = p.inputPer1k
+      outputPer1k = p.outputPer1k
+    }
+
+    const inputCost = (inputTokens / 1000) * inputPer1k
+    const outputCost = (outputTokens / 1000) * outputPer1k
     return {
       inputCost: Math.round(inputCost * 1_000_000) / 1_000_000,
       outputCost: Math.round(outputCost * 1_000_000) / 1_000_000,
@@ -60,6 +72,7 @@ export class CostService {
       providerName: string
       inputTokens: number
       outputTokens: number
+      instanceCost?: InstanceCost | null
     },
     db?: DbClient,
   ): Promise<void> {
@@ -68,6 +81,7 @@ export class CostService {
         params.providerName,
         params.inputTokens,
         params.outputTokens,
+        params.instanceCost,
       )
 
       const dbInstance = db ?? getDatabase()

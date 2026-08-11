@@ -1,5 +1,3 @@
-'use client'
-
 import { AlertCircle, Loader2, Send } from 'lucide-react'
 
 import { Button } from '../../../shared/components/ui/button'

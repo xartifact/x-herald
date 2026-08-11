@@ -1,5 +1,3 @@
-'use client'
-
 import { useState } from 'react'
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../shared/components/ui/tabs'
@@ -8,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../shared/compon
 import { HeadersTab } from './headers-tab'
 import { JsonEditorTab } from './json-editor-tab'
 import { SchemaTab } from './schema-tab'
+import { TimeoutTab, type TimeoutConfigFields } from './timeout-tab'
 import { TransformsTab } from './transforms-tab'
 
 type InstanceConfig = NonNullable<Record<string, any>['config']>
@@ -76,6 +75,16 @@ export function InstanceConfigEditor({ value, onChange }: InstanceConfigEditorPr
     })
   }
 
+  const updateTimeoutConfig = (timeoutConfig: TimeoutConfigFields | undefined) => {
+    const next = { ...config }
+    if (timeoutConfig == null) {
+      delete next.timeoutConfig
+    } else {
+      next.timeoutConfig = timeoutConfig
+    }
+    onChange(next)
+  }
+
   const handleJsonChange = (json: string) => {
     try {
       setJsonError(null)
@@ -87,11 +96,12 @@ export function InstanceConfigEditor({ value, onChange }: InstanceConfigEditorPr
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-      <TabsList className="grid w-full grid-cols-4">
+      <TabsList className="grid w-full grid-cols-5">
         <TabsTrigger value="transforms">参数转换</TabsTrigger>
-        <TabsTrigger value="schema">Schema 配置</TabsTrigger>
-        <TabsTrigger value="headers">自定义 Headers</TabsTrigger>
-        <TabsTrigger value="json">JSON 编辑</TabsTrigger>
+        <TabsTrigger value="schema">Schema</TabsTrigger>
+        <TabsTrigger value="headers">Headers</TabsTrigger>
+        <TabsTrigger value="timeout">超时</TabsTrigger>
+        <TabsTrigger value="json">JSON</TabsTrigger>
       </TabsList>
 
       <TabsContent value="transforms" className="space-y-4">
@@ -114,6 +124,10 @@ export function InstanceConfigEditor({ value, onChange }: InstanceConfigEditorPr
           onUpdate={updateHeader}
           onRemove={removeHeader}
         />
+      </TabsContent>
+
+      <TabsContent value="timeout" className="space-y-4">
+        <TimeoutTab timeoutConfig={config.timeoutConfig} onChange={updateTimeoutConfig} />
       </TabsContent>
 
       <TabsContent value="json" className="space-y-4">

@@ -56,6 +56,64 @@ export async function createEngine(options: CreateEngineOptions = {}): Promise<E
     }
   }
 
+  // 2b. Load runtime policies from DB (TTFB / circuit breaker)
+  try {
+    const { loadTtfbTimeoutConfig } = await import('./gateway/services/ttfb-timeout-policy')
+    const { recoverCircuitBreakerState } = await import('./gateway/services/circuit-breaker-state')
+    await Promise.all([loadTtfbTimeoutConfig(), recoverCircuitBreakerState()])
+  } catch (error) {
+    logger.warn({ err: error }, 'Failed to load runtime policies (using defaults)')
+  }
+
+  // 2c. 加载所有接入模型的 active route_rules 到内存缓存（运行时引擎查询入口）
+  try {
+    const { loadAllActiveRouteRules } = await import('./features/route-rules/service')
+    await loadAllActiveRouteRules()
+  } catch (error) {
+    logger.warn({ err: error }, 'route rules cache load skipped or failed (safe to continue)')
+  }
+
+  // 2d. 启动 RouteRuleEngine auto-rebuild（订阅 route-rules 变更并维护内存索引）
+  try {
+    const { getRouteRuleEngine } = await import('./gateway/services/route-rule-engine')
+    getRouteRuleEngine().startAutoRebuild()
+  } catch (error) {
+    logger.warn(
+      { err: error },
+      'route rule engine auto-rebuild skipped or failed (safe to continue)',
+    )
+  }
+
+  try {
+    const { installCircuitBreakerPrometheus } =
+      await import('./features/metrics/prometheus-circuit-breaker')
+    installCircuitBreakerPrometheus()
+  } catch (error) {
+    logger.warn(
+      { err: error },
+      'prometheus circuit-breaker subscriber install skipped or failed (safe to continue)',
+    )
+  }
+  try {
+    const { installResourceGauges } = await import('./features/metrics/gateway-resource-metrics')
+    installResourceGauges()
+  } catch (error) {
+    logger.warn(
+      { err: error },
+      'prometheus resource gauges install skipped or failed (safe to continue)',
+    )
+  }
+
+  try {
+    const { installCleanupJob } = await import('./features/potential-models')
+    installCleanupJob()
+  } catch (error) {
+    logger.warn(
+      { err: error },
+      'potential model cleanup job install skipped or failed (safe to continue)',
+    )
+  }
+
   // 3. Create Hono app
   const app = new Hono()
 
@@ -66,6 +124,31 @@ export async function createEngine(options: CreateEngineOptions = {}): Promise<E
   app.use('*', errorHandler)
   app.use('*', requestLogger)
   app.use('*', createCorsMiddleware(config))
+
+  // 5b. Prometheus HTTP middleware (QPS + duration) — mounted globally so it
+  //     observes /api/v1, /api/* and /metrics scrapes alike.
+  try {
+    const { prometheusHttpMiddleware } =
+      await import('./features/metrics/prometheus-http-middleware')
+    app.use('*', prometheusHttpMiddleware)
+  } catch (error) {
+    logger.warn(
+      { err: error },
+      'prometheus http middleware install skipped or failed (safe to continue)',
+    )
+  }
+
+  // 5c. Prometheus /metrics endpoint — mounted on root (outside /api/*) so
+  //     it bypasses JWT auth. Network-isolation + optional METRICS_IP_ALLOWLIST.
+  try {
+    const { metricsRoutes: promRoutes } = await import('./features/metrics/prometheus-endpoint')
+    app.route('/', promRoutes)
+  } catch (error) {
+    logger.warn(
+      { err: error },
+      'prometheus /metrics endpoint mount skipped or failed (safe to continue)',
+    )
+  }
 
   // 6. Mount engine-internal routes
   // Gateway API v1 (Anthropic/OpenAI compatible)
@@ -114,8 +197,11 @@ export async function createEngine(options: CreateEngineOptions = {}): Promise<E
     const { default: accessModelRoutes } = await import('./features/access-models/api')
     app.route('/api/access-models', accessModelRoutes)
 
-    const { default: modelRoutesApi } = await import('./features/model-routes/api')
-    app.route('/api/model-routes', modelRoutesApi)
+    const { default: routingTracesRoutes } = await import('./features/routing-traces/api')
+    app.route('/api/routing-traces', routingTracesRoutes)
+
+    const { potentialModelRoutes } = await import('./features/potential-models')
+    app.route('/api/potential-models', potentialModelRoutes)
 
     const { default: configIORoutes } = await import('./features/config-io/api')
     app.route('/api/config', configIORoutes)
@@ -131,6 +217,12 @@ export async function createEngine(options: CreateEngineOptions = {}): Promise<E
 
     const { default: costRoutes } = await import('./features/costs/api')
     app.route('/api/costs', costRoutes)
+
+    const { routeRulesRoutes } = await import('./features/route-rules')
+    app.route('/api/access-models/:accessModelId/route-rules', routeRulesRoutes)
+
+    const { routeOverviewRoutes } = await import('./features/route-overview')
+    app.route('/api/route-overview', routeOverviewRoutes)
   }
 
   // 9. Mount extra routes from the consumer app

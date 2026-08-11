@@ -1,18 +1,21 @@
-import { and, eq, sql } from '@xartifact/x-llm-gateway-db'
+import { and, eq } from '@xartifact/x-llm-gateway-db'
+import type { CircuitBreakerConfig, TtfbTimeoutConfig } from '@xartifact/x-llm-gateway-shared'
 
 import { getDatabase } from '../../index'
 import { rootLogger } from '../../index'
 import { invalidateVirtualKeyCache } from '../../middleware'
 import { gatewayConfigs } from '../../index'
 import { virtualKeys } from '../../index'
-import {
-  accessModels,
-  modelGroupMemberships,
-  modelGroups,
-  modelInstances,
-  modelRoutes,
-} from '../../index'
+import { accessModels, modelGroupMemberships, modelGroups, modelInstances } from '../../index'
 import { providers } from '../../index'
+import {
+  CB_CONFIG_KEY,
+  configureCircuitBreaker,
+  TTFB_TIMEOUT_CONFIG_KEY,
+  configureTtfbTimeout,
+  validateTtfbTimeoutConfig,
+} from '../../gateway/services'
+import { clearConfigCache, getConfig } from '../gateway-config/service'
 
 import { type EngineExportFormat, type EngineImportResult, type ImportSummaryItem } from './types'
 
@@ -32,15 +35,12 @@ export async function importConfig(data: EngineExportFormat['data']): Promise<En
     modelInstances: emptySummary(),
     virtualModels: emptySummary(),
     accessModels: emptySummary(),
-    modelRoutes: emptySummary(),
     virtualKeys: emptySummary(),
     gatewayConfigs: emptySummary(),
   }
 
   const providerNameToId = new Map<string, string>()
   const groupNameToId = new Map<string, string>()
-  const virtualModelNameToId = new Map<string, string>()
-  const instanceRefToId = new Map<string, string>()
 
   // ── 1. providers ────────────────────────────────────────────────────────
   for (const p of data.providers) {
@@ -151,20 +151,15 @@ export async function importConfig(data: EngineExportFormat['data']): Promise<En
             updatedAt: new Date(),
           })
           .where(eq(accessModels.id, existing[0].id))
-        virtualModelNameToId.set(v.name, existing[0].id)
         summary.accessModels.updated++
         summary.virtualModels.updated++
       } else {
-        const [created] = await db
-          .insert(accessModels)
-          .values({
-            name: v.name,
-            displayName: v.displayName,
-            description: v.description,
-            enabled: v.enabled,
-          })
-          .returning({ id: accessModels.id })
-        virtualModelNameToId.set(v.name, created.id)
+        await db.insert(accessModels).values({
+          name: v.name,
+          displayName: v.displayName,
+          description: v.description,
+          enabled: v.enabled,
+        })
         summary.accessModels.created++
         summary.virtualModels.created++
       }
@@ -249,6 +244,26 @@ export async function importConfig(data: EngineExportFormat['data']): Promise<En
     }
   }
 
+  // 导入后清缓存并热应用到运行时（熔断器 / TTFB）
+  if (data.gatewayConfigs.length > 0) {
+    clearConfigCache()
+    try {
+      const cb = await getConfig<CircuitBreakerConfig | null>(CB_CONFIG_KEY, null)
+      if (cb) configureCircuitBreaker(cb)
+    } catch (err) {
+      logger.warn({ err }, '[Import] Failed to apply circuit breaker runtime config')
+    }
+    try {
+      const ttfb = await getConfig<TtfbTimeoutConfig | null>(TTFB_TIMEOUT_CONFIG_KEY, null)
+      if (ttfb) {
+        const validated = validateTtfbTimeoutConfig(ttfb)
+        if (validated.ok) configureTtfbTimeout(validated.value)
+      }
+    } catch (err) {
+      logger.warn({ err }, '[Import] Failed to apply TTFB runtime config')
+    }
+  }
+
   // ── 6. modelInstances ────────────────────────────────────────────────────
   for (const i of data.modelInstances) {
     try {
@@ -278,7 +293,6 @@ export async function importConfig(data: EngineExportFormat['data']): Promise<En
         )
         .limit(1)
 
-      const instanceRef = `${i.providerName}/${i.actualModelName}`
       let instanceId: string
 
       if (existing.length > 0) {
@@ -298,7 +312,6 @@ export async function importConfig(data: EngineExportFormat['data']): Promise<En
           })
           .where(eq(modelInstances.id, existing[0].id))
         instanceId = existing[0].id
-        instanceRefToId.set(instanceRef, instanceId)
         summary.modelInstances.updated++
       } else {
         const [created] = await db
@@ -318,7 +331,6 @@ export async function importConfig(data: EngineExportFormat['data']): Promise<En
           })
           .returning({ id: modelInstances.id })
         instanceId = created.id
-        instanceRefToId.set(instanceRef, instanceId)
         summary.modelInstances.created++
       }
 
@@ -334,83 +346,6 @@ export async function importConfig(data: EngineExportFormat['data']): Promise<En
       errors.push(`ModelInstance "${i.name}": ${err instanceof Error ? err.message : String(err)}`)
       logger.warn({ err, name: i.name }, '[Import] Failed to upsert model instance')
       summary.modelInstances.errors++
-    }
-  }
-
-  // ── 7. modelRoutes ───────────────────────────────────────────────────────
-  for (const r of data.modelRoutes) {
-    try {
-      const names =
-        r.virtualModelNames && r.virtualModelNames.length > 0
-          ? r.virtualModelNames
-          : r.virtualModelName
-            ? [r.virtualModelName]
-            : []
-      const accessModelIds = names
-        .map((name) => virtualModelNameToId.get(name))
-        .filter((id): id is string => id != null)
-
-      let targetId: string | undefined
-      if (r.action.targetRef) {
-        if (
-          r.action.type === 'route_to_access_model' ||
-          r.action.type === 'route_to_virtual_model'
-        ) {
-          targetId = virtualModelNameToId.get(r.action.targetRef)
-        } else if (r.action.type === 'route_to_group') {
-          targetId = groupNameToId.get(r.action.targetRef)
-        } else if (r.action.type === 'route_to_instance') {
-          targetId = instanceRefToId.get(r.action.targetRef)
-        }
-      }
-
-      const action = { type: r.action.type, targetId, reason: r.action.reason }
-      const firstId = accessModelIds[0] ?? null
-      const existing = await db
-        .select({ id: modelRoutes.id })
-        .from(modelRoutes)
-        .where(
-          and(
-            firstId
-              ? sql`${modelRoutes.accessModelIds} @> ARRAY[${firstId}]::text[]`
-              : eq(modelRoutes.name, r.name),
-            eq(modelRoutes.name, r.name),
-          ),
-        )
-        .limit(1)
-
-      if (existing.length > 0) {
-        await db
-          .update(modelRoutes)
-          .set({
-            description: r.description,
-            accessModelIds,
-            conditions: r.conditions as never,
-            action: action as never,
-            priority: r.priority,
-            enabled: r.enabled,
-            flowData: r.flowData as never,
-            updatedAt: new Date(),
-          })
-          .where(eq(modelRoutes.id, existing[0].id))
-        summary.modelRoutes.updated++
-      } else {
-        await db.insert(modelRoutes).values({
-          name: r.name,
-          description: r.description,
-          accessModelIds,
-          conditions: r.conditions as never,
-          action: action as never,
-          priority: r.priority,
-          enabled: r.enabled,
-          flowData: r.flowData as never,
-        })
-        summary.modelRoutes.created++
-      }
-    } catch (err) {
-      errors.push(`ModelRoute "${r.name}": ${err instanceof Error ? err.message : String(err)}`)
-      logger.warn({ err, name: r.name }, '[Import] Failed to upsert model route')
-      summary.modelRoutes.errors++
     }
   }
 

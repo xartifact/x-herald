@@ -8,6 +8,7 @@ function createChainable(type: ResultType, results: Map<ResultType, unknown>) {
     from: () => self,
     where: () => self,
     limit: () => self,
+    offset: () => self,
     orderBy: () => self,
     groupBy: () => self,
     $dynamic: () => self,

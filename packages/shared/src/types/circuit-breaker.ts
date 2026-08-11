@@ -11,6 +11,9 @@ export interface CircuitBreakerRealtimeState {
   remainingMs: number
   openUntil: number
   cooldownUntil: number
+  instanceName?: string
+  providerName?: string
+  groupName?: string
 }
 
 export interface CircuitBreakerTopInstance {

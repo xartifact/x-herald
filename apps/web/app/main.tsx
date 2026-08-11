@@ -10,15 +10,21 @@ import { KeysPage } from './routes/admin/keys/index'
 import { ModelGroupsPage } from './routes/admin/model-groups/index'
 import { SettingsPage } from './routes/admin/settings/index'
 import { AccessModelsPage } from './routes/admin/access-models/index'
+import { AccessModelDetailPage } from './routes/admin/access-models/detail'
+import { PotentialModelsPage } from './routes/admin/potential-models/index'
 import { CircuitBreakerPage } from './routes/admin/circuit-breaker/index'
 import { LogsPage } from './routes/admin/logs/index'
 import { LogDetailPage } from './routes/admin/logs/log-detail'
+import { RoutingTracesPage } from './routes/admin/routing-traces/index'
+import { RoutingTraceDetailPage } from './routes/admin/routing-traces/log-detail'
 import { MetricsPage } from './routes/admin/metrics/index'
 import { ClientModelsPage } from './routes/admin/client-models/index'
 import { CostsPage } from './routes/admin/costs/index'
 import { ProviderStatsPage } from './routes/admin/provider-stats/index'
-import { ModelRoutesPage } from './routes/admin/model-routes/index'
 import { AiAssistPage } from './routes/admin/ai-assist/index'
+import { IntentRecognitionPage } from './routes/admin/intent-recognition'
+import { RouteOverviewPage } from './routes/admin/route-overview/index'
+
 import './styles/app.css'
 
 const rootRoute = createRootRoute({ component: RootLayout })
@@ -80,6 +86,16 @@ const accessModelsRoute = createRoute({
   path: '/access-models',
   component: AccessModelsPage,
 })
+const accessModelDetailRoute = createRoute({
+  getParentRoute: () => adminRoute,
+  path: '/access-models/$accessModelId',
+  component: AccessModelDetailPage,
+})
+const potentialModelsRoute = createRoute({
+  getParentRoute: () => adminRoute,
+  path: '/potential-models',
+  component: PotentialModelsPage,
+})
 const circuitBreakerRoute = createRoute({
   getParentRoute: () => adminRoute,
   path: '/circuit-breaker',
@@ -94,6 +110,16 @@ const logDetailRoute = createRoute({
   getParentRoute: () => adminRoute,
   path: '/logs/$logId',
   component: LogDetailPage,
+})
+const routingTracesRoute = createRoute({
+  getParentRoute: () => adminRoute,
+  path: '/routing-traces',
+  component: RoutingTracesPage,
+})
+const routingTraceDetailRoute = createRoute({
+  getParentRoute: () => adminRoute,
+  path: '/routing-traces/$logId',
+  component: RoutingTraceDetailPage,
 })
 const metricsRoute = createRoute({
   getParentRoute: () => adminRoute,
@@ -115,15 +141,20 @@ const providerStatsRoute = createRoute({
   path: '/provider-stats',
   component: ProviderStatsPage,
 })
-const modelRoutesRoute = createRoute({
-  getParentRoute: () => adminRoute,
-  path: '/model-routes',
-  component: ModelRoutesPage,
-})
 const aiAssistRoute = createRoute({
   getParentRoute: () => adminRoute,
   path: '/ai-assist',
   component: AiAssistPage,
+})
+const intentRecognitionRoute = createRoute({
+  getParentRoute: () => adminRoute,
+  path: '/intent-recognition',
+  component: IntentRecognitionPage,
+})
+const routeOverviewRoute = createRoute({
+  getParentRoute: () => adminRoute,
+  path: '/route-overview',
+  component: RouteOverviewPage,
 })
 
 const routeTree = rootRoute.addChildren([
@@ -137,15 +168,20 @@ const routeTree = rootRoute.addChildren([
     modelGroupsRoute,
     settingsRoute,
     accessModelsRoute,
+    accessModelDetailRoute,
+    potentialModelsRoute,
     circuitBreakerRoute,
     logsRoute,
     logDetailRoute,
+    routingTracesRoute,
+    routingTraceDetailRoute,
     metricsRoute,
     clientModelsRoute,
     costsRoute,
     providerStatsRoute,
-    modelRoutesRoute,
     aiAssistRoute,
+    intentRecognitionRoute,
+    routeOverviewRoute,
   ]),
 ])
 const router = createRouter({

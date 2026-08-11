@@ -1,5 +1,3 @@
-'use client'
-
 import { cn } from '../../../../shared/lib/utils'
 import type { Log } from '@xartifact/x-llm-gateway-shared'
 
@@ -35,10 +33,10 @@ export function MetadataPerformanceSections({
               className={cn(
                 'font-semibold',
                 log.responseTimeMs < 1000
-                  ? 'text-green-600'
+                  ? 'text-success'
                   : log.responseTimeMs < 3000
-                    ? 'text-amber-600'
-                    : 'text-red-600',
+                    ? 'text-warning'
+                    : 'text-destructive',
               )}
             >
               {formatDuration(log.responseTimeMs)}
@@ -50,7 +48,7 @@ export function MetadataPerformanceSections({
           <InfoRow
             label="首 Thinking"
             value={
-              <span className="font-mono text-purple-600">
+              <span className="font-mono text-info">
                 {formatDuration(perf.ttfbToFirstThinkingMs)}
               </span>
             }
@@ -60,7 +58,7 @@ export function MetadataPerformanceSections({
           <InfoRow
             label="首 Token (TTFT)"
             value={
-              <span className="font-mono text-green-600">
+              <span className="font-mono text-success">
                 {formatDuration(perf.ttfbToFirstTextMs)}
               </span>
             }
@@ -70,7 +68,7 @@ export function MetadataPerformanceSections({
           <InfoRow
             label="思考时长"
             value={
-              <span className="font-mono text-violet-600 font-semibold">
+              <span className="font-mono text-info font-semibold">
                 {formatDuration(perf.thinkingDurationMs)}
               </span>
             }
@@ -80,7 +78,7 @@ export function MetadataPerformanceSections({
           label="思考模式"
           value={
             log.metadata?.request?.thinkingMode ? (
-              <span className="text-violet-600 font-semibold">开启</span>
+              <span className="text-info font-semibold">开启</span>
             ) : (
               <span className="text-muted-foreground">关闭</span>
             )
@@ -91,7 +89,7 @@ export function MetadataPerformanceSections({
           label="重试次数"
           value={
             log.retryCount > 0 ? (
-              <span className="text-orange-600 font-semibold">{log.retryCount}</span>
+              <span className="text-warning font-semibold">{log.retryCount}</span>
             ) : (
               '0'
             )
@@ -127,10 +125,10 @@ export function MetadataPerformanceSections({
                     className={cn(
                       'font-semibold',
                       contentFeatures.tokens.tokensPerSecond >= 80
-                        ? 'text-green-600'
+                        ? 'text-success'
                         : contentFeatures.tokens.tokensPerSecond >= 30
-                          ? 'text-blue-600'
-                          : 'text-amber-600',
+                          ? 'text-info'
+                          : 'text-warning',
                     )}
                   >
                     {contentFeatures.tokens.tokensPerSecond} tokens/s

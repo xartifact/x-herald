@@ -40,6 +40,15 @@ export const DEFAULTS = {
     TIMEOUT: 60000,
     RESET_TIMEOUT: 30000,
   },
+  TTFB_TIMEOUT: {
+    TOTAL_STREAMING_MS: 90_000,
+    TOTAL_NON_STREAMING_MS: 60_000,
+    ATTEMPT_STREAMING_MS: 60_000,
+    ATTEMPT_NON_STREAMING_MS: 30_000,
+    MIN_ATTEMPT_MS: 30_000,
+    BASELINE_MULTIPLIER: 2,
+    CONNECT_TIMEOUT_MS: 30_000,
+  },
 } as const
 export const CATCHALL_VM_NAME = '__catchall__'
 
@@ -58,6 +67,7 @@ function getEnv(key: string): string | undefined {
 }
 
 export const APP_VERSION = getEnv('APP_VERSION') || 'dev'
+export const GIT_COMMIT_HASH = getEnv('GIT_COMMIT_HASH') || 'unknown'
 export const IS_DEVELOPMENT = getEnv('NODE_ENV') !== 'production'
 export const IS_PRODUCTION = getEnv('NODE_ENV') === 'production'
 export const ENABLE_LOG_CLEANUP = getEnv('ENABLE_LOG_CLEANUP') === 'true'

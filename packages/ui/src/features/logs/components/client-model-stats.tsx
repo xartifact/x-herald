@@ -1,5 +1,3 @@
-'use client'
-
 import { useState, useMemo } from 'react'
 
 import { BarChart3, Clock, Hash, Activity, ArrowUpDown } from 'lucide-react'

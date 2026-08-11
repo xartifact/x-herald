@@ -168,6 +168,7 @@ async function finalizeStreamWithLog(
       providerName: params.provider.name,
       inputTokens: usage.inputTokens,
       outputTokens: usage.outputTokens,
+      instanceCost: params.routingTrace?.instanceCost,
     })
   }
 

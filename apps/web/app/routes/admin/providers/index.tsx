@@ -24,9 +24,11 @@ import {
   ThinkingTypeMappingDialog,
   PROTOCOL_OPTIONS,
   providerSchema,
+  PageHeader,
+  EmptyState,
 } from '@xartifact/x-llm-gateway-ui'
 import type { Provider } from '@xartifact/x-llm-gateway-shared'
-import { Plus, Search } from 'lucide-react'
+import { Plus, Search, Loader2 } from 'lucide-react'
 
 const defaultValues: ProviderFormData = {
   name: '',
@@ -48,14 +50,17 @@ function providerToForm(p: Provider): ProviderFormData {
       openai: {
         enabled: !!p.protocols.openai?.enabled,
         baseUrl: p.protocols.openai?.baseUrl ?? '',
+        toolSchemaSanitization: p.protocols.openai?.toolSchemaSanitization ?? false,
       },
       anthropic: {
         enabled: !!p.protocols.anthropic?.enabled,
         baseUrl: p.protocols.anthropic?.baseUrl ?? '',
+        toolSchemaSanitization: p.protocols.anthropic?.toolSchemaSanitization ?? false,
       },
       gemini: {
         enabled: !!p.protocols.gemini?.enabled,
         baseUrl: p.protocols.gemini?.baseUrl ?? '',
+        toolSchemaSanitization: p.protocols.gemini?.toolSchemaSanitization ?? false,
       },
     },
   }
@@ -129,10 +134,17 @@ export function ProvidersPage() {
   )
   const handleSubmit = useCallback(
     (data: ProviderFormData) => {
-      const protocols: Record<string, { enabled: boolean; baseUrl: string }> = {}
+      const protocols: Record<
+        string,
+        { enabled: boolean; baseUrl: string; toolSchemaSanitization?: boolean }
+      > = {}
       for (const [key, val] of Object.entries(data.protocols)) {
         if (val?.enabled && val.baseUrl) {
-          protocols[key] = { enabled: true, baseUrl: val.baseUrl }
+          protocols[key] = {
+            enabled: true,
+            baseUrl: val.baseUrl,
+            ...(val.toolSchemaSanitization && { toolSchemaSanitization: true }),
+          }
         }
       }
       const payload = {
@@ -163,16 +175,16 @@ export function ProvidersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">供应商管理</h2>
-          <p className="text-muted-foreground">管理所有 LLM 供应商配置</p>
-        </div>
-        <Button onClick={handleAddNew}>
-          <Plus className="mr-2 h-4 w-4" />
-          添加供应商
-        </Button>
-      </div>
+      <PageHeader
+        title="供应商管理"
+        description="管理所有 LLM 供应商配置"
+        actions={
+          <Button onClick={handleAddNew}>
+            <Plus className="mr-2 h-4 w-4" />
+            添加供应商
+          </Button>
+        }
+      />
 
       <div className="flex items-center gap-2">
         <div className="relative flex-1 max-w-sm">
@@ -189,25 +201,24 @@ export function ProvidersPage() {
       {isLoading ? (
         <Card>
           <CardContent className="py-12">
-            <div className="text-center text-muted-foreground">加载中...</div>
-          </CardContent>
-        </Card>
-      ) : filtered.length === 0 ? (
-        <Card>
-          <CardContent className="py-12">
-            <div className="text-center space-y-4">
-              <p className="text-muted-foreground">
-                {searchQuery ? '没有找到匹配的供应商' : '还没有供应商'}
-              </p>
-              {!searchQuery && (
-                <Button onClick={handleAddNew} variant="outline">
-                  <Plus className="mr-2 h-4 w-4" />
-                  添加第一个供应商
-                </Button>
-              )}
+            <div className="text-center text-muted-foreground flex items-center justify-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              加载中...
             </div>
           </CardContent>
         </Card>
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          searchQuery={searchQuery}
+          action={
+            !searchQuery && (
+              <Button onClick={handleAddNew} variant="outline">
+                <Plus className="mr-2 h-4 w-4" />
+                添加第一个供应商
+              </Button>
+            )
+          }
+        />
       ) : (
         <div className="space-y-4">
           {filtered.map((provider) => (

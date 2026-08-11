@@ -3,7 +3,12 @@ import { useMemo, useState } from 'react'
 import { Brain } from 'lucide-react'
 
 import { useClientModelStats } from '../../../hooks/logs'
-import { ClientModelFilter, ClientModelList, ClientModelSummary } from '@xartifact/x-llm-gateway-ui'
+import {
+  ClientModelFilter,
+  ClientModelList,
+  ClientModelSummary,
+  PageHeader,
+} from '@xartifact/x-llm-gateway-ui'
 import type { FilterConfig } from '@xartifact/x-llm-gateway-ui'
 
 function buildQueryParams(timeRange: string): Record<string, string> {
@@ -85,13 +90,11 @@ export function ClientModelsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-          <Brain className="h-6 w-6" />
-          模型统计
-        </h2>
-        <p className="text-sm text-muted-foreground mt-1">查看和分析客户端请求的所有模型使用情况</p>
-      </div>
+      <PageHeader
+        title="模型统计"
+        description="查看和分析客户端请求的所有模型使用情况"
+        icon={<Brain className="h-5 w-5 text-muted-foreground" />}
+      />
 
       <ClientModelSummary summary={summary} />
 

@@ -35,12 +35,14 @@ describe('keys API', () => {
 
   it('GET /api/keys with auth returns 200 and empty list', async () => {
     const res = await authGet(ctx, '/api/keys')
-    const { status, body } = await parseJson<unknown[]>(res)
+    const { status, body } = await parseJson<{ data: unknown[]; pagination: { total: number } }>(
+      res,
+    )
 
     expect(status).toBe(200)
     expect(body.success).toBe(true)
     expect(Array.isArray(body.data)).toBe(true)
-    expect(body.total).toBe(0)
+    expect(body.pagination.total).toBe(0)
   })
 
   it('POST /api/keys with valid data returns 201 with deep field checks', async () => {

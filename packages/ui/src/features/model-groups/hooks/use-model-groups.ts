@@ -1,16 +1,16 @@
-'use client'
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import { get, post, put, del as deleteRequest, patch } from '@xartifact/x-llm-gateway-ui'
 
 import type {
+  ApiResponse,
+  InstanceCost,
+  InstanceTestResult,
   ModelGroup,
   ModelGroupDetail,
-  ApiResponse,
-  RoutingConfig,
   ModelInstance,
+  RoutingConfig,
 } from '@xartifact/x-llm-gateway-shared'
 
 // ── Query key factory ──────────────────────────────────────────────
@@ -201,7 +201,7 @@ export interface CreateInstanceData {
   description?: string
   weight?: number
   priority?: number
-  costPer1kTokens?: { input: number; output: number }
+  costPer1kTokens?: InstanceCost
   config?: ModelInstance['config']
 }
 
@@ -317,6 +317,18 @@ export function useToggleModelInstance() {
     },
     onError: (error: Error) => {
       toast.error(error.message)
+    },
+  })
+}
+
+/**
+ * 测试模型实例连通性与可用性（POST /instances/:id/test）。
+ * 返回的 result.ok 区分成功/失败，由调用方（如 InstanceTestButton）决定如何提示。
+ */
+export function useTestInstance() {
+  return useMutation({
+    mutationFn: async (instanceId: string) => {
+      return post<InstanceTestResult>(`/api/model-groups/instances/${instanceId}/test`)
     },
   })
 }

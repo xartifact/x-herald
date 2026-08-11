@@ -1,4 +1,4 @@
-import { eq } from '@xartifact/x-llm-gateway-db'
+import { eq, isNull } from '@xartifact/x-llm-gateway-db'
 
 import type { Database } from '../../db/client'
 import { getDatabase } from '../../db/client'
@@ -6,7 +6,7 @@ import rootLogger from '../../lib/logger'
 import { accessModels } from '@xartifact/x-llm-gateway-db'
 import type { ModelCapabilities } from '../model-groups/db'
 
-import { CATCHALL_VM_NAME } from './constants'
+import { CATCHALL_VM_NAME, DEFAULT_ACCESS_MODEL_CAPABILITIES } from './constants'
 
 const logger = rootLogger.child({ module: 'access-models-service' })
 
@@ -19,11 +19,12 @@ export async function listAccessModels(db?: Database) {
       displayName: accessModels.displayName,
       description: accessModels.description,
       enabled: accessModels.enabled,
+      deletedAt: accessModels.deletedAt,
       capabilities: accessModels.capabilities,
-      createdAt: accessModels.createdAt,
       updatedAt: accessModels.updatedAt,
     })
     .from(accessModels)
+    .where(isNull(accessModels.deletedAt))
 }
 
 export async function getAccessModel(id: string, db?: Database) {
@@ -35,8 +36,8 @@ export async function getAccessModel(id: string, db?: Database) {
       displayName: accessModels.displayName,
       description: accessModels.description,
       enabled: accessModels.enabled,
+      deletedAt: accessModels.deletedAt,
       capabilities: accessModels.capabilities,
-      createdAt: accessModels.createdAt,
       updatedAt: accessModels.updatedAt,
     })
     .from(accessModels)
@@ -63,7 +64,7 @@ export async function createAccessModel(
       displayName: data.displayName || null,
       description: data.description || null,
       enabled: data.enabled ?? true,
-      capabilities: data.capabilities ?? null,
+      capabilities: data.capabilities ?? DEFAULT_ACCESS_MODEL_CAPABILITIES,
     })
     .returning()
   logger.info({ id: am.id, name: am.name }, 'Access model created')
@@ -109,12 +110,18 @@ export async function deleteAccessModel(id: string, db?: Database) {
   const current = await getAccessModel(id, db)
   if (!current) return null
 
+  if (current.deletedAt) return null
+
   if (current.name === CATCHALL_VM_NAME) {
     throw new Error('System access model cannot be deleted')
   }
 
   const database = db ?? getDatabase()
-  const [deleted] = await database.delete(accessModels).where(eq(accessModels.id, id)).returning()
+  const [deleted] = await database
+    .update(accessModels)
+    .set({ deletedAt: new Date(), updatedAt: new Date() })
+    .where(eq(accessModels.id, id))
+    .returning()
   return deleted ?? null
 }
 

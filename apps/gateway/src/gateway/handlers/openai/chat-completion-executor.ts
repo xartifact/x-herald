@@ -20,6 +20,7 @@ import type { ModelMappingResult } from '../../services/model-mapping'
 import { getEndpoint } from '../../services/protocol-detector'
 import { getTransformer } from '../../transformer'
 import { buildHeaders } from '../../transformer/shared/parameter-transformer'
+import { sanitizeOpenAIToolsArray } from '../../transformer/shared/tool-schema-sanitizer'
 import type { AbortManager } from '../shared/abort-manager'
 import type { PreparedRequest } from '../shared/failover-executor'
 import { joinUrl } from '../shared/join-url'
@@ -63,6 +64,31 @@ export interface ExecutorConfig {
   retryCount: number
   requestGroupId: string
   candidateIndex: number
+  /** 可选：路由链路快照（用于追踪查询） */
+  routeChain?: {
+    requestedModel: string
+    accessModelId?: string
+    accessModelName?: string
+    chain: Array<{
+      index: number
+      kind: 'primary' | 'backup' | 'single'
+      actionType: string
+      resolvedGroupId?: string
+      resolvedGroupName?: string
+      candidates: Array<{
+        candidateIndex: number
+        chainStepIndex: number
+        chainStepKind: 'primary' | 'backup' | 'single'
+        instanceId: string
+        instanceName: string
+        providerId: string
+        providerName: string
+        priority: number
+        strategy: string
+        groupName: string
+      }>
+    }>
+  }
 }
 
 export class ChatCompletionCandidateExecutor {
@@ -144,8 +170,18 @@ export class ChatCompletionCandidateExecutor {
     )
 
     if (isPassthroughEnabled) {
+      const passthroughBody: { model?: string; tools?: unknown; [key: string]: unknown } = {
+        ...rawBody,
+        model: instance.actualModelName,
+      }
+      if (
+        provider.protocols?.openai?.toolSchemaSanitization &&
+        Array.isArray(passthroughBody.tools)
+      ) {
+        passthroughBody.tools = sanitizeOpenAIToolsArray(passthroughBody.tools)
+      }
       return {
-        transformedBody: { ...rawBody, model: instance.actualModelName },
+        transformedBody: passthroughBody,
         targetUrl: joinUrl(providerUrl, getEndpoint(targetProtocol, isStreaming)),
         pHeaders: { ...filtered, authorization: `Bearer ${provider.apiKey}` },
       }
@@ -185,7 +221,7 @@ export class ChatCompletionCandidateExecutor {
       conversationId,
       incomingProtocol,
     } = this.req
-    const { targetProtocol, requestGroupId, candidateIndex } = this.config
+    const { targetProtocol, requestGroupId, candidateIndex, routeChain } = this.config
     return {
       virtualKey,
       modelName: mapping.modelName,
@@ -218,6 +254,8 @@ export class ChatCompletionCandidateExecutor {
         instanceId: instance.id,
         actualModelName: instance.actualModelName,
         strategy: decision.strategy,
+        instanceCost: instance.costPer1kTokens,
+        ...(routeChain ? { routeChain } : {}),
       },
     }
   }

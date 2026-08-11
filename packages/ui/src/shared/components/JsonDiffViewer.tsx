@@ -1,5 +1,3 @@
-'use client'
-
 import { useState, useRef, useEffect } from 'react'
 
 import { DiffEditor, loader } from '@monaco-editor/react'

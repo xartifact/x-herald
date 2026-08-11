@@ -169,12 +169,7 @@ describe('executeFailoverIteration', () => {
 
   describe('network/timeout error paths', () => {
     it('returns error with gateway timeout when over total budget (streaming)', async () => {
-      mockRetryResult({
-        response: null,
-        retryCount: 1,
-        aborted: 'timeout',
-        networkError: false,
-      })
+      // remainingBudget<=0 时直接 504，不再调用上游 retry
       const params = createParams({
         isStreaming: true,
         isLastCandidate: false,
@@ -182,20 +177,17 @@ describe('executeFailoverIteration', () => {
       })
       const result = await executeFailoverIteration(params)
       expect(result.type).toBe('error')
-      expect(result.retryCount).toBe(1)
+      expect(result.retryCount).toBe(0)
       expect(params.onRecordFailure).toHaveBeenCalled()
       expect(params.onMarkLogAsFailed).toHaveBeenCalled()
       expect(params.onLogEventBusEmitAborted).toHaveBeenCalledWith('log-1')
-      expect(params.handleGatewayError).toHaveBeenCalled()
+      expect(params.handleGatewayError).toHaveBeenCalledWith(
+        'ttfb_timeout',
+        expect.stringContaining('total budget'),
+      )
     })
 
     it('returns error with gateway timeout when over total budget (non-streaming)', async () => {
-      mockRetryResult({
-        response: null,
-        retryCount: 1,
-        aborted: 'timeout',
-        networkError: false,
-      })
       const params = createParams({
         isStreaming: false,
         isLastCandidate: false,
@@ -203,11 +195,14 @@ describe('executeFailoverIteration', () => {
       })
       const result = await executeFailoverIteration(params)
       expect(result.type).toBe('error')
-      expect(result.retryCount).toBe(1)
+      expect(result.retryCount).toBe(0)
       expect(params.onRecordFailure).toHaveBeenCalled()
       expect(params.onMarkLogAsFailed).toHaveBeenCalled()
       expect(params.onLogEventBusEmitAborted).toHaveBeenCalledWith('log-1')
-      expect(params.handleGatewayError).toHaveBeenCalled()
+      expect(params.handleGatewayError).toHaveBeenCalledWith(
+        'ttfb_timeout',
+        expect.stringContaining('total budget'),
+      )
     })
 
     it('returns failover when not last candidate and not over total budget', async () => {

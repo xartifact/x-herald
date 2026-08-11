@@ -1,0 +1,2 @@
+[test]
+exclude = ["**/*.ui.test.tsx", "**/*.ui.test.ts"]

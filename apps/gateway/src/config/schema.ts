@@ -28,6 +28,8 @@ export interface MetricsConfig {
   memoryBufferSize: number
   flushIntervalMs: number
   retentionDays: number
+  /** Comma-separated IPs / CIDRs allowed to scrape GET /metrics. Empty = open. */
+  ipAllowlist: string
 }
 
 export interface HealthConfig {

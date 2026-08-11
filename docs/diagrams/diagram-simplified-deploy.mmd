@@ -1,0 +1,34 @@
+---
+config:
+  theme: neutral
+---
+sequenceDiagram
+  autonumber
+  actor U as 用户
+  participant FE as Web SPA
+  participant API as Gateway API
+  participant ENG as CanvasRouteEngine<br/>(内存索引)
+  participant DB as 数据库
+
+  Note over U,DB: 简化后：deploy = 保存画布即可
+
+  U ->> FE: 点击部署
+  activate FE
+
+  FE ->> API: PUT /api/canvas-state<br/>{ graph: Node[], edges: Edge[] }
+  activate API
+
+  API ->> DB: UPSERT canvas_states<br/>(graph + name + enabled + priority)
+  DB -->> API: ok
+
+  API ->> ENG: subscribeToCanvasChanges 回调<br/>→ rebuild 内存索引
+  ENG -->> API: rebuild 完成
+
+  API -->> FE: 200
+  deactivate API
+
+  FE -->> U: 部署成功
+
+  deactivate FE
+
+  Note over FE,DB: 收益：<br/>1. deploy = 1 次 HTTP 请求（PUT /api/canvas-state）<br/>2. 运行时引擎订阅变更自动重建索引，O(1) 查询<br/>3. 单一数据源，事务原子性，零同步复杂度<br/>4. GET /api/model-routes 在运行时热路径不再触发

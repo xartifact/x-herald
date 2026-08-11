@@ -1,51 +1,36 @@
-import { ArrowDownToLine, Ban, GitBranch, Layers } from 'lucide-react'
+import type { NodeType } from '@xartifact/x-llm-gateway-shared'
+import { NodeTypeUIRegistry } from './node-type-ui-registry'
 
-import { ConditionNode } from './nodes/condition-node'
-import { ModelTriggerNode } from './nodes/model-trigger-node'
-import { StrategyNode } from './nodes/strategy-node'
-import { TargetNode } from './nodes/target-node'
+const NODE_TYPE_KEYS = Object.keys(NodeTypeUIRegistry) as NodeType[]
 
-export const nodeTypes = {
-  modelTrigger: ModelTriggerNode,
-  condition: ConditionNode,
-  target: TargetNode,
-  reject: StrategyNode,
-  fallback: StrategyNode,
+export const nodeTypes = Object.fromEntries(
+  NODE_TYPE_KEYS.map((type) => [type, NodeTypeUIRegistry[type].component]),
+)
+
+export interface NodeTemplate {
+  type: NodeType
+  label: string
+  desc: string
+  icon: (typeof NodeTypeUIRegistry)[NodeType]['icon']
+  color: string
+  defaultData: Record<string, unknown>
 }
 
-export const NODE_TEMPLATES = [
-  {
-    type: 'condition',
-    label: '条件节点',
-    desc: '按字段匹配请求',
-    icon: GitBranch,
-    color: 'text-amber-600',
-    defaultData: { label: '条件', field: '', operator: 'eq', value: '' },
-  },
-  {
-    type: 'target',
-    label: '目标节点',
-    desc: '路由到模型组/实例',
-    icon: Layers,
-    color: 'text-green-600',
-    defaultData: { label: '目标', actionType: 'route_to_group', targetId: '', targetName: '' },
-  },
-  {
-    type: 'reject',
-    label: '拒绝节点',
-    desc: '拒绝请求返回错误',
-    icon: Ban,
-    color: 'text-red-600',
-    defaultData: { label: '拒绝', strategyType: 'reject', reason: '' },
-  },
-  {
-    type: 'fallback',
-    label: '降级节点',
-    desc: '跳过此规则继续匹配',
-    icon: ArrowDownToLine,
-    color: 'text-orange-600',
-    defaultData: { label: '降级', strategyType: 'fallback' },
-  },
-] as const
-
-export type NodeTemplate = (typeof NODE_TEMPLATES)[number]
+/**
+ * add-node-dialog 的模板列表 —— 派生自 NodeTypeUIRegistry，只包含声明了
+ * templateDefaults 的类型（modelTrigger 不可手动添加，由 build-flow 按接入模型自动同步）。
+ */
+export const NODE_TEMPLATES: NodeTemplate[] = NODE_TYPE_KEYS.flatMap((type) => {
+  const entry = NodeTypeUIRegistry[type]
+  if (!entry.templateDefaults) return []
+  return [
+    {
+      type,
+      label: entry.templateLabel ?? entry.title,
+      desc: entry.templateDesc ?? '',
+      icon: entry.icon,
+      color: entry.colorClassName,
+      defaultData: entry.templateDefaults,
+    },
+  ]
+})

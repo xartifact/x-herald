@@ -15,16 +15,12 @@ const TABLE_NAMES = [
   'request_logs',
   'request_attempts',
   'client_requested_models',
-  'model_request_stats',
-  'health_targets',
-  'health_runs',
   'gateway_configs',
   'circuit_breaker_events',
   'instance_perf_snapshots',
   'anomaly_events',
   'cost_records',
   'access_models',
-  'model_routes',
 ]
 
 export function transactionalTest() {

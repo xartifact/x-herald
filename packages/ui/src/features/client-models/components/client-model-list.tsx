@@ -88,10 +88,10 @@ export function ClientModelList({ stats, total, isLoading, searchQuery }: Client
                           className={cn(
                             'font-semibold text-lg',
                             Number(successRate) >= 95
-                              ? 'text-green-600'
+                              ? 'text-success'
                               : Number(successRate) >= 80
-                                ? 'text-yellow-600'
-                                : 'text-red-600',
+                                ? 'text-warning'
+                                : 'text-destructive',
                           )}
                         >
                           {successRate}%
@@ -110,8 +110,7 @@ export function ClientModelList({ stats, total, isLoading, searchQuery }: Client
                         </div>
                       </div>
                       <div className="bg-muted/50 rounded-lg px-3 py-2">
-                        <div className="text-xs text-muted-foreground">失败次数</div>
-                        <div className="font-semibold text-lg text-red-600">
+                        <div className="font-semibold text-lg text-destructive">
                           {stat.failureCount}
                         </div>
                       </div>
@@ -121,12 +120,11 @@ export function ClientModelList({ stats, total, isLoading, searchQuery }: Client
                         className={cn(
                           'h-full rounded-full transition-all',
                           Number(successRate) >= 95
-                            ? 'bg-green-500'
+                            ? 'bg-success'
                             : Number(successRate) >= 80
-                              ? 'bg-yellow-500'
-                              : 'bg-red-500',
+                              ? 'bg-warning'
+                              : 'bg-destructive',
                         )}
-                        style={{ width: `${successRate}%` }}
                       />
                     </div>
                   </div>

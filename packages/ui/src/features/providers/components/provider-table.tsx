@@ -1,5 +1,3 @@
-'use client'
-
 import { Pencil, Trash2, Eye, EyeOff, BrainCircuit, RefreshCw } from 'lucide-react'
 
 import { StatusToggle } from '../../../shared/components/status-toggle'

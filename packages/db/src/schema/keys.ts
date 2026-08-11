@@ -23,6 +23,7 @@ export const virtualKeys = pgTable('virtual_keys', {
   lastUsedAt: timestamp('last_used_at'),
   totalRequests: integer('total_requests').default(0),
   totalTokens: bigint('total_tokens', { mode: 'bigint' }).default(0n),
+  deletedAt: timestamp('deleted_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })

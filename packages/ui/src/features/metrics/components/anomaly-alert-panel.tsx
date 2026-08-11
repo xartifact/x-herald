@@ -1,5 +1,3 @@
-'use client'
-
 import { useState } from 'react'
 
 import { AlertTriangle, Bell, CheckCircle2, RefreshCw, Search, ShieldAlert } from 'lucide-react'
@@ -31,12 +29,12 @@ const TYPE_LABELS: Record<string, string> = {
 const SEVERITY_CONFIG = {
   warning: {
     label: '警告',
-    badgeClass: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+    badgeClass: 'bg-warning/10 text-warning border-warning/20',
     icon: AlertTriangle,
   },
   critical: {
     label: '严重',
-    badgeClass: 'bg-red-50 text-red-700 border-red-200',
+    badgeClass: 'bg-destructive/10 text-destructive border-destructive/20',
     icon: ShieldAlert,
   },
 }
@@ -79,7 +77,7 @@ function AnomalyRow({ event, onResolve, isResolving }: AnomalyRowProps) {
       <TableCell>
         <div className="flex items-center gap-2">
           <Icon
-            className={`h-4 w-4 ${event.severity === 'critical' ? 'text-red-500' : 'text-yellow-500'}`}
+            className={`h-4 w-4 ${event.severity === 'critical' ? 'text-destructive' : 'text-warning'}`}
           />
           <Badge variant="outline" className={severityConfig.badgeClass}>
             {severityConfig.label}
@@ -175,7 +173,7 @@ export function AnomalyAlertPanel() {
         {isLoading && <div className="text-center text-muted-foreground py-8">加载中…</div>}
         {!isLoading && events.length === 0 && (
           <div className="text-center text-muted-foreground py-8 flex flex-col items-center gap-2">
-            <CheckCircle2 className="h-8 w-8 text-green-500" />
+            <CheckCircle2 className="h-8 w-8 text-success" />
             <p>暂无异常事件</p>
           </div>
         )}

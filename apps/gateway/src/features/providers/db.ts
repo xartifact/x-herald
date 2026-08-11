@@ -18,6 +18,7 @@ export type SyntheticThinkingStrategy = 'strip' | 'inject'
 export interface ProtocolExtendedConfig extends ProtocolConfig {
   thinkingMapping?: ThinkingMappingConfig
   syntheticThinking?: SyntheticThinkingStrategy
+  toolSchemaSanitization?: boolean
 }
 
 // 支持的协议类型

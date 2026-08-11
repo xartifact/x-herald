@@ -8,7 +8,6 @@ import {
   modelInstances,
   modelGroupMemberships,
   accessModels,
-  modelRoutes,
 } from '@xartifact/x-llm-gateway-db'
 import { virtualKeys } from '@xartifact/x-llm-gateway-db'
 import { gatewayConfigs } from '@xartifact/x-llm-gateway-db'
@@ -92,13 +91,12 @@ describe('exportConfig', () => {
   it('returns empty config for empty database', async () => {
     const result = await exportConfig()
 
-    expect(result.version).toBe('1')
+    expect(result.version).toBe('2')
     expect(typeof result.exportedAt).toBe('string')
     expect(result.data.providers).toEqual([])
     expect(result.data.modelGroups).toEqual([])
     expect(result.data.modelInstances).toEqual([])
     expect(result.data.virtualModels).toEqual([])
-    expect(result.data.modelRoutes).toEqual([])
     expect(result.data.virtualKeys).toEqual([])
     expect(result.data.gatewayConfigs).toEqual([])
   })
@@ -351,22 +349,6 @@ describe('exportConfig', () => {
       },
     ])
 
-    mockDb.selectResults.set(modelRoutes, [
-      {
-        id: 'route-1',
-        name: 'default',
-        description: null,
-        accessModelIds: [accessModelId],
-        conditions: [],
-        action: { type: 'route_to_group', targetId: groupId, reason: null },
-        priority: 0,
-        enabled: true,
-        flowData: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    ])
-
     mockDb.selectResults.set(virtualKeys, [
       {
         id: 'key-1',
@@ -403,11 +385,9 @@ describe('exportConfig', () => {
     expect(result.data.modelGroups).toHaveLength(1)
     expect(result.data.modelInstances).toHaveLength(1)
     expect(result.data.virtualModels).toHaveLength(1)
-    expect(result.data.modelRoutes).toHaveLength(1)
     expect(result.data.virtualKeys).toHaveLength(1)
     expect(result.data.gatewayConfigs).toHaveLength(1)
 
     expect(result.data.providers[0].apiKey).toBe('sk-secret')
-    expect(result.data.modelRoutes[0].action.targetRef).toBe('gpt-4')
   })
 })

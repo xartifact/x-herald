@@ -25,9 +25,9 @@ function fmtPct(v: number | null | undefined): string {
 }
 
 function scoreColor(score: number): string {
-  if (score >= 80) return 'text-green-600'
-  if (score >= 60) return 'text-yellow-600'
-  return 'text-red-600'
+  if (score >= 80) return 'text-success'
+  if (score >= 60) return 'text-warning'
+  return 'text-destructive'
 }
 
 function ScoreBar({ score }: { score: number }) {
@@ -35,7 +35,7 @@ function ScoreBar({ score }: { score: number }) {
     <div className="flex items-center gap-2">
       <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
         <div
-          className={`h-full rounded-full ${score >= 80 ? 'bg-green-500' : score >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`}
+          className={`h-full rounded-full ${score >= 80 ? 'bg-success' : score >= 60 ? 'bg-warning' : 'bg-destructive'}`}
           style={{ width: `${Math.min(score, 100)}%` }}
         />
       </div>
@@ -52,7 +52,7 @@ export function ProviderQualityTable() {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div className="flex items-center gap-2">
-          <Trophy className="h-4 w-4 text-yellow-500" />
+          <Trophy className="h-4 w-4 text-warning" />
           <CardTitle>供应商质量排名（近24小时）</CardTitle>
         </div>
         <Button variant="ghost" size="sm" onClick={() => refetch()} disabled={isLoading}>

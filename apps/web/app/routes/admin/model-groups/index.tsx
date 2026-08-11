@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
-import { Plus, Search } from 'lucide-react'
+import { Loader2, Plus, Search } from 'lucide-react'
 
 import {
   useModelGroups,
@@ -19,10 +19,12 @@ import {
   Button,
   Card,
   CardContent,
+  EmptyState,
   Input,
   ModelGroupCard,
   ModelGroupForm,
   ModelInstanceForm,
+  PageHeader,
   UngroupedInstancesSection,
 } from '@xartifact/x-llm-gateway-ui'
 
@@ -119,7 +121,8 @@ export function ModelGroupsPage() {
       description: '',
       weight: 100,
       priority: 0,
-      config: undefined,
+      costPer1kTokens: { _enabled: false },
+      config: { capabilityOverrides: {} },
     },
   })
 
@@ -190,7 +193,6 @@ export function ModelGroupsPage() {
   }
 
   const handleAddInstance = () => {
-    setEditingInstanceId(null)
     instanceForm.reset({
       providerId: '',
       name: '',
@@ -198,10 +200,11 @@ export function ModelGroupsPage() {
       description: '',
       weight: 100,
       priority: 0,
+      costPer1kTokens: { _enabled: false },
+      config: { capabilityOverrides: {} },
     })
     setInstanceDialogOpen(true)
   }
-
   const handleEditInstance = (instance: ModelInstance) => {
     setEditingInstanceId(instance.id)
     instanceForm.reset({
@@ -211,9 +214,12 @@ export function ModelGroupsPage() {
       description: instance.description || '',
       weight: instance.weight,
       priority: instance.priority,
+      costPer1kTokens: {
+        ...((instance.costPer1kTokens ?? {}) as Record<string, unknown>),
+        _enabled: !!instance.costPer1kTokens,
+      },
       config: instance.config as any,
     })
-    setInstanceDialogOpen(true)
   }
 
   const handleDeleteInstance = async (instance: ModelInstance) => {
@@ -242,6 +248,20 @@ export function ModelGroupsPage() {
   )
 
   const onInstanceSubmit = async (data: Record<string, any>) => {
+    // 剥离 _enabled 开关字段，只在 costPer1kTokens._enabled 为 true 时发送
+    const costRaw = data.costPer1kTokens as Record<string, unknown> | undefined
+    const costEnabled = costRaw?._enabled === true
+    const { _enabled, ...costData } = costRaw ?? {}
+
+    // 清理 capabilityOverrides 中的 undefined 值（避免覆盖组级配置为 undefined）
+    const config = data.config as Record<string, unknown> | undefined
+    if (config?.capabilityOverrides) {
+      const overrides = config.capabilityOverrides as Record<string, unknown>
+      Object.keys(overrides).forEach((k) => {
+        if (overrides[k] === undefined) delete overrides[k]
+      })
+    }
+
     const payload = {
       providerId: data.providerId,
       name: data.name,
@@ -249,6 +269,7 @@ export function ModelGroupsPage() {
       description: data.description,
       weight: data.weight,
       priority: data.priority,
+      costPer1kTokens: costEnabled ? (costData as any) : undefined,
       config: data.config,
     }
     if (editingInstanceId) {
@@ -263,12 +284,7 @@ export function ModelGroupsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">模型组管理</h2>
-          <p className="text-muted-foreground">管理模型组和模型实例配置</p>
-        </div>
-      </div>
+      <PageHeader title="模型组管理" description="管理模型组和模型实例配置" />
 
       <div className="flex items-center gap-2">
         <div className="relative flex-1 max-w-sm">
@@ -289,25 +305,24 @@ export function ModelGroupsPage() {
       {groupsLoading || instancesLoading ? (
         <Card>
           <CardContent className="py-12">
-            <div className="text-center text-muted-foreground">加载中...</div>
-          </CardContent>
-        </Card>
-      ) : filteredGroups.length === 0 ? (
-        <Card>
-          <CardContent className="py-12">
-            <div className="text-center space-y-4">
-              <p className="text-muted-foreground">
-                {searchQuery ? '没有找到匹配的模型组' : '还没有模型组'}
-              </p>
-              {!searchQuery && (
-                <Button onClick={handleAddGroup} variant="outline">
-                  <Plus className="mr-2 h-4 w-4" />
-                  添加第一个模型组
-                </Button>
-              )}
+            <div className="text-center text-muted-foreground flex items-center justify-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              加载中...
             </div>
           </CardContent>
         </Card>
+      ) : filteredGroups.length === 0 ? (
+        <EmptyState
+          searchQuery={searchQuery}
+          action={
+            !searchQuery ? (
+              <Button onClick={handleAddGroup} variant="outline">
+                <Plus className="mr-2 h-4 w-4" />
+                添加第一个模型组
+              </Button>
+            ) : undefined
+          }
+        />
       ) : (
         <div className="space-y-4">
           {filteredGroups.map((group) => (

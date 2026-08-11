@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader } from '../../../../shared/components/ui/
 import { Checkbox } from '../../../../shared/components/ui/checkbox'
 import type { LogMetadata } from '@xartifact/x-llm-gateway-shared'
 
-import { borderColor, extractMessageText, roleConfig } from './timeline-message-card-utils'
+import { borderColor, extractMessageText, roleColors } from './timeline-message-card-utils'
 
 type RoleInfo = NonNullable<LogMetadata['messageSequence']>['roles'][0]
 
@@ -37,7 +37,7 @@ export function TimelineMessageCard({
   const [isFullText, setIsFullText] = useState(false)
   const { isExpanded, isSelected } = displayState
 
-  const config = roleConfig[roleInfo.role] ?? roleConfig.user
+  const config = roleColors[roleInfo.role] ?? roleColors.user
   const Icon = config.icon
   const rawText = extractMessageText(message)
   const hasContent = rawText.length > 0
@@ -47,7 +47,7 @@ export function TimelineMessageCard({
 
   return (
     <Card
-      className={`border-l-4 cursor-pointer transition-colors hover:bg-accent/30 ${isSelected ? 'ring-1 ring-primary/30' : ''} ${borderColor[roleInfo.role] ?? 'border-l-gray-400'}`}
+      className={`border-l-4 cursor-pointer transition-colors hover:bg-accent/30 ${isSelected ? 'ring-1 ring-primary/30' : ''} ${borderColor[roleInfo.role] ?? 'border-l-muted-foreground'}`}
       onClick={onToggleExpand}
     >
       <CardHeader className="py-3 px-4">
@@ -104,7 +104,7 @@ export function TimelineMessageCard({
               <span className="text-muted-foreground">工具调用:</span>
               <Badge
                 variant="secondary"
-                className="text-xs bg-amber-50 text-amber-700 border-amber-200"
+                className="text-xs bg-warning/10 text-warning border-warning/20"
               >
                 🔧 {roleInfo.toolCallCount} 个
               </Badge>

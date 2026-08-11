@@ -1,0 +1,47 @@
+---
+config:
+  theme: neutral
+---
+block-beta
+columns 1
+
+T1["表现层 (Web SPA)"]
+block:L1
+  columns 3
+  W1["路由规则画布"] W2["接入模型管理"] W3["服务/组/密钥/日志"]
+end
+
+T2["API 网关层 (apps/gateway)"]
+block:L2
+  columns 3
+  A1["canvas-state<br/>(GET/PUT) — 唯一路由源"] A2["(model-routes CRUD<br/>已废弃，标 @deprecated)"] A3["access-models / providers / keys / logs"]
+end
+
+T3["路由引擎层 (运行时热路径)"]
+block:L3
+  columns 3
+  E1["RouteRuleEngine<br/>(@deprecated, 保留兜底)"] E2["CanvasRouteEngine<br/>(active, 内存索引 O(1))"] E3["(shadow-compare<br/>已完成使命)"]
+end
+
+T4["数据层"]
+block:L4
+  columns 3
+  D1[("canvas_states<br/>(唯一活跃表)")] D2[("model_routes<br/>(只读快照, 后续 DROP)")] D3[("access_models / providers / groups")]
+end
+
+classDef hdr1 fill:#EAF1FB,stroke:#3B6FB6,font-weight:bold
+classDef hdr2 fill:#FFF3DC,stroke:#C8862C,font-weight:bold
+classDef hdr3 fill:#E6F7E6,stroke:#3A8A3A,font-weight:bold
+classDef hdr4 fill:#EFEFEF,stroke:#808080,font-weight:bold
+classDef band1 fill:#EAF1FB,stroke:#3B6FB6
+classDef band2 fill:#FFF3DC,stroke:#C8862C
+classDef band3 fill:#E6F7E6,stroke:#3A8A3A
+classDef band4 fill:#EFEFEF,stroke:#808080
+classDef box fill:#FFFFFF,stroke:#666666
+classDef deprecated fill:#F0F0F0,stroke:#999999,stroke-dasharray: 3 3
+
+class T1,T2,T3,T4 hdr1,hdr2,hdr3,hdr4
+class L1,L2,L3,L4 band1,band2,band3,band4
+class W1,W2,W3,A3,D3 box
+class A1,E2,D1 box
+class A2,E1,D2 deprecated

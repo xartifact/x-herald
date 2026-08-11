@@ -4,8 +4,8 @@ WORKDIR /app
 # ---- 构建 ----
 FROM base AS builder
 
-ARG GIT_HASH=unknown
-ENV GIT_HASH=${GIT_HASH}
+ARG GIT_COMMIT_HASH=unknown
+ENV GIT_COMMIT_HASH=${GIT_COMMIT_HASH}
 
 COPY package.json bun.lock* bun.lockb* ./
 
@@ -54,13 +54,12 @@ COPY packages/ai-agent/src ./packages/ai-agent/src
 
 COPY --from=builder /app/apps/web/dist ./apps/web/dist
 
-COPY apps/gateway/src/db/migrations /app/migrations
+COPY packages/db/migrations ./packages/db/migrations
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
-ENV DB_MIGRATIONS_FOLDER=/app/migrations
 
 CMD ["bun", "apps/gateway/src/server.ts"]

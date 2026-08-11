@@ -1,175 +1,104 @@
 import type { Node, Edge } from '@xyflow/react'
 
-import type { RouteCondition, RouteAction, CreateModelRoutePayload } from '../components/types'
-
-function buildOutEdgeMap(edges: Edge[]): Map<string, Edge[]> {
-  const map = new Map<string, Edge[]>()
-  for (const edge of edges) {
-    if (!map.has(edge.source)) map.set(edge.source, [])
-    map.get(edge.source)!.push(edge)
-  }
-  return map
-}
-
-function extractCondition(node: Node): RouteCondition | null {
-  const d = node.data as Record<string, unknown>
-  const field = d.field as string | undefined
-  const operator = d.operator as string | undefined
-  if (!field || !operator) return null
-  return {
-    field,
-    operator: operator as RouteCondition['operator'],
-    value: operator === 'exists' ? undefined : d.value,
-  }
-}
-
-function extractAction(node: Node): RouteAction | null {
-  const d = node.data as Record<string, unknown>
-  if (node.type === 'reject') {
-    return { type: 'reject', reason: (d.reason as string) || undefined }
-  }
-  if (node.type === 'fallback') {
-    return { type: 'fallback' }
-  }
-  if (node.type === 'target') {
-    const actionType = d.actionType as string | undefined
-    const targetId = d.targetId as string | undefined
-    if (!actionType || !targetId) return null
-    return { type: actionType as RouteAction['type'], targetId }
-  }
-  return null
-}
-
-interface PathEntry {
-  conditions: RouteCondition[]
-  leaf: Node
-}
-
-function dfs(
-  node: Node,
-  accConditions: RouteCondition[],
-  outEdges: Map<string, Edge[]>,
-  nodeMap: Map<string, Node>,
-  visitedInPath: Set<string>,
-  results: PathEntry[],
-): void {
-  if (visitedInPath.has(node.id)) return
-
-  const isLeaf = node.type === 'target' || node.type === 'reject' || node.type === 'fallback'
-  if (isLeaf) {
-    results.push({ conditions: [...accConditions], leaf: node })
-    return
-  }
-
-  const newVisited = new Set(visitedInPath)
-  newVisited.add(node.id)
-  const nextEdges = outEdges.get(node.id) || []
-
-  if (node.type === 'condition') {
-    const cond = extractCondition(node)
-    for (const edge of nextEdges) {
-      const nextNode = nodeMap.get(edge.target)
-      if (!nextNode) continue
-      if (edge.sourceHandle === 'true') {
-        const newConds = cond ? [...accConditions, cond] : [...accConditions]
-        dfs(nextNode, newConds, outEdges, nodeMap, newVisited, results)
-      } else {
-        dfs(nextNode, [...accConditions], outEdges, nodeMap, newVisited, results)
-      }
-    }
-    return
-  }
-
-  for (const edge of nextEdges) {
-    const nextNode = nodeMap.get(edge.target)
-    if (nextNode) dfs(nextNode, [...accConditions], outEdges, nodeMap, newVisited, results)
-  }
-}
+import {
+  getValidHandleIds,
+  NodeTypeRegistry,
+  validateNodeData,
+  type NodeType,
+} from '@xartifact/x-llm-gateway-shared'
 
 export interface ValidationError {
   nodeId: string
   message: string
 }
 
-export function validateFlow(nodes: Node[], _edges: Edge[]): ValidationError[] {
-  const errors: ValidationError[] = []
-  for (const node of nodes) {
-    if (node.type === 'condition') {
-      const d = node.data as Record<string, unknown>
-      if (!d.field || !d.operator) {
-        errors.push({ nodeId: node.id, message: '条件节点未配置字段或操作符' })
-      }
-    }
-    if (node.type === 'target') {
-      const d = node.data as Record<string, unknown>
-      if (!d.actionType || !d.targetId) {
-        errors.push({ nodeId: node.id, message: '目标节点未配置动作或目标' })
-      }
-    }
-  }
-  return errors
+function isNodeType(type: string | undefined): type is NodeType {
+  return type !== undefined && type in NodeTypeRegistry
 }
 
-export function compileFlowToRoutes(nodes: Node[], edges: Edge[]): CreateModelRoutePayload[] {
-  const outEdges = buildOutEdgeMap(edges)
+export function validateFlow(nodes: Node[], edges: Edge[]): ValidationError[] {
+  const errors: ValidationError[] = []
   const nodeMap = new Map(nodes.map((n) => [n.id, n]))
-  const vmNodes = nodes.filter((n) => n.type === 'modelTrigger')
 
-  // signature → { vmIds, conditions, leaf }
-  const pathMap = new Map<string, { vmIds: string[]; conditions: RouteCondition[]; leaf: Node }>()
+  for (const node of nodes) {
+    if (!isNodeType(node.type)) continue
+    const presentHandles = new Set(
+      edges.flatMap((e) => (e.source === node.id && e.sourceHandle ? [e.sourceHandle] : [])),
+    )
+    const messages = validateNodeData(node.type, node.data, presentHandles)
+    for (const message of messages) {
+      errors.push({ nodeId: node.id, message })
+    }
+  }
 
-  for (const vmNode of vmNodes) {
-    const vmId = vmNode.id.replace(/^vm-/, '')
-    const nextEdges = outEdges.get(vmNode.id) || []
-
-    for (const edge of nextEdges) {
-      const nextNode = nodeMap.get(edge.target)
-      if (!nextNode) continue
-
-      const paths: PathEntry[] = []
-      dfs(nextNode, [], outEdges, nodeMap, new Set([vmNode.id]), paths)
-
-      for (const path of paths) {
-        const sig = `${JSON.stringify(path.conditions)}|${path.leaf.id}`
-        if (pathMap.has(sig)) {
-          pathMap.get(sig)!.vmIds.push(vmId)
-        } else {
-          pathMap.set(sig, { vmIds: [vmId], conditions: path.conditions, leaf: path.leaf })
+  const vmIds = new Set(nodes.filter((n) => n.type === 'modelTrigger').map((n) => n.id))
+  if (vmIds.size > 0) {
+    const outgoing = new Map<string, string[]>()
+    for (const e of edges) {
+      const list = outgoing.get(e.source) ?? []
+      list.push(e.target)
+      outgoing.set(e.source, list)
+    }
+    const reachable = new Set<string>(vmIds)
+    const stack = [...vmIds]
+    while (stack.length > 0) {
+      const cur = stack.pop()!
+      for (const next of outgoing.get(cur) ?? []) {
+        if (!reachable.has(next)) {
+          reachable.add(next)
+          stack.push(next)
         }
       }
     }
+    for (const n of nodes) {
+      if (!vmIds.has(n.id) && !reachable.has(n.id)) {
+        errors.push({ nodeId: n.id, message: '孤立节点：没有任何 VM 入口可到达' })
+      }
+    }
   }
 
-  const entries = Array.from(pathMap.values())
-    .map((entry) => {
-      const action = extractAction(entry.leaf)
-      if (!action) return null
-      const d = entry.leaf.data as Record<string, unknown>
-      const condCount = entry.conditions.length
-      const name = (
-        (d.label as string) ||
-        (condCount > 0
-          ? entry.conditions
-              .map((c) => `${c.field} ${c.operator} ${String(c.value ?? '')}`)
-              .join(' & ')
-          : action.type)
-      ).slice(0, 255)
-      return {
-        name,
-        accessModelIds: [...new Set(entry.vmIds)],
-        conditions: entry.conditions,
-        action,
-        enabled: true,
-        _condCount: condCount,
-        _leafY: entry.leaf.position?.y ?? 0,
+  const color = new Map<string, number>()
+  for (const n of nodes) color.set(n.id, 0)
+  const adj = new Map<string, string[]>()
+  for (const e of edges) {
+    const list = adj.get(e.source) ?? []
+    list.push(e.target)
+    adj.set(e.source, list)
+  }
+  function detectCycle(startId: string, path: string[]): boolean {
+    color.set(startId, 1)
+    path.push(startId)
+    for (const next of adj.get(startId) ?? []) {
+      if (color.get(next) === 1) {
+        const cycleStart = path.indexOf(next)
+        errors.push({
+          nodeId: next,
+          message: `检测到循环：${path.slice(cycleStart).concat(next).join(' → ')}`,
+        })
+        return true
       }
-    })
-    .filter(Boolean) as Array<CreateModelRoutePayload & { _condCount: number; _leafY: number }>
+      if (color.get(next) === 0 && detectCycle(next, path)) return true
+    }
+    color.set(startId, 2)
+    path.pop()
+    return false
+  }
+  for (const n of nodes) {
+    if (color.get(n.id) === 0) detectCycle(n.id, [])
+  }
 
-  entries.sort((a, b) => b._condCount - a._condCount || a._leafY - b._leafY)
+  for (const e of edges) {
+    if (!e.sourceHandle) continue
+    const source = nodeMap.get(e.source)
+    if (!source || !isNodeType(source.type)) continue
+    const validHandles = getValidHandleIds(source.type, source.data)
+    if (validHandles.size > 0 && !validHandles.has(e.sourceHandle)) {
+      errors.push({
+        nodeId: e.source,
+        message: `Edge 引用了不存在的 handle "${e.sourceHandle}"`,
+      })
+    }
+  }
 
-  return entries.map(({ _condCount: _, _leafY: __, ...payload }, i) => ({
-    ...payload,
-    priority: i * 10,
-  }))
+  return errors
 }

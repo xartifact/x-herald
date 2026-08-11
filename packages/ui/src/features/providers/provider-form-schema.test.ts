@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'bun:test'
+import { describe, it, expect } from 'vitest'
 import { providerSchema, PROTOCOL_OPTIONS } from './provider-form-schema'
 
 describe('providerSchema', () => {

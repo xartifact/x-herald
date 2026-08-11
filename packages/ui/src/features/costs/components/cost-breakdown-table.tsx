@@ -1,5 +1,3 @@
-'use client'
-
 import { useMemo } from 'react'
 
 import {
@@ -72,7 +70,7 @@ export function CostBreakdownTable({ items, totalCost, isLoading }: CostBreakdow
                 <TableCell className="text-right">{item.requestCount.toLocaleString()}</TableCell>
                 <TableCell className="text-right">{formatTokens(item.inputTokens)}</TableCell>
                 <TableCell className="text-right">{formatTokens(item.outputTokens)}</TableCell>
-                <TableCell className="text-right font-medium text-emerald-600">
+                <TableCell className="text-right font-medium text-success">
                   {formatCurrency(item.totalCost)}
                 </TableCell>
                 <TableCell className="text-right">
@@ -82,7 +80,7 @@ export function CostBreakdownTable({ items, totalCost, isLoading }: CostBreakdow
                     </span>
                     <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-emerald-500 rounded-full"
+                        className="h-full bg-success rounded-full"
                         style={{ width: `${Math.min(percentage, 100)}%` }}
                       />
                     </div>

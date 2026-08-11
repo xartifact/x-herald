@@ -22,11 +22,13 @@ export {
   requestAttempts,
   clientRequestedModels,
   modelRequestStats,
+  intentLogs,
+  INTENT_SOURCE_VALUES,
+  type IntentSource,
 } from '@xartifact/x-llm-gateway-db'
 export { healthTargets, healthRuns } from '@xartifact/x-llm-gateway-db'
 export { gatewayConfigs, type NewGatewayConfig } from '@xartifact/x-llm-gateway-db'
 export { circuitBreakerEvents } from '@xartifact/x-llm-gateway-db'
-export { modelRoutes, modelRoutesRelations } from '@xartifact/x-llm-gateway-db'
 
 // Types that are not drizzle-inferred — still needed from feature dirs
 export type {
@@ -35,7 +37,6 @@ export type {
   ModelGroup,
   ModelInstance,
   InstanceConfig,
-  RouteCondition,
   NewModelGroupMembership,
 } from '../features/model-groups/db'
 export type {

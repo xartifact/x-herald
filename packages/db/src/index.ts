@@ -1,4 +1,5 @@
-export { createDbConnection, getDatabase, closeDb } from './client'
+export { createDbConnection, getDatabase, closeDb, MIGRATIONS_FOLDER } from './client'
+export { runPgliteMigrations } from './connections/pglite'
 export { seedSystemData } from './seed'
 export type { Database, DatabaseOptions, DbClient, DbLogger, Transaction } from './types'
 
@@ -20,6 +21,8 @@ export {
   ne,
   inArray,
   isNotNull,
+  isNull,
   count,
   max,
+  ilike,
 } from 'drizzle-orm'

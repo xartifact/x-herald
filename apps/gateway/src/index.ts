@@ -25,24 +25,22 @@ export {
   type ImportResult,
 } from './features/config-io'
 
-// model-routes
-export {
-  buildFlowFromData,
-  compileFlowToRoutes,
-  validateFlow,
-  getLayoutedElements,
-  type ModelRoute,
-  type CreateModelRoutePayload,
-} from './features/model-routes'
-
 // Gateway services (needed by settings API)
-export { CB_CONFIG_KEY, configureCircuitBreaker } from './gateway/services'
+export {
+  CB_CONFIG_KEY,
+  configureCircuitBreaker,
+  TTFB_TIMEOUT_CONFIG_KEY,
+  configureTtfbTimeout,
+  getTtfbTimeoutConfig,
+  loadTtfbTimeoutConfig,
+} from './gateway/services'
 
 // Settings feature types
 export type {
   SettingsData,
   SettingsFormData,
   CircuitBreakerConfig,
+  TtfbTimeoutConfig,
   AvailableModelGroup,
 } from '@xartifact/x-llm-gateway-shared'
 

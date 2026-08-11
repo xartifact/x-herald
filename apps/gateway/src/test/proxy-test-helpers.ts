@@ -19,6 +19,7 @@ import { Hono } from 'hono'
 
 import { createTestEngine, destroyTestEngine, getAuthToken } from './setup'
 import { createMockUpstream, type MockUpstream } from './mock-upstream'
+import { seedCanvasRoute } from './canvas-route-helper'
 
 import { getDatabase } from '../db/client'
 import {
@@ -27,7 +28,6 @@ import {
   modelInstances,
   modelGroupMemberships,
   accessModels,
-  modelRoutes,
   virtualKeys,
 } from '../db'
 import { invalidateVirtualKeyCache } from '../middleware/virtual-key'
@@ -180,15 +180,10 @@ export async function createProxyTestEnv(options: ProxyTestEnvOptions = {}): Pro
     })
     .returning()
 
-  // 8. Create ModelRoute: access model → group
-  await db.insert(modelRoutes).values({
-    name: 'test-proxy-route',
-    description: 'Test proxy route',
-    accessModelIds: [accessModel.id],
-    conditions: [],
+  await seedCanvasRoute({
+    amId: accessModel.id,
+    amName: accessModelName,
     action: { type: 'route_to_group', targetId: group.id },
-    priority: 0,
-    enabled: true,
   })
 
   // 9. Create VirtualKey

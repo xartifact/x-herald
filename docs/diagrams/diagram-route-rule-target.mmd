@@ -1,0 +1,54 @@
+---
+config:
+  theme: neutral
+---
+block-beta
+columns 1
+
+T1["表现层 (Web SPA)"]
+block:L1
+  columns 2
+  W1["接入模型详情页<br/>└ 路由规则 Tab<br/>   ├ 版本列表 (active/draft)<br/>   └ 画布编辑器"] W2["接入模型管理<br/>(身份 + 路由容器)"]
+end
+
+T2["API 网关层 (apps/gateway)"]
+block:L2
+  columns 2
+  A1["route-rules API<br/>GET/POST/PUT/DELETE<br/>PATCH /activate"] A2["access-models CRUD<br/>(扩展返回 activeRule)"]
+end
+
+T3["路由引擎层 (运行时热路径)"]
+block:L3
+  columns 2
+  E1["RouteRuleEngine<br/>per-AM 编译缓存<br/>match(amId, ctx)"] E2["AccessModelRouter<br/>action 分发<br/>(~420 行不变)"]
+end
+
+T4["数据层"]
+block:L4
+  columns 2
+  D1[("route_rules<br/>access_model_id FK<br/>graph JSONB<br/>active + version")] D2[("access_models<br/>(owner of route rules)")]
+end
+
+T5["启动迁移"]
+block:L5
+  columns 1
+  M1["migrate-route-rules<br/>canvas_states 子图提取<br/>→ per-AM route_rule"]
+end
+
+classDef hdr1 fill:#EAF1FB,stroke:#3B6FB6,font-weight:bold
+classDef hdr2 fill:#FFF3DC,stroke:#C8862C,font-weight:bold
+classDef hdr3 fill:#FCE4E4,stroke:#B33A3A,font-weight:bold
+classDef hdr4 fill:#EFEFEF,stroke:#808080,font-weight:bold
+classDef hdr5 fill:#FFF7E6,stroke:#C8862C,font-weight:bold
+classDef band1 fill:#EAF1FB,stroke:#3B6FB6
+classDef band2 fill:#FFF3DC,stroke:#C8862C
+classDef band3 fill:#FCE4E4,stroke:#B33A3A
+classDef band4 fill:#EFEFEF,stroke:#808080
+classDef band5 fill:#FFF7E6,stroke:#C8862C
+classDef box fill:#FFFFFF,stroke:#666666
+classDef good fill:#D6F5D6,stroke:#3A9B3A
+
+class T1,T2,T3,T4,T5 hdr1,hdr2,hdr3,hdr4,hdr5
+class L1,L2,L3,L4,L5 band1,band2,band3,band4,band5
+class W1,A1,E1,D1 good
+class W2,A2,E2,D2,M1 box

@@ -3,13 +3,13 @@ import type { CircuitBreakerState } from '@xartifact/x-llm-gateway-shared'
 export function stateBadgeColor(state: CircuitBreakerState): string {
   switch (state) {
     case 'closed':
-      return 'text-green-600'
+      return 'text-success'
     case 'half_open':
-      return 'text-yellow-600'
+      return 'text-warning'
     case 'open':
-      return 'text-red-600'
+      return 'text-destructive'
     case 'cooldown':
-      return 'text-blue-600'
+      return 'text-info'
   }
 }
 
@@ -44,10 +44,10 @@ export function relativeTime(dateStr: string): string {
 
 export function tripCountBadge(tripCount: number): { color: string; label: string } {
   if (tripCount <= 1) {
-    return { color: 'bg-gray-100 text-gray-600', label: String(tripCount) }
+    return { color: 'bg-muted text-muted-foreground', label: String(tripCount) }
   }
   if (tripCount <= 3) {
-    return { color: 'bg-yellow-100 text-yellow-700', label: String(tripCount) }
+    return { color: 'bg-warning/10 text-warning', label: String(tripCount) }
   }
-  return { color: 'bg-orange-100 text-orange-700', label: String(tripCount) }
+  return { color: 'bg-warning/10 text-warning', label: String(tripCount) }
 }

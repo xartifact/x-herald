@@ -27,6 +27,7 @@ import {
   TableRow,
   get,
   post,
+  PageHeader,
 } from '@xartifact/x-llm-gateway-ui'
 
 interface FixSuggestion {
@@ -153,12 +154,7 @@ export function AiAssistPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Sparkles className="h-6 w-6 text-purple-600" />
-          AI 错误诊断
-        </h1>
-      </div>
+      <PageHeader title="AI 错误诊断" icon={<Sparkles className="h-5 w-5 text-primary" />} />
 
       <Card>
         <CardHeader>

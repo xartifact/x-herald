@@ -71,8 +71,7 @@ test.describe('Access Models', () => {
     await expect(page.getByText(originalName)).toBeVisible({ timeout: 15000 })
 
     const row = page.locator('table tbody tr').filter({ hasText: originalName }).first()
-    const actionButtons = row.locator('div.flex.justify-end.gap-2 button')
-    await actionButtons.nth(0).click()
+    await row.getByRole('button', { name: '编辑' }).click()
 
     await page.waitForSelector('[role="dialog"]')
     await page.locator('input[placeholder="my-gpt4"]').fill(newName)
@@ -99,8 +98,7 @@ test.describe('Access Models', () => {
     await expect(page.getByText(name)).toBeVisible({ timeout: 15000 })
 
     const row = page.locator('table tbody tr').filter({ hasText: name }).first()
-    const actionButtons = row.locator('div.flex.justify-end.gap-2 button')
-    await actionButtons.nth(1).click()
+    await row.getByRole('button', { name: '删除' }).click()
 
     await expect(page.getByText(name)).not.toBeVisible({ timeout: 10000 })
   })

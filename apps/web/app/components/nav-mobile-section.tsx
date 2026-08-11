@@ -1,5 +1,3 @@
-'use client'
-
 import { ChevronDown } from 'lucide-react'
 
 import { cn } from '@xartifact/x-llm-gateway-ui'
@@ -10,15 +8,25 @@ import {
   DropdownMenuTrigger,
 } from '@xartifact/x-llm-gateway-ui'
 
-import { navGroups } from './admin-nav-config'
+import { navGroups, allNavItems } from './admin-nav-config'
 import type { NavGroup } from './admin-nav-config'
 
+/**
+ * 判断 `href` 是否是“公共前缀型”路径——即存在其他菜单项以 `href + '/'` 开头。
+ * 例如 `/admin` 是所有页面的公共前缀，不应通过前缀匹配命中。
+ */
+function isPrefixOnly(href: string): boolean {
+  return allNavItems.some((item) => item.href !== href && item.href.startsWith(href + '/'))
+}
+
 function isGroupActive(group: NavGroup, pathname: string): boolean {
-  return group.items.some((item) => pathname === item.href || pathname.startsWith(item.href + '/'))
+  return group.items.some((item) => isItemActive(item.href, pathname))
 }
 
 function isItemActive(href: string, pathname: string): boolean {
-  return pathname === href || pathname.startsWith(href + '/')
+  if (pathname === href) return true
+  if (isPrefixOnly(href)) return false
+  return pathname.startsWith(href + '/')
 }
 
 export function NavMobileMenu() {
@@ -28,7 +36,7 @@ export function NavMobileMenu() {
     <div className="md:hidden ml-4 flex items-center">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">
+          <button className="inline-flex items-center px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
             菜单
             <ChevronDown className="ml-1 h-4 w-4" />
           </button>
@@ -65,7 +73,7 @@ export function NavMobileSubnav() {
   const pathname = typeof window !== 'undefined' ? window.location.pathname : ''
 
   return (
-    <div className="md:hidden border-t bg-gray-50">
+    <div className="md:hidden border-t bg-accent">
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex space-x-4 py-2 overflow-x-auto">
           {navGroups
@@ -79,7 +87,7 @@ export function NavMobileSubnav() {
                   'inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap',
                   isItemActive(item.href, pathname)
                     ? 'bg-primary text-white'
-                    : 'text-gray-600 hover:bg-gray-200',
+                    : 'text-muted-foreground hover:bg-accent',
                 )}
               >
                 {item.label}

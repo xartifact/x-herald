@@ -225,6 +225,125 @@
       "when": 1754477200000,
       "tag": "0031_rename_latency_to_response_time",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1784280000000,
+      "tag": "0035_drop_user_message_snippet",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1784350000000,
+      "tag": "0036_classifier_prompts",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1784350001000,
+      "tag": "0037_intent_logs_prompt_version",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1784420000000,
+      "tag": "0038_intent_logs_user_message_semantics",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1784688000000,
+      "tag": "0039_create_canvas_states",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1784689000000,
+      "tag": "0040_drop_flow_data",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1785157000000,
+      "tag": "0041_canvas_states_runtime_meta",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1785400000000,
+      "tag": "0042_potential_models",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1785542400000,
+      "tag": "0043_routing_traces_perf",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1785628800000,
+      "tag": "0044_provider_soft_delete",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1785715200000,
+      "tag": "0045_virtual_key_soft_delete",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1785801600000,
+      "tag": "0046_crud_soft_delete",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1785888000000,
+      "tag": "0047_drop_model_routes",
+      "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1785974400000,
+      "tag": "0048_create_route_rules",
+      "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1786060800000,
+      "tag": "0049_drop_canvas_states",
+      "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1786147200000,
+      "tag": "0050_cleanup_dead_tables_and_orphans",
+      "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1786233600000,
+      "tag": "0051_intent_logs_classifier_category",
+      "breakpoints": true
     }
   ]
 }

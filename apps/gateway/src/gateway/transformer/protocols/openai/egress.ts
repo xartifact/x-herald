@@ -5,6 +5,7 @@ import { convertToOpenAIMessages } from './converters/message-converter'
 import type { OpenAIRequest } from './types'
 import { applyParameterTransforms, applyRequestInject } from '../../shared/parameter-transformer'
 import { cleanSchemaForOpenAI } from '../../shared/schema-cleaner'
+import { sanitizeToolSchema } from '../../shared/tool-schema-sanitizer'
 
 /**
  * Adapt standard request to OpenAI format
@@ -44,18 +45,16 @@ export async function adaptOpenAIRequest(
           additionalBannedFields: schemaCfg.additionalBannedFields as string[] | undefined,
         }
       : undefined
-    openaiReq.tools = transformedRequest.tools.map(({ _passthrough: _, ...tool }) => ({
-      ...tool,
-      function: {
-        ...tool.function,
-        parameters: tool.function.parameters
-          ? (cleanSchemaForOpenAI(
-              tool.function.parameters,
-              schemaConfig,
-            ) as typeof tool.function.parameters)
-          : tool.function.parameters,
-      },
-    }))
+    const sanitizeSchema = ctx.provider?.protocols?.openai?.toolSchemaSanitization ?? false
+
+    openaiReq.tools = transformedRequest.tools.map(({ _passthrough: _, ...tool }) => {
+      let parameters = tool.function.parameters
+      if (parameters) {
+        parameters = cleanSchemaForOpenAI(parameters, schemaConfig) as typeof parameters
+        if (sanitizeSchema) parameters = sanitizeToolSchema(parameters) as typeof parameters
+      }
+      return { ...tool, function: { ...tool.function, parameters } }
+    })
 
     if (transformedRequest.tool_choice) {
       openaiReq.tool_choice = transformedRequest.tool_choice

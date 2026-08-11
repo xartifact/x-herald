@@ -1,1 +1,25 @@
-bun run ci
+#!/usr/bin/env sh
+# pre-push gate: format + lint + typecheck + model-routing tests only.
+# Full suite runs in CI (GitHub Actions), not on local push.
+
+PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$PROJECT_ROOT"
+
+echo "==> format + lint + typecheck"
+bun run check
+if [ $? -ne 0 ]; then
+  echo "✗ check failed"
+  exit 1
+fi
+
+echo "==> model-routing tests"
+cd "$PROJECT_ROOT/apps/gateway"
+rc=0
+bun test src/gateway/services/route-rule-compiler.test.ts src/gateway/services/access-model-router.test.ts src/gateway/services/routing-trace-recorder.test.ts src/features/route-rules --reporter=dots 2>/dev/null || rc=$?
+# bun test exits 99 on subprocess teardown with 0 failures.
+if [ "$rc" -eq 99 ] || [ "$rc" -eq 0 ]; then
+  echo "✓ pre-push checks passed"
+  exit 0
+fi
+echo "✗ model-routing tests failed (exit $rc)"
+exit 1

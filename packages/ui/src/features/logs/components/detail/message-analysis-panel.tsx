@@ -1,5 +1,3 @@
-'use client'
-
 import { Bot, ChevronDown, ChevronRight, Loader2, RotateCcw } from 'lucide-react'
 
 import { Badge } from '../../../../shared/components/ui/badge'
@@ -20,7 +18,7 @@ export function MessageAnalysisPanel({ logId, selectedIndices }: MessageAnalysis
     <div className="border-b">
       <div className="px-4 py-2.5 bg-muted/30 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-2">
-          <Bot className="h-4 w-4 text-purple-500" />
+          <Bot className="h-4 w-4 text-primary" />
           <span className="text-sm font-semibold">AI 分析</span>
           {hasSelection && (
             <Badge variant="secondary" className="text-xs">
@@ -83,7 +81,7 @@ export function MessageAnalysisPanel({ logId, selectedIndices }: MessageAnalysis
         </div>
       </div>
       {isActive && expanded && (
-        <div className="px-4 py-3 bg-purple-50/30 dark:bg-purple-950/10">
+        <div className="px-4 py-3 bg-primary/5">
           {status === 'error' ? (
             <p className="text-sm text-destructive">{error}</p>
           ) : (

@@ -6,6 +6,7 @@ import type { VirtualKey } from '@xartifact/x-llm-gateway-db'
 import type { StandardRequest } from '@xartifact/x-llm-gateway-shared'
 
 import { accessModelRouter } from '../../services/access-model-router'
+import { buildRouteChainSnapshot } from '../../services/routing-trace-recorder'
 import { identifyClient } from '../../services/client-identifier'
 import { handleGatewayError } from '../../services/error-handler'
 import { ModelNotFoundError } from '../../services/model-group-router'
@@ -78,12 +79,28 @@ export async function handleAnthropicMessages(
       requestedModel: standardReq.model,
       streaming: standardReq.stream || false,
       hasTools: !!standardReq.tools?.length,
+      request: standardReq,
       hasVision: standardReq.messages.some(
         (m) => Array.isArray(m.content) && m.content.some((c) => c.type === 'image_url'),
       ),
       virtualKeyId: virtualKey.id,
     })
     if (!candidates.length) throw new ModelNotFoundError(standardReq.model)
+
+    // 构建路由链路快照（供日志/查询使用）
+    const routeChain = buildRouteChainSnapshot(
+      candidates,
+      standardReq.model,
+      undefined,
+      candidates[0]?.matchedRule
+        ? {
+            id: candidates[0].matchedRule.id,
+            name: candidates[0].matchedRule.name,
+            priority: candidates[0].matchedRule.priority,
+            conditions: candidates[0].matchedRule.conditions,
+          }
+        : undefined,
+    )
 
     const config = loadConfig()
     const requestGroupId = crypto.randomUUID()
@@ -128,6 +145,7 @@ export async function handleAnthropicMessages(
             provider: provider.name,
             actualModel: instance.actualModelName,
             strategy: decision.strategy,
+            instanceCost: instance.costPer1kTokens,
           },
           'Model routed via group',
         )
@@ -166,6 +184,7 @@ export async function handleAnthropicMessages(
           retryCount,
           requestGroupId,
           candidateIndex: i,
+          routeChain,
         })
 
         const retryConfig = {
@@ -183,6 +202,9 @@ export async function handleAnthropicMessages(
           isStreaming,
           isLastCandidate,
           requestId,
+          providerName: provider.name,
+          instanceName: instance.name,
+          modelName: instance.actualModelName,
           startTime,
           getLogId: () => executor.logId,
           getAttemptId: () => executor.attemptId,
@@ -193,6 +215,7 @@ export async function handleAnthropicMessages(
           requestMethod,
           rawBody,
           baselineTtfbP95: perf?.ttfbP95 ?? perf?.ttfbAvg ?? undefined,
+          instanceTimeoutConfig: instance.config?.timeoutConfig ?? null,
           retryConfig,
           onPrepareRequest: () => executor.prepareRequest(),
           onBeforeFetch: () => executor.beforeFetch(),
@@ -278,6 +301,8 @@ export async function handleAnthropicMessages(
             instanceId: instance.id,
             actualModelName: instance.actualModelName,
             strategy: decision.strategy,
+            instanceCost: instance.costPer1kTokens,
+            routeChain,
           },
         }
 

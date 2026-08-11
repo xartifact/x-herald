@@ -13,6 +13,7 @@ import {
   listInstances,
   reorderInstances,
   setInstanceGroupsById,
+  testInstanceConnectivity,
   toggleGroup,
   toggleInstance,
   updateGroup,
@@ -166,6 +167,19 @@ modelGroupRoutes.delete('/instances/:id', async (c) => {
     return c.json({ success: true, data: deleted })
   } catch (error) {
     logger.warn({ err: error }, 'Failed to delete model instance')
+    return c.json(
+      { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
+      500,
+    )
+  }
+})
+
+modelGroupRoutes.post('/instances/:id/test', async (c) => {
+  try {
+    const result = await testInstanceConnectivity(c.req.param('id'))
+    return c.json({ success: true, data: result })
+  } catch (error) {
+    logger.warn({ err: error }, 'Failed to test model instance connectivity')
     return c.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       500,

@@ -1,5 +1,3 @@
-'use client'
-
 import { useState } from 'react'
 
 import { ArrowLeftRight, Columns2, Filter, Rows2 } from 'lucide-react'

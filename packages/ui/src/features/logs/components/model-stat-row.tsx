@@ -12,8 +12,8 @@ export function ModelStatRow({ stat, rank }: ModelStatRowProps) {
     stat.requestCount > 0 ? ((stat.successCount / stat.requestCount) * 100).toFixed(1) : '0'
   const rateNum = Number(successRate)
   const rateColor =
-    rateNum >= 95 ? 'text-green-600' : rateNum >= 80 ? 'text-yellow-600' : 'text-red-600'
-  const barColor = rateNum >= 95 ? 'bg-green-500' : rateNum >= 80 ? 'bg-yellow-500' : 'bg-red-500'
+    rateNum >= 95 ? 'text-success' : rateNum >= 80 ? 'text-warning' : 'text-destructive'
+  const barColor = rateNum >= 95 ? 'bg-success' : rateNum >= 80 ? 'bg-warning' : 'bg-destructive'
 
   return (
     <div className="rounded-lg border p-3 text-sm hover:bg-accent/50 transition-colors">

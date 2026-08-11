@@ -40,10 +40,10 @@ export function ClientModelSummary({ summary }: ClientModelSummaryProps) {
             className={cn(
               'text-2xl font-bold',
               successRate >= 0.95
-                ? 'text-green-600'
+                ? 'text-success'
                 : successRate >= 0.8
-                  ? 'text-yellow-600'
-                  : 'text-red-600',
+                  ? 'text-warning'
+                  : 'text-destructive',
             )}
           >
             {(successRate * 100).toFixed(1)}%
@@ -64,8 +64,7 @@ export function ClientModelSummary({ summary }: ClientModelSummaryProps) {
       </Card>
       <Card>
         <CardContent className="p-4">
-          <div className="text-xs text-muted-foreground">失败请求</div>
-          <div className="text-2xl font-bold text-red-600">{summary.totalFailure}</div>
+          <div className="text-2xl font-bold text-destructive">{summary.totalFailure}</div>
         </CardContent>
       </Card>
     </div>

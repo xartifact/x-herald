@@ -1,5 +1,3 @@
-'use client'
-
 import { HeadersViewer } from '../../../../shared'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../../shared/components/ui/tabs'
 import { cn } from '../../../../shared/lib/utils'
@@ -22,7 +20,7 @@ export function ResponsePanel({ log, className }: ResponsePanelProps) {
     >
       <div className="px-4 py-2.5 border-b bg-muted/20 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">
-          <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
+          <div className="h-1.5 w-1.5 rounded-full bg-success" />
           <h3 className="font-semibold text-sm">Response</h3>
         </div>
       </div>

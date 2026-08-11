@@ -1,5 +1,3 @@
-'use client'
-
 import { memo } from 'react'
 
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
@@ -28,7 +26,7 @@ const themeConfig = {
     text: 'text-orange-600',
     handle: '!bg-orange-500',
     icon: ArrowDownToLine,
-    label: '降级',
+    label: '兜底拒绝',
   },
 } as const
 

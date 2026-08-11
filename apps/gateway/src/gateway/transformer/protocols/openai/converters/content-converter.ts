@@ -1,4 +1,4 @@
-import type { MessageContent } from '@xartifact/x-llm-gateway-shared'
+import type { ImageContent, MessageContent, TextContent } from '@xartifact/x-llm-gateway-shared'
 
 /**
  * Convert OpenAI content to Standard format
@@ -38,14 +38,19 @@ export function convertToOpenAIContent(
   if (msgContent === undefined) return undefined
   if (typeof msgContent === 'string') return msgContent
 
-  return msgContent.map((item) => {
-    if (item.type === 'text') {
-      return { type: 'text', text: item.text }
-    } else {
-      return {
-        type: 'image_url',
-        image_url: { url: item.image_url.url },
+  return msgContent
+    .filter(
+      (item): item is TextContent | ImageContent =>
+        item.type === 'text' || item.type === 'image_url',
+    )
+    .map((item) => {
+      if (item.type === 'text') {
+        return { type: 'text', text: item.text }
+      } else {
+        return {
+          type: 'image_url',
+          image_url: { url: item.image_url.url },
+        }
       }
-    }
-  })
+    })
 }

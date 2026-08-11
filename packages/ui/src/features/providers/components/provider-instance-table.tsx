@@ -1,10 +1,10 @@
-'use client'
-
 import { Pencil, Trash2 } from 'lucide-react'
 
 import { StatusToggle } from '../../../shared/components/status-toggle'
 import type { ModelInstance as BaseModelInstance } from '@xartifact/x-llm-gateway-shared'
 import { Badge } from '../../../shared/components/ui/badge'
+import { InstanceTestButton } from '../../model-groups/components/instance-test-button'
+
 import { Button } from '../../../shared/components/ui/button'
 import {
   Table,
@@ -80,6 +80,7 @@ export function ProviderInstanceTable({
             </TableCell>
             <TableCell className="text-right">
               <div className="flex justify-end gap-1">
+                <InstanceTestButton instanceId={instance.id} instanceName={instance.name} />
                 <Button
                   variant="ghost"
                   size="icon"

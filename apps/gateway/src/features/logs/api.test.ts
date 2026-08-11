@@ -175,18 +175,3 @@ describe('logs API - GET /:id (404 for unknown)', () => {
     expect(res.status).toBe(404)
   })
 })
-
-describe('logs API - POST /rank-recalculate', () => {
-  beforeAll(async () => {
-    ctx = await setupCrudTest()
-  })
-
-  afterAll(async () => {
-    await teardownCrudTest()
-  })
-
-  it('returns 500 when CRON_SECRET is not configured', async () => {
-    const res = await authPost(ctx, '/api/logs/rank-recalculate', {})
-    expect(res.status).toBe(500)
-  })
-})

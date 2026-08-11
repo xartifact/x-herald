@@ -1,0 +1,39 @@
+---
+config:
+  theme: neutral
+---
+flowchart LR
+    subgraph AM["access_model: gpt-4"]
+        direction TB
+        R1["route_rule v1<br/>active=true<br/>(蓝绿)"]
+        R2["route_rule v2<br/>active=false<br/>(金丝雀 draft)"]
+        R3["route_rule v3<br/>active=false<br/>(实验)"]
+    end
+
+    subgraph R1G["v1 graph (active)"]
+        direction TB
+        T1["modelTrigger<br/>vmId=gpt-4"]
+        C1["condition<br/>streaming=true"]
+        C2["condition<br/>hour>22"]
+        L1A["target → group A"]
+        L1B["target → group B"]
+        L1C["target → group C"]
+        T1 --> C1 --> L1A
+        T1 --> C2 --> L1B
+        T1 --> L1C
+    end
+
+    subgraph R2G["v2 graph (draft)"]
+        direction TB
+        T2["modelTrigger<br/>vmId=gpt-4"]
+        L2A["intent → group D/E"]
+        T2 --> L2A
+    end
+
+    R1 --- R1G
+    R2 --- R2G
+
+    classDef active fill:#D6F5D6,stroke:#3A9B3A
+    classDef draft fill:#FFF3DC,stroke:#C8862C
+    class R1 active
+    class R2,R3 draft

@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 
 import { get, post, put, del } from '@xartifact/x-llm-gateway-ui'
 
-import type { VirtualKey } from '@xartifact/x-llm-gateway-shared'
+import type { Pagination, VirtualKey } from '@xartifact/x-llm-gateway-shared'
 
 // Query Keys
 export const keyKeys = {
@@ -18,13 +18,41 @@ export const keyKeys = {
   detail: (id: string) => [...keyKeys.details(), id] as const,
 }
 
+export interface KeysListParams {
+  page?: number
+  pageSize?: number
+  search?: string
+}
+
+export interface KeysListResult {
+  data: VirtualKey[]
+  pagination: Pagination
+}
+
+function buildKeysQueryString(params: KeysListParams): string {
+  const qs = new URLSearchParams()
+  if (params.page != null) qs.set('page', String(params.page))
+  if (params.pageSize != null) qs.set('pageSize', String(params.pageSize))
+  if (params.search) qs.set('search', params.search)
+  const s = qs.toString()
+  return s ? `?${s}` : ''
+}
+
 /**
- * 获取密钥列表
+ * 获取密钥列表（分页）
  */
-export function useKeys() {
+export function useKeys(params: KeysListParams = {}) {
+  const queryString = buildKeysQueryString(params)
   return useQuery({
-    queryKey: keyKeys.lists(),
-    queryFn: () => get<VirtualKey[]>('/api/keys'),
+    queryKey: keyKeys.list(queryString),
+    queryFn: async (): Promise<KeysListResult> => {
+      const response = await get<{
+        success: boolean
+        data: VirtualKey[]
+        pagination: Pagination
+      }>(`/api/keys${queryString}`, { extractData: false })
+      return { data: response.data, pagination: response.pagination }
+    },
   })
 }
 

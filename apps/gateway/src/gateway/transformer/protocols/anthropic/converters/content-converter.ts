@@ -1,4 +1,9 @@
-import type { MessageContent, StandardMessage } from '@xartifact/x-llm-gateway-shared'
+import type {
+  ImageContent,
+  MessageContent,
+  StandardMessage,
+  TextContent,
+} from '@xartifact/x-llm-gateway-shared'
 
 import type { AnthropicMessage } from '../types'
 
@@ -53,35 +58,40 @@ export function convertAnthropicContent(
 export function convertToAnthropicContent(msg: StandardMessage): AnthropicMessage['content'] {
   if (typeof msg.content === 'string') return msg.content
 
-  return msg.content.map((item) => {
-    if (item.type === 'text') {
-      return {
-        type: 'text' as const,
-        text: item.text,
-        ...(item.cache_control && { cache_control: item.cache_control }),
-      }
-    } else {
-      const url = item.image_url.url
-      const cacheCtrl = item.cache_control ? { cache_control: item.cache_control } : {}
-      if (url.startsWith('data:')) {
-        const match = url.match(/^data:([^;]+);base64,(.+)$/)
-        if (match) {
-          return {
-            type: 'image',
-            source: {
-              type: 'base64',
-              media_type: match[1],
-              data: match[2],
-            },
-            ...cacheCtrl,
+  return msg.content
+    .filter(
+      (item): item is TextContent | ImageContent =>
+        item.type === 'text' || item.type === 'image_url',
+    )
+    .map((item) => {
+      if (item.type === 'text') {
+        return {
+          type: 'text' as const,
+          text: item.text,
+          ...(item.cache_control && { cache_control: item.cache_control }),
+        }
+      } else {
+        const url = item.image_url.url
+        const cacheCtrl = item.cache_control ? { cache_control: item.cache_control } : {}
+        if (url.startsWith('data:')) {
+          const match = url.match(/^data:([^;]+);base64,(.+)$/)
+          if (match) {
+            return {
+              type: 'image',
+              source: {
+                type: 'base64',
+                media_type: match[1],
+                data: match[2],
+              },
+              ...cacheCtrl,
+            }
           }
         }
+        return {
+          type: 'image',
+          source: { type: 'url', url },
+          ...cacheCtrl,
+        }
       }
-      return {
-        type: 'image',
-        source: { type: 'url', url },
-        ...cacheCtrl,
-      }
-    }
-  })
+    })
 }

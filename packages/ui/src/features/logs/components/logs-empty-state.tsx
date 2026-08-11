@@ -1,5 +1,3 @@
-'use client'
-
 interface LogsEmptyStateProps {
   hasFilters: boolean
 }

@@ -86,8 +86,12 @@ export const requestLogs = pgTable(
       table.streamStatus,
       table.isComplete,
     ),
-    lastUpdatedAtIdx: index('idx_request_logs_last_updated_at').on(table.lastUpdatedAt),
     requestGroupIdIdx: index('idx_request_logs_request_group_id').on(table.requestGroupId),
+    candidateCreatedIdIdx: index('idx_request_logs_candidate_created_id').on(
+      table.candidateIndex,
+      table.createdAt,
+      table.id,
+    ),
   }),
 )
 

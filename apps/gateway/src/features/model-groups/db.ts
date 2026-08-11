@@ -88,10 +88,14 @@ export interface InstanceConfig {
     retryableStatusCodes: number[]
   }
 
-  // 超时配置
+  // 超时配置（实例级覆盖全局 TTFB / connect）
   timeoutConfig?: {
-    connectTimeout: number
-    readTimeout: number
+    connectTimeoutMs?: number
+    ttfbTimeoutMs?: number
+    /** @deprecated 使用 connectTimeoutMs */
+    connectTimeout?: number
+    /** @deprecated 映射为 ttfbTimeoutMs */
+    readTimeout?: number
   }
 
   // 供应商特定参数转换规则
@@ -137,43 +141,3 @@ export type { ModelInstance, NewModelInstance } from '@xartifact/x-llm-gateway-d
 export type { ModelGroupMembership, NewModelGroupMembership } from '@xartifact/x-llm-gateway-db'
 
 export type { AccessModel, NewAccessModel } from '@xartifact/x-llm-gateway-db'
-
-/**
- * 路由规则 (Model Route)
- *
- * 定义请求如何通过条件匹配路由到目标。
- * 支持 React Flow 可视化编辑。
- */
-
-// 路由条件
-export interface RouteCondition {
-  field: string
-  operator: 'eq' | 'ne' | 'in' | 'starts_with' | 'exists' | 'gt' | 'lt' | 'gte' | 'lte'
-  value?: unknown
-}
-
-// 路由动作
-export interface RouteAction {
-  type: 'route_to_virtual_model' | 'route_to_group' | 'route_to_instance' | 'reject' | 'fallback'
-  targetId?: string
-  reason?: string
-}
-
-// React Flow 序列化数据
-export interface FlowData {
-  nodes: Array<{
-    id: string
-    type: string
-    position: { x: number; y: number }
-    data: Record<string, unknown>
-  }>
-  edges: Array<{
-    id: string
-    source: string
-    target: string
-    sourceHandle?: string
-    targetHandle?: string
-  }>
-}
-
-export type { ModelRoute, NewModelRoute } from '@xartifact/x-llm-gateway-db'

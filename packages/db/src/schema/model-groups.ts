@@ -16,9 +16,7 @@ import type {
   ModelCapabilities,
   RoutingConfig,
   InstanceConfig,
-  RouteCondition,
-  RouteAction,
-  FlowData,
+  InstanceCost,
 } from '@xartifact/x-llm-gateway-shared'
 
 export const modelGroups = pgTable('model_groups', {
@@ -33,6 +31,7 @@ export const modelGroups = pgTable('model_groups', {
   enabled: boolean('enabled').default(true).notNull(),
   routingConfig: jsonb('routing_config').$type<RoutingConfig>(),
   metadata: jsonb('metadata').$type<Record<string, unknown>>(),
+  deletedAt: timestamp('deleted_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })
@@ -51,12 +50,13 @@ export const modelInstances = pgTable('model_instances', {
   config: jsonb('config').$type<InstanceConfig>(),
   weight: integer('weight').default(100).notNull(),
   priority: integer('priority').default(0).notNull(),
-  costPer1kTokens: jsonb('cost_per_1k_tokens').$type<{ input: number; output: number }>(),
+  costPer1kTokens: jsonb('cost_per_1k_tokens').$type<InstanceCost>(),
   healthCheckUrl: varchar('health_check_url', { length: 512 }),
   enabled: boolean('enabled').default(true).notNull(),
   status: varchar('status', { length: 20 }).default('unknown'),
   lastCheckedAt: timestamp('last_checked_at'),
   metadata: jsonb('metadata').$type<Record<string, unknown>>(),
+  deletedAt: timestamp('deleted_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })
@@ -109,31 +109,10 @@ export const accessModels = pgTable('access_models', {
   description: text('description'),
   enabled: boolean('enabled').default(true).notNull(),
   capabilities: jsonb('capabilities').$type<ModelCapabilities>(),
+  deletedAt: timestamp('deleted_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })
 
 export type AccessModel = typeof accessModels.$inferSelect
 export type NewAccessModel = typeof accessModels.$inferInsert
-
-export const modelRoutes = pgTable('model_routes', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  name: varchar('name', { length: 255 }).notNull(),
-  description: text('description'),
-  accessModelIds: text('access_model_ids').array().notNull().default([]),
-  conditions: jsonb('conditions').$type<RouteCondition[]>().default([]),
-  action: jsonb('action').$type<RouteAction>().notNull(),
-  priority: integer('priority').default(0).notNull(),
-  enabled: boolean('enabled').default(true).notNull(),
-  flowData: jsonb('flow_data').$type<FlowData>(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-})
-
-export const modelRoutesRelations = relations(modelRoutes, ({ many: _many }) => ({
-  // Note: accessModelIds is a TEXT[] array - no FK relationship
-  // Access model lookup is done at application layer
-}))
-
-export type ModelRoute = typeof modelRoutes.$inferSelect
-export type NewModelRoute = typeof modelRoutes.$inferInsert

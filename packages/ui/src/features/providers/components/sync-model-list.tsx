@@ -12,11 +12,7 @@ import {
   TableRow,
 } from '../../../shared/components/ui/index'
 
-interface ProviderModel {
-  id: string
-  name: string
-  synced: boolean
-}
+import type { ProviderModelInfo } from '@xartifact/x-llm-gateway-shared'
 
 interface SyncSelectionHandlers {
   selected: Set<string>
@@ -25,10 +21,40 @@ interface SyncSelectionHandlers {
 }
 
 interface SyncModelListProps {
-  models: ProviderModel[]
+  models: ProviderModelInfo[]
   isLoading: boolean
   onRefetch: () => void
   selection: SyncSelectionHandlers
+}
+
+/** 格式化计费信息为简洁展示 */
+function formatCost(cost?: { input: number; output: number }): string | null {
+  if (!cost) return null
+  const fmt = (v: number) => `$${v}`
+  return `${fmt(cost.input)} / ${fmt(cost.output)}`
+}
+
+/** 渲染能力标签 */
+function CapabilityBadges({ caps }: { caps?: ProviderModelInfo['capabilities'] }) {
+  if (!caps) return null
+  const items: Array<{ label: string; value: boolean | undefined }> = [
+    { label: 'Vision', value: caps.vision },
+    { label: 'Reasoning', value: caps.reasoning },
+    { label: 'Tools', value: caps.functionCalling },
+    { label: 'JSON', value: caps.jsonMode },
+    { label: 'Stream', value: caps.streaming },
+  ]
+  const active = items.filter((i) => i.value)
+  if (active.length === 0) return null
+  return (
+    <div className="flex flex-wrap gap-1">
+      {active.map((i) => (
+        <Badge key={i.label} variant="outline" className="text-[10px] px-1 py-0">
+          {i.label}
+        </Badge>
+      ))}
+    </div>
+  )
 }
 
 export function SyncModelList({ models, isLoading, onRefetch, selection }: SyncModelListProps) {
@@ -69,6 +95,9 @@ export function SyncModelList({ models, isLoading, onRefetch, selection }: SyncM
             />
           </TableHead>
           <TableHead>模型名称</TableHead>
+          <TableHead className="w-32">上下文窗口</TableHead>
+          <TableHead className="w-32">计费 (输入/输出)</TableHead>
+          <TableHead className="w-40">能力</TableHead>
           <TableHead className="w-24">状态</TableHead>
         </TableRow>
       </TableHeader>
@@ -87,6 +116,32 @@ export function SyncModelList({ models, isLoading, onRefetch, selection }: SyncM
               {model.name !== model.id && (
                 <span className="ml-2 text-xs text-muted-foreground">{model.name}</span>
               )}
+              {model.description && (
+                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                  {model.description}
+                </p>
+              )}
+            </TableCell>
+            <TableCell>
+              {model.contextWindow ? (
+                <span className="text-xs text-muted-foreground">
+                  {(model.contextWindow / 1000).toFixed(0)}K
+                </span>
+              ) : (
+                <span className="text-xs text-muted-foreground">—</span>
+              )}
+            </TableCell>
+            <TableCell>
+              {formatCost(model.cost) ? (
+                <span className="text-xs font-mono text-muted-foreground">
+                  {formatCost(model.cost)}
+                </span>
+              ) : (
+                <span className="text-xs text-muted-foreground">—</span>
+              )}
+            </TableCell>
+            <TableCell>
+              <CapabilityBadges caps={model.capabilities} />
             </TableCell>
             <TableCell>
               {model.synced ? (

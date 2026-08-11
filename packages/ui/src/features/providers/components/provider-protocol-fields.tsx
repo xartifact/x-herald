@@ -9,6 +9,7 @@ import {
   FormMessage,
 } from '../../../shared/components/ui/form'
 import { Input } from '../../../shared/components/ui/input'
+import { Switch } from '../../../shared/components/ui/switch'
 
 import type { ProtocolOption, ProviderFormData } from './provider-form-types'
 
@@ -36,6 +37,8 @@ export function ProviderProtocolFields({ form, protocolOptions }: ProviderProtoc
         const config = watchedProtocols?.[key]
         const enabledField = `protocols.${key}.enabled` as `protocols.${ProtocolKey}.enabled`
         const baseUrlField = `protocols.${key}.baseUrl` as `protocols.${ProtocolKey}.baseUrl`
+        const toolSchemaSanitizationField =
+          `protocols.${key}.toolSchemaSanitization` as `protocols.${ProtocolKey}.toolSchemaSanitization`
 
         return (
           <div key={protocol.value} className="border rounded-lg p-4 space-y-3">
@@ -70,6 +73,26 @@ export function ProviderProtocolFields({ form, protocolOptions }: ProviderProtoc
                       />
                     </FormControl>
                     <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+            {config?.enabled && (
+              <FormField
+                control={form.control}
+                name={toolSchemaSanitizationField}
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between">
+                    <div className="space-y-0.5">
+                      <FormLabel className="font-normal">Tool Schema 归一化</FormLabel>
+                      <p className="text-sm text-muted-foreground">
+                        自动修正不规范的 tool 参数 schema（如 required 非数组、anyOf/oneOf 分支缺失
+                        type），避免被严格校验的 Provider 以 400 拒绝
+                      </p>
+                    </div>
+                    <FormControl>
+                      <Switch checked={!!field.value} onCheckedChange={field.onChange} />
+                    </FormControl>
                   </FormItem>
                 )}
               />

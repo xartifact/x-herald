@@ -1,6 +1,4 @@
-'use client'
-
-import { Pencil, Trash2, Lock } from 'lucide-react'
+import { Pencil, Trash2, Lock, Waypoints } from 'lucide-react'
 
 import { Badge } from '../../../shared/components/ui/badge'
 import { Button } from '../../../shared/components/ui/button'
@@ -23,9 +21,16 @@ interface AccessModelTableProps {
   onEdit: (am: AccessModel) => void
   onDelete: (am: AccessModel) => void
   onToggle: (id: string) => void
+  onOpenRouteRules?: (am: AccessModel) => void
 }
 
-export function AccessModelTable({ models, onEdit, onDelete, onToggle }: AccessModelTableProps) {
+export function AccessModelTable({
+  models,
+  onEdit,
+  onDelete,
+  onToggle,
+  onOpenRouteRules,
+}: AccessModelTableProps) {
   return (
     <Card>
       <CardContent className="p-0">
@@ -70,11 +75,21 @@ export function AccessModelTable({ models, onEdit, onDelete, onToggle }: AccessM
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => onEdit(am)}>
+                    {onOpenRouteRules && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        title="路由规则"
+                        onClick={() => onOpenRouteRules(am)}
+                      >
+                        <Waypoints className="h-4 w-4" />
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="sm" title="编辑" onClick={() => onEdit(am)}>
                       <Pencil className="h-4 w-4" />
                     </Button>
                     {am.name !== CATCHALL_VM_NAME && (
-                      <Button variant="ghost" size="sm" onClick={() => onDelete(am)}>
+                      <Button variant="ghost" size="sm" title="删除" onClick={() => onDelete(am)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     )}

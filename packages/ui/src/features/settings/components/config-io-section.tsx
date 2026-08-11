@@ -1,5 +1,3 @@
-'use client'
-
 import { useRef, useState } from 'react'
 
 import { AlertTriangle, Download, RefreshCw, Upload } from 'lucide-react'
@@ -22,7 +20,6 @@ const IMPORT_LABELS = [
   ['模型组', 'modelGroups'],
   ['模型实例', 'modelInstances'],
   ['访问模型', 'accessModels'],
-  ['路由规则', 'modelRoutes'],
   ['虚拟密钥', 'virtualKeys'],
   ['网关配置', 'gatewayConfigs'],
 ] as const
@@ -96,8 +93,8 @@ export function ConfigIOSection() {
                 return (
                   <div key={key} className="contents">
                     <span>{label}</span>
-                    <span className="text-green-600">+{s.created} 新增</span>
-                    <span className="text-blue-600">↺{s.updated} 更新</span>
+                    <span className="text-success">+{s.created} 新增</span>
+                    <span className="text-info">↺{s.updated} 更新</span>
                   </div>
                 )
               })}

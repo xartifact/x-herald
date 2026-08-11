@@ -258,9 +258,9 @@ cp .env.example .env
 
 所有数据库 schema 变更必须遵循以下流程：
 
-1. 在 `apps/gateway/src/db/migrations/` 目录下创建新的 SQL 迁移文件
+1. 在 `packages/db/migrations/` 目录下创建新的 SQL 迁移文件（**单一真实源**，dev runtime 和 test 都引用这里）
 2. 使用 `IF EXISTS` / `IF NOT EXISTS` 等守卫语句确保迁移可重复执行
-3. 更新 `apps/gateway/src/db/migrations/meta/_journal.json` 中的迁移记录
+3. 更新 `packages/db/migrations/meta/_journal.json` 中的迁移记录
 4. 同步更新对应功能目录下的 Drizzle schema 定义
 
 **禁止行为：**
@@ -319,47 +319,47 @@ cp .env.example .env
 | `.claude/skills/engineering-conventions/SKILL.md` | 工程编码规范         |
 
 <!-- gitnexus:start -->
-
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **x-llm-gateway** (7437 symbols, 14232 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **x-llm-gateway** (5894 symbols, 14159 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
-> If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
+> Index stale? Run `node .gitnexus/run.cjs analyze` from the project root — it auto-selects an available runner. No `.gitnexus/run.cjs` yet? `npx gitnexus analyze` (npm 11 crash → `npm i -g gitnexus`; #1939).
 
 ## Always Do
 
-- **MUST run impact analysis before editing any symbol.** Before modifying a function, class, or method, run `gitnexus_impact({target: "symbolName", direction: "upstream"})` and report the blast radius (direct callers, affected processes, risk level) to the user.
-- **MUST run `gitnexus_detect_changes()` before committing** to verify your changes only affect expected symbols and execution flows.
+- **MUST run impact analysis before editing any symbol.** Before modifying a function, class, or method, run `impact({target: "symbolName", direction: "upstream"})` and report the blast radius (direct callers, affected processes, risk level) to the user.
+- **MUST run `detect_changes()` before committing** to verify your changes only affect expected symbols and execution flows. For regression review, compare against the default branch: `detect_changes({scope: "compare", base_ref: "main"})`.
 - **MUST warn the user** if impact analysis returns HIGH or CRITICAL risk before proceeding with edits.
-- When exploring unfamiliar code, use `gitnexus_query({query: "concept"})` to find execution flows instead of grepping. It returns process-grouped results ranked by relevance.
-- When you need full context on a specific symbol — callers, callees, which execution flows it participates in — use `gitnexus_context({name: "symbolName"})`.
+- When exploring unfamiliar code, use `query({search_query: "concept"})` to find execution flows instead of grepping. It returns process-grouped results ranked by relevance.
+- When you need full context on a specific symbol — callers, callees, which execution flows it participates in — use `context({name: "symbolName"})`.
+- For security review, `explain({target: "fileOrSymbol"})` lists taint findings (source→sink flows; needs `analyze --pdg`).
 
 ## Never Do
 
-- NEVER edit a function, class, or method without first running `gitnexus_impact` on it.
+- NEVER edit a function, class, or method without first running `impact` on it.
 - NEVER ignore HIGH or CRITICAL risk warnings from impact analysis.
-- NEVER rename symbols with find-and-replace — use `gitnexus_rename` which understands the call graph.
-- NEVER commit changes without running `gitnexus_detect_changes()` to check affected scope.
+- NEVER rename symbols with find-and-replace — use `rename` which understands the call graph.
+- NEVER commit changes without running `detect_changes()` to check affected scope.
 
 ## Resources
 
-| Resource                                       | Use for                                  |
-| ---------------------------------------------- | ---------------------------------------- |
-| `gitnexus://repo/x-llm-gateway/context`        | Codebase overview, check index freshness |
-| `gitnexus://repo/x-llm-gateway/clusters`       | All functional areas                     |
-| `gitnexus://repo/x-llm-gateway/processes`      | All execution flows                      |
-| `gitnexus://repo/x-llm-gateway/process/{name}` | Step-by-step execution trace             |
+| Resource | Use for |
+|----------|---------|
+| `gitnexus://repo/x-llm-gateway/context` | Codebase overview, check index freshness |
+| `gitnexus://repo/x-llm-gateway/clusters` | All functional areas |
+| `gitnexus://repo/x-llm-gateway/processes` | All execution flows |
+| `gitnexus://repo/x-llm-gateway/process/{name}` | Step-by-step execution trace |
 
 ## CLI
 
-| Task                                         | Read this skill file                                        |
-| -------------------------------------------- | ----------------------------------------------------------- |
-| Understand architecture / "How does X work?" | `.claude/skills/gitnexus/gitnexus-exploring/SKILL.md`       |
-| Blast radius / "What breaks if I change X?"  | `.claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md` |
-| Trace bugs / "Why is X failing?"             | `.claude/skills/gitnexus/gitnexus-debugging/SKILL.md`       |
-| Rename / extract / split / refactor          | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md`     |
-| Tools, resources, schema reference           | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md`           |
-| Index, status, clean, wiki CLI commands      | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md`             |
+| Task | Read this skill file |
+|------|---------------------|
+| Understand architecture / "How does X work?" | `.claude/skills/gitnexus/gitnexus-exploring/SKILL.md` |
+| Blast radius / "What breaks if I change X?" | `.claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md` |
+| Trace bugs / "Why is X failing?" | `.claude/skills/gitnexus/gitnexus-debugging/SKILL.md` |
+| Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
+| Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
+| Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
 
 <!-- gitnexus:end -->
 
@@ -412,3 +412,69 @@ This project is indexed by GitNexus as **x-llm-gateway** (7437 symbols, 14232 re
 | 用户提议引入不必要的复杂性   | "这个方案引入了 [额外抽象层/依赖]。当前规模下，更简单的 [方案A] 可以满足需求。需要我详细对比吗？" |
 | 用户要求跳过架构分析直接修改 | "直接修改 [文件X] 可能影响 [模块Y/Z]，因为 [引用关系]。我先做影响分析再动手。"                    |
 | 用户认可某个方案             | "确认采用 [方案]。但需注意 [具体风险]，我们在实现时加入 [防护措施]。"                             |
+
+---
+
+## 提交约束 (Commit Constraints)
+
+### 提交前强制检查（MUST DO）
+
+在 `git commit` 和 `git push` 之前，Agent **必须**执行以下验证，任何一项不通过则不得提交：
+
+```bash
+# 1. 全量测试
+bun run ci                # format + lint + typecheck + 1629 个测试全通过
+
+# 2. 功能完整性检查
+#    前端 + 后端代码必须同时实现，不允许只提交一端
+#    如果改动了路由/API，必须改动以下 3 层：
+#    后端: apps/gateway/src/**     — 路由 / 服务层
+#    前端: packages/ui/src/**       — 组件 / Hook
+#    共享: packages/shared/src/**   — 类型 / Schema
+
+# 3. 集成测试
+bun test                   # 新增功能必须有对应测试（至少覆盖 happy path + error path）
+
+# 4. 构建验证（如果改动涉及）
+cd apps/web && bun run build 2>/dev/null || true    # Web SPA build
+docker compose build 2>/dev/null || true             # Docker build
+
+# 5. 无残留
+grep -rn "vite-plus\|vp " --include="*.ts" --include="*.tsx" --include="*.json" apps/ packages/ 2>/dev/null
+```
+
+### 三层完整性原则
+
+任何功能型改动必须同时触及 3 层，缺一不可：
+
+| 层 | 路径 | 职责 | 必须 |
+|---|---|---|---|
+| **Shared** | `packages/shared/src/` | 类型定义、Zod Schema、常量 | ✅ 接口契约 |
+| **Backend** | `apps/gateway/src/` | 路由处理器、服务逻辑、数据访问 | ✅ 功能实现 |
+| **Frontend** | `packages/ui/src/` | 组件、Hook、流程编排 | ✅ 用户交互 |
+
+**违反示例（被拒绝）：**
+- 只改了后端路由，没改前端组件 → ❌ 功能不完整
+- 只改了前端组件，没改共享类型 → ❌ 接口不对齐
+- 没写测试 → ❌ 无法验证
+
+### 提交信息格式
+
+```
+<type>(<scope>): <subject>
+
+type: feat / fix / refactor / test / docs / chore / style
+scope: gateway / web / ui / shared / docs / ci / deps
+subject: 72 字符以内，小写开头，不加句号
+```
+
+### 审核清单（Review Checklist）
+
+在标记完成前，Agent 必须自检：
+
+- [ ] `bun run ci` 通过
+- [ ] 新增测试通过（happy path + error path）
+- [ ] 三层完整性：Shared + Backend + Frontend 都有改动
+- [ ] `git status` 无意外文件
+- [ ] Docker build 无错误
+- [ ] 无 `vite-plus` / `vp ` 残留

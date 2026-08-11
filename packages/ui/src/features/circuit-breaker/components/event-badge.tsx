@@ -1,5 +1,3 @@
-'use client'
-
 import { Badge } from '../../../shared/components/ui/badge'
 import type { CircuitBreakerEventType } from '@xartifact/x-llm-gateway-shared'
 import { ShieldOff, AlertTriangle, CheckCircle, Timer, RotateCcw, Octagon } from 'lucide-react'
@@ -19,28 +17,28 @@ export function EventBadge({ event }: EventBadgeProps) {
       )
     case 'half_open':
       return (
-        <Badge variant="outline" className="gap-1 border-yellow-400 text-yellow-700">
+        <Badge variant="outline" className="gap-1 border-warning/40 text-warning">
           <AlertTriangle className="h-3 w-3" />
           半开
         </Badge>
       )
     case 'closed':
       return (
-        <Badge variant="outline" className="gap-1 border-green-400 text-green-700">
+        <Badge variant="outline" className="gap-1 border-success/40 text-success">
           <CheckCircle className="h-3 w-3" />
           恢复
         </Badge>
       )
     case 'cooldown':
       return (
-        <Badge variant="outline" className="gap-1 border-blue-400 text-blue-700">
+        <Badge variant="outline" className="gap-1 border-info/40 text-info">
           <Timer className="h-3 w-3" />
           冷却
         </Badge>
       )
     case 'reset':
       return (
-        <Badge variant="outline" className="gap-1 border-green-400 text-green-700">
+        <Badge variant="outline" className="gap-1 border-success/40 text-success">
           <RotateCcw className="h-3 w-3" />
           重置
         </Badge>

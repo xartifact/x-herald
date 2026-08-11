@@ -1,4 +1,4 @@
-import { desc, eq } from '@xartifact/x-llm-gateway-db'
+import { desc, eq, isNull } from '@xartifact/x-llm-gateway-db'
 import { z } from 'zod'
 
 import type { Database } from '../../db/client'
@@ -8,6 +8,8 @@ import { modelInstances } from '@xartifact/x-llm-gateway-db'
 
 import { providers } from '@xartifact/x-llm-gateway-db'
 import type { ProtocolsConfig } from './db'
+import type { ProviderModelInfo } from '@xartifact/x-llm-gateway-shared'
+import { normalizeProviderModel, buildInstanceMetadata } from './service-helpers'
 
 const logger = rootLogger.child({ module: 'providers-service' })
 
@@ -37,7 +39,43 @@ export const UpdateProviderSchema = z.object({
 })
 
 export const SyncModelsSchema = z.object({
-  models: z.array(z.object({ id: z.string(), name: z.string() })),
+  models: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      description: z.string().optional(),
+      contextWindow: z.number().optional(),
+      maxOutputTokens: z.number().optional(),
+      cost: z
+        .object({
+          input: z.number(),
+          output: z.number(),
+          cache_read: z.number().optional(),
+          cache_write: z.number().optional(),
+          tiers: z
+            .array(
+              z.object({
+                input_tokens_above: z.number(),
+                input: z.number(),
+                output: z.number(),
+                cache_read: z.number().optional(),
+                cache_write: z.number().optional(),
+              }),
+            )
+            .optional(),
+        })
+        .optional(),
+      capabilities: z
+        .object({
+          streaming: z.boolean().optional(),
+          functionCalling: z.boolean().optional(),
+          vision: z.boolean().optional(),
+          jsonMode: z.boolean().optional(),
+          reasoning: z.boolean().optional(),
+        })
+        .optional(),
+    }),
+  ),
   groupId: z.string().optional(),
 })
 
@@ -47,7 +85,11 @@ export type SyncModelsCommand = z.infer<typeof SyncModelsSchema>
 
 export async function listProviders(db?: Database) {
   const database = db ?? getDatabase()
-  return database.select().from(providers).orderBy(desc(providers.createdAt))
+  return database
+    .select()
+    .from(providers)
+    .where(isNull(providers.deletedAt))
+    .orderBy(desc(providers.createdAt))
 }
 
 export async function getProvider(id: string, db?: Database) {
@@ -93,9 +135,14 @@ export async function updateProvider(id: string, data: UpdateProviderCommand, db
 export async function deleteProvider(id: string, db?: Database): Promise<boolean> {
   const database = db ?? getDatabase()
   const existing = await getProvider(id, db)
-  if (!existing) return false
-  await database.delete(providers).where(eq(providers.id, id))
-  logger.info({ providerId: id }, 'Provider deleted')
+  if (!existing || existing.deletedAt) return false
+  // 逻辑删除：标记 deletedAt 而非物理删除。
+  // 保留行以维持 request_logs / request_attempts 的外键引用完整性。
+  await database
+    .update(providers)
+    .set({ deletedAt: new Date(), updatedAt: new Date() })
+    .where(eq(providers.id, id))
+  logger.info({ providerId: id }, 'Provider soft-deleted')
   return true
 }
 
@@ -162,7 +209,7 @@ export async function updateThinkingMappings(id: string, data: ThinkingMappingDa
 
 type FetchModelsOk = {
   ok: true
-  models: Array<{ id: string; name: string; synced: boolean }>
+  models: ProviderModelInfo[]
   fetchError: string | null
 }
 type FetchModelsErr = { ok: false; code: 'NOT_FOUND' | 'DISABLED' }
@@ -174,7 +221,7 @@ export async function fetchRemoteModels(id: string, db?: Database): Promise<Fetc
   if (!provider.enabled) return { ok: false, code: 'DISABLED' }
 
   const protocols = provider.protocols as ProtocolsConfig
-  let remoteModels: Array<{ id: string; name: string }> = []
+  let remoteModels: ProviderModelInfo[] = []
   let fetchError: string | null = null
 
   try {
@@ -184,9 +231,9 @@ export async function fetchRemoteModels(id: string, db?: Database): Promise<Fetc
       if (provider.apiKey) headers['Authorization'] = `Bearer ${provider.apiKey}`
       const resp = await fetch(url, { headers, signal: AbortSignal.timeout(15000) })
       if (resp.ok) {
-        const body = (await resp.json()) as { data?: Array<{ id: string }> }
+        const body = (await resp.json()) as { data?: Array<Record<string, unknown>> }
         if (Array.isArray(body.data))
-          remoteModels = body.data.map((m) => ({ id: m.id, name: m.id }))
+          remoteModels = body.data.map((m) => normalizeProviderModel(m, false))
       } else {
         fetchError = `OpenAI API returned ${resp.status}`
       }
@@ -199,9 +246,9 @@ export async function fetchRemoteModels(id: string, db?: Database): Promise<Fetc
       if (provider.apiKey) headers['x-api-key'] = provider.apiKey
       const resp = await fetch(url, { headers, signal: AbortSignal.timeout(15000) })
       if (resp.ok) {
-        const body = (await resp.json()) as { data?: Array<{ id: string; display_name?: string }> }
+        const body = (await resp.json()) as { data?: Array<Record<string, unknown>> }
         if (Array.isArray(body.data))
-          remoteModels = body.data.map((m) => ({ id: m.id, name: m.display_name || m.id }))
+          remoteModels = body.data.map((m) => normalizeProviderModel(m, false))
       } else {
         fetchError = `Anthropic API returned ${resp.status}`
       }
@@ -272,9 +319,12 @@ export async function syncModels(
           providerId: id,
           name: m.name,
           actualModelName: m.id,
+          description: m.description ?? null,
           weight: 100,
           priority: 0,
           enabled: true,
+          costPer1kTokens: m.cost ?? null,
+          metadata: buildInstanceMetadata(m),
         })),
       )
       .returning({ id: modelInstances.id })

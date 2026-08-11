@@ -1,7 +1,6 @@
 import { Hono } from 'hono'
 import { stream, streamSSE } from 'hono/streaming'
 
-import { CRON_SECRET } from '../../config/env'
 import { rootLogger } from '../../lib'
 import { logEventBus } from '../../gateway/services/log-event-bus'
 import type { LiveStreamEvent } from '../../gateway/services/log-event-bus'
@@ -21,38 +20,10 @@ import {
   getStorageStats,
 } from './services/log-query'
 import { AnalyzeLogError, buildAnalysisStream } from './services/log-analyzer'
-import { recalculateAll } from './services/rank-calculator'
+import { getIntentLogsPage, getIntentStats } from './services/intent-log-service'
+import type { IntentSource } from '@xartifact/x-llm-gateway-db'
+import { INTENT_SOURCE_VALUES } from '@xartifact/x-llm-gateway-db'
 const logsRoutes = new Hono()
-
-let isRecalculating = false
-
-logsRoutes.post('/rank-recalculate', async (c) => {
-  if (!CRON_SECRET) {
-    logger.error('CRON_SECRET environment variable not configured')
-    return c.json({ error: 'Server misconfiguration', code: 'CONFIG_ERROR' }, 500)
-  }
-  const authHeader = c.req.header('authorization')
-  if (authHeader !== `Bearer ${CRON_SECRET}`) {
-    return c.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, 401)
-  }
-  if (isRecalculating) {
-    return c.json(
-      { error: 'Recalculation already in progress', code: 'RANK_RECALC_IN_PROGRESS' },
-      409,
-    )
-  }
-  isRecalculating = true
-  try {
-    const result = await recalculateAll()
-    logger.info(result, 'Rank recalculation completed')
-    return c.json({ success: true, data: result })
-  } catch (error) {
-    logger.error({ error }, 'Rank recalculation failed')
-    return c.json({ error: 'Failed to recalculate ranks', code: 'RANK_RECALC_ERROR' }, 500)
-  } finally {
-    isRecalculating = false
-  }
-})
 
 logsRoutes.get('/live', (c) => {
   return streamSSE(c, async (s) => {
@@ -153,6 +124,51 @@ logsRoutes.get('/conversation/:conversationId', async (c) => {
       { error: 'Failed to get conversation trace', code: 'CONVERSATION_TRACE_ERROR' },
       500,
     )
+  }
+})
+
+logsRoutes.get('/intents', async (c) => {
+  try {
+    const q = c.req.query()
+    const intentSource = q.intentSource as IntentSource | undefined
+    const validatedSource =
+      intentSource && (INTENT_SOURCE_VALUES as readonly string[]).includes(intentSource)
+        ? intentSource
+        : undefined
+    const result = await getIntentLogsPage({
+      cursor: q.cursor,
+      pageSize: parseInt(q.pageSize || '50'),
+      virtualKeyId: q.virtualKeyId,
+      accessModelId: q.accessModelId,
+      intentName: q.intentName,
+      intentSource: validatedSource,
+      startDate: q.startDate,
+      endDate: q.endDate,
+    })
+    return c.json({
+      success: true,
+      data: result.logs,
+      nextCursor: result.nextCursor,
+      hasMore: result.hasMore,
+    })
+  } catch (error) {
+    logger.warn({ err: error }, 'Failed to list intent logs')
+    return c.json({ error: 'Failed to list intent logs', code: 'INTENT_LOGS_LIST_ERROR' }, 500)
+  }
+})
+
+logsRoutes.get('/intents/stats', async (c) => {
+  try {
+    const q = c.req.query()
+    const data = await getIntentStats({
+      startDate: q.startDate,
+      endDate: q.endDate,
+      virtualKeyId: q.virtualKeyId,
+    })
+    return c.json({ success: true, data })
+  } catch (error) {
+    logger.warn({ err: error }, 'Failed to get intent stats')
+    return c.json({ error: 'Failed to get intent stats', code: 'INTENT_STATS_ERROR' }, 500)
   }
 })
 

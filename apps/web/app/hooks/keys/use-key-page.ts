@@ -1,5 +1,3 @@
-'use client'
-
 import { useState, useMemo } from 'react'
 
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -36,7 +34,8 @@ export function useKeyPage() {
   const [statsKeyId, setStatsKeyId] = useState<string | null>(null)
   const [statsPeriod, setStatsPeriod] = useState<'today' | '7d' | '30d' | 'all'>('7d')
 
-  const { data: keys = [], isLoading: loading } = useKeys()
+  const { data: keysResult, isLoading: loading } = useKeys()
+  const keys = keysResult?.data ?? []
   const { data: keysStats = [] } = useKeysStats(statsPeriod)
   const createKey = useCreateKey()
   const updateKey = useUpdateKey()

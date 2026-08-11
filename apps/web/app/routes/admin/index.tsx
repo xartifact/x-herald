@@ -10,6 +10,7 @@ import {
   CardTitle,
   get,
   Button,
+  PageHeader,
   Select,
   SelectContent,
   SelectItem,
@@ -58,7 +59,7 @@ export function DashboardPage() {
   })
   const { data: keysRes } = useQuery({
     queryKey: ['keys'],
-    queryFn: () => get<{ data: unknown[] }>('/api/keys', { extractData: false }),
+    queryFn: () => get<{ pagination?: { total: number } }>('/api/keys', { extractData: false }),
   })
 
   const [timeRange, setTimeRange] = useState('24h')
@@ -70,7 +71,8 @@ export function DashboardPage() {
 
   const providerCount = (providersRes as { data?: unknown[] } | undefined)?.data?.length ?? 0
   const modelGroupCount = (modelGroupsRes as { data?: unknown[] } | undefined)?.data?.length ?? 0
-  const keyCount = (keysRes as { data?: unknown[] } | undefined)?.data?.length ?? 0
+  const keyCount =
+    (keysRes as { pagination?: { total: number } } | undefined)?.pagination?.total ?? 0
 
   const stats = statsData?.data?.overview
   const clientStats = statsData?.data?.clientStats
@@ -83,7 +85,20 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">仪表盘</h1>
+      <PageHeader
+        title="仪表盘"
+        actions={
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={handleRefresh}
+            disabled={isFetching}
+            title="刷新数据"
+          >
+            <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+          </Button>
+        }
+      />
 
       {/* 资源计数卡片 */}
       <div className="grid gap-4 md:grid-cols-3">
@@ -122,29 +137,18 @@ export function DashboardPage() {
       {/* 统计概览 */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold tracking-tight">概览</h2>
-        <div className="flex items-center gap-2">
-          <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="w-[140px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">全部时间</SelectItem>
-              <SelectItem value="1h">最近 1 小时</SelectItem>
-              <SelectItem value="24h">最近 24 小时</SelectItem>
-              <SelectItem value="7d">最近 7 天</SelectItem>
-              <SelectItem value="30d">最近 30 天</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handleRefresh}
-            disabled={isFetching}
-            title="刷新数据"
-          >
-            <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
-          </Button>
-        </div>
+        <Select value={timeRange} onValueChange={setTimeRange}>
+          <SelectTrigger className="w-[140px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">全部时间</SelectItem>
+            <SelectItem value="1h">最近 1 小时</SelectItem>
+            <SelectItem value="24h">最近 24 小时</SelectItem>
+            <SelectItem value="7d">最近 7 天</SelectItem>
+            <SelectItem value="30d">最近 30 天</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <LogStatsCards stats={stats} storage={storage} clientStats={clientStats} />

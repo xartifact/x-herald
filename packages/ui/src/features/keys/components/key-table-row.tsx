@@ -1,5 +1,3 @@
-'use client'
-
 import { Pencil, Trash2, RefreshCw, BarChart2 } from 'lucide-react'
 
 import type { KeyStat } from '@xartifact/x-llm-gateway-shared'

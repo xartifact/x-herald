@@ -4,6 +4,7 @@ import logger from '../../lib/logger'
 import type { VirtualKey } from '@xartifact/x-llm-gateway-db'
 
 import { handleAnthropicMessages } from '../handlers/anthropic/messages-handler'
+import { resolveConnectTimeoutMs } from '../handlers/shared/constants'
 import { accessModelRouter } from '../services/access-model-router'
 import { identifyClient } from '../services/client-identifier'
 import { shouldFilterHeader } from '../services/headers'
@@ -131,11 +132,12 @@ anthropicRoutes.post('/messages/count_tokens', async (c) => {
     )
 
     // 6. 转发请求到上游 Provider
+    const connectTimeout = resolveConnectTimeoutMs(instance.config?.timeoutConfig)
     const response = await fetch(targetUrl, {
       method: 'POST',
       headers: providerRequestHeaders,
       body: JSON.stringify(forwardedBody),
-      connectTimeout: 30000, // 30 秒连接超时
+      connectTimeout,
     } as RequestInit)
 
     // 7. 处理响应

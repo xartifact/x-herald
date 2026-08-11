@@ -1,36 +1,37 @@
 import { Bot, Settings, User, Wrench } from 'lucide-react'
 
-export const roleConfig = {
+export const roleColors = {
   user: {
     icon: User,
     label: 'User',
-    color: 'bg-blue-50 text-blue-700 border-blue-200',
-    iconColor: 'text-blue-500',
+    color: 'bg-info/10 text-info border-info/20',
+    iconColor: 'text-info',
   },
   assistant: {
     icon: Bot,
     label: 'Assistant',
-    color: 'bg-purple-50 text-purple-700 border-purple-200',
-    iconColor: 'text-purple-500',
+    color: 'bg-primary/10 text-primary border-primary/20',
+    iconColor: 'text-primary',
   },
   system: {
     icon: Settings,
     label: 'System',
-    color: 'bg-gray-50 text-gray-700 border-gray-200',
-    iconColor: 'text-gray-500',
+    color: 'bg-muted text-muted-foreground border-border',
+    iconColor: 'text-muted-foreground',
   },
   tool: {
     icon: Wrench,
     label: 'Tool',
-    color: 'bg-green-50 text-green-700 border-green-200',
-    iconColor: 'text-green-500',
+    color: 'bg-success/10 text-success border-success/20',
+    iconColor: 'text-success',
   },
 }
 
 export const borderColor: Record<string, string> = {
-  user: 'border-l-blue-400',
-  assistant: 'border-l-purple-400',
-  tool: 'border-l-green-400',
+  user: 'border-l-info',
+  assistant: 'border-l-primary',
+  system: 'border-l-muted-foreground',
+  tool: 'border-l-success',
 }
 
 export function extractText(content: unknown): string {

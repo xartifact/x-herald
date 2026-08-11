@@ -1,12 +1,6 @@
 import { test, expect } from './helpers'
 
 test.describe('Monitoring Pages', () => {
-  test('model-routes page loads', async ({ page }) => {
-    await page.goto('/admin/model-routes')
-    await page.waitForLoadState('domcontentloaded')
-    await expect(page.getByRole('heading', { name: '路由规则' })).toBeVisible()
-  })
-
   test('logs page loads', async ({ page }) => {
     await page.goto('/admin/logs')
     await page.waitForLoadState('domcontentloaded')

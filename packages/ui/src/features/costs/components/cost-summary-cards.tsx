@@ -1,8 +1,7 @@
-'use client'
-
 import { DollarSign, Hash, ArrowRightLeft, Receipt } from 'lucide-react'
 
 import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/components/ui'
+import { StatCard } from '../../../shared/components/stat-card'
 import type { CostSummary } from '../hooks'
 
 interface CostSummaryCardsProps {
@@ -45,58 +44,30 @@ export function CostSummaryCards({ summary }: CostSummaryCardsProps) {
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">总费用</CardTitle>
-          <DollarSign className="h-4 w-4 text-emerald-600" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-emerald-600">
-            {formatCurrency(summary.totalCost)}
-          </div>
-          <div className="text-xs text-muted-foreground mt-1">累计 API 调用费用</div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">总请求数</CardTitle>
-          <Hash className="h-4 w-4 text-blue-600" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-blue-600">
-            {summary.requestCount.toLocaleString()}
-          </div>
-          <div className="text-xs text-muted-foreground mt-1">API 请求总数</div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">总 Token</CardTitle>
-          <ArrowRightLeft className="h-4 w-4 text-purple-600" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-purple-600">{formatTokens(totalTokens)}</div>
-          <div className="text-xs text-muted-foreground mt-1">
-            ↑ {formatTokens(summary.totalInputTokens)} 输入 / ↓{' '}
-            {formatTokens(summary.totalOutputTokens)} 输出
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">平均费用</CardTitle>
-          <Receipt className="h-4 w-4 text-orange-600" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-orange-600">
-            {formatCurrency(avgCostPerRequest)}
-          </div>
-          <div className="text-xs text-muted-foreground mt-1">单次请求平均费用</div>
-        </CardContent>
-      </Card>
+      <StatCard
+        title="总费用"
+        icon={<DollarSign className="h-4 w-4" />}
+        value={formatCurrency(summary.totalCost)}
+        sub="累计 API 调用费用"
+      />
+      <StatCard
+        title="总请求数"
+        icon={<Hash className="h-4 w-4" />}
+        value={summary.requestCount.toLocaleString()}
+        sub="API 请求总数"
+      />
+      <StatCard
+        title="总 Token"
+        icon={<ArrowRightLeft className="h-4 w-4" />}
+        value={formatTokens(totalTokens)}
+        sub={`↑ ${formatTokens(summary.totalInputTokens)} 输入 / ↓ ${formatTokens(summary.totalOutputTokens)} 输出`}
+      />
+      <StatCard
+        title="平均费用"
+        icon={<Receipt className="h-4 w-4" />}
+        value={formatCurrency(avgCostPerRequest)}
+        sub="单次请求平均费用"
+      />
     </div>
   )
 }

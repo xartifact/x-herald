@@ -4,6 +4,11 @@ export * from './auth'
 export * from './health'
 export * from './model-group'
 export * from './model-route'
+export * from './node-data'
+export * from './canvas-graph'
+export * from './node-type-registry'
+export * from './routing-trace'
+export * from './model-schema'
 export * from './access-model'
 export * from './settings'
 // transformer.ts - non-conflicting types only
@@ -18,6 +23,8 @@ export * from './llm'
 export * from './circuit-breaker'
 export * from './log'
 export * from './config-io'
+export * from './potential-model'
+export * from './pagination'
 
 // Live stream event type (for real-time log streaming)
 export type LiveStreamEvent =

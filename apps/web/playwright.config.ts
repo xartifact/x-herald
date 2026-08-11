@@ -1,5 +1,8 @@
 import { defineConfig, devices } from '@playwright/test'
 
+// 本机 5173 可能被其他项目的 dev server 占用；E2E_WEB_PORT 允许换端口跑 e2e
+const webPort = Number(process.env.E2E_WEB_PORT ?? 5173)
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
@@ -50,20 +53,20 @@ export default defineConfig({
         PORT: '3000',
         HOST: '127.0.0.1',
         CORS_ENABLED: 'true',
-        CORS_ORIGINS: 'http://localhost:5173',
+        CORS_ORIGINS: `http://localhost:${webPort}`,
         NODE_ENV: 'development',
       },
     },
     {
-      command: 'bun run dev',
-      port: 5173,
+      command: `bun run dev -- --port ${webPort} --strictPort`,
+      port: webPort,
       timeout: 15_000,
       reuseExistingServer: !process.env.CI,
     },
   ],
 
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: `http://localhost:${webPort}`,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },

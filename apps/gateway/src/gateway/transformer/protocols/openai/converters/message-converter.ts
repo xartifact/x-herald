@@ -1,4 +1,4 @@
-import type { StandardMessage } from '@xartifact/x-llm-gateway-shared'
+import type { ImageContent, StandardMessage, TextContent } from '@xartifact/x-llm-gateway-shared'
 
 import type { OpenAIMessage } from '../types'
 import { convertContent } from './content-converter'
@@ -30,16 +30,21 @@ export function convertToOpenAIMessages(messages: StandardMessage[]): OpenAIMess
     if (typeof msg.content === 'string') {
       openaiMsg.content = msg.content
     } else if (Array.isArray(msg.content)) {
-      openaiMsg.content = msg.content.map((item) => {
-        if (item.type === 'text') {
-          return { type: 'text', text: item.text }
-        } else {
-          return {
-            type: 'image_url',
-            image_url: { url: item.image_url.url },
+      openaiMsg.content = msg.content
+        .filter(
+          (item): item is TextContent | ImageContent =>
+            item.type === 'text' || item.type === 'image_url',
+        )
+        .map((item) => {
+          if (item.type === 'text') {
+            return { type: 'text', text: item.text }
+          } else {
+            return {
+              type: 'image_url',
+              image_url: { url: item.image_url.url },
+            }
           }
-        }
-      })
+        })
     }
 
     if (msg.tool_calls) {

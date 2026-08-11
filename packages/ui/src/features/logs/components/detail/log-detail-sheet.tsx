@@ -1,5 +1,3 @@
-'use client'
-
 import { useState } from 'react'
 
 import { ScrollArea } from '../../../../shared/components/ui/scroll-area'

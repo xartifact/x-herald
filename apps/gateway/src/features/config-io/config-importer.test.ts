@@ -8,7 +8,6 @@ import {
   modelInstances,
   modelGroupMemberships,
   accessModels,
-  modelRoutes,
 } from '@xartifact/x-llm-gateway-db'
 import { virtualKeys } from '@xartifact/x-llm-gateway-db'
 import { gatewayConfigs } from '@xartifact/x-llm-gateway-db'
@@ -96,7 +95,6 @@ describe('importConfig', () => {
       modelGroups: [],
       modelInstances: [],
       virtualModels: [],
-      modelRoutes: [],
       virtualKeys: [],
       gatewayConfigs: [],
     })
@@ -108,7 +106,6 @@ describe('importConfig', () => {
     expect(result.summary.modelInstances).toEqual({ created: 0, updated: 0, errors: 0 })
     expect(result.summary.accessModels).toEqual({ created: 0, updated: 0, errors: 0 })
     expect(result.summary.virtualModels).toEqual({ created: 0, updated: 0, errors: 0 })
-    expect(result.summary.modelRoutes).toEqual({ created: 0, updated: 0, errors: 0 })
     expect(result.summary.virtualKeys).toEqual({ created: 0, updated: 0, errors: 0 })
     expect(result.summary.gatewayConfigs).toEqual({ created: 0, updated: 0, errors: 0 })
   })
@@ -126,7 +123,6 @@ describe('importConfig', () => {
       modelGroups: [],
       modelInstances: [],
       virtualModels: [],
-      modelRoutes: [],
       virtualKeys: [],
       gatewayConfigs: [],
     })
@@ -152,7 +148,6 @@ describe('importConfig', () => {
       modelGroups: [],
       modelInstances: [],
       virtualModels: [],
-      modelRoutes: [],
       virtualKeys: [],
       gatewayConfigs: [],
     })
@@ -195,7 +190,6 @@ describe('importConfig', () => {
           enabled: true,
         },
       ],
-      modelRoutes: [],
       virtualKeys: [
         {
           name: 'Test Key',
@@ -253,7 +247,6 @@ describe('importConfig', () => {
       modelGroups: [],
       modelInstances: [],
       virtualModels: [],
-      modelRoutes: [],
       virtualKeys: [],
       gatewayConfigs: [],
     })
@@ -285,7 +278,6 @@ describe('importConfig', () => {
         },
       ],
       virtualModels: [],
-      modelRoutes: [],
       virtualKeys: [],
       gatewayConfigs: [],
     })
@@ -351,7 +343,6 @@ describe('importConfig', () => {
         },
       ],
       virtualModels: [],
-      modelRoutes: [],
       virtualKeys: [],
       gatewayConfigs: [],
     })

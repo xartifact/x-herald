@@ -6,8 +6,13 @@ import {
   normalizeProviderErrorMessage,
   parseProviderError,
   extractProviderResponseHeaders,
+  looksLikeToolSchemaError,
 } from './error-classifier'
+import rootLogger from '../../lib/logger'
 import { logRequest } from './log-service'
+import type { RouteChainSnapshot } from './routing-trace-recorder'
+
+const logger = rootLogger.child({ module: 'error-handler' })
 import { mergeResponseHeaders } from './response-handlers'
 import {
   ModelNotFoundError,
@@ -87,6 +92,8 @@ async function logFailure(
     errorType: string
     requestedModel: string
     responseTimeMs: number
+    /** 路由在产出候选之前就失败时的链路快照（reject / 无可用实例等），供 routing-traces 覆盖失败请求 */
+    routeChain?: RouteChainSnapshot
   },
 ): Promise<void> {
   const {
@@ -121,6 +128,7 @@ async function logFailure(
     targetProtocol,
     logId,
     retryCount,
+    routingTrace: opts.routeChain ? { routeChain: opts.routeChain } : undefined,
   })
 }
 
@@ -138,6 +146,7 @@ export async function handleGatewayError(params: GatewayErrorParams): Promise<Re
       errorType: 'model_not_found',
       requestedModel,
       responseTimeMs,
+      routeChain: error.routeChain,
     })
     return c.json({ error: { type: 'not_found_error', message: error.message } }, 404)
   }
@@ -149,6 +158,7 @@ export async function handleGatewayError(params: GatewayErrorParams): Promise<Re
       errorType: 'model_disabled',
       requestedModel,
       responseTimeMs,
+      routeChain: error.routeChain,
     })
     return c.json({ error: { type: 'invalid_request_error', message: error.message } }, 400)
   }
@@ -160,6 +170,7 @@ export async function handleGatewayError(params: GatewayErrorParams): Promise<Re
       errorType: 'request_rejected',
       requestedModel,
       responseTimeMs,
+      routeChain: error.routeChain,
     })
     return c.json({ error: { type: 'permission_error', message: error.message } }, 403)
   }
@@ -171,6 +182,7 @@ export async function handleGatewayError(params: GatewayErrorParams): Promise<Re
       errorType: 'service_unavailable',
       requestedModel,
       responseTimeMs,
+      routeChain: error.routeChain,
     })
     return c.json({ error: { type: 'service_unavailable', message: error.message } }, 503)
   }
@@ -265,6 +277,12 @@ export async function handleProviderError(params: ProviderErrorParams): Promise<
 
   const errorData = await parseProviderError(response)
   const rawErrorMessage = errorData.error?.message || 'Provider request failed'
+  if (looksLikeToolSchemaError(rawErrorMessage, response.status)) {
+    logger.warn(
+      { providerName: provider.name, logId, attemptId, rawErrorMessage },
+      'Provider 疑似因 tool schema 兼容性问题拒绝请求，考虑在 tool-schema-sanitizer.ts 补规则',
+    )
+  }
   const normalized = normalizeProviderErrorMessage(rawErrorMessage)
   const responseTimeMs = Date.now() - startTime
   const providerResponseHeaders = extractProviderResponseHeaders(response)
@@ -347,6 +365,12 @@ export async function handleProviderErrorPassthrough(
   const responseClone = response.clone()
   const errorData = await parseProviderError(responseClone as any)
   const rawErrorMessage = errorData.error?.message || 'Provider request failed'
+  if (looksLikeToolSchemaError(rawErrorMessage, response.status)) {
+    logger.warn(
+      { providerName: provider.name, logId, attemptId, rawErrorMessage },
+      'Provider 疑似因 tool schema 兼容性问题拒绝请求，考虑在 tool-schema-sanitizer.ts 补规则',
+    )
+  }
   const responseTimeMs = Date.now() - startTime
   const providerResponseHeaders = extractProviderResponseHeaders(response)
 

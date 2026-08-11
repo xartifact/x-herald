@@ -1,5 +1,3 @@
-'use client'
-
 import { Badge } from '../../../../shared/components/ui/badge'
 import type { Log } from '@xartifact/x-llm-gateway-shared'
 

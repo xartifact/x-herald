@@ -1,5 +1,3 @@
-'use client'
-
 import type { ComponentProps } from 'react'
 
 import { ModelInstanceForm } from '../../model-groups'

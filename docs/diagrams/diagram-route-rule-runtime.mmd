@@ -1,0 +1,23 @@
+---
+config:
+  theme: neutral
+---
+flowchart LR
+    REQ["请求 model=gpt-4"] --> AM["access_models<br/>查找 by name"] --> AMID["am.id"]
+    AMID --> FETCH["route_rules<br/>WHERE access_model_id=am.id<br/>AND active=true<br/>LIMIT 1"]
+    FETCH -.->|"缓存命中<br/>O(1)"| CACHE[("per-AM<br/>编译缓存")]
+    FETCH --> COMPILE["编译 graph<br/>→ RouteMatcher[]"]
+    CACHE --> MATCH["match(ctx)<br/>evaluateConditions"]
+    COMPILE --> MATCH
+    MATCH --> ACTION["RouteAction<br/>route_to_group / intent /<br/>capability / fallback / reject"]
+    ACTION --> EXEC["AccessModelRouter<br/>resolveAction (~420 行不变)"]
+    EXEC --> UPSTREAM["上游实例"]
+
+    SAVE["route-rules API<br/>save / activate"] -.->|"invalidate(amId)"| CACHE
+
+    classDef hot fill:#FCE4E4,stroke:#B33A3A
+    classDef cold fill:#EAF1FB,stroke:#3B6FB6
+    classDef cache fill:#FFF3DC,stroke:#C8862C
+    class REQ,AM,AMID,MATCH,ACTION,EXEC,UPSTREAM hot
+    class FETCH,COMPILE,SAVE cold
+    class CACHE cache

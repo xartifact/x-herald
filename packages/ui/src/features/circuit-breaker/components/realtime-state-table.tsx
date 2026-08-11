@@ -1,5 +1,3 @@
-'use client'
-
 import { Activity, RotateCcw, Octagon } from 'lucide-react'
 
 import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/components/ui/card'
@@ -81,10 +79,18 @@ export function RealtimeStateTable({
             <TableBody>
               {instances.map((inst) => {
                 const badge = tripCountBadge(inst.tripCount)
+                const displayName =
+                  [inst.providerName, inst.instanceName].filter(Boolean).join(' - ') ||
+                  inst.instanceId.slice(0, 12)
                 return (
                   <TableRow key={inst.instanceId}>
-                    <TableCell className="font-mono text-xs">
-                      {inst.instanceId.slice(0, 12)}
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span>{displayName}</span>
+                        <span className="font-mono text-[10px] text-muted-foreground">
+                          {inst.instanceId.slice(0, 12)}
+                        </span>
+                      </div>
                     </TableCell>
                     <TableCell className={stateBadgeColor(inst.state)}>
                       {stateLabel(inst.state)}

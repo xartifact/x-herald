@@ -1,5 +1,3 @@
-'use client'
-
 import { useEffect, useState } from 'react'
 
 import {
@@ -49,7 +47,7 @@ function CopyButton({ value }: { value: string }) {
       className="text-muted-foreground hover:text-foreground transition-colors"
       title="复制"
     >
-      <Copy className={`h-3 w-3 ${copied ? 'text-green-500' : ''}`} />
+      <Copy className={`h-3 w-3 ${copied ? 'text-success' : ''}`} />
     </button>
   )
 }
@@ -97,9 +95,7 @@ function StreamCard({
     }
   }
 
-  const borderClass = isStuck
-    ? 'border-red-300 bg-red-50/50 dark:border-red-800 dark:bg-red-950/20'
-    : 'bg-card'
+  const borderClass = isStuck ? 'border-destructive/20 bg-destructive/10' : 'bg-card'
 
   return (
     <div className={`rounded-lg border text-sm ${borderClass}`}>
@@ -110,18 +106,18 @@ function StreamCard({
         <span className="relative flex h-2 w-2 shrink-0">
           {isStuck ? (
             <>
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-destructive" />
             </>
           ) : isWaiting ? (
             <>
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-warning opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-warning" />
             </>
           ) : (
             <>
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
             </>
           )}
         </span>
@@ -138,10 +134,10 @@ function StreamCard({
           </Badge>
         )}
 
-        {item.hasThinking && <Brain className="h-3.5 w-3.5 shrink-0 text-violet-500" />}
+        {item.hasThinking && <Brain className="h-3.5 w-3.5 shrink-0 text-info" />}
 
         {isWaiting ? (
-          <span className="shrink-0 text-xs text-amber-600 dark:text-amber-400">等待响应</span>
+          <span className="shrink-0 text-xs text-warning">等待响应</span>
         ) : (
           <div className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
             <Zap className="h-3 w-3" />
@@ -215,7 +211,7 @@ function StreamCard({
 
             {isStuck && (
               <>
-                <span className="col-span-2 mt-1 rounded bg-red-100 px-2 py-1 text-red-700 dark:bg-red-950/40 dark:text-red-400">
+                <span className="col-span-2 mt-1 rounded bg-destructive/10 px-2 py-1 text-destructive">
                   已等待 {formatElapsed(elapsedMs)}，可能卡住
                 </span>
               </>
@@ -251,9 +247,9 @@ export function LiveLogsPanel({ onViewDetail }: LiveLogsPanelProps) {
   if (streams.size === 0) return null
 
   return (
-    <Card className="border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-950/20">
+    <Card className="border-success/20 bg-success/10">
       <CardHeader className="pb-2 pt-3">
-        <CardTitle className="flex items-center gap-2 text-sm font-medium text-green-700 dark:text-green-400">
+        <CardTitle className="flex items-center gap-2 text-sm font-medium text-success">
           <Activity className="h-4 w-4" />
           实时请求
           <Badge variant="secondary" className="text-xs">

@@ -5,6 +5,7 @@ import { convertToAnthropicMessages } from './converters/message-converter'
 import { convertToAnthropicTool, convertToAnthropicToolChoice } from './converters/tool-converter'
 import type { AnthropicMessage, AnthropicRequest } from './types'
 import { applyRequestInject } from '../../shared/parameter-transformer'
+import { sanitizeToolSchema } from '../../shared/tool-schema-sanitizer'
 
 /**
  * Apply thinking type mapping if configured on provider
@@ -106,7 +107,14 @@ export async function adaptAnthropicRequest(
   } else if (systemContent) anthropicReq.system = systemContent
 
   if (request.tools?.length) {
-    anthropicReq.tools = request.tools.map((t) => convertToAnthropicTool(t))
+    const sanitizeSchema = ctx.provider?.protocols?.anthropic?.toolSchemaSanitization ?? false
+    anthropicReq.tools = request.tools.map((t) => {
+      const tool = convertToAnthropicTool(t)
+      if (sanitizeSchema) {
+        tool.input_schema = sanitizeToolSchema(tool.input_schema) as typeof tool.input_schema
+      }
+      return tool
+    })
     if (request.tool_choice)
       anthropicReq.tool_choice = convertToAnthropicToolChoice(request.tool_choice)
   }

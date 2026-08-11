@@ -20,6 +20,7 @@ import type { ModelMappingResult } from '../../services/model-mapping'
 import { getEndpoint } from '../../services/protocol-detector'
 import { getTransformer } from '../../transformer'
 import { buildHeaders } from '../../transformer/shared/parameter-transformer'
+import { sanitizeAnthropicToolsArray } from '../../transformer/shared/tool-schema-sanitizer'
 import type { AbortManager } from '../shared/abort-manager'
 import type { PreparedRequest } from '../shared/failover-executor'
 import { joinUrl } from '../shared/join-url'
@@ -68,6 +69,31 @@ export interface AnthropicExecutorConfig {
   isPassthroughEnabled: boolean
   targetProtocol: 'openai' | 'anthropic'
   retryCount: number
+  /** 可选：路由链路快照 */
+  routeChain?: {
+    requestedModel: string
+    accessModelId?: string
+    accessModelName?: string
+    chain: Array<{
+      index: number
+      kind: 'primary' | 'backup' | 'single'
+      actionType: string
+      resolvedGroupId?: string
+      resolvedGroupName?: string
+      candidates: Array<{
+        candidateIndex: number
+        chainStepIndex: number
+        chainStepKind: 'primary' | 'backup' | 'single'
+        instanceId: string
+        instanceName: string
+        providerId: string
+        providerName: string
+        priority: number
+        strategy: string
+        groupName: string
+      }>
+    }>
+  }
 }
 
 export class AnthropicMessagesExecutor {
@@ -173,6 +199,12 @@ export class AnthropicMessagesExecutor {
           )
         }
       }
+      if (
+        provider.protocols?.anthropic?.toolSchemaSanitization &&
+        Array.isArray(passthroughBody.tools)
+      ) {
+        passthroughBody.tools = sanitizeAnthropicToolsArray(passthroughBody.tools)
+      }
       return {
         transformedBody: passthroughBody,
         targetUrl: joinUrl(providerUrl, getEndpoint(targetProtocol, isStreaming)),
@@ -216,7 +248,7 @@ export class AnthropicMessagesExecutor {
       conversationId,
       incomingProtocol,
     } = this.req
-    const { targetProtocol, requestGroupId, candidateIndex } = this.config
+    const { targetProtocol, requestGroupId, candidateIndex, routeChain } = this.config
     return {
       virtualKey,
       modelName: mapping.modelName,
@@ -249,6 +281,8 @@ export class AnthropicMessagesExecutor {
         instanceId: instance.id,
         actualModelName: instance.actualModelName,
         strategy: decision.strategy,
+        instanceCost: instance.costPer1kTokens,
+        ...(routeChain ? { routeChain } : {}),
       },
     }
   }

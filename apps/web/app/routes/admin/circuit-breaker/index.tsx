@@ -12,6 +12,7 @@ import {
   EventHistoryTable,
   CircuitBreakerConfirmDialog,
   Button,
+  PageHeader,
 } from '@xartifact/x-llm-gateway-ui'
 import { RefreshCw } from 'lucide-react'
 import type { CircuitBreakerEventType } from '@xartifact/x-llm-gateway-shared'
@@ -50,24 +51,24 @@ export function CircuitBreakerPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">熔断记录</h1>
-          <p className="text-muted-foreground">模型实例熔断状态与事件历史</p>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            statsQuery.refetch()
-            eventsQuery.refetch()
-            realtimeQuery.refetch()
-          }}
-        >
-          <RefreshCw className="mr-2 h-4 w-4" />
-          刷新
-        </Button>
-      </div>
+      <PageHeader
+        title="熔断记录"
+        description="模型实例熔断状态与事件历史"
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              statsQuery.refetch()
+              eventsQuery.refetch()
+              realtimeQuery.refetch()
+            }}
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            刷新
+          </Button>
+        }
+      />
 
       <CircuitBreakerStatsCards
         stats={statsQuery.data ?? null}

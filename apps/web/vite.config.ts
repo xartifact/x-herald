@@ -1,5 +1,35 @@
 import { defineConfig } from 'vite'
+import { execSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+function resolveVersion(): string {
+  if (process.env.APP_VERSION) return process.env.APP_VERSION
+  try {
+    const pkg = JSON.parse(readFileSync(path.resolve(__dirname, '../../package.json'), 'utf8')) as {
+      version?: string
+    }
+    return pkg.version ?? 'dev'
+  } catch {
+    return 'dev'
+  }
+}
+
+function resolveCommitHash(): string {
+  if (process.env.GIT_COMMIT_HASH) return process.env.GIT_COMMIT_HASH
+  try {
+    return execSync('git rev-parse --short HEAD', {
+      stdio: ['ignore', 'pipe', 'ignore'],
+    })
+      .toString()
+      .trim()
+  } catch {
+    return 'unknown'
+  }
+}
 
 export default defineConfig({
   optimizeDeps: { force: true },
@@ -10,6 +40,8 @@ export default defineConfig({
       LOG_LEVEL: 'info',
       LOG_ENABLE_DEBUG: 'false',
       LOG_ENABLE_REQUEST: 'false',
+      APP_VERSION: resolveVersion(),
+      GIT_COMMIT_HASH: resolveCommitHash(),
     }),
   },
   resolve: {
@@ -21,7 +53,22 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': 'http://localhost:3000',
+      '/api': process.env.GATEWAY_API_PROXY || 'http://localhost:3000',
+    },
+  },
+  build: {
+    chunkSizeWarningLimit: 10240,
+    rollupOptions: {
+      onwarn(warning, defaultHandler) {
+        if (warning.code === 'MODULE_LEVEL_DIRECTIVE') return
+        if (defaultHandler) defaultHandler(warning)
+      },
+      output: {
+        manualChunks: {
+          'monaco-editor': ['monaco-editor'],
+          'tanstack-vendor': ['@tanstack/react-router', '@tanstack/react-query'],
+        },
+      },
     },
   },
 })

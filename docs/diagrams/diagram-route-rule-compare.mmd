@@ -1,0 +1,27 @@
+---
+config:
+  theme: neutral
+---
+flowchart TB
+    subgraph BEFORE["重构前：全局画布 + 条件竞争"]
+        direction TB
+        B_AM["access_models 表<br/>(纯身份记录)"]
+        B_CANVAS["canvas_states 表<br/>id='default'<br/>全局单一 graph"]
+        B_AM -.->|"运行时按 vmId 索引"| B_CANVAS
+        B_CANVAS --> B_DFS["DFS 遍历全局 graph<br/>按 priority 排序"]
+        B_DFS --> B_MATCH["首个 conditions 匹配<br/>→ 返回 RouteAction"]
+    end
+
+    subgraph AFTER["重构后：per-AM 规则 + 配置激活"]
+        direction TB
+        A_AM["access_models 表<br/>(路由容器)"]
+        A_AM -->|"1:N 拥有"| A_RR["route_rules 表<br/>access_model_id FK<br/>graph + active + version"]
+        A_RR --> A_FILTER["筛选 active=true<br/>(部分唯一索引保证唯一)"]
+        A_FILTER --> A_COMPILE["编译单 rule graph<br/>→ RouteMatcher[]"]
+        A_COMPILE --> A_MATCH["evaluateConditions<br/>→ 返回 RouteAction"]
+    end
+
+    classDef before fill:#FFF3DC,stroke:#C8862C
+    classDef after fill:#D6F5D6,stroke:#3A9B3A
+    class B_AM,B_CANVAS,B_DFS,B_MATCH before
+    class A_AM,A_RR,A_FILTER,A_COMPILE,A_MATCH after

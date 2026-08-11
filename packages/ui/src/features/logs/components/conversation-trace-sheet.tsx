@@ -1,5 +1,3 @@
-'use client'
-
 import {
   AlertCircle,
   CheckCircle2,
@@ -38,9 +36,9 @@ function formatMs(ms: number | null | undefined) {
 }
 
 function StatusIcon({ status }: { status: ConversationRound['status'] }) {
-  if (status === 'success') return <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
-  if (status === 'failure') return <XCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
-  return <Loader2 className="h-4 w-4 text-yellow-500 animate-spin flex-shrink-0" />
+  if (status === 'success') return <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
+  if (status === 'failure') return <XCircle className="h-4 w-4 text-destructive flex-shrink-0" />
+  return <Loader2 className="h-4 w-4 text-warning animate-spin flex-shrink-0" />
 }
 
 function AttemptRow({ attempt }: { attempt: ConversationAttempt }) {
@@ -51,8 +49,8 @@ function AttemptRow({ attempt }: { attempt: ConversationAttempt }) {
     <div
       className={cn(
         'flex items-center gap-3 px-3 py-2 rounded text-xs',
-        isSuccess && 'bg-green-50 dark:bg-green-950/20',
-        isFailure && 'bg-red-50 dark:bg-red-950/20',
+        isSuccess && 'bg-success/10',
+        isFailure && 'bg-destructive/10',
         !isSuccess && !isFailure && 'bg-muted/50',
       )}
     >
@@ -61,7 +59,7 @@ function AttemptRow({ attempt }: { attempt: ConversationAttempt }) {
       </span>
       <span className="flex-1 font-medium">{attempt.providerName ?? '未知 Provider'}</span>
       {attempt.failoverReason && (
-        <Badge variant="outline" className="text-xs text-orange-600 border-orange-300">
+        <Badge variant="outline" className="text-xs text-warning border-warning/40">
           {attempt.failoverReason}
         </Badge>
       )}
@@ -109,7 +107,7 @@ function RoundCard({ round, index }: { round: ConversationRound; index: number }
       {expanded && (
         <div className="px-4 pb-3 space-y-1.5 border-t bg-muted/10">
           {round.errorMessage && (
-            <div className="flex items-start gap-2 py-2 text-xs text-red-600">
+            <div className="flex items-start gap-2 py-2 text-xs text-destructive">
               <AlertCircle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
               <span>{round.errorMessage}</span>
             </div>

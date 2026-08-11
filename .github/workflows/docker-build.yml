@@ -42,7 +42,8 @@ jobs:
           retention-days: 14
       # TODO: fix react-hook-form@7.80.0 + React 19 vitest module resolution conflict
       - name: UI tests
-        run: bunx vitest@latest run --reporter=dots
+        working-directory: apps/web
+        run: bunx vitest run
         continue-on-error: true
       - name: Cache Playwright
         id: playwright-cache
@@ -102,6 +103,7 @@ jobs:
             type=semver,pattern={{major}}
             type=sha,format=short
             type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=alpha,enable=${{ !startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master' }}
 
       - name: Build and push Docker image
         id: build-and-push
@@ -126,15 +128,21 @@ jobs:
   deploy:
     needs: build
     runs-on: self-hosted
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: github.event_name != 'pull_request' && !startsWith(github.ref, 'refs/tags/')
 
     steps:
       - name: Deploy to server
+        env:
+          # main/master 部署 latest；其他分支（feat/**, fix/**, ci/**, refactor/**）部署 alpha
+          IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && 'latest' || 'alpha' }}
+        # 提示：服务器 ~/Docker/x-llm-gateway/docker-compose.yml 的 gateway.image 字段
+        # 必须支持 interpolation：`image: ghcr.io/xartifact/x-llm-gateway:${IMAGE_TAG:-latest}`
+        # 否则 docker-compose 仍会按 hardcoded 标签启动，alpha 镜像不会被实际使用。
         run: |
           cd ${{ env.DEPLOY_DIR }}
 
-          echo "Pulling latest images..."
-          docker-compose pull
+          echo "Pulling image tag: $IMAGE_TAG"
+          docker pull ghcr.io/${{ github.repository }}:$IMAGE_TAG
 
           echo "Starting services..."
           docker-compose up -d
@@ -189,7 +197,7 @@ jobs:
   notify:
     needs: [build, deploy]
     runs-on: self-hosted
-    if: always() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: always() && github.event_name != 'pull_request' && !startsWith(github.ref, 'refs/tags/')
 
     steps:
       - name: Send Feishu notification
@@ -202,6 +210,7 @@ jobs:
           REF_NAME: ${{ github.ref_name }}
           ACTOR: ${{ github.actor }}
           ACTION_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && 'latest' || 'alpha' }}
         run: |
           if [ "$DEPLOY_RESULT" = "success" ]; then
             STATUS="✅ 部署成功"
@@ -226,6 +235,7 @@ jobs:
             --arg msg "$FIRST_LINE" \
             --arg actor "$ACTOR" \
             --arg build "$BUILD_RESULT" \
+            --arg tag "$IMAGE_TAG" \
             --arg url "$ACTION_URL" \
             '{
               msg_type: "interactive",
@@ -242,7 +252,8 @@ jobs:
                       { is_short: true, text: { tag: "lark_md", content: "**提交：**\($sha)" } },
                       { is_short: false, text: { tag: "lark_md", content: "**信息：**\($msg)" } },
                       { is_short: true, text: { tag: "lark_md", content: "**触发：**\($actor)" } },
-                      { is_short: true, text: { tag: "lark_md", content: "**构建：**\($build)" } }
+                      { is_short: true, text: { tag: "lark_md", content: "**构建：**\($build)" } },
+                      { is_short: true, text: { tag: "lark_md", content: "**镜像：**`\($tag)`" } }
                     ]
                   },
                   {

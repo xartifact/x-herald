@@ -25,7 +25,24 @@ export interface ImageContent {
   cache_control?: CacheControl
 }
 
-export type MessageContent = TextContent | ImageContent
+export interface AudioContent {
+  type: 'input_audio'
+  input_audio: {
+    data: string
+    format: string
+  }
+  cache_control?: CacheControl
+}
+
+export interface VideoContent {
+  type: 'video_url'
+  video_url: {
+    url: string
+  }
+  cache_control?: CacheControl
+}
+
+export type MessageContent = TextContent | ImageContent | AudioContent | VideoContent
 
 export interface ToolCall {
   id: string
@@ -239,6 +256,7 @@ export interface ProviderConfig {
         mappings: Record<string, string>
       }
       syntheticThinking?: 'strip' | 'inject'
+      toolSchemaSanitization?: boolean
     }
   >
 }

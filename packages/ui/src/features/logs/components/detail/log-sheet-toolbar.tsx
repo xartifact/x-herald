@@ -1,5 +1,3 @@
-'use client'
-
 import { ChevronRight, GitBranch, X } from 'lucide-react'
 
 import { Badge } from '../../../../shared/components/ui/badge'
@@ -22,11 +20,11 @@ export function LogSheetToolbar({ log, onClose, onOpenTrace }: LogSheetToolbarPr
       <div className="flex items-center gap-2 md:gap-3 min-w-0">
         <div className="flex items-center gap-1.5 md:gap-2 min-w-0">
           {isPending ? (
-            <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
+            <div className="h-2 w-2 rounded-full bg-warning animate-pulse flex-shrink-0" />
           ) : isSuccess ? (
-            <div className="h-2 w-2 rounded-full bg-green-500 flex-shrink-0" />
+            <div className="h-2 w-2 rounded-full bg-success flex-shrink-0" />
           ) : (
-            <div className="h-2 w-2 rounded-full bg-red-500 flex-shrink-0" />
+            <div className="h-2 w-2 rounded-full bg-destructive flex-shrink-0" />
           )}
           <span className="text-sm font-semibold hidden md:inline">
             {log.requestMethod || 'REQUEST'}
@@ -38,7 +36,7 @@ export function LogSheetToolbar({ log, onClose, onOpenTrace }: LogSheetToolbarPr
           variant={isPending ? 'outline' : isSuccess ? 'default' : 'destructive'}
           className={cn(
             'font-mono text-xs flex-shrink-0',
-            isPending && 'border-amber-500 text-amber-600',
+            isPending && 'border-warning text-warning',
           )}
         >
           {isPending ? '请求中' : log.statusCode != null ? String(log.statusCode) : log.status}

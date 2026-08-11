@@ -1,5 +1,3 @@
-'use client'
-
 import { useState } from 'react'
 
 import { ChevronDown, ChevronRight, RefreshCw } from 'lucide-react'
@@ -38,12 +36,12 @@ function fmtTps(v: number | null | undefined): string {
 
 function successRateColor(rate: number | null): string {
   if (rate == null) return ''
-  return rate >= 0.95 ? 'text-green-600' : rate >= 0.8 ? 'text-yellow-600' : 'text-red-600'
+  return rate >= 0.95 ? 'text-success' : rate >= 0.8 ? 'text-warning' : 'text-destructive'
 }
 
 function ttfbColor(ms: number | null): string {
   if (ms == null) return ''
-  return ms < 3000 ? 'text-green-600' : ms < 10000 ? 'text-yellow-600' : 'text-red-600'
+  return ms < 3000 ? 'text-success' : ms < 10000 ? 'text-warning' : 'text-destructive'
 }
 
 interface InstanceRowProps {

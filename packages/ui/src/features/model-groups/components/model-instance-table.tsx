@@ -1,10 +1,9 @@
-'use client'
-
 import { Pencil, Trash2, ArrowUp, ArrowDown } from 'lucide-react'
 
 import { StatusToggle } from '../../../shared/components/status-toggle'
 import { InstanceAiChat } from '../../ai-assist'
 import { Button } from '../../../shared/components/ui/button'
+import { InstanceTestButton } from './instance-test-button'
 import {
   Table,
   TableBody,
@@ -91,6 +90,7 @@ export function ModelInstanceTable({
             <TableCell className="text-right">
               <div className="flex justify-end gap-1">
                 <InstanceAiChat instanceId={instance.id} instanceName={instance.name} />
+                <InstanceTestButton instanceId={instance.id} instanceName={instance.name} />
                 <Button
                   variant="ghost"
                   size="icon"

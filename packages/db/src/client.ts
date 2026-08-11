@@ -30,14 +30,22 @@ function setPostgresClient(client: unknown) {
 export { getDbClient, setDbClient, getPostgresClient, setPostgresClient }
 
 /**
- * Resolve the migrations folder path.
- * If `migrationsFolder` is provided, use it; otherwise derive from this file's location.
+ * Single source of truth for the migrations folder. All consumers
+ * (runtime PGlite/Postgres, test setup, drizzle-kit config) must import
+ * this — no hardcoded `apps/gateway/src/db/migrations` or similar copies.
  */
-function resolveMigrationsFolder(provided?: string): string {
-  if (provided) return provided
+export const MIGRATIONS_FOLDER = (() => {
   const __filename = fileURLToPath(import.meta.url)
   const __dirname = path.dirname(__filename)
   return path.join(__dirname, '..', 'migrations')
+})()
+
+/**
+ * Resolve the migrations folder path.
+ * If `migrationsFolder` is provided, use it; otherwise use {@link MIGRATIONS_FOLDER}.
+ */
+function resolveMigrationsFolder(provided?: string): string {
+  return provided ?? MIGRATIONS_FOLDER
 }
 
 /**

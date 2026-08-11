@@ -1,9 +1,8 @@
-'use client'
-
 import { Zap, ShieldAlert, ShieldCheck } from 'lucide-react'
 
-import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/components/ui/card'
+import { Card, CardContent } from '../../../shared/components/ui/card'
 import { Button } from '../../../shared/components/ui/button'
+import { StatCard } from '../../../shared/components/stat-card'
 import type { CircuitBreakerStats } from '@xartifact/x-llm-gateway-shared'
 
 interface Props {
@@ -31,25 +30,26 @@ export function CircuitBreakerStatsCards({ stats, loading, error, onRetry }: Pro
     )
   }
 
-  const items = [
-    { title: '今日熔断次数', icon: Zap, value: stats?.todayOpened },
-    { title: '7 天熔断次数', icon: ShieldAlert, value: stats?.weekOpened },
-    { title: '触发过熔断的实例', icon: ShieldCheck, value: stats?.trippedInstanceCount },
-  ]
-
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      {items.map((item) => (
-        <Card key={item.title}>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">{item.title}</CardTitle>
-            <item.icon className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{loading ? '—' : (item.value ?? 0)}</div>
-          </CardContent>
-        </Card>
-      ))}
+      <StatCard
+        title="今日熔断次数"
+        icon={<Zap className="h-4 w-4" />}
+        value={stats?.todayOpened ?? 0}
+        loading={loading}
+      />
+      <StatCard
+        title="7 天熔断次数"
+        icon={<ShieldAlert className="h-4 w-4" />}
+        value={stats?.weekOpened ?? 0}
+        loading={loading}
+      />
+      <StatCard
+        title="触发过熔断的实例"
+        icon={<ShieldCheck className="h-4 w-4" />}
+        value={stats?.trippedInstanceCount ?? 0}
+        loading={loading}
+      />
     </div>
   )
 }

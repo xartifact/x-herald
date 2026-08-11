@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
+import { useNavigate } from '@tanstack/react-router'
 import { Plus, Search } from 'lucide-react'
 
 import {
@@ -22,11 +23,11 @@ import type { AccessModel } from '@xartifact/x-llm-gateway-shared'
 
 const DEFAULT_CAPABILITIES = {
   streaming: true,
-  functionCalling: false,
-  vision: false,
-  jsonMode: false,
-  reasoning: false,
-  contextWindow: 0,
+  functionCalling: true,
+  vision: true,
+  jsonMode: true,
+  reasoning: true,
+  contextWindow: 1_000_000,
   maxTokens: 0,
 }
 
@@ -39,6 +40,7 @@ const defaultValues = {
 }
 
 export function AccessModelsPage() {
+  const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -95,6 +97,13 @@ export function AccessModelsPage() {
       toggleAM.mutate(id)
     },
     [toggleAM],
+  )
+
+  const handleOpenRouteRules = useCallback(
+    (am: AccessModel) => {
+      navigate({ to: '/admin/access-models/$accessModelId', params: { accessModelId: am.id } })
+    },
+    [navigate],
   )
 
   const onSubmit = useCallback(
@@ -174,6 +183,7 @@ export function AccessModelsPage() {
           onEdit={handleEdit}
           onDelete={handleDelete}
           onToggle={handleToggle}
+          onOpenRouteRules={handleOpenRouteRules}
         />
       )}
 

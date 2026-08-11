@@ -1,9 +1,7 @@
-'use client'
-
 import { useEffect } from 'react'
 
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Brain, Plus } from 'lucide-react'
+import { Brain, Loader2, Plus } from 'lucide-react'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { toast } from 'sonner'
 
@@ -83,7 +81,7 @@ export function ThinkingTypeMappingDialog({
 
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : (
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">

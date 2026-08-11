@@ -1,5 +1,3 @@
-'use client'
-
 import { History } from 'lucide-react'
 
 import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/components/ui/card'

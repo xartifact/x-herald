@@ -43,6 +43,7 @@ describe('settings API', () => {
           aiModelGroupId: string | null
           availableModelGroups: unknown[]
           circuitBreaker: Record<string, unknown>
+          ttfbTimeout: Record<string, unknown>
         }
       }
 
@@ -50,12 +51,17 @@ describe('settings API', () => {
       expect(body.data).toHaveProperty('aiModelGroupId')
       expect(body.data).toHaveProperty('availableModelGroups')
       expect(body.data).toHaveProperty('circuitBreaker')
+      expect(body.data).toHaveProperty('ttfbTimeout')
       expect(Array.isArray(body.data.availableModelGroups)).toBe(true)
       expect(body.data.circuitBreaker).toHaveProperty('failureThreshold')
       expect(body.data.circuitBreaker).toHaveProperty('openDurationMs')
       expect(body.data.circuitBreaker).toHaveProperty('maxBackoffMs')
       expect(body.data.circuitBreaker).toHaveProperty('maxTripsBeforeCooldown')
       expect(body.data.circuitBreaker).toHaveProperty('cooldownDurationMs')
+      expect(body.data.ttfbTimeout).toHaveProperty('totalStreamingMs')
+      expect(body.data.ttfbTimeout).toHaveProperty('attemptStreamingMs')
+      expect(body.data.ttfbTimeout).toHaveProperty('minAttemptMs')
+      expect(body.data.ttfbTimeout).toHaveProperty('baselineMultiplier')
     })
   })
 

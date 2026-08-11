@@ -20,18 +20,21 @@ export const providerSchema = z.object({
         .object({
           enabled: z.boolean(),
           baseUrl: z.string().url('请输入有效的 URL').or(z.literal('')).optional(),
+          toolSchemaSanitization: z.boolean().optional(),
         })
         .optional(),
       anthropic: z
         .object({
           enabled: z.boolean(),
           baseUrl: z.string().url('请输入有效的 URL').or(z.literal('')).optional(),
+          toolSchemaSanitization: z.boolean().optional(),
         })
         .optional(),
       gemini: z
         .object({
           enabled: z.boolean(),
           baseUrl: z.string().url('请输入有效的 URL').or(z.literal('')).optional(),
+          toolSchemaSanitization: z.boolean().optional(),
         })
         .optional(),
     })

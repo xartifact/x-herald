@@ -3,90 +3,16 @@ BigInt.prototype.toJSON = function () {
   return this.toString()
 }
 
-import path from 'path'
-import { fileURLToPath } from 'url'
-
 import { Hono } from 'hono'
 import { drizzle as drizzlePglite } from 'drizzle-orm/pglite'
+
+import { MIGRATIONS_FOLDER, runPgliteMigrations } from '@xartifact/x-llm-gateway-db'
 
 import { createEngine } from '../createEngine'
 import * as schema from '../db'
 
 import type { Database } from '../db/client'
 import type { EngineInstance } from '../createEngine'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-
-/**
- * Run PGlite migrations manually (in-memory DB has no persistent data dir,
- * so we bypass the file-based path in db/client.ts and execute the same SQL
- * files directly).
- */
-async function runPgliteMigrations(pgliteClient: {
-  exec: (sql: string) => Promise<unknown>
-  query: (sql: string, params?: unknown[]) => Promise<{ rows: Array<{ hash: string }> }>
-}): Promise<void> {
-  const { createHash } = await import('crypto')
-  const fs = await import('fs')
-  const { extname } = await import('path')
-
-  const migrationsFolder = path.join(__dirname, '..', 'db', 'migrations')
-
-  // Ensure migration tracking table exists
-  await pgliteClient.exec(`
-    CREATE TABLE IF NOT EXISTS "__drizzle_migrations" (
-      "id" SERIAL PRIMARY KEY,
-      "hash" text NOT NULL,
-      "created_at" bigint
-    )
-  `)
-
-  // Get already-applied migrations
-  const existingResult = await pgliteClient.query('SELECT hash FROM "__drizzle_migrations"')
-  const appliedHashes = new Set<string>(existingResult.rows.map((r) => r.hash))
-
-  // Read and sort migration files
-  const migrationFiles = fs
-    .readdirSync(migrationsFolder)
-    .filter((f: string) => extname(f) === '.sql')
-    .toSorted()
-
-  for (const file of migrationFiles) {
-    const content = fs.readFileSync(path.join(migrationsFolder, file), 'utf8')
-    const hash = createHash('md5').update(content).digest('hex')
-
-    if (appliedHashes.has(hash)) {
-      continue
-    }
-
-    try {
-      await pgliteClient.exec(content)
-      await pgliteClient.query(
-        'INSERT INTO "__drizzle_migrations" (hash, created_at) VALUES ($1, $2)',
-        [hash, Date.now()],
-      )
-      appliedHashes.add(hash)
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err)
-      // "already exists" / "duplicate" = object already exists, safe to skip
-      // "does not exist" = object missing, likely schema already applied via another path
-      if (
-        msg.includes('already exists') ||
-        msg.includes('duplicate') ||
-        msg.includes('does not exist')
-      ) {
-        await pgliteClient.query(
-          'INSERT INTO "__drizzle_migrations" (hash, created_at) VALUES ($1, $2)',
-          [hash, Date.now()],
-        )
-        appliedHashes.add(hash)
-      } else {
-        throw err
-      }
-    }
-  }
-}
 
 export async function createTestEngine(): Promise<EngineInstance> {
   // 1. Set required env vars
@@ -112,8 +38,14 @@ export async function createTestEngine(): Promise<EngineInstance> {
   g.__xllm_dbClient = db
   g.__xllm_postgresClient = undefined
 
-  // 5. Run migrations
-  await runPgliteMigrations(pgliteClient)
+  // 5. Run migrations using the shared folder — keeps tests and runtime in sync
+  //    (no more dual directories in apps/gateway + packages/db).
+  await runPgliteMigrations(pgliteClient, MIGRATIONS_FOLDER, {
+    trace() {},
+    info() {},
+    warn() {},
+    error() {},
+  })
 
   // 6. Create engine
   const engine = await createEngine({
@@ -148,6 +80,5 @@ export async function getAuthToken(app: Hono): Promise<string> {
   if (!data.token) {
     throw new Error(`No token in login response: ${JSON.stringify(data)}`)
   }
-
   return data.token
 }

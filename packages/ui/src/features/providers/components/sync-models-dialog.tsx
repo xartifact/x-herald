@@ -1,5 +1,3 @@
-'use client'
-
 import { useState, useEffect } from 'react'
 
 import { Loader2 } from 'lucide-react'
@@ -71,7 +69,15 @@ export function SyncModelsDialog({
     const toSync = models.filter((m) => selectedModels.has(m.id))
     await syncModels.mutateAsync({
       providerId,
-      models: toSync.map((m) => ({ id: m.id, name: m.name })),
+      models: toSync.map((m) => ({
+        id: m.id,
+        name: m.name,
+        description: m.description,
+        contextWindow: m.contextWindow,
+        maxOutputTokens: m.maxOutputTokens,
+        cost: m.cost,
+        capabilities: m.capabilities,
+      })),
       groupId: groupId || undefined,
     })
     onOpenChange(false)

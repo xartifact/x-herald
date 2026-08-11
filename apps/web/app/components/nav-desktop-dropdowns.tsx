@@ -1,5 +1,3 @@
-'use client'
-
 import { useState } from 'react'
 
 import { ChevronDown } from 'lucide-react'
@@ -12,15 +10,30 @@ import {
   DropdownMenuTrigger,
 } from '@xartifact/x-llm-gateway-ui'
 
-import { navGroups } from './admin-nav-config'
+import { navGroups, allNavItems } from './admin-nav-config'
 import type { NavGroup } from './admin-nav-config'
 
+/**
+ * 判断 `href` 是否是“叶子型”路径——即存在其他菜单项以 `href + '/'` 开头。
+ *
+ * `/admin` 下有 `/admin/providers`、`/admin/logs` 等其他菜单项，
+ * 所以它是公共前缀，不应通过前缀匹配命中。
+ * `/admin/logs` 下只有 `/admin/logs/log-detail`（没有独立的菜单项），
+ * 所以它不是叶子型，前缀匹配仍然有效。
+ */
+function isPrefixOnly(href: string): boolean {
+  return allNavItems.some((item) => item.href !== href && item.href.startsWith(href + '/'))
+}
+
 function isGroupActive(group: NavGroup, pathname: string): boolean {
-  return group.items.some((item) => pathname === item.href || pathname.startsWith(item.href + '/'))
+  return group.items.some((item) => isItemActive(item.href, pathname))
 }
 
 function isItemActive(href: string, pathname: string): boolean {
-  return pathname === href || pathname.startsWith(href + '/')
+  if (pathname === href) return true
+  // 对公共前缀型路径（如 /admin）不做前缀匹配，避免始终高亮
+  if (isPrefixOnly(href)) return false
+  return pathname.startsWith(href + '/')
 }
 
 export function NavDesktopDropdowns() {
@@ -41,7 +54,7 @@ export function NavDesktopDropdowns() {
                 'inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors',
                 isGroupActive(group, pathname)
                   ? 'text-primary bg-primary/10'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100',
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent',
               )}
             >
               {group.icon && <span className="mr-2">{group.icon}</span>}

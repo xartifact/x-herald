@@ -1,8 +1,6 @@
-'use client'
-
 import { LogOut } from 'lucide-react'
 
-import { APP_VERSION } from '@xartifact/x-llm-gateway-shared'
+import { APP_VERSION, GIT_COMMIT_HASH } from '@xartifact/x-llm-gateway-shared'
 
 import { Button } from '@xartifact/x-llm-gateway-ui'
 
@@ -19,11 +17,11 @@ export default function AdminNav() {
 
   return (
     <nav className="bg-white shadow-sm border-b">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex">
             <div className="shrink-0 flex items-center">
-              <h1 className="text-xl font-bold text-gray-900">x-llm-gateway</h1>
+              <h1 className="text-xl font-bold text-foreground">x-llm-gateway</h1>
             </div>
             <NavDesktopDropdowns />
             <NavMobileMenu />
@@ -31,9 +29,15 @@ export default function AdminNav() {
 
           <div className="flex items-center space-x-4">
             <span className="hidden md:block text-sm text-muted-foreground">{currentLabel}</span>
-            {APP_VERSION !== 'dev' && (
-              <span className="hidden md:block text-xs text-muted-foreground/60 font-mono">
-                v{APP_VERSION}
+            {(APP_VERSION !== 'dev' || GIT_COMMIT_HASH !== 'unknown') && (
+              <span className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground/60 font-mono">
+                {APP_VERSION !== 'dev' && <span>v{APP_VERSION}</span>}
+                {APP_VERSION !== 'dev' && GIT_COMMIT_HASH !== 'unknown' && (
+                  <span aria-hidden="true">·</span>
+                )}
+                {GIT_COMMIT_HASH !== 'unknown' && (
+                  <span title={`commit ${GIT_COMMIT_HASH}`}>{GIT_COMMIT_HASH}</span>
+                )}
               </span>
             )}
             <Button

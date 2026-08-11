@@ -25,15 +25,21 @@ import {
 } from '../../services/response-handlers'
 import { getTransformer, createTransformerContext } from '../../transformer'
 import { buildHeaders } from '../../transformer/shared/parameter-transformer'
+import { sanitizeOpenAIToolsArray } from '../../transformer/shared/tool-schema-sanitizer'
 import { AbortManager } from '../shared/abort-manager'
 import {
-  CONNECT_TIMEOUT_MS,
-  TOTAL_TTFB_TIMEOUT_MS_NON_STREAMING,
-  TOTAL_TTFB_TIMEOUT_MS_STREAMING,
   calculateTtfbTimeout,
+  resolveConnectTimeoutMs,
+  resolveInstanceAttemptTimeoutMs,
 } from '../shared/constants'
 import { joinUrl } from '../shared/join-url'
 import { executeWithRetry, type RetryConfig } from '../shared/retry-executor'
+import {
+  getTtfbTimeoutConfig,
+  refreshTtfbConfigIfStale,
+  resolveAttemptBaseMs,
+  resolveTotalLimitMs,
+} from '../../services/ttfb-timeout-policy'
 import {
   convertChatToResponsesBody,
   convertResponsesToChatFormat,
@@ -85,7 +91,16 @@ async function buildProviderRequest(opts: {
   )
 
   if (isPassthroughEnabled) {
-    const transformedBody = { ...rawBody, model: instance.actualModelName }
+    const transformedBody: { model?: string; tools?: unknown; [key: string]: unknown } = {
+      ...rawBody,
+      model: instance.actualModelName,
+    }
+    if (
+      provider.protocols?.openai?.toolSchemaSanitization &&
+      Array.isArray(transformedBody.tools)
+    ) {
+      transformedBody.tools = sanitizeOpenAIToolsArray(transformedBody.tools)
+    }
     return {
       transformedBody,
       targetUrl: joinUrl(providerUrl, getEndpoint(targetProtocol, isStreaming)),
@@ -183,6 +198,7 @@ function buildLogParams(opts: {
       instanceId: instance.id,
       actualModelName: instance.actualModelName,
       strategy: decision.strategy,
+      instanceCost: instance.costPer1kTokens,
     },
   }
 }
@@ -254,6 +270,7 @@ export async function handleResponsesAPI(
       requestedModel: standardReq.model,
       streaming: standardReq.stream || false,
       hasTools: !!standardReq.tools?.length,
+      request: standardReq,
       hasVision: standardReq.messages.some(
         (m) => Array.isArray(m.content) && m.content.some((c) => c.type === 'image_url'),
       ),
@@ -271,6 +288,7 @@ export async function handleResponsesAPI(
         provider: provider.name,
         actualModel: instance.actualModelName,
         strategy: decision.strategy,
+        instanceCost: instance.costPer1kTokens,
       },
       'Model routed via group',
     )
@@ -368,6 +386,22 @@ export async function handleResponsesAPI(
     const abortManager = new AbortManager(c.req.raw.signal)
     abortManager.registerClientDisconnect()
 
+    await refreshTtfbConfigIfStale()
+    const ttfbCfg = getTtfbTimeoutConfig()
+    const totalLimit = resolveTotalLimitMs(isStreaming, ttfbCfg)
+    const elapsed = Date.now() - startTime
+    const remainingBudget = Math.max(0, totalLimit - elapsed)
+    const instanceTimeout = instance.config?.timeoutConfig ?? null
+    const connectTimeout = resolveConnectTimeoutMs(instanceTimeout)
+    const configuredTimeout =
+      resolveInstanceAttemptTimeoutMs(instanceTimeout) ?? resolveAttemptBaseMs(isStreaming, ttfbCfg)
+    const ttfbTimeout = calculateTtfbTimeout({
+      configuredTimeout,
+      remainingBudget,
+      minAttemptMs: ttfbCfg.minAttemptMs,
+      baselineMultiplier: ttfbCfg.baselineMultiplier,
+    })
+
     let response: Response | undefined
     let providerTtfbTime = 0
     try {
@@ -379,13 +413,9 @@ export async function handleResponsesAPI(
             headers: providerRequestHeaders,
             body: providerReq.requestBody,
             signal,
-            connectTimeout: CONNECT_TIMEOUT_MS,
+            connectTimeout,
           } as RequestInit),
-        timeout: calculateTtfbTimeout(
-          undefined,
-          isStreaming ? 60_000 : 30_000,
-          isStreaming ? TOTAL_TTFB_TIMEOUT_MS_STREAMING : TOTAL_TTFB_TIMEOUT_MS_NON_STREAMING,
-        ),
+        timeout: ttfbTimeout,
         requestId,
         isStreaming,
         config: retryConfig,
@@ -402,14 +432,11 @@ export async function handleResponsesAPI(
       retryCount = finalRetryCount
 
       if (retryResult.aborted || !rawResponse) {
-        const totalLimit = isStreaming
-          ? TOTAL_TTFB_TIMEOUT_MS_STREAMING
-          : TOTAL_TTFB_TIMEOUT_MS_NON_STREAMING
         const abortMessage =
           retryResult.aborted === 'client_disconnect'
             ? 'Client disconnected'
             : retryResult.aborted === 'timeout'
-              ? `Request TTFB timeout after ${totalLimit / 1000}s`
+              ? `Request TTFB timeout after ${Math.round(ttfbTimeout / 1000)}s (limit=${ttfbTimeout}ms, totalBudget=${totalLimit}ms)`
               : 'Client disconnected'
         return handleGatewayError({
           error: new Error(abortMessage),
@@ -509,6 +536,7 @@ export async function handleResponsesAPI(
         instanceId: instance.id,
         actualModelName: instance.actualModelName,
         strategy: decision.strategy,
+        instanceCost: instance.costPer1kTokens,
       },
     }
 

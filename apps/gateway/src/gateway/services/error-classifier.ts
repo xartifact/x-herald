@@ -2,6 +2,21 @@ function bytesToMB(bytes: number): string {
   return (Math.round((bytes / 1024 / 1024) * 10) / 10).toFixed(1)
 }
 
+// 各 Provider（x.ai、Moonshot 等）拒绝 tool schema 时的报错关键词，用于主动发现新的
+// tool schema 兼容性问题，而不是被动等用户报告。命中后只打日志，不改变响应/行为。
+const TOOL_SCHEMA_KEYWORDS = [
+  'tool parameter',
+  'tools.function.parameters',
+  'moonshot flavored json schema',
+  'anyof/oneof',
+]
+
+export function looksLikeToolSchemaError(rawMessage: string, statusCode: number): boolean {
+  if (statusCode !== 400) return false
+  const lower = rawMessage.toLowerCase()
+  return TOOL_SCHEMA_KEYWORDS.some((keyword) => lower.includes(keyword))
+}
+
 export function normalizeProviderErrorMessage(rawMessage: string): {
   message: string
   code: string

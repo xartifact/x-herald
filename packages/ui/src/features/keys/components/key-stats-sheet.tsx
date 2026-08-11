@@ -1,11 +1,9 @@
-'use client'
-
 import { Button } from '../../../shared/components/ui/button'
 import type { KeyStat } from '@xartifact/x-llm-gateway-shared'
-import { Card, CardContent } from '../../../shared/components/ui/card'
 import { Separator } from '../../../shared/components/ui/separator'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../../../shared/components/ui/sheet'
 import { Tabs, TabsList, TabsTrigger } from '../../../shared/components/ui/tabs'
+import { StatCard } from '../../../shared/components/stat-card'
 
 // TODO(6): from apps/web
 import type { VirtualKey } from '@xartifact/x-llm-gateway-shared'
@@ -18,18 +16,6 @@ interface KeyStatsSheetProps {
   stat: KeyStat | undefined
   period: 'today' | '7d' | '30d' | 'all'
   onPeriodChange: (period: 'today' | '7d' | '30d' | 'all') => void
-}
-
-function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
-  return (
-    <Card>
-      <CardContent className="pt-4 pb-3 px-4">
-        <div className="text-xs text-muted-foreground mb-1">{label}</div>
-        <div className="text-2xl font-semibold">{value}</div>
-        {sub && <div className="text-xs text-muted-foreground mt-1">{sub}</div>}
-      </CardContent>
-    </Card>
-  )
 }
 
 function formatTokens(n: number): string {
@@ -55,7 +41,7 @@ interface RateLimitWindowStatus {
 function ProgressBar({ current, limit }: { current: number; limit: number }) {
   const percentage = limit > 0 ? Math.min(100, (current / limit) * 100) : 0
   const barColor =
-    percentage >= 90 ? 'bg-destructive' : percentage >= 70 ? 'bg-amber-500' : 'bg-primary'
+    percentage >= 90 ? 'bg-destructive' : percentage >= 70 ? 'bg-warning' : 'bg-primary'
 
   return (
     <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
@@ -145,22 +131,22 @@ export function KeyStatsSheet({
 
         <div className="grid grid-cols-2 gap-3">
           <StatCard
-            label="总请求数"
+            title="总请求数"
             value={requestCount.toLocaleString()}
             sub={`成功 ${successCount} / 失败 ${stat?.failureCount ?? 0}`}
           />
           <StatCard
-            label="成功率"
+            title="成功率"
             value={`${successRate}%`}
             sub={requestCount === 0 ? '暂无数据' : undefined}
           />
           <StatCard
-            label="Token 用量"
+            title="Token 用量"
             value={formatTokens(totalTokens)}
             sub={`输入 ${formatTokens(stat?.totalInputTokens ?? 0)} / 输出 ${formatTokens(stat?.totalOutputTokens ?? 0)}`}
           />
           <StatCard
-            label="平均响应时间"
+            title="平均响应时间"
             value={avgResponseTime > 0 ? `${avgResponseTime.toLocaleString()} ms` : '-'}
           />
         </div>

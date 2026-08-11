@@ -72,7 +72,9 @@ packages/llms
 
 
 # AI
+graphify-out/
 .codegraph/
+.omp/
 .omo/
 .opencode/
 .swarm/
@@ -84,3 +86,4 @@ query_db.mjs
 test-results/
 playwright-report/
 .gitnexus
+.playwright-mcp/

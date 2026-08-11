@@ -5,6 +5,7 @@ import {
   Button,
   Card,
   CardContent,
+  PageHeader,
   Tabs,
   TabsContent,
   TabsList,
@@ -66,21 +67,19 @@ export function CostsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <DollarSign className="h-6 w-6" />
-            费用统计
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">查看和分析 API 调用费用明细</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <CostDateFilter value={filter} onChange={setFilter} />
-          <Button variant="outline" size="icon" onClick={handleRefresh}>
-            <RefreshCw className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="费用统计"
+        description="查看和分析 API 调用费用明细"
+        icon={<DollarSign className="h-5 w-5 text-muted-foreground" />}
+        actions={
+          <div className="flex items-center gap-2">
+            <CostDateFilter value={filter} onChange={setFilter} />
+            <Button variant="outline" size="icon" onClick={handleRefresh}>
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          </div>
+        }
+      />
 
       <CostSummaryCards summary={summary} />
 

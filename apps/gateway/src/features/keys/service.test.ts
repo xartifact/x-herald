@@ -44,7 +44,7 @@ describe('keys service', () => {
       { id: 'key-2', key: 'xg_def456', name: 'Key 2', createdAt: new Date('2024-01-02') },
     ]
     db._setResult('select', keys)
-    const result = await listKeys(db)
+    const result = await listKeys({}, db)
     expect(result).toEqual(keys as unknown)
   })
 

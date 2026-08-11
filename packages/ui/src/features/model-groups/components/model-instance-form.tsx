@@ -1,5 +1,3 @@
-'use client'
-
 import { UseFormReturn } from 'react-hook-form'
 
 import type { Provider } from '@xartifact/x-llm-gateway-shared'
@@ -23,6 +21,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../shared/compon
 
 // Record<string, any> defined locally // TODO(6): from apps/web
 import { InstanceBasicFields } from './instance-basic-fields'
+import { InstanceCostFields } from './instance-cost-fields'
+import { InstanceCapabilitiesFields } from './instance-capabilities-fields'
 import { InstanceConfigEditor } from './instance-config-editor'
 
 interface ModelInstanceFormProps {
@@ -57,13 +57,19 @@ export function ModelInstanceForm({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <Tabs defaultValue="basic" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="basic">基本信息</TabsTrigger>
+                <TabsTrigger value="cost-cap">计费与能力</TabsTrigger>
                 <TabsTrigger value="advanced">高级配置</TabsTrigger>
               </TabsList>
 
               <TabsContent value="basic" className="space-y-4">
                 <InstanceBasicFields form={form} providers={providers} />
+              </TabsContent>
+
+              <TabsContent value="cost-cap" className="space-y-4">
+                <InstanceCostFields form={form} />
+                <InstanceCapabilitiesFields form={form} />
               </TabsContent>
 
               <TabsContent value="advanced" className="space-y-4">

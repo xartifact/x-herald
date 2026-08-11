@@ -54,13 +54,16 @@ const mockKeys = [
   },
 ]
 
+const mockPagination = { page: 1, pageSize: 20, total: 2, totalPages: 1 }
+const mockResponse = { success: true, data: mockKeys, pagination: mockPagination }
+
 describe('useKeys', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
   it('returns loading state initially', () => {
-    vi.mocked(get).mockResolvedValue(mockKeys)
+    vi.mocked(get).mockResolvedValue(mockResponse)
 
     const { result } = renderHook(() => useKeys(), { wrapper: createWrapper() })
 
@@ -69,13 +72,13 @@ describe('useKeys', () => {
   })
 
   it('returns data after fetch resolves', async () => {
-    vi.mocked(get).mockResolvedValue(mockKeys)
+    vi.mocked(get).mockResolvedValue(mockResponse)
 
     const { result } = renderHook(() => useKeys(), { wrapper: createWrapper() })
 
     await waitFor(() => expect(result.current.isLoading).toBe(false))
 
-    expect(result.current.data).toEqual(mockKeys)
+    expect(result.current.data).toEqual({ data: mockKeys, pagination: mockPagination })
     expect(result.current.error).toBeNull()
   })
 
@@ -91,10 +94,10 @@ describe('useKeys', () => {
   })
 
   it('calls get with correct endpoint', async () => {
-    vi.mocked(get).mockResolvedValue(mockKeys)
+    vi.mocked(get).mockResolvedValue(mockResponse)
 
     renderHook(() => useKeys(), { wrapper: createWrapper() })
 
-    await waitFor(() => expect(get).toHaveBeenCalledWith('/api/keys'))
+    await waitFor(() => expect(get).toHaveBeenCalledWith('/api/keys', { extractData: false }))
   })
 })

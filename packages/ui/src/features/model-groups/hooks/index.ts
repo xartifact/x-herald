@@ -13,6 +13,7 @@ export {
   useDeleteModelInstance,
   useSetInstanceGroups,
   useToggleModelInstance,
+  useTestInstance,
 } from './use-model-groups'
 
 export type {

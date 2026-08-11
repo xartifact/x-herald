@@ -1,5 +1,3 @@
-'use client'
-
 import { useState } from 'react'
 
 import { ChevronDown, ChevronUp, Wrench } from 'lucide-react'
@@ -23,12 +21,12 @@ interface ToolCallCardProps {
 
 function ToolCallCard({ detail, index, isExpanded, onToggle }: ToolCallCardProps) {
   return (
-    <Card className="border-l-2 border-l-amber-400">
+    <Card className="border-l-2 border-l-warning">
       <CardHeader className="py-2.5 px-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-md bg-amber-50">
-              <Wrench className="h-3.5 w-3.5 text-amber-600" />
+            <div className="p-1.5 rounded-md bg-warning/10">
+              <Wrench className="h-3.5 w-3.5 text-warning" />
             </div>
             <div className="flex items-center gap-2">
               <span className="font-medium text-sm">
@@ -173,7 +171,7 @@ export function ToolCallsSection({ log }: ToolCallsSectionProps) {
                 <Badge
                   key={tool}
                   variant="secondary"
-                  className="text-xs font-mono bg-blue-50 text-blue-700 border-blue-200"
+                  className="text-xs font-mono bg-info/10 text-info border-info/20"
                 >
                   {tool}
                 </Badge>

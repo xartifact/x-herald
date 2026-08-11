@@ -39,6 +39,7 @@ export function loadConfig(): GatewayConfig {
       memoryBufferSize: parseInt(process.env.METRICS_BUFFER_SIZE || '10000'),
       flushIntervalMs: parseInt(process.env.METRICS_FLUSH_INTERVAL || '300000'), // 5 minutes
       retentionDays: parseInt(process.env.METRICS_RETENTION_DAYS || '30'),
+      ipAllowlist: process.env.METRICS_IP_ALLOWLIST || '',
     },
 
     health: {

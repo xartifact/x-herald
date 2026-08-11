@@ -1,5 +1,3 @@
-'use client'
-
 import { cn } from '../../../../shared/lib/utils'
 import type { Log } from '@xartifact/x-llm-gateway-shared'
 
@@ -21,16 +19,16 @@ function buildLatencySegments(log: Log): Segment[] {
     segs.push({
       label: '网关预处理',
       ms: perf.gatewayOverheadMs,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-500',
+      color: 'text-info',
+      bgColor: 'bg-info',
     })
   }
   if (perf.providerTtfbMs) {
     segs.push({
       label: 'Provider TTFB',
       ms: perf.providerTtfbMs,
-      color: 'text-amber-600',
-      bgColor: 'bg-amber-500',
+      color: 'text-warning',
+      bgColor: 'bg-warning',
     })
   }
 
@@ -41,14 +39,14 @@ function buildLatencySegments(log: Log): Segment[] {
       segs.push({
         label: '首思考等待',
         ms: ttfbToFirstThinkingMs,
-        color: 'text-orange-600',
-        bgColor: 'bg-orange-400',
+        color: 'text-warning',
+        bgColor: 'bg-warning',
       })
       segs.push({
         label: '思考',
         ms: thinkingDurationMs!,
-        color: 'text-violet-600',
-        bgColor: 'bg-violet-500',
+        color: 'text-info',
+        bgColor: 'bg-info',
       })
       const textGenMs =
         ttfbToFirstTextMs != null
@@ -58,30 +56,30 @@ function buildLatencySegments(log: Log): Segment[] {
         segs.push({
           label: '文本生成',
           ms: textGenMs,
-          color: 'text-green-600',
-          bgColor: 'bg-green-500',
+          color: 'text-success',
+          bgColor: 'bg-success',
         })
     } else if (ttfbToFirstTextMs != null && ttfbToFirstTextMs > 0) {
       segs.push({
         label: '首字等待',
         ms: ttfbToFirstTextMs,
-        color: 'text-amber-500',
-        bgColor: 'bg-amber-400',
+        color: 'text-warning',
+        bgColor: 'bg-warning',
       })
       const textGenMs = streamDurationMs - ttfbToFirstTextMs
       if (textGenMs > 0)
         segs.push({
           label: '文本生成',
           ms: textGenMs,
-          color: 'text-green-600',
-          bgColor: 'bg-green-500',
+          color: 'text-success',
+          bgColor: 'bg-success',
         })
     } else {
       segs.push({
         label: '流式传输',
         ms: streamDurationMs,
-        color: 'text-green-600',
-        bgColor: 'bg-green-500',
+        color: 'text-success',
+        bgColor: 'bg-success',
       })
     }
   }

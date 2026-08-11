@@ -1,5 +1,3 @@
-'use client'
-
 import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, Layers } from 'lucide-react'
 
 import { Badge } from '../../../shared/components/ui/badge'

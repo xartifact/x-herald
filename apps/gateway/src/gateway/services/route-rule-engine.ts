@@ -1,14 +1,30 @@
 /**
- * 路由规则引擎
- * 按优先级匹配规则，执行条件判断
+ * RouteRuleEngine —— 运行时路由引擎（唯一数据源）
+ *
+ * 按接入模型（accessModelId）维护一份编译缓存：每个接入模型的 route_rules
+ * active 版本 graph 被编译成 RouteMatcher[]，缓存在内存里，请求路径只读缓存，
+ * 永不直接查 DB。取代原来全局单一 canvas_states 的 CanvasRouteEngine——
+ * 那个版本对任意一次编辑都要重建全局索引，这里按接入模型粒度 invalidate。
+ *
+ * 条件求值复用本文件下方的纯函数（evaluateConditions / getField / evaluateOperator），
+ * 图 → RouteMatcher[] 的编译逻辑在 route-rule-compiler.ts（NodeCompilerRegistry
+ * 按 node.type 查表分发每种叶子节点）。
  */
 
-import { eq, and, asc, sql } from '@xartifact/x-llm-gateway-db'
-
+import type { RouteCondition } from '@xartifact/x-llm-gateway-shared'
+import { inArray, modelInstances } from '@xartifact/x-llm-gateway-db'
+import {
+  getActiveRouteRule,
+  peekActiveRouteRule,
+  peekAllActiveRouteRules,
+  subscribeToRouteRuleChanges,
+} from '../../features/route-rules/service'
 import { getDatabase } from '../../db/client'
-import logger from '../../lib/logger'
-import { modelRoutes, type ModelRoute } from '@xartifact/x-llm-gateway-db'
-import type { RouteCondition } from '../../features/model-groups/db'
+import {
+  compileCanvasToMatchers,
+  type ClassifierModelNameResolver,
+  type RouteMatcher,
+} from './route-rule-compiler'
 
 // 性能上下文：聚合目标路由规则所有实例的最差健康状态
 export interface PerfContext {
@@ -118,37 +134,172 @@ export function evaluateOperator(
 }
 
 /**
- * 路由规则引擎
+ * 异步版 compileActiveMatchers —— 注入 DB-backed resolver，把意图节点的
+ * classifier.modelName 自动从 model_instance.id (UUID) 规范化为 actual_model_name。
+ *
+ * 历史背景：前端 RemoteSelectWidget 早期实现把 instance.id 作为 value 写进 graph，
+ * 导致上游 LLM 收到 UUID → 400。此 resolver 在编译阶段做最后一道防线，
+ * 即使数据库里仍有脏数据，运行时也能自动恢复。
+ */
+async function compileActiveMatchersAsync(
+  graph: Parameters<typeof compileCanvasToMatchers>[0],
+  resolveClassifierModelName: ClassifierModelNameResolver,
+): Promise<RouteMatcher[]> {
+  const matchers = await compileCanvasToMatchers(graph, resolveClassifierModelName)
+  return matchers.filter((m) => m.enabled).toSorted((a, b) => a.priority - b.priority)
+}
+
+/**
+ * 构建意图分类器 modelName resolver：从 model_instances 表批量查 UUID → actual_model_name。
+ *
+ * 性能优化：先扫描 graph 收集所有候选 UUID，一次性 IN 查询，避免每个 intent 节点
+ * 单独 round-trip。
+ */
+async function buildClassifierModelNameResolver(
+  graph: Parameters<typeof compileCanvasToMatchers>[0],
+): Promise<ClassifierModelNameResolver> {
+  // 1. 扫描所有 intent 节点，收集看起来像 UUID 的 modelName
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  const uuids = new Set<string>()
+  for (const node of graph.nodes) {
+    if (node.type !== 'intent') continue
+    const data = node.data as Record<string, unknown> | undefined
+    const ic = data?.intentConfig as { classifier?: { modelName?: string } } | undefined
+    const modelName = ic?.classifier?.modelName
+    if (modelName && uuidPattern.test(modelName)) {
+      uuids.add(modelName)
+    }
+  }
+
+  if (uuids.size === 0) {
+    // 没有候选 UUID，直接返回 identity resolver（零开销）
+    return (_providerId, modelName) => modelName
+  }
+
+  // 2. 一次性查 DB
+  const db = getDatabase()
+  const rows = await db
+    .select({ id: modelInstances.id, actualModelName: modelInstances.actualModelName })
+    .from(modelInstances)
+    .where(inArray(modelInstances.id, Array.from(uuids)))
+
+  const lookup = new Map(rows.map((r) => [r.id, r.actualModelName]))
+
+  // 3. resolver：UUID 且在表里 → actual_model_name；否则原样返回
+  return (_providerId, modelName) => lookup.get(modelName) ?? modelName
+}
+
+/**
+ * RouteRuleEngine 类
  */
 export class RouteRuleEngine {
-  async match(virtualModelId: string | null, context: RouteContext): Promise<ModelRoute | null> {
-    const db = getDatabase()
+  private cache = new Map<string, RouteMatcher[]>() // accessModelId -> matchers
+  private unsubscribe: (() => void) | null = null
 
-    const conditions = virtualModelId
-      ? and(
-          sql`${modelRoutes.accessModelIds} @> ARRAY[${virtualModelId}]::text[]`,
-          eq(modelRoutes.enabled, true),
-        )
-      : eq(modelRoutes.enabled, true)
+  /**
+   * 从缓存中的 route_rules（所有接入模型的 active 版本）重新编译。
+   * 异步：需要查 DB 把意图分类器的 UUID modelName 解析为 actual_model_name。
+   */
+  async rebuild(): Promise<void> {
+    const records = peekAllActiveRouteRules()
+    const compiled = await Promise.all(
+      records.map(async (r) => {
+        const resolver = await buildClassifierModelNameResolver(r.graph)
+        return {
+          accessModelId: r.accessModelId,
+          matchers: await compileActiveMatchersAsync(r.graph, resolver),
+        }
+      }),
+    )
+    this.cache.clear()
+    for (const { accessModelId, matchers } of compiled) {
+      this.cache.set(accessModelId, matchers)
+    }
+  }
 
-    const rules = await db
-      .select()
-      .from(modelRoutes)
-      .where(conditions)
-      .orderBy(asc(modelRoutes.priority))
+  /**
+   * 重新编译单个接入模型（route-rules 变更订阅回调用 + 管理员手动触发）。
+   * 公开：因为 admin API 端点需要直接重编译指定接入模型（不必刷新全部）。
+   */
+  async rebuildOne(accessModelId: string): Promise<void> {
+    const record = peekActiveRouteRule(accessModelId)
+    if (record) {
+      const resolver = await buildClassifierModelNameResolver(record.graph)
+      const matchers = await compileActiveMatchersAsync(record.graph, resolver)
+      this.cache.set(accessModelId, matchers)
+    } else {
+      this.cache.delete(accessModelId)
+    }
+  }
 
-    for (const rule of rules) {
-      if (evaluateConditions(rule.conditions || [], context)) {
-        logger.info(
-          { ruleId: rule.id, ruleName: rule.name, model: context.model },
-          'Route rule matched',
-        )
-        return rule
+  /**
+   * 订阅 route-rules 变更，自动重建对应接入模型的索引。
+   */
+  startAutoRebuild(): void {
+    if (this.unsubscribe) return
+    void this.rebuild()
+    this.unsubscribe = subscribeToRouteRuleChanges(
+      (accessModelId) => void this.rebuildOne(accessModelId),
+    )
+  }
+
+  stopAutoRebuild(): void {
+    if (this.unsubscribe) {
+      this.unsubscribe()
+      this.unsubscribe = null
+    }
+  }
+
+  /**
+   * 按接入模型匹配路由（请求路径主入口）。缓存未命中时（例如接入模型在
+   * startAutoRebuild() 之后才拿到 active 版本）惰性补一次编译，防御时序问题。
+   */
+  async match(accessModelId: string, ctx: RouteContext): Promise<RouteMatcher | null> {
+    if (!this.cache.has(accessModelId)) {
+      await getActiveRouteRule(accessModelId)
+      this.rebuildOne(accessModelId)
+    }
+    const candidates = this.cache.get(accessModelId) ?? []
+    for (const m of candidates) {
+      if (evaluateConditions(m.conditions, ctx)) {
+        return m
       }
     }
-
     return null
+  }
+
+  /**
+   * 内部：返回当前所有接入模型的全部 matchers（供 model-list/metrics 等
+   * 需要"全局视角"的消费方使用）。
+   */
+  getAllMatchers(): RouteMatcher[] {
+    return Array.from(this.cache.values()).flat()
+  }
+
+  /**
+   * 返回单个接入模型当前缓存的 matchers（性能上下文查询等只关心一个 AM 的场景）。
+   */
+  getMatchersForAccessModel(accessModelId: string): RouteMatcher[] {
+    return this.cache.get(accessModelId) ?? []
   }
 }
 
-export const routeRuleEngine = new RouteRuleEngine()
+// 单例（lazy init）
+let instance: RouteRuleEngine | null = null
+
+export function getRouteRuleEngine(): RouteRuleEngine {
+  if (!instance) {
+    instance = new RouteRuleEngine()
+  }
+  return instance
+}
+
+export function resetRouteRuleEngine(): void {
+  if (instance) {
+    instance.stopAutoRebuild()
+    instance = null
+  }
+}
+
+// 类型导出
+export type { RouteMatcher }

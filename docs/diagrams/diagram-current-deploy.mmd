@@ -1,0 +1,58 @@
+---
+config:
+  theme: neutral
+---
+sequenceDiagram
+  autonumber
+  actor U as 用户
+  participant FE as Web SPA<br/>(use-model-route-page)
+  participant API as Gateway API
+  participant DB as 数据库<br/>(model_routes + canvas_states)
+
+  Note over U,DB: 场景：用户编辑画布后点击"部署"按钮
+
+  U ->> FE: 点击部署
+  activate FE
+
+  FE ->> API: GET /api/model-routes<br/>(refetch 拿当前 routes 做 diff)
+  API ->> DB: SELECT * FROM model_routes
+  DB -->> API: rows
+  API -->> FE: routes[]
+
+  Note over FE: compileGraph()<br/>diff 得出 N updates / M creates / K deletes
+
+  par 并行 N 个 PUT
+    FE ->> API: PUT /api/model-routes/:id (×N)
+    API ->> DB: UPDATE model_routes
+    DB -->> API: ok
+    API -->> FE: 200
+    Note right of FE: 每个 PUT onSuccess<br/>都 invalidate → 再触发 1 次 GET
+    FE ->> API: GET /api/model-routes
+    API ->> DB: SELECT
+    DB -->> API: rows
+    API -->> FE: routes[] (×N)
+  end
+
+  par 并行 M 个 POST
+    FE ->> API: POST /api/model-routes (×M)
+    API ->> DB: INSERT
+    DB -->> API: ok
+    API -->> FE: 201 (×M)
+  end
+
+  par 并行 K 个 DELETE
+    FE ->> API: DELETE /api/model-routes/:id (×K)
+    API ->> DB: DELETE
+    DB -->> API: ok
+    API -->> FE: 200 (×K)
+  end
+
+  FE ->> API: PUT /api/canvas-state<br/>(画布图持久化)
+  API ->> DB: UPSERT canvas_states
+  DB -->> API: ok
+  API -->> FE: 200
+
+  deactivate FE
+  U -->> U: 部署成功
+
+  Note over FE,DB: 问题：<br/>1. deploy = N+M+K+1 次写 + 1 次初 GET + N+M+K 次 onSuccess refetch<br/>2. model_routes 和 canvas_states 重复存储同一信息<br/>3. 失败时部分事务已提交，无原子性

@@ -18,6 +18,18 @@ export {
   refreshConfigIfStale,
 } from './circuit-breaker-policy'
 
+export {
+  TTFB_TIMEOUT_CONFIG_KEY,
+  DEFAULT_TTFB_CONFIG,
+  configureTtfbTimeout,
+  getTtfbTimeoutConfig,
+  loadTtfbTimeoutConfig,
+  refreshTtfbConfigIfStale,
+  validateTtfbTimeoutConfig,
+  resolveTotalLimitMs,
+  resolveAttemptBaseMs,
+} from './ttfb-timeout-policy'
+
 export { logEventBus } from './log-event-bus'
 
 export { cleanupStaleStreams } from './stream-cleanup'

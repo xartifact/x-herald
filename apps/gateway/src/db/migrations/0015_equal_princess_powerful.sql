@@ -1,1 +1,0 @@
-ALTER TABLE "model_groups" ADD COLUMN "routing_config" jsonb;

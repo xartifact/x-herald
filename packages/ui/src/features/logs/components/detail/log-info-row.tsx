@@ -1,5 +1,3 @@
-'use client'
-
 import { useState } from 'react'
 import { Copy, Check } from 'lucide-react'
 import { Button } from '../../../../shared/components/ui/button'

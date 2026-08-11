@@ -1,5 +1,3 @@
-'use client'
-
 import { FileText, Trash2, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react'
 
 import { Badge } from '../../../shared/components/ui/badge'
@@ -28,7 +26,7 @@ function ModelCell({ log, isPending, isSuccess }: ModelCellProps) {
           variant={isPending ? 'outline' : isSuccess ? 'default' : 'destructive'}
           className={cn(
             'text-xs font-mono h-5 px-1.5 shrink-0',
-            isPending && 'border-amber-500 text-amber-600',
+            isPending && 'border-warning text-warning',
           )}
         >
           {isPending ? '请求中' : log.statusCode || log.status}
@@ -36,7 +34,7 @@ function ModelCell({ log, isPending, isSuccess }: ModelCellProps) {
         {log.retryCount > 0 && (
           <Badge
             variant="outline"
-            className="text-xs h-5 px-1.5 text-orange-600 border-orange-300 shrink-0"
+            className="text-xs h-5 px-1.5 text-warning border-warning/40 shrink-0"
           >
             重试×{log.retryCount}
           </Badge>
@@ -55,7 +53,7 @@ function ModelCell({ log, isPending, isSuccess }: ModelCellProps) {
         </div>
       )}
       {log.errorMessage && (
-        <div className="text-xs text-red-600 truncate max-w-[280px]" title={log.errorMessage}>
+        <div className="text-xs text-destructive truncate max-w-[280px]" title={log.errorMessage}>
           {log.errorMessage}
         </div>
       )}
@@ -87,18 +85,18 @@ export function LogTableRow({
     <TableRow
       className={cn(
         'cursor-pointer transition-colors hover:bg-muted/50',
-        !isSuccess && !isPending && 'bg-red-50/30 dark:bg-red-950/10',
+        !isSuccess && !isPending && 'bg-destructive/10',
       )}
       onClick={() => onViewDetail(log.id)}
     >
       <TableCell>
         <div className="flex items-center justify-center">
           {isPending ? (
-            <Loader2 className="h-4 w-4 text-amber-600 animate-spin" />
+            <Loader2 className="h-4 w-4 text-warning animate-spin" />
           ) : isSuccess ? (
-            <CheckCircle2 className="h-4 w-4 text-green-600" />
+            <CheckCircle2 className="h-4 w-4 text-success" />
           ) : (
-            <AlertCircle className="h-4 w-4 text-red-600" />
+            <AlertCircle className="h-4 w-4 text-destructive" />
           )}
         </div>
       </TableCell>
@@ -110,10 +108,10 @@ export function LogTableRow({
           className={cn(
             'font-mono text-sm font-semibold',
             log.responseTimeMs < 1000
-              ? 'text-green-600'
+              ? 'text-success'
               : log.responseTimeMs < 3000
-                ? 'text-amber-600'
-                : 'text-red-600',
+                ? 'text-warning'
+                : 'text-destructive',
           )}
         >
           {formatDuration(log.responseTimeMs)}
@@ -138,10 +136,7 @@ export function LogTableRow({
             </Badge>
           )}
           {log.thinkingMode && (
-            <Badge
-              variant="outline"
-              className="text-xs h-5 px-1.5 text-violet-600 border-violet-300"
-            >
+            <Badge variant="outline" className="text-xs h-5 px-1.5 text-info border-info/40">
               思考
             </Badge>
           )}

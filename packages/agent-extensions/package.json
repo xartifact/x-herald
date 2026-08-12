@@ -1,0 +1,55 @@
+{
+  "name": "@xartifact/x-llm-gateway-agent-extensions",
+  "version": "0.3.0",
+  "private": true,
+  "description": "Agent runtime extensions for x-llm-gateway. Single home for all agent runtimes (pi/omp today, openclaw/hermes next): the extension adapts internally via runtime detection — pi seeds eagerly + refreshModels hook, omp registers fetchDynamicModels with SQLite cache.",
+  "keywords": [
+    "omp-package",
+    "pi-package"
+  ],
+  "license": "MIT",
+  "files": [
+    "src",
+    "schemas",
+    "index.ts",
+    "README.md",
+    "LICENSE"
+  ],
+  "type": "module",
+  "main": "./index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/js-yaml": "^4.0.9",
+    "@xartifact/x-llm-gateway-shared": "workspace:*",
+    "typescript": "^5.3.3"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "@oh-my-pi/pi-coding-agent": "*"
+  },
+  "peerDependenciesMeta": {
+    "@earendil-works/pi-coding-agent": {
+      "optional": true
+    },
+    "@oh-my-pi/pi-coding-agent": {
+      "optional": true
+    }
+  },
+  "omp": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  }
+}

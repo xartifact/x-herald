@@ -1,0 +1,333 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://x-llm-gateway.local/schemas/v1-models.schema.json",
+  "title": "x-llm-gateway /v1/models response (v1, complete)",
+  "description": "JSON Schema for the OpenAI-compatible model catalogue returned by x-llm-gateway's GET /v1/models endpoint. Naming is snake_case throughout. Extensions should keep the OpenAI standard envelope (id/object/created/owned_by) and add per-model metadata under context_window, max_output_tokens, capabilities, cost, headers, thinking_level_map, and compat.",
+  "type": "object",
+  "required": ["object", "data"],
+  "additionalProperties": false,
+  "properties": {
+    "object": {
+      "type": "string",
+      "const": "list",
+      "description": "OpenAI standard envelope discriminator. Always 'list' for this endpoint."
+    },
+    "data": {
+      "type": "array",
+      "description": "Per-model catalogue entries.",
+      "items": { "$ref": "#/$defs/Model" }
+    }
+  },
+  "$defs": {
+    "Model": {
+      "type": "object",
+      "description": "One model advertised by the gateway.",
+      "required": ["id", "context_window", "max_output_tokens", "capabilities"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:/\\-]+$",
+          "description": "OpenAI standard. Stable identifier passed back in chat completion `model`."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Display name. Optional; pi falls back to `id` when absent."
+        },
+        "object": {
+          "type": "string",
+          "const": "model",
+          "description": "OpenAI standard. Always 'model' inside `data`."
+        },
+        "owned_by": {
+          "type": "string",
+          "minLength": 1,
+          "description": "OpenAI standard. Owning organization."
+        },
+        "created": {
+          "type": "integer",
+          "minimum": 1000000000,
+          "maximum": 4102444800,
+          "description": "OpenAI standard. Unix timestamp (seconds) of model creation/release."
+        },
+        "context_window": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "description": "Maximum input context window in tokens. Required. pi uses this to size the compaction threshold."
+        },
+        "max_output_tokens": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Maximum output tokens per response. Required. 0 means unlimited (no output cap); consumers should map it to floor(context_window / 2) because most LLM SDKs require a positive value. Maps to pi's maxTokens."
+        },
+        "context_length": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "description": "OpenAI-standard fallback some gateways emit in place of context_window. Consumers should read context_window first, then this."
+        },
+        "capabilities": { "$ref": "#/$defs/Capabilities" },
+        "cost": { "$ref": "#/$defs/Cost" },
+        "headers": {
+          "type": "object",
+          "description": "Per-model static headers appended to every request. Values are literal strings or pi's $ENV_VAR / ${ENV_VAR} references.",
+          "additionalProperties": { "type": "string" }
+        },
+        "thinking_level_map": { "$ref": "#/$defs/ThinkingLevelMap" },
+        "compat": { "$ref": "#/$defs/Compat" },
+
+        "contextWindow": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "description": "camelCase mirror of context_window, emitted by newer gateway versions (pi/omp-compat projection). Same value; consumers should read context_window first."
+        },
+        "maxTokens": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "camelCase mirror of max_output_tokens, emitted by newer gateway versions. Same value; consumers should read max_output_tokens first."
+        },
+        "reasoning": {
+          "type": "boolean",
+          "description": "camelCase mirror of capabilities.reasoning, emitted by newer gateway versions. Same value."
+        },
+        "input": {
+          "type": "array",
+          "description": "camelCase mirror of capabilities.vision, emitted by newer gateway versions as the derived input-mode list. ['text','image'] when vision is on.",
+          "items": { "enum": ["text", "image"] }
+        },
+        "maxTokensField": {
+          "type": "string",
+          "enum": ["max_completion_tokens", "max_tokens"],
+          "description": "camelCase mirror of compat.max_tokens_field, emitted by newer gateway versions. Same value."
+        },
+        "mediaInput": {
+          "type": "object",
+          "description": "媒体输入约束，透传路由目标实例 metadata.mediaInput（无实例配置时省略）。"
+        }
+      }
+    },
+    "Capabilities": {
+      "type": "object",
+      "description": "Boolean capability flags. Closed set; missing key implies false. Extend by adding a new boolean property here when needed.",
+      "required": ["vision", "reasoning"],
+      "additionalProperties": {
+        "type": "boolean",
+        "description": "Ad-hoc capability flag (forwards-compatible)."
+      },
+      "properties": {
+        "streaming": {
+          "type": "boolean",
+          "description": "Gateway can stream tokens via SSE."
+        },
+        "function_calling": {
+          "type": "boolean",
+          "description": "Model accepts OpenAI-style tool/function definitions."
+        },
+        "vision": {
+          "type": "boolean",
+          "description": "Model accepts image input. Maps to pi's input: ['text','image']."
+        },
+        "json_mode": {
+          "type": "boolean",
+          "description": "Model supports response_format: { type: 'json_object' }."
+        },
+        "reasoning": {
+          "type": "boolean",
+          "description": "Model supports extended thinking. Maps to pi's reasoning: true."
+        }
+      }
+    },
+    "Cost": {
+      "type": "object",
+      "description": "Pricing per million tokens. snake_case for consistency with the rest of the schema. Tiered pricing (e.g., GPT-5.6 short/long-context switch) lives under `tiers`.",
+      "additionalProperties": false,
+      "required": ["input", "output", "cache_read", "cache_write"],
+      "properties": {
+        "input": {
+          "type": "number",
+          "minimum": 0,
+          "description": "USD per 1M input tokens (non-cached)."
+        },
+        "output": {
+          "type": "number",
+          "minimum": 0,
+          "description": "USD per 1M output tokens."
+        },
+        "cache_read": {
+          "type": "number",
+          "minimum": 0,
+          "description": "USD per 1M cached input tokens read."
+        },
+        "cache_write": {
+          "type": "number",
+          "minimum": 0,
+          "description": "USD per 1M cached input tokens written."
+        },
+        "tiers": {
+          "type": "array",
+          "description": "Ordered list of alternate rate sets. Each tier REPLACES the base rates for the entire request once total input usage (input + cache_read + cache_write) exceeds the tier's `input_tokens_above`. When multiple tiers match, the one with the highest `input_tokens_above` wins.",
+          "items": { "$ref": "#/$defs/CostTier" }
+        }
+      }
+    },
+    "CostTier": {
+      "type": "object",
+      "description": "A complete alternate rate set triggered by total input tokens above a threshold.",
+      "additionalProperties": false,
+      "required": ["input_tokens_above", "input", "output"],
+      "properties": {
+        "input_tokens_above": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "description": "Total input tokens (input + cache_read + cache_write) at or above which this tier applies."
+        },
+        "input": {
+          "type": "number",
+          "minimum": 0,
+          "description": "USD per 1M input tokens under this tier."
+        },
+        "output": {
+          "type": "number",
+          "minimum": 0,
+          "description": "USD per 1M output tokens under this tier."
+        },
+        "cache_read": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Optional. USD per 1M cache-read tokens under this tier."
+        },
+        "cache_write": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Optional. USD per 1M cache-write tokens under this tier."
+        }
+      }
+    },
+    "ThinkingLevelMap": {
+      "type": "object",
+      "description": "Maps pi's thinking levels to provider-specific values. Each level is either a string the provider accepts, or null to hide that level from the model's thinking picker. Strict set; unknown levels are rejected.",
+      "additionalProperties": false,
+      "properties": {
+        "off": { "type": ["string", "null"] },
+        "minimal": { "type": ["string", "null"] },
+        "low": { "type": ["string", "null"] },
+        "medium": { "type": ["string", "null"] },
+        "high": { "type": ["string", "null"] },
+        "xhigh": { "type": ["string", "null"] },
+        "max": { "type": ["string", "null"] }
+      }
+    },
+    "Compat": {
+      "type": "object",
+      "description": "Provider-specific compatibility overrides. Mirrors pi's `ProviderModelConfig.compat`. Field names use snake_case; values are forwarded as-is to pi.",
+      "additionalProperties": {
+        "description": "Ad-hoc compat flag (forwards-compatible). pi ignores keys it does not recognize."
+      },
+      "properties": {
+        "supports_store": { "type": "boolean" },
+        "supports_developer_role": { "type": "boolean" },
+        "supports_reasoning_effort": { "type": "boolean" },
+        "supports_usage_in_streaming": { "type": "boolean" },
+        "supports_strict_mode": { "type": "boolean" },
+        "supports_openai_grammar_tools": { "type": "boolean" },
+        "max_tokens_field": {
+          "type": "string",
+          "enum": ["max_completion_tokens", "max_tokens"]
+        },
+        "requires_tool_result_name": { "type": "boolean" },
+        "requires_assistant_after_tool_result": { "type": "boolean" },
+        "requires_thinking_as_text": { "type": "boolean" },
+        "requires_reasoning_content_on_assistant_messages": { "type": "boolean" },
+        "thinking_format": {
+          "type": "string",
+          "enum": [
+            "openai",
+            "openrouter",
+            "deepseek",
+            "together",
+            "zai",
+            "qwen",
+            "chat-template",
+            "qwen-chat-template",
+            "string-thinking",
+            "ant-ling"
+          ]
+        },
+        "chat_template_kwargs": {
+          "type": "object",
+          "description": "Provider-specific chat_template_kwargs. Values forwarded as-is."
+        },
+        "cache_control_format": {
+          "type": "string",
+          "enum": ["anthropic"]
+        },
+        "session_affinity_format": {
+          "type": "string",
+          "enum": ["openai", "openai-nosession", "openrouter"]
+        },
+        "send_session_affinity_headers": { "type": "boolean" },
+        "deferred_tools_mode": {
+          "type": "string",
+          "enum": ["kimi"]
+        },
+        "supports_long_cache_retention": { "type": "boolean" },
+        "supports_eager_tool_input_streaming": { "type": "boolean" },
+        "supports_cache_control_on_tools": { "type": "boolean" },
+        "force_adaptive_thinking": { "type": "boolean" },
+        "allow_empty_signature": { "type": "boolean" },
+        "supports_strict_tools": { "type": "boolean" },
+        "openrouter_routing": {
+          "type": "object",
+          "description": "Forwarded verbatim into OpenRouter's `provider` routing field."
+        },
+        "vercel_gateway_routing": {
+          "type": "object",
+          "description": "Forwarded verbatim into Vercel AI Gateway's `provider` routing config."
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "object": "list",
+      "data": [
+        {
+          "id": "Plan",
+          "name": "Plan Agent",
+          "object": "model",
+          "owned_by": "x-llm-gateway",
+          "created": 1779613580,
+          "context_window": 8192,
+          "max_output_tokens": 4096,
+          "capabilities": {
+            "streaming": true,
+            "function_calling": true,
+            "vision": true,
+            "json_mode": true,
+            "reasoning": true
+          },
+          "cost": {
+            "input": 3,
+            "output": 15,
+            "cache_read": 0.3,
+            "cache_write": 3.75,
+            "tiers": [{ "input_tokens_above": 200000, "input": 6, "output": 30 }]
+          },
+          "headers": { "X-Model-Tier": "premium" },
+          "thinking_level_map": {
+            "low": "low",
+            "medium": "medium",
+            "high": "high",
+            "max": "max"
+          },
+          "compat": {
+            "supports_developer_role": true,
+            "supports_reasoning_effort": true,
+            "max_tokens_field": "max_completion_tokens"
+          }
+        }
+      ]
+    }
+  ]
+}

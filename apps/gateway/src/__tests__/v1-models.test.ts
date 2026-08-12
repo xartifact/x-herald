@@ -592,3 +592,36 @@ describe('camelCase compat view — vision / cost / mediaInput (冗余发射)', 
     }
   })
 })
+
+// ── canonical JSON schema (packages/agent-extensions) — closed-set validation ──
+// 权威 schema 文件在扩展包内（单一来源）；此处直接用 ajv 编译并校验实时响应，
+// 任何 server 输出与 schema 的漂移（新增字段未同步 schema、类型违规）都会让本块失败。
+import Ajv from 'ajv'
+import v1ModelsSchema from '../../../../packages/agent-extensions/schemas/v1-models.schema.json'
+
+// schema 声明 draft-2020-12；ajv 默认 meta 只到 draft-07，注册 2020-12 meta 在
+// CJS dist 下有 this 绑定坑。validateSchema:false 跳过 schema 自校验（$schema 仅
+// 文档用途），对实例的严格闭合集校验不受影响。
+const ajv = new Ajv({ allErrors: true, strict: false, validateSchema: false })
+const validateModelsResponse = ajv.compile(v1ModelsSchema)
+describe('canonical JSON schema (packages/agent-extensions) — strict validation', () => {
+  let env: ProxyTestEnv
+
+  beforeAll(async () => {
+    env = await createProxyTestEnv({
+      protocol: 'openai',
+      accessModelName: 'gpt-4-test',
+    })
+  })
+
+  afterAll(async () => {
+    await env.close()
+  })
+
+  it('live GET /v1/models response validates against the canonical schema (closed set)', async () => {
+    const res = await listModels(env)
+    const body = await res.json()
+    const ok = validateModelsResponse(body)
+    expect(ok, JSON.stringify(validateModelsResponse.errors, null, 2)).toBe(true)
+  })
+})

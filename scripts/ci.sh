@@ -8,6 +8,14 @@ cd "$PROJECT_ROOT"
 echo "==> format + lint + typecheck"
 bun run check
 
+echo "==> agent-extensions tests"
+cd "$PROJECT_ROOT/packages/agent-extensions"
+bun test --reporter=dots
+ext_status=$?
+if [ $ext_status -ne 0 ]; then
+  exit $ext_status
+fi
+
 echo "==> backend tests"
 cd "$PROJECT_ROOT/apps/gateway"
 bun test --reporter=dots

@@ -37,6 +37,7 @@
   "devDependencies": {
     "@electric-sql/pglite": "^0.4.3",
     "@types/bun": "latest",
+    "ajv": "^8.20.0",
     "drizzle-orm": "^0.45.1",
     "typescript": "^5.3.3"
   },

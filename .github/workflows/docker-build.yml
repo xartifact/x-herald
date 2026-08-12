@@ -20,7 +20,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  DEPLOY_DIR: ~/Docker/x-llm-gateway
+  DEPLOY_DIR: ~/Docker/x-herald
 
 jobs:
   test:
@@ -135,8 +135,8 @@ jobs:
         env:
           # main/master 部署 latest；其他分支（feat/**, fix/**, ci/**, refactor/**）部署 alpha
           IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && 'latest' || 'alpha' }}
-        # 提示：服务器 ~/Docker/x-llm-gateway/docker-compose.yml 的 gateway.image 字段
-        # 必须支持 interpolation：`image: ghcr.io/xartifact/x-llm-gateway:${IMAGE_TAG:-latest}`
+        # 提示：服务器 ~/Docker/x-herald/docker-compose.yml 的 gateway.image 字段
+        # 必须支持 interpolation：`image: ghcr.io/xartifact/x-herald:${IMAGE_TAG:-latest}`
         # 否则 docker-compose 仍会按 hardcoded 标签启动，alpha 镜像不会被实际使用。
         run: |
           cd ${{ env.DEPLOY_DIR }}
@@ -153,7 +153,7 @@ jobs:
 
           while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
             # 先检查容器是否存活
-            CONTAINER_STATUS=$(docker inspect --format='{{.State.Status}}' x-llm-gateway 2>/dev/null || echo "unknown")
+            CONTAINER_STATUS=$(docker inspect --format='{{.State.Status}}' x-herald 2>/dev/null || echo "unknown")
             if [ "$CONTAINER_STATUS" = "exited" ] || [ "$CONTAINER_STATUS" = "dead" ]; then
               echo "✗ Container has stopped (status: $CONTAINER_STATUS)"
               echo "Container logs:"
@@ -162,7 +162,7 @@ jobs:
             fi
 
             # 在容器内用 bun 请求 health 端点（容器内始终是 3000 端口）
-            HTTP_CODE=$(docker exec x-llm-gateway bun -e "fetch('http://localhost:3000/api/health').then(r=>console.log(r.status)).catch(()=>console.log(0))" 2>/dev/null || echo "0")
+            HTTP_CODE=$(docker exec x-herald bun -e "fetch('http://localhost:3000/api/health').then(r=>console.log(r.status)).catch(()=>console.log(0))" 2>/dev/null || echo "0")
 
             if [ "$HTTP_CODE" = "200" ]; then
               echo "✓ Service is healthy (HTTP 200)"
@@ -241,7 +241,7 @@ jobs:
               msg_type: "interactive",
               card: {
                 header: {
-                  title: { tag: "plain_text", content: "\($status) - x-llm-gateway" },
+                  title: { tag: "plain_text", content: "\($status) - x-herald" },
                   template: $color
                 },
                 elements: [

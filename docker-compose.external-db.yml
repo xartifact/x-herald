@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: x-llm-gateway
+    container_name: x-herald
     env_file:
       - .env
     environment:

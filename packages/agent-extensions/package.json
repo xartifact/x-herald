@@ -19,7 +19,7 @@
   "main": "./index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "bun test"
+    "test": "bun test --parallel=1"
   },
   "dependencies": {
     "js-yaml": "^4.1.0"

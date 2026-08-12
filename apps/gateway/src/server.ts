@@ -26,7 +26,7 @@ const PORT = parseInt(process.env.PORT || '3000', 10)
 
 // ─── x-tinker SDK Setup ──────────────────────────────────────
 const X_TINKER_URL = process.env.X_TINKER_URL || ''
-const X_TINKER_PROJECT_ID = process.env.X_TINKER_PROJECT_ID || 'x-llm-gateway'
+const X_TINKER_PROJECT_ID = process.env.X_TINKER_PROJECT_ID || 'x-herald'
 
 const sdkConfig: ErrorReporterConfig | null = X_TINKER_URL
   ? {

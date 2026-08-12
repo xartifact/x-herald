@@ -1,13 +1,13 @@
 ---
 name: cdp-debugging-on-5005
-description: Use when debugging or scripting the x-llm-gateway admin SPA served on the unified host port 5005 via Chrome DevTools Protocol (CDP) — scraping admin pages, inspecting the React/TanStack Router DOM, driving Runtime.evaluate in a real browser, or reproducing the apps/web/cdp-uuid-lookup.mjs pattern against localhost:5005.
+description: Use when debugging or scripting the x-herald admin SPA served on the unified host port 5005 via Chrome DevTools Protocol (CDP) — scraping admin pages, inspecting the React/TanStack Router DOM, driving Runtime.evaluate in a real browser, or reproducing the apps/web/cdp-uuid-lookup.mjs pattern against localhost:5005.
 ---
 
 # CDP Debugging on the Unified 5005 Port
 
 ## Overview
 
-The x-llm-gateway admin SPA and gateway API are served together on **port 5005** (the "unified/host port", see `.env` `HOST_PORT=5005`). CDP tooling drives real Chromium against it with Playwright's `CDPSession` (`Runtime.evaluate`). Canonical pattern: `apps/web/cdp-uuid-lookup.mjs`.
+The x-herald admin SPA and gateway API are served together on **port 5005** (the "unified/host port", see `.env` `HOST_PORT=5005`). CDP tooling drives real Chromium against it with Playwright's `CDPSession` (`Runtime.evaluate`). Canonical pattern: `apps/web/cdp-uuid-lookup.mjs`.
 
 ## When to Use
 

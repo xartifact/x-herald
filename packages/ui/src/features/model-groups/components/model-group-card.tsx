@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/compon
 import { Separator } from '../../../shared/components/ui/separator'
 
 import { ModelInstanceTable } from './model-instance-table'
-import type { ModelGroup, ModelInstance } from '@xartifact/x-llm-gateway-shared'
+import type { ModelGroup, ModelInstance } from '@xartifact/x-herald-shared'
 
 interface ModelGroupCardProps {
   group: ModelGroup

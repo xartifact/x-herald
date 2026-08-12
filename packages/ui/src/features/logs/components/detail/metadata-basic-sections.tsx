@@ -2,7 +2,7 @@ import { GitBranch } from 'lucide-react'
 
 import { Badge } from '../../../../shared/components/ui/badge'
 import { Button } from '../../../../shared/components/ui/button'
-import type { Log } from '@xartifact/x-llm-gateway-shared'
+import type { Log } from '@xartifact/x-herald-shared'
 
 import { InfoRow, Section } from './log-info-row'
 import { RequestMetaSection } from './request-meta-section'

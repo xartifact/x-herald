@@ -1,9 +1,9 @@
-import { sql } from '@xartifact/x-llm-gateway-db'
+import { sql } from '@xartifact/x-herald-db'
 
 import { getDatabase } from '../../../db/client'
 import logger from '../../../lib/logger'
 
-import { clientRequestedModels } from '@xartifact/x-llm-gateway-db'
+import { clientRequestedModels } from '@xartifact/x-herald-db'
 
 /**
  * 记录客户端请求的模型名称

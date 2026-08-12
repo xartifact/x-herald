@@ -3,13 +3,13 @@ import { useCallback, useEffect, useMemo, useReducer, useState } from 'react'
 import type { Node } from '@xyflow/react'
 import { toast } from 'sonner'
 
-import type { CanvasGraph } from '@xartifact/x-llm-gateway-shared'
+import type { CanvasGraph } from '@xartifact/x-herald-shared'
 import {
   toFlowGraph,
   validateFlow,
   type FlowEditorApi,
   type ValidationError,
-} from '@xartifact/x-llm-gateway-ui'
+} from '@xartifact/x-herald-ui'
 
 import { useRouteRuleGraphPersistence } from './use-route-rule-graph-persistence'
 import type { RouteRuleVersion } from './use-route-rule-versions'

@@ -6,9 +6,9 @@ import type { ProxyTestEnv } from '../test/proxy-test-helpers'
 
 import { getDatabase } from '../db/client'
 import { modelInstances, accessModels, modelGroups } from '../db'
-import { eq } from '@xartifact/x-llm-gateway-db'
+import { eq } from '@xartifact/x-herald-db'
 
-// ── Zod schemas mirroring ~/.pi/agent/extensions/x-llm-gateway/schemas/v1-models.schema.json ──
+// ── Zod schemas mirroring ~/.pi/agent/extensions/x-herald/schemas/v1-models.schema.json ──
 
 const ThinkingLevelMapSchema = z
   .object({
@@ -145,7 +145,7 @@ async function listModels(env: ProxyTestEnv, extraHeaders: Record<string, string
 
 // ── tests ────────────────────────────────────────────────────────────────────
 
-describe('GET /api/v1/models — x-llm-gateway schema v1 (OpenAI protocol)', () => {
+describe('GET /api/v1/models — x-herald schema v1 (OpenAI protocol)', () => {
   let env: ProxyTestEnv
 
   beforeAll(async () => {
@@ -184,7 +184,7 @@ describe('GET /api/v1/models — x-llm-gateway schema v1 (OpenAI protocol)', () 
     expect(entry).toBeDefined()
     if (!entry) return
     expect(entry.object).toBe('model')
-    expect(entry.owned_by).toBe('x-llm-gateway')
+    expect(entry.owned_by).toBe('x-herald')
     expect(typeof entry.context_window).toBe('number')
     expect(entry.context_window).toBeGreaterThan(0)
     expect(typeof entry.max_output_tokens).toBe('number')
@@ -259,7 +259,7 @@ describe('GET /api/v1/models — x-llm-gateway schema v1 (OpenAI protocol)', () 
   })
 })
 
-describe('GET /api/v1/models — x-llm-gateway schema v1 (Anthropic protocol)', () => {
+describe('GET /api/v1/models — x-herald schema v1 (Anthropic protocol)', () => {
   let env: ProxyTestEnv
 
   beforeAll(async () => {

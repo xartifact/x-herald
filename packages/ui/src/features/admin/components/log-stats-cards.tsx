@@ -2,7 +2,7 @@ import { BarChart3, Clock, Database, Zap } from 'lucide-react'
 
 import { Badge } from '../../../shared/components/ui/index'
 import { StatCard } from '../../../shared/components/stat-card'
-import type { LogStats, LogStorage } from '@xartifact/x-llm-gateway-shared'
+import type { LogStats, LogStorage } from '@xartifact/x-herald-shared'
 
 const CLIENT_LABELS: Record<string, string> = {
   openai: 'OpenAI',

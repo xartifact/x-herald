@@ -1,6 +1,6 @@
-import type { Provider } from '@xartifact/x-llm-gateway-db'
-import type { VirtualKey } from '@xartifact/x-llm-gateway-db'
-import type { ModelGroup, ModelInstance } from '@xartifact/x-llm-gateway-db'
+import type { Provider } from '@xartifact/x-herald-db'
+import type { VirtualKey } from '@xartifact/x-herald-db'
+import type { ModelGroup, ModelInstance } from '@xartifact/x-herald-db'
 
 export function createTestProvider(overrides: Partial<Provider> = {}): Provider {
   return {

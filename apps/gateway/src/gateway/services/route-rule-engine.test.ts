@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'bun:test'
 import { evaluateConditions, evaluateOperator, coerceValue, getField } from './route-rule-engine'
 import type { RouteContext, PerfContext } from './route-rule-engine'
-import type { RouteCondition } from '@xartifact/x-llm-gateway-shared'
+import type { RouteCondition } from '@xartifact/x-herald-shared'
 
 function makePerf(overrides: Partial<PerfContext> = {}): PerfContext {
   return {

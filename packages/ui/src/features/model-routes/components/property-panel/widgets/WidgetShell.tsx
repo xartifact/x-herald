@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-import { Label } from '@xartifact/x-llm-gateway-ui'
+import { Label } from '@xartifact/x-herald-ui'
 
 interface WidgetShellProps {
   id: string

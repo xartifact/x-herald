@@ -1,4 +1,4 @@
-import { eq } from '@xartifact/x-llm-gateway-db'
+import { eq } from '@xartifact/x-herald-db'
 
 import { IS_PRODUCTION } from '../../config/env'
 import type { DbClient } from '../../db/client'
@@ -15,7 +15,7 @@ function getXTinkerReporter() {
     require('@xartifact/x-tinker-sdk') as typeof import('@xartifact/x-tinker-sdk')
   xTinkerReporter = new ErrorReporter({
     serverUrl: url,
-    projectId: process.env.X_TINKER_PROJECT_ID || 'x-llm-gateway',
+    projectId: process.env.X_TINKER_PROJECT_ID || 'x-herald',
   })
   return xTinkerReporter
 }
@@ -25,8 +25,8 @@ function reportFailureToXTinker(error: Error, metadata?: Record<string, string>)
     ?.report(error, 'gateway/stream', metadata)
     .catch(() => {})
 }
-import type { VirtualKey } from '@xartifact/x-llm-gateway-db'
-import { requestLogs, requestAttempts } from '@xartifact/x-llm-gateway-db'
+import type { VirtualKey } from '@xartifact/x-herald-db'
+import { requestLogs, requestAttempts } from '@xartifact/x-herald-db'
 import type {
   StreamProgress,
   StreamContent,

@@ -1,4 +1,4 @@
-import type { ToolDefinition, StandardRequest } from '@xartifact/x-llm-gateway-shared'
+import type { ToolDefinition, StandardRequest } from '@xartifact/x-herald-shared'
 
 import type { AnthropicTool, AnthropicRequest } from '../types'
 

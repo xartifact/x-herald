@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '../../../shared/components/ui/table'
-import type { CircuitBreakerRealtimeState } from '@xartifact/x-llm-gateway-shared'
+import type { CircuitBreakerRealtimeState } from '@xartifact/x-herald-shared'
 import { stateBadgeColor, stateLabel, tripCountBadge, formatDuration } from './utils'
 
 interface Props {

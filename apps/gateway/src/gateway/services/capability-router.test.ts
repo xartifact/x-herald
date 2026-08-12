@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'bun:test'
 import { resolveCapabilityRoute, sliceToStatelessMessages } from './capability-router'
-import type { CapabilityActionConfig } from '@xartifact/x-llm-gateway-shared'
-import type { StandardRequest } from '@xartifact/x-llm-gateway-shared'
+import type { CapabilityActionConfig } from '@xartifact/x-herald-shared'
+import type { StandardRequest } from '@xartifact/x-herald-shared'
 
 const mockConfig: CapabilityActionConfig = {
   capabilityMap: {

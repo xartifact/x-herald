@@ -12,7 +12,7 @@ import {
   CardTitle,
 } from '../../../shared/components/ui/card'
 
-import type { ImportResult } from '@xartifact/x-llm-gateway-shared'
+import type { ImportResult } from '@xartifact/x-herald-shared'
 import { useExportConfig, useImportConfig } from '../hooks/use-config-io'
 
 const IMPORT_LABELS = [

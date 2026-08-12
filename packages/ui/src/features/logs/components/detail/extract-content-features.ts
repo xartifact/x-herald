@@ -1,4 +1,4 @@
-import type { Log } from '@xartifact/x-llm-gateway-shared'
+import type { Log } from '@xartifact/x-herald-shared'
 
 // Content Features 数据结构
 export interface ContentFeatures {

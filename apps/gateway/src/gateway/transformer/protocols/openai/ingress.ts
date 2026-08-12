@@ -1,4 +1,4 @@
-import type { TransformerContext, StandardRequest } from '@xartifact/x-llm-gateway-shared'
+import type { TransformerContext, StandardRequest } from '@xartifact/x-herald-shared'
 
 import { convertMessages } from './converters/message-converter'
 import type { OpenAIRequest } from './types'

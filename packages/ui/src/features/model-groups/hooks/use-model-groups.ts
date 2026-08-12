@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
-import { get, post, put, del as deleteRequest, patch } from '@xartifact/x-llm-gateway-ui'
+import { get, post, put, del as deleteRequest, patch } from '@xartifact/x-herald-ui'
 
 import type {
   ApiResponse,
@@ -11,7 +11,7 @@ import type {
   ModelGroupDetail,
   ModelInstance,
   RoutingConfig,
-} from '@xartifact/x-llm-gateway-shared'
+} from '@xartifact/x-herald-shared'
 
 // ── Query key factory ──────────────────────────────────────────────
 

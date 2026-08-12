@@ -8,7 +8,7 @@ import {
   SheetTitle,
 } from '../../../../shared/components/ui/sheet'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../../shared/components/ui/tabs'
-import type { Log } from '@xartifact/x-llm-gateway-shared'
+import type { Log } from '@xartifact/x-herald-shared'
 
 import { LogSheetStatusBar } from './log-sheet-status-bar'
 import { LogSheetToolbar } from './log-sheet-toolbar'

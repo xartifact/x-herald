@@ -8,7 +8,7 @@ import {
   SelectSeparator,
   SelectTrigger,
   SelectValue,
-} from '@xartifact/x-llm-gateway-ui'
+} from '@xartifact/x-herald-ui'
 import { AlertTriangle, ChevronDown, Search, X } from 'lucide-react'
 
 import { type RemoteSelectOptions, useRemoteOptions } from '../remote-sources'

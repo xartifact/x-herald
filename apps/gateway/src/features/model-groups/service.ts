@@ -1,9 +1,9 @@
-import { asc, desc, eq, inArray, isNull } from '@xartifact/x-llm-gateway-db'
+import { asc, desc, eq, inArray, isNull } from '@xartifact/x-herald-db'
 
 import type { Database } from '../../db/client'
 import { getDatabase } from '../../db/client'
 import rootLogger from '../../lib/logger'
-import { providers } from '@xartifact/x-llm-gateway-db'
+import { providers } from '@xartifact/x-herald-db'
 
 import {
   modelGroupMemberships,
@@ -11,14 +11,14 @@ import {
   modelInstances,
   type NewModelGroup,
   type NewModelInstance,
-} from '@xartifact/x-llm-gateway-db'
+} from '@xartifact/x-herald-db'
 import type {
   InstanceConfig,
   InstanceCost,
   InstanceTestResult,
   ModelCapabilities,
   RoutingConfig,
-} from '@xartifact/x-llm-gateway-shared'
+} from '@xartifact/x-herald-shared'
 
 const logger = rootLogger.child({ module: 'model-groups-service' })
 

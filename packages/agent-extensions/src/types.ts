@@ -10,7 +10,7 @@
 // ---------------------------------------------------------------------------
 
 export const PROVIDER_ID = 'x-llm-gateway'
-export const PROVIDER_NAME = 'X-LLM Gateway'
+export const PROVIDER_NAME = 'X-Herald'
 
 // ---------------------------------------------------------------------------
 // Defaults

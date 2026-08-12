@@ -4,9 +4,9 @@ import starlight from '@astrojs/starlight'
 export default defineConfig({
   integrations: [
     starlight({
-      title: 'x-llm-gateway Docs',
+      title: 'x-herald Docs',
       logo: { src: './public/logo.svg' },
-      social: { github: 'https://github.com/xartifact/x-llm-gateway' },
+      social: { github: 'https://github.com/xartifact/x-herald' },
       sidebar: [
         {
           label: '系统架构',

@@ -26,9 +26,9 @@ import {
   ModelInstanceForm,
   PageHeader,
   UngroupedInstancesSection,
-} from '@xartifact/x-llm-gateway-ui'
+} from '@xartifact/x-herald-ui'
 
-import type { ModelGroup, ModelInstance } from '@xartifact/x-llm-gateway-shared'
+import type { ModelGroup, ModelInstance } from '@xartifact/x-herald-shared'
 
 export function ModelGroupsPage() {
   const [searchQuery, setSearchQuery] = useState('')

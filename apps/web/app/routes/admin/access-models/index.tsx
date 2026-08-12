@@ -17,9 +17,9 @@ import {
   Input,
   AccessModelTable,
   AccessModelFormDialog,
-} from '@xartifact/x-llm-gateway-ui'
+} from '@xartifact/x-herald-ui'
 
-import type { AccessModel } from '@xartifact/x-llm-gateway-shared'
+import type { AccessModel } from '@xartifact/x-herald-shared'
 
 const DEFAULT_CAPABILITIES = {
   streaming: true,

@@ -13,7 +13,7 @@ vi.mock('../../../shared/lib/api-client', () => ({
   patch: vi.fn(),
 }))
 
-import { get } from '@xartifact/x-llm-gateway-ui'
+import { get } from '@xartifact/x-herald-ui'
 
 function createWrapper() {
   const queryClient = new QueryClient({

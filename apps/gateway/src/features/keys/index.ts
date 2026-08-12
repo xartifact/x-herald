@@ -1,3 +1,3 @@
 // Server-side exports only
-export { virtualKeys, type NewVirtualKey } from '@xartifact/x-llm-gateway-db'
+export { virtualKeys, type NewVirtualKey } from '@xartifact/x-herald-db'
 export * from './service'

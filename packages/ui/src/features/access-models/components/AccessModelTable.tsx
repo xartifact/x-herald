@@ -13,8 +13,8 @@ import {
   TableRow,
 } from '../../../shared/components/ui/table'
 
-import { CATCHALL_VM_NAME } from '@xartifact/x-llm-gateway-shared'
-import type { AccessModel } from '@xartifact/x-llm-gateway-shared'
+import { CATCHALL_VM_NAME } from '@xartifact/x-herald-shared'
+import type { AccessModel } from '@xartifact/x-herald-shared'
 
 interface AccessModelTableProps {
   models: AccessModel[]

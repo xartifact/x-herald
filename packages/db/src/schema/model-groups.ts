@@ -17,7 +17,7 @@ import type {
   RoutingConfig,
   InstanceConfig,
   InstanceCost,
-} from '@xartifact/x-llm-gateway-shared'
+} from '@xartifact/x-herald-shared'
 
 export const modelGroups = pgTable('model_groups', {
   id: uuid('id').primaryKey().defaultRandom(),

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'bun:test'
 import { CapabilityActionHandler } from './capability-handler'
-import type { RouteAction } from '@xartifact/x-llm-gateway-shared'
+import type { RouteAction } from '@xartifact/x-herald-shared'
 import type { RouteActionResolutionContext } from './types'
 
 const handler = new CapabilityActionHandler()

@@ -6,8 +6,8 @@
  * since the runtime engine reads from route_rules（the single source of truth）。
  */
 
-import { sql } from '@xartifact/x-llm-gateway-db'
-import type { RouteAction } from '@xartifact/x-llm-gateway-shared'
+import { sql } from '@xartifact/x-herald-db'
+import type { RouteAction } from '@xartifact/x-herald-shared'
 
 import { getDatabase } from '../db/client'
 import {

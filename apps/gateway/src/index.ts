@@ -11,7 +11,7 @@ export {
 } from './gateway/transformer'
 
 // db (server-only exports)
-export { seedSystemData } from '@xartifact/x-llm-gateway-db'
+export { seedSystemData } from '@xartifact/x-herald-db'
 
 // createEngine factory
 export { createEngine, type CreateEngineOptions, type EngineInstance } from './createEngine'
@@ -42,7 +42,7 @@ export type {
   CircuitBreakerConfig,
   TtfbTimeoutConfig,
   AvailableModelGroup,
-} from '@xartifact/x-llm-gateway-shared'
+} from '@xartifact/x-herald-shared'
 
 // Provider feature types
 export type { ProtocolsConfig, SyntheticThinkingStrategy } from './features/providers/db'
@@ -73,6 +73,6 @@ export type {
   CreateModelInstancePayload,
   UpdateModelInstancePayload,
   RoutingConfig,
-} from '@xartifact/x-llm-gateway-shared'
-export type { KeyFormData } from '@xartifact/x-llm-gateway-shared'
+} from '@xartifact/x-herald-shared'
+export type { KeyFormData } from '@xartifact/x-herald-shared'
 export type { AccessModel, NewAccessModel } from './features/model-groups/db'

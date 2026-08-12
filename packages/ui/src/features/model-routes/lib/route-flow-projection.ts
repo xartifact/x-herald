@@ -1,5 +1,5 @@
 import type { Node, Edge } from '@xyflow/react'
-import { CanvasGraphSchema, type CanvasGraph } from '@xartifact/x-llm-gateway-shared'
+import { CanvasGraphSchema, type CanvasGraph } from '@xartifact/x-herald-shared'
 
 /**
  * 画布图领域类型（CanvasGraph）<-> xyflow 运行时类型（Node[]/Edge[]）的双向投影。

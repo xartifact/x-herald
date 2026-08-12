@@ -1,12 +1,12 @@
 import { Button } from '../../../shared/components/ui/button'
-import type { KeyStat } from '@xartifact/x-llm-gateway-shared'
+import type { KeyStat } from '@xartifact/x-herald-shared'
 import { Separator } from '../../../shared/components/ui/separator'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../../../shared/components/ui/sheet'
 import { Tabs, TabsList, TabsTrigger } from '../../../shared/components/ui/tabs'
 import { StatCard } from '../../../shared/components/stat-card'
 
 // TODO(6): from apps/web
-import type { VirtualKey } from '@xartifact/x-llm-gateway-shared'
+import type { VirtualKey } from '@xartifact/x-herald-shared'
 import { useKeyUsage, useResetKeyUsage } from '../hooks/use-keys'
 
 interface KeyStatsSheetProps {

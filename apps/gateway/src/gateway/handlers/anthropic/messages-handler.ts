@@ -2,8 +2,8 @@ import type { Context } from 'hono'
 
 import { loadConfig } from '../../../config'
 import logger from '../../../lib/logger'
-import type { VirtualKey } from '@xartifact/x-llm-gateway-db'
-import type { StandardRequest } from '@xartifact/x-llm-gateway-shared'
+import type { VirtualKey } from '@xartifact/x-herald-db'
+import type { StandardRequest } from '@xartifact/x-herald-shared'
 
 import { accessModelRouter } from '../../services/access-model-router'
 import { buildRouteChainSnapshot } from '../../services/routing-trace-recorder'

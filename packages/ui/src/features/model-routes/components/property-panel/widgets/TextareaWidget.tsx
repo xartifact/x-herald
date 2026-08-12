@@ -1,4 +1,4 @@
-import { Textarea } from '@xartifact/x-llm-gateway-ui'
+import { Textarea } from '@xartifact/x-herald-ui'
 
 import type { WidgetProps } from '@rjsf/utils'
 

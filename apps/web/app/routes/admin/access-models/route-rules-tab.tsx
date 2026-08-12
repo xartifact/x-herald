@@ -9,16 +9,9 @@ import {
   useDeleteRouteRuleVersion,
   type RouteRuleVersion,
 } from '../../../hooks/route-rules'
-import {
-  Badge,
-  Button,
-  Card,
-  CardContent,
-  FlowEditor,
-  DeployBanner,
-} from '@xartifact/x-llm-gateway-ui'
+import { Badge, Button, Card, CardContent, FlowEditor, DeployBanner } from '@xartifact/x-herald-ui'
 
-import type { AccessModel, CanvasGraph } from '@xartifact/x-llm-gateway-shared'
+import type { AccessModel, CanvasGraph } from '@xartifact/x-herald-shared'
 
 interface RouteRulesTabProps {
   accessModel: AccessModel

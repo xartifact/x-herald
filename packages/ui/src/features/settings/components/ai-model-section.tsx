@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from '../../../shared/components/ui/select'
 
-import type { SettingsData } from '@xartifact/x-llm-gateway-shared'
+import type { SettingsData } from '@xartifact/x-herald-shared'
 import { useUpdateSettings } from '../hooks/use-settings'
 
 const NONE_VALUE = '__none__'

@@ -1,8 +1,8 @@
 import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
-import type { ExportFormat, ImportResult } from '@xartifact/x-llm-gateway-shared'
-import { post } from '@xartifact/x-llm-gateway-ui'
+import type { ExportFormat, ImportResult } from '@xartifact/x-herald-shared'
+import { post } from '@xartifact/x-herald-ui'
 
 async function exportConfigFn(): Promise<Blob> {
   // Blob 下载 — 使用 raw fetch（api-client 仅支持 JSON）
@@ -37,7 +37,7 @@ export function useExportConfig() {
       const date = new Date().toISOString().slice(0, 10)
       const a = document.createElement('a')
       a.href = url
-      a.download = `x-llm-gateway-config-${date}.json`
+      a.download = `x-herald-config-${date}.json`
       a.click()
       URL.revokeObjectURL(url)
       toast.success('导出成功')

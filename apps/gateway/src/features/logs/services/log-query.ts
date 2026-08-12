@@ -11,12 +11,12 @@ import {
   ne,
   or,
   sql,
-} from '@xartifact/x-llm-gateway-db'
+} from '@xartifact/x-herald-db'
 
 import { getDatabase } from '../../../db/client'
-import { virtualKeys } from '@xartifact/x-llm-gateway-db'
+import { virtualKeys } from '@xartifact/x-herald-db'
 
-import { requestLogs, requestAttempts } from '@xartifact/x-llm-gateway-db'
+import { requestLogs, requestAttempts } from '@xartifact/x-herald-db'
 
 interface DateRange {
   startDate?: string

@@ -1,4 +1,4 @@
-import { classifierPrompts, desc } from '@xartifact/x-llm-gateway-db'
+import { classifierPrompts, desc } from '@xartifact/x-herald-db'
 
 import { getDatabase } from '../../../db/client'
 

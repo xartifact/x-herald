@@ -1,9 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
-import { get, post, del as deleteRequest, patch } from '@xartifact/x-llm-gateway-ui'
+import { get, post, del as deleteRequest, patch } from '@xartifact/x-herald-ui'
 
-import type { CanvasGraph } from '@xartifact/x-llm-gateway-shared'
+import type { CanvasGraph } from '@xartifact/x-herald-shared'
 
 export interface RouteRuleVersion {
   id: string

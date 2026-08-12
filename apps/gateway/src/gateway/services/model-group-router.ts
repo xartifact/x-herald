@@ -1,11 +1,11 @@
-import { and, asc, eq, isNull } from '@xartifact/x-llm-gateway-db'
+import { and, asc, eq, isNull } from '@xartifact/x-herald-db'
 
 import { getDatabase } from '../../db/client'
 import logger from '../../lib/logger'
 import { fetchGroupInstancesPerf } from '../../features/metrics/services/instance-perf-cache'
-import { modelGroups, modelInstances, modelGroupMemberships } from '@xartifact/x-llm-gateway-db'
-import type { ModelGroup, ModelInstance } from '@xartifact/x-llm-gateway-db'
-import { providers } from '@xartifact/x-llm-gateway-db'
+import { modelGroups, modelInstances, modelGroupMemberships } from '@xartifact/x-herald-db'
+import type { ModelGroup, ModelInstance } from '@xartifact/x-herald-db'
+import { providers } from '@xartifact/x-herald-db'
 
 import { selectByStrategy, filterCandidates } from './router-selector'
 import {

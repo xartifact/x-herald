@@ -1,4 +1,4 @@
-import type { RouteAction } from '@xartifact/x-llm-gateway-shared'
+import type { RouteAction } from '@xartifact/x-herald-shared'
 import { resolveIntentRoute, type IntentResult } from '../intent-router'
 import { recordIntentDecision } from '../../../features/logs/services/intent-log-service'
 import { NoAvailableInstanceError } from '../router-selector'

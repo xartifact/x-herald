@@ -1,7 +1,7 @@
 /**
  * Model Groups Feature Types
  *
- * Re-exported from @xartifact/x-llm-gateway-shared for frontend / admin consumers.
+ * Re-exported from @xartifact/x-herald-shared for frontend / admin consumers.
  */
 
 export type {
@@ -16,4 +16,4 @@ export type {
   UpdateModelGroupPayload,
   CreateModelInstancePayload,
   UpdateModelInstancePayload,
-} from '@xartifact/x-llm-gateway-shared'
+} from '@xartifact/x-herald-shared'

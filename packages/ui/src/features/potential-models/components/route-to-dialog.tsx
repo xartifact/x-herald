@@ -28,7 +28,7 @@ import {
 } from '../../../shared/components/ui/select'
 import { Textarea } from '../../../shared/components/ui/textarea'
 
-import type { AccessModel, PotentialModel } from '@xartifact/x-llm-gateway-shared'
+import type { AccessModel, PotentialModel } from '@xartifact/x-herald-shared'
 
 export interface RouteToFormValues {
   targetAccessModelId: string

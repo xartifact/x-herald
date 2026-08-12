@@ -4,6 +4,6 @@ export {
   modelInstances,
   modelInstancesRelations,
   accessModels,
-} from '@xartifact/x-llm-gateway-db'
+} from '@xartifact/x-herald-db'
 export * from './service'
 export type { ModelGroup, ModelInstance } from './types'

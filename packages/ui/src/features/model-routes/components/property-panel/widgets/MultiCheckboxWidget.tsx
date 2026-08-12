@@ -1,4 +1,4 @@
-import { Checkbox, Label } from '@xartifact/x-llm-gateway-ui'
+import { Checkbox, Label } from '@xartifact/x-herald-ui'
 
 import type { WidgetProps } from '@rjsf/utils'
 

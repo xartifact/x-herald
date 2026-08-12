@@ -1,11 +1,11 @@
-import { lt, inArray } from '@xartifact/x-llm-gateway-db'
+import { lt, inArray } from '@xartifact/x-herald-db'
 
 import { getDatabase } from '../../db/client'
 import rootLogger from '../../lib/logger'
 
 const logger = rootLogger.child({ module: 'log-cleanup' })
 
-import { requestLogs, requestAttempts } from '@xartifact/x-llm-gateway-db'
+import { requestLogs, requestAttempts } from '@xartifact/x-herald-db'
 
 /**
  * 清理过期日志

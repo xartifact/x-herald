@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
 import { Button } from '../../../../shared/components/ui/button'
-import type { LogMetadata } from '@xartifact/x-llm-gateway-shared'
+import type { LogMetadata } from '@xartifact/x-herald-shared'
 
 import { TimelineMessageCard } from './timeline-message-card'
 

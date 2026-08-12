@@ -1,11 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
-import { get, put } from '@xartifact/x-llm-gateway-ui'
+import { get, put } from '@xartifact/x-herald-ui'
 
-import type {
-  SyntheticThinkingStrategy,
-  ThinkingTypeMapping,
-} from '@xartifact/x-llm-gateway-shared'
+import type { SyntheticThinkingStrategy, ThinkingTypeMapping } from '@xartifact/x-herald-shared'
 
 const API_BASE = '/api/providers'
 

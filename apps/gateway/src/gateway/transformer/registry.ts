@@ -7,7 +7,7 @@ import type {
   Transformer,
   TransformerConstructor,
   TransformerRegistry,
-} from '@xartifact/x-llm-gateway-shared'
+} from '@xartifact/x-herald-shared'
 
 class TransformerRegistryImpl implements TransformerRegistry {
   private transformers = new Map<string, Transformer | TransformerConstructor>()

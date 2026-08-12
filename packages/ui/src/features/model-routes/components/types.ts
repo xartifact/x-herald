@@ -8,4 +8,4 @@ export {
   type CanvasGraph,
   type GraphNode,
   type GraphEdge,
-} from '@xartifact/x-llm-gateway-shared'
+} from '@xartifact/x-herald-shared'

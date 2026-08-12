@@ -3,9 +3,9 @@ import {
   fetchGroupInstancesPerf,
   type InstancePerfData,
 } from '../../features/metrics/services/instance-perf-cache'
-import type { ModelGroup, ModelInstance } from '@xartifact/x-llm-gateway-db'
-import { providers } from '@xartifact/x-llm-gateway-db'
-import type { RouteCondition, StandardRequest } from '@xartifact/x-llm-gateway-shared'
+import type { ModelGroup, ModelInstance } from '@xartifact/x-herald-db'
+import { providers } from '@xartifact/x-herald-db'
+import type { RouteCondition, StandardRequest } from '@xartifact/x-herald-shared'
 
 import { circuitBreakerRegistry } from './circuit-breaker'
 import type { ModelMappingResult } from './model-mapping'

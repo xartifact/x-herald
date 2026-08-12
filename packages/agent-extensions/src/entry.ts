@@ -12,9 +12,9 @@
  *      mechanism — pi: eager seed + `refreshModels` (model selector open);
  *      omp: `fetchDynamicModels` (SQLite model cache, 24 h TTL). New models
  *      added on the gateway appear without a restart.
- *   3. Register /x-gate admin commands.
+ *   3. Register /x-herald admin commands.
  *
- * The /x-gate handlers in src/commands.ts re-resolve config + re-fetch on
+ * The /x-herald handlers in src/commands.ts re-resolve config + re-fetch on
  * each invocation so they always reflect the latest env / file state.
  */
 
@@ -27,14 +27,14 @@ import { detectRuntime } from './runtime.ts'
 import { PROVIDER_ID, PROVIDER_NAME } from './types.ts'
 
 export default async function (pi: ExtensionAPI): Promise<void> {
-  // Always register the command — even if /models fails, /x-gate help is useful.
+  // Always register the command — even if /models fails, /x-herald help is useful.
   registerXGateCommand(pi)
 
   const { baseUrl, apiKey, api } = await resolveProviderConfig()
   if (!apiKey) {
     process.stderr.write(
       `[${PROVIDER_ID}] no apiKey configured (set one in models.{json,yml}, ` +
-        `auth.json [pi only], or $X_LLM_GATEWAY_API_KEY); leaving runtime's models in place.\n`,
+        `auth.json [pi only], or $X_HERALD_API_KEY); leaving runtime's models in place.\n`,
     )
     return
   }

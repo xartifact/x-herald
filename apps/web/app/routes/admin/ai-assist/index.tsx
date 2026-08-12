@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { Sparkles, Wrench, AlertCircle, Loader2 } from 'lucide-react'
 
 import { useLogs } from '../../../hooks/logs'
-import type { LogListItem } from '@xartifact/x-llm-gateway-shared'
+import type { LogListItem } from '@xartifact/x-herald-shared'
 import {
   Button,
   Card,
@@ -28,7 +28,7 @@ import {
   get,
   post,
   PageHeader,
-} from '@xartifact/x-llm-gateway-ui'
+} from '@xartifact/x-herald-ui'
 
 interface FixSuggestion {
   action: 'update_config' | 'remove_parameter' | 'add_parameter' | 'modify_transform' | 'add_header'

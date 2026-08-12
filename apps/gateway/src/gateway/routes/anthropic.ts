@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 
 import logger from '../../lib/logger'
-import type { VirtualKey } from '@xartifact/x-llm-gateway-db'
+import type { VirtualKey } from '@xartifact/x-herald-db'
 
 import { handleAnthropicMessages } from '../handlers/anthropic/messages-handler'
 import { resolveConnectTimeoutMs } from '../handlers/shared/constants'

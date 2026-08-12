@@ -1,5 +1,5 @@
-import { Agent } from '@xartifact/x-llm-gateway-sdk'
-import { errorDiagnosisSkill, configGenerationSkill } from '@xartifact/x-llm-gateway-sdk'
+import { Agent } from '@xartifact/x-herald-sdk'
+import { errorDiagnosisSkill, configGenerationSkill } from '@xartifact/x-herald-sdk'
 
 import { createLLMAdapter } from '../../lib/llm-adapter'
 import { allExecutors } from './tool-executors'

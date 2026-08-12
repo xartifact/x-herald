@@ -1,4 +1,4 @@
-import type { RouteAction } from '@xartifact/x-llm-gateway-shared'
+import type { RouteAction } from '@xartifact/x-herald-shared'
 import { RequestRejectedError } from '../model-group-router'
 import type { RouteResult } from '../router-selector'
 import type { RouteActionHandler, RouteActionResolutionContext } from './types'

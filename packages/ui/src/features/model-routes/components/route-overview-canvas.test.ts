@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { AccessModelRouteOverview } from '@xartifact/x-llm-gateway-shared'
+import type { AccessModelRouteOverview } from '@xartifact/x-herald-shared'
 
 import { buildOverviewGraph } from './route-overview-canvas'
 

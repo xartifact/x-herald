@@ -9,7 +9,7 @@ import type {
   TransformerContext,
   StandardRequest,
   StandardResponse,
-} from '@xartifact/x-llm-gateway-shared'
+} from '@xartifact/x-herald-shared'
 
 const { AnthropicTransformer } = await import('../protocols/anthropic?v=1')
 const { OpenAITransformer } = await import('../protocols/openai?v=1')

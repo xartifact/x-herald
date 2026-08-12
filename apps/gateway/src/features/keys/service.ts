@@ -1,13 +1,13 @@
 import crypto from 'crypto'
 
-import { and, desc, eq, ilike, isNull, sql } from '@xartifact/x-llm-gateway-db'
+import { and, desc, eq, ilike, isNull, sql } from '@xartifact/x-herald-db'
 
 import type { Database } from '../../db/client'
 import { getDatabase } from '../../db/client'
 import rootLogger from '../../lib/logger'
 import { invalidateVirtualKeyCache } from '../../middleware/virtual-key'
 
-import { virtualKeys, type NewVirtualKey } from '@xartifact/x-llm-gateway-db'
+import { virtualKeys, type NewVirtualKey } from '@xartifact/x-herald-db'
 
 const logger = rootLogger.child({ module: 'keys-service' })
 

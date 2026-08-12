@@ -78,7 +78,7 @@ async function runFromFile(filePath: string): Promise<void> {
 async function runFromRequestLog(requestLogId: string): Promise<void> {
   const { loadConfig } = await import('../src/config/loader')
   const { createDatabase, getDatabase, closeDatabase } = await import('../src/db/client')
-  const { requestAttempts, eq } = await import('@xartifact/x-llm-gateway-db')
+  const { requestAttempts, eq } = await import('@xartifact/x-herald-db')
 
   const config = loadConfig()
   await createDatabase(config.database)

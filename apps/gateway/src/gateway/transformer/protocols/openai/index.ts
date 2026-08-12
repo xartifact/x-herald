@@ -8,7 +8,7 @@ import type {
   TransformerContext,
   StandardRequest,
   StandardResponse,
-} from '@xartifact/x-llm-gateway-shared'
+} from '@xartifact/x-herald-shared'
 
 import { adaptOpenAIRequest } from './egress'
 import { normalizeOpenAIRequest } from './ingress'

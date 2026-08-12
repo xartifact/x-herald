@@ -3,13 +3,13 @@
  * 改为显式参数的自由函数，供各 RouteActionHandler 通过 RouteActionDeps 注入使用。
  */
 
-import { and, eq, isNull } from '@xartifact/x-llm-gateway-db'
+import { and, eq, isNull } from '@xartifact/x-herald-db'
 import {
   modelInstances,
   modelGroups,
   modelGroupMemberships,
   providers,
-} from '@xartifact/x-llm-gateway-db'
+} from '@xartifact/x-herald-db'
 
 import { getDatabase } from '../../../db/client'
 import { modelGroupRouter } from '../model-group-router'
@@ -27,7 +27,7 @@ import {
   type FailedStepInfo,
   type RouteChainSnapshot,
 } from '../routing-trace-recorder'
-import type { RouteCondition } from '@xartifact/x-llm-gateway-shared'
+import type { RouteCondition } from '@xartifact/x-herald-shared'
 import type { LegacyRuleMatch } from './types'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i

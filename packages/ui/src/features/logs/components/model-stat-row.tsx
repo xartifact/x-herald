@@ -1,5 +1,5 @@
 import { cn } from '../../../shared/lib/utils'
-import type { ClientModelStat } from '@xartifact/x-llm-gateway-shared'
+import type { ClientModelStat } from '@xartifact/x-herald-shared'
 import { Badge } from '../../../shared/components/ui/badge'
 
 interface ModelStatRowProps {

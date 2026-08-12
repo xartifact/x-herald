@@ -1,4 +1,4 @@
-import { sql } from '@xartifact/x-llm-gateway-db'
+import { sql } from '@xartifact/x-herald-db'
 import { Hono } from 'hono'
 
 import { APP_VERSION, GIT_COMMIT_HASH } from '../../config'

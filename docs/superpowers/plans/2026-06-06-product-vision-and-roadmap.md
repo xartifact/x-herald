@@ -1,4 +1,4 @@
-# x-llm-gateway 产品愿景与研发计划
+# x-herald 产品愿景与研发计划
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task.
 
@@ -87,7 +87,7 @@
 #### 3.1.1 Base URL 直连模式
 
 ```
-客户端（配置 base URL）──→ x-llm-gateway ──HTTP/HTTPS──→ Provider API
+客户端（配置 base URL）──→ x-herald ──HTTP/HTTPS──→ Provider API
                               │
                               ├─ 协议检测（自动识别 OpenAI/Anthropic/Gemini）
                               ├─ 协议转换（按需）
@@ -271,8 +271,8 @@ Response → ResponseIngress → ResponseAdapt → ResponseEgress → Client
 **Cursor 配置：**
 
 ```bash
-# 自动配置 Cursor 使用 x-llm-gateway
-npx x-llm-gateway configure cursor
+# 自动配置 Cursor 使用 x-herald
+npx x-herald configure cursor
 
 # 生成的配置：
 # ~/.cursor/settings.json 中添加：
@@ -282,7 +282,7 @@ npx x-llm-gateway configure cursor
 **Claude Desktop 配置：**
 
 ```bash
-npx x-llm-gateway configure claude-desktop
+npx x-herald configure claude-desktop
 
 # 生成的配置：
 # ~/Library/Application Support/Claude/claude_desktop_config.json
@@ -587,7 +587,7 @@ GET    /health/ready
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  x-llm-gateway                                    [Settings]│
+│  x-herald                                    [Settings]│
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐       │
@@ -709,19 +709,19 @@ GET    /health/ready
 
 **目标：** 让 opencode/claude-code/pi 用户 5 分钟内跑起来
 
-| 周次 | 任务                        | 产出                                            | 状态                |
-| ---- | --------------------------- | ----------------------------------------------- | ------------------- |
-| W1   | Base URL 直连模式           | 客户端配置 base URL 指向网关                    | ✅ 已有             |
-| W1   | 协议检测 + 透传             | 自动识别 OpenAI/Anthropic 请求                  | ✅ 已有             |
-| W2   | 客户端一键配置脚本          | `xgate configure opencode/claude-code/pi/codex` | ✅ 已完成 `258f2da` |
-| W3   | 协议转换完善                | OpenAI ↔ Anthropic 双向转换                     | ✅ 已有             |
-| W3   | 虚拟模型路由                | 条件规则引擎                                    | ✅ 已有             |
-| W4   | 虚拟密钥 + 速率限制         | Key 管理 + RPM/Token 限制                       | ✅ 已完成 `3d35c43` |
-| W4   | 熔断器 + 故障转移           | 生产级可靠性                                    | ✅ 已有             |
-| W5   | 请求日志 + 管理 UI          | Dashboard + Logs 页面                           | ✅ 已有             |
-| W5   | Provider + Model Group 管理 | CRUD 页面                                       | ✅ 已有             |
-| W6   | 集成测试 + Bug 修复         | 稳定版本                                        | ⬜ 待做             |
-| W6   | Docker 部署 + 文档          | 一键部署                                        | ⬜ 待做             |
+| 周次 | 任务                        | 产出                                               | 状态                |
+| ---- | --------------------------- | -------------------------------------------------- | ------------------- |
+| W1   | Base URL 直连模式           | 客户端配置 base URL 指向网关                       | ✅ 已有             |
+| W1   | 协议检测 + 透传             | 自动识别 OpenAI/Anthropic 请求                     | ✅ 已有             |
+| W2   | 客户端一键配置脚本          | `x-herald configure opencode/claude-code/pi/codex` | ✅ 已完成 `258f2da` |
+| W3   | 协议转换完善                | OpenAI ↔ Anthropic 双向转换                        | ✅ 已有             |
+| W3   | 虚拟模型路由                | 条件规则引擎                                       | ✅ 已有             |
+| W4   | 虚拟密钥 + 速率限制         | Key 管理 + RPM/Token 限制                          | ✅ 已完成 `3d35c43` |
+| W4   | 熔断器 + 故障转移           | 生产级可靠性                                       | ✅ 已有             |
+| W5   | 请求日志 + 管理 UI          | Dashboard + Logs 页面                              | ✅ 已有             |
+| W5   | Provider + Model Group 管理 | CRUD 页面                                          | ✅ 已有             |
+| W6   | 集成测试 + Bug 修复         | 稳定版本                                           | ⬜ 待做             |
+| W6   | Docker 部署 + 文档          | 一键部署                                           | ⬜ 待做             |
 
 ### Phase 2: 智能分析（3-4 周）
 

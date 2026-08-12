@@ -3,8 +3,8 @@ import { setupCrudTest, teardownCrudTest, type CrudTestContext } from '../../tes
 import { accessModelRouter } from './access-model-router'
 import type { RoutingContext } from './router-selector'
 import { getDatabase } from '../../db/client'
-import { eq } from '@xartifact/x-llm-gateway-db'
-import type { StandardRequest, RouteAction } from '@xartifact/x-llm-gateway-shared'
+import { eq } from '@xartifact/x-herald-db'
+import type { StandardRequest, RouteAction } from '@xartifact/x-herald-shared'
 import {
   modelGroups,
   modelInstances,
@@ -17,7 +17,7 @@ import {
   type ModelGroup,
   type ModelInstance,
   type Provider,
-} from '@xartifact/x-llm-gateway-db'
+} from '@xartifact/x-herald-db'
 import { seedCanvasRoute, resetCanvasStateForTests } from '../../test/canvas-route-helper'
 import { saveDraft, activateVersion } from '../../features/route-rules/service'
 import { getRouteRuleEngine } from './route-rule-engine'

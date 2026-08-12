@@ -1,4 +1,4 @@
-import { DEFAULTS } from '@xartifact/x-llm-gateway-shared'
+import { DEFAULTS } from '@xartifact/x-herald-shared'
 
 import logger from '../../../lib/logger'
 import { getTtfbTimeoutConfig } from '../../services/ttfb-timeout-policy'

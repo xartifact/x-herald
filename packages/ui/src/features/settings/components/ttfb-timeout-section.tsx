@@ -17,7 +17,7 @@ import {
   DEFAULT_TTFB_TIMEOUT_CONFIG,
   type SettingsData,
   type TtfbTimeoutConfig,
-} from '@xartifact/x-llm-gateway-shared'
+} from '@xartifact/x-herald-shared'
 import { useUpdateSettings } from '../hooks/use-settings'
 
 interface FormState {

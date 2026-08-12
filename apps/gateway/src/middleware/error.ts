@@ -25,7 +25,7 @@ function getReporter(): ErrorReporter | null {
   if (!url) return null
   xTinkerReporter = new ErrorReporter({
     serverUrl: url,
-    projectId: process.env.X_TINKER_PROJECT_ID || 'x-llm-gateway',
+    projectId: process.env.X_TINKER_PROJECT_ID || 'x-herald',
   })
   return xTinkerReporter
 }

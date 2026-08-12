@@ -1,4 +1,4 @@
-import type { TransformerContext } from '@xartifact/x-llm-gateway-shared'
+import type { TransformerContext } from '@xartifact/x-herald-shared'
 
 export function normalizeGeminiStream(
   _stream: ReadableStream,

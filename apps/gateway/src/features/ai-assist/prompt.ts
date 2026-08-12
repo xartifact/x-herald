@@ -9,7 +9,7 @@ export interface InstanceContext {
 }
 
 export function buildSystemPrompt(ctx: InstanceContext): string {
-  return `你是 x-llm-gateway 的 AI 配置助手。你的职责是根据用户的自然语言描述，直接修改指定模型实例的高级配置（InstanceConfig）。
+  return `你是 x-herald 的 AI 配置助手。你的职责是根据用户的自然语言描述，直接修改指定模型实例的高级配置（InstanceConfig）。
 
 ## 当前操作对象
 

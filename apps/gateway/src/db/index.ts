@@ -7,16 +7,16 @@ export {
   type DatabaseOptions,
 } from './client'
 
-// Aggregated schemas (now from @xartifact/x-llm-gateway-db — centralized)
-export { providers, type Provider, type NewProvider } from '@xartifact/x-llm-gateway-db'
+// Aggregated schemas (now from @xartifact/x-herald-db — centralized)
+export { providers, type Provider, type NewProvider } from '@xartifact/x-herald-db'
 export {
   modelGroups,
   modelInstances,
   modelInstancesRelations,
   modelGroupMemberships,
   accessModels,
-} from '@xartifact/x-llm-gateway-db'
-export { virtualKeys, type VirtualKey, type NewVirtualKey } from '@xartifact/x-llm-gateway-db'
+} from '@xartifact/x-herald-db'
+export { virtualKeys, type VirtualKey, type NewVirtualKey } from '@xartifact/x-herald-db'
 export {
   requestLogs,
   requestAttempts,
@@ -25,10 +25,10 @@ export {
   intentLogs,
   INTENT_SOURCE_VALUES,
   type IntentSource,
-} from '@xartifact/x-llm-gateway-db'
-export { healthTargets, healthRuns } from '@xartifact/x-llm-gateway-db'
-export { gatewayConfigs, type NewGatewayConfig } from '@xartifact/x-llm-gateway-db'
-export { circuitBreakerEvents } from '@xartifact/x-llm-gateway-db'
+} from '@xartifact/x-herald-db'
+export { healthTargets, healthRuns } from '@xartifact/x-herald-db'
+export { gatewayConfigs, type NewGatewayConfig } from '@xartifact/x-herald-db'
+export { circuitBreakerEvents } from '@xartifact/x-herald-db'
 
 // Types that are not drizzle-inferred — still needed from feature dirs
 export type {

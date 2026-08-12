@@ -11,7 +11,7 @@ import {
   useProviderInstanceState,
   useProviderDialogState,
 } from '../../../hooks/providers'
-import type { ProviderFormData } from '@xartifact/x-llm-gateway-ui'
+import type { ProviderFormData } from '@xartifact/x-herald-ui'
 import {
   Card,
   CardContent,
@@ -26,8 +26,8 @@ import {
   providerSchema,
   PageHeader,
   EmptyState,
-} from '@xartifact/x-llm-gateway-ui'
-import type { Provider } from '@xartifact/x-llm-gateway-shared'
+} from '@xartifact/x-herald-ui'
+import type { Provider } from '@xartifact/x-herald-shared'
 import { Plus, Search, Loader2 } from 'lucide-react'
 
 const defaultValues: ProviderFormData = {

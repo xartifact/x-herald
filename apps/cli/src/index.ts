@@ -9,11 +9,11 @@ import { GatewayClient } from './client'
 const program = new Command()
 
 program
-  .name('xgate')
-  .description('x-llm-gateway management CLI')
+  .name('x-herald')
+  .description('x-herald management CLI')
   .version('0.1.0')
-  .option('-u, --url <url>', 'API base URL', process.env.XGATE_URL || 'http://localhost:3000')
-  .option('-k, --api-key <key>', 'API key', process.env.XGATE_API_KEY)
+  .option('-u, --url <url>', 'API base URL', process.env.X_HERALD_URL || 'http://localhost:3000')
+  .option('-k, --api-key <key>', 'API key', process.env.X_HERALD_API_KEY)
 
 // Providers
 const providers = program.command('providers').description('Manage providers')
@@ -114,10 +114,10 @@ program
   })
 
 // Configure
-const configure = program.command('configure').description('配置 AI 工具使用 x-llm-gateway')
+const configure = program.command('configure').description('配置 AI 工具使用 x-herald')
 
 configure.action(async () => {
-  p.intro('x-llm-gateway 配置向导')
+  p.intro('x-herald 配置向导')
 
   // 选择工具
   const tool = await p.select({
@@ -202,9 +202,9 @@ async function configureOpenCode(url: string, apiKey: string, models: string[]) 
   const config = {
     $schema: 'https://opencode.ai/config.json',
     provider: {
-      'x-llm-gateway': {
+      'x-herald': {
         npm: '@ai-sdk/openai-compatible',
-        name: 'x-llm-gateway',
+        name: 'x-herald',
         options: {
           baseURL: `${url}/api/v1`,
           ...(apiKey ? { apiKey } : {}),
@@ -268,7 +268,7 @@ async function configurePi(url: string, apiKey: string, models: string[]) {
   }
 
   const providersRecord = (existing.providers as Record<string, unknown>) || {}
-  providersRecord['x-llm-gateway'] = {
+  providersRecord['x-herald'] = {
     baseUrl: url,
     api: 'anthropic-messages',
     ...(apiKey ? { apiKey } : {}),
@@ -283,7 +283,7 @@ async function configurePi(url: string, apiKey: string, models: string[]) {
 
 async function configureCodex(url: string, apiKey: string) {
   const envContent = [
-    '# x-llm-gateway 配置 (添加到 ~/.zshrc 或 ~/.bashrc)',
+    '# x-herald 配置 (添加到 ~/.zshrc 或 ~/.bashrc)',
     `export OPENAI_API_BASE="${url}/api/v1"`,
     apiKey ? `export OPENAI_API_KEY="${apiKey}"` : '# export OPENAI_API_KEY="sk-your-key"',
     '',
@@ -293,9 +293,9 @@ async function configureCodex(url: string, apiKey: string) {
   console.log(envContent)
 
   // 也写入一个 .env 文件
-  const envPath = join(process.cwd(), '.env.xgate')
+  const envPath = join(process.cwd(), '.env.x-herald')
   writeFileSync(envPath, envContent)
-  p.log.success('.env.xgate 已生成')
+  p.log.success('.env.x-herald 已生成')
 }
 
 program.parse()

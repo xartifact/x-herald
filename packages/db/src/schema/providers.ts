@@ -1,6 +1,6 @@
 import { pgTable, varchar, boolean, timestamp, text, uuid, jsonb } from 'drizzle-orm/pg-core'
 
-import type { ProtocolsConfig } from '@xartifact/x-llm-gateway-shared'
+import type { ProtocolsConfig } from '@xartifact/x-herald-shared'
 
 export const providers = pgTable('providers', {
   id: uuid('id').primaryKey().defaultRandom(),

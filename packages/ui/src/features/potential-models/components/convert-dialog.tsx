@@ -23,7 +23,7 @@ import { Input } from '../../../shared/components/ui/input'
 import { Switch } from '../../../shared/components/ui/switch'
 import { Textarea } from '../../../shared/components/ui/textarea'
 
-import type { PotentialModel } from '@xartifact/x-llm-gateway-shared'
+import type { PotentialModel } from '@xartifact/x-herald-shared'
 
 export interface ConvertFormValues {
   displayName?: string

@@ -5,7 +5,7 @@ import {
   NodeTypeRegistry,
   validateNodeData,
   type NodeType,
-} from '@xartifact/x-llm-gateway-shared'
+} from '@xartifact/x-herald-shared'
 
 export interface ValidationError {
   nodeId: string

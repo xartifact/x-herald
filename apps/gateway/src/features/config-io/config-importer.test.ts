@@ -2,15 +2,15 @@ import { describe, it, expect, mock, beforeEach, afterEach, afterAll } from 'bun
 
 const realDbClient = await import('../../db/client')
 
-import { providers } from '@xartifact/x-llm-gateway-db'
+import { providers } from '@xartifact/x-herald-db'
 import {
   modelGroups,
   modelInstances,
   modelGroupMemberships,
   accessModels,
-} from '@xartifact/x-llm-gateway-db'
-import { virtualKeys } from '@xartifact/x-llm-gateway-db'
-import { gatewayConfigs } from '@xartifact/x-llm-gateway-db'
+} from '@xartifact/x-herald-db'
+import { virtualKeys } from '@xartifact/x-herald-db'
+import { gatewayConfigs } from '@xartifact/x-herald-db'
 
 // ─── Mock DB with mutable state ─────────────────────────────────────────────
 

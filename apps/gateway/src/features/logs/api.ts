@@ -21,8 +21,8 @@ import {
 } from './services/log-query'
 import { AnalyzeLogError, buildAnalysisStream } from './services/log-analyzer'
 import { getIntentLogsPage, getIntentStats } from './services/intent-log-service'
-import type { IntentSource } from '@xartifact/x-llm-gateway-db'
-import { INTENT_SOURCE_VALUES } from '@xartifact/x-llm-gateway-db'
+import type { IntentSource } from '@xartifact/x-herald-db'
+import { INTENT_SOURCE_VALUES } from '@xartifact/x-herald-db'
 const logsRoutes = new Hono()
 
 logsRoutes.get('/live', (c) => {

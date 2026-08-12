@@ -4,7 +4,7 @@ import { Badge } from '../../../shared/components/ui/badge'
 import { Button } from '../../../shared/components/ui/button'
 import { TableCell, TableRow } from '../../../shared/components/ui/table'
 import { cn } from '../../../shared/lib/utils'
-import type { LogListItem } from '@xartifact/x-llm-gateway-shared'
+import type { LogListItem } from '@xartifact/x-herald-shared'
 
 interface ModelCellProps {
   log: LogListItem

@@ -9,7 +9,7 @@ import type {
   TransformerContext,
   StandardRequest,
   StandardResponse,
-} from '@xartifact/x-llm-gateway-shared'
+} from '@xartifact/x-herald-shared'
 
 import { AnthropicTransformer } from '../anthropic'
 

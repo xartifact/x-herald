@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test'
 
-import { accessModels, routeRules } from '@xartifact/x-llm-gateway-db'
+import { accessModels, routeRules } from '@xartifact/x-herald-db'
 
 import { getDatabase } from '../../db/client'
 import { createTestEngine, destroyTestEngine } from '../../test/setup'

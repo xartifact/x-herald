@@ -17,7 +17,7 @@
  *   - 顶层 handler 把 snapshot 透传到 `logStartAsync({ routingTrace: { routeChain: ... } })`
  */
 
-import type { RouteCondition } from '@xartifact/x-llm-gateway-shared'
+import type { RouteCondition } from '@xartifact/x-herald-shared'
 
 import type { RouteResult } from './router-selector'
 

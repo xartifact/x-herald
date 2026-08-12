@@ -1,4 +1,4 @@
-import type { InstanceConfig } from '@xartifact/x-llm-gateway-shared'
+import type { InstanceConfig } from '@xartifact/x-herald-shared'
 
 export interface ChatMessage {
   id: string

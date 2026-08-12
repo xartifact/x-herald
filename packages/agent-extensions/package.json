@@ -1,8 +1,8 @@
 {
-  "name": "@xartifact/x-llm-gateway-agent-extensions",
+  "name": "@xartifact/x-herald-agent-extensions",
   "version": "0.3.0",
   "private": true,
-  "description": "Agent runtime extensions for x-llm-gateway. Single home for all agent runtimes (pi/omp today, openclaw/hermes next): the extension adapts internally via runtime detection — pi seeds eagerly + refreshModels hook, omp registers fetchDynamicModels with SQLite cache.",
+  "description": "Agent runtime extensions for x-herald. Single home for all agent runtimes (pi/omp today, openclaw/hermes next): the extension adapts internally via runtime detection — pi seeds eagerly + refreshModels hook, omp registers fetchDynamicModels with SQLite cache.",
   "keywords": [
     "omp-package",
     "pi-package"
@@ -27,7 +27,7 @@
   "devDependencies": {
     "@types/bun": "latest",
     "@types/js-yaml": "^4.0.9",
-    "@xartifact/x-llm-gateway-shared": "workspace:*",
+    "@xartifact/x-herald-shared": "workspace:*",
     "typescript": "^5.3.3"
   },
   "peerDependencies": {

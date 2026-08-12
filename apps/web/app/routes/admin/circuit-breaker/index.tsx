@@ -13,9 +13,9 @@ import {
   CircuitBreakerConfirmDialog,
   Button,
   PageHeader,
-} from '@xartifact/x-llm-gateway-ui'
+} from '@xartifact/x-herald-ui'
 import { RefreshCw } from 'lucide-react'
-import type { CircuitBreakerEventType } from '@xartifact/x-llm-gateway-shared'
+import type { CircuitBreakerEventType } from '@xartifact/x-herald-shared'
 
 export function CircuitBreakerPage() {
   const [eventFilter, setEventFilter] = useState<CircuitBreakerEventType | 'all'>('all')

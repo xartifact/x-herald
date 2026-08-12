@@ -1,5 +1,5 @@
 /**
- * HTTP client for x-llm-gateway's OpenAI-compatible `/models` endpoint.
+ * HTTP client for x-herald's OpenAI-compatible `/models` endpoint.
  * Pure logic — same code under pi (Node) and omp (Bun).
  */
 
@@ -55,7 +55,7 @@ export async function discoverModels(apiKey?: string): Promise<ProviderModelConf
   const config = await resolveProviderConfig()
   const key = apiKey ?? config.apiKey
   if (!key) {
-    throw new Error('no apiKey configured (models file, auth.json, or $X_LLM_GATEWAY_API_KEY)')
+    throw new Error('no apiKey configured (models file, auth.json, or $X_HERALD_API_KEY)')
   }
   const entries = await fetchGatewayModels(config.baseUrl, key)
   if (entries.length === 0) {

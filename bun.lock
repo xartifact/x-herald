@@ -26,10 +26,10 @@
       },
     },
     "apps/cli": {
-      "name": "@xartifact/x-llm-gateway-cli",
+      "name": "@xartifact/x-herald-cli",
       "version": "0.1.0",
       "bin": {
-        "xgate": "./src/index.ts",
+        "x-herald": "./src/index.ts",
       },
       "dependencies": {
         "@clack/prompts": "^1.5.1",
@@ -41,13 +41,13 @@
       },
     },
     "apps/gateway": {
-      "name": "@xartifact/x-llm-gateway-core",
+      "name": "@xartifact/x-herald-core",
       "version": "0.0.0",
       "dependencies": {
         "@dagrejs/dagre": "^3.0.0",
-        "@xartifact/x-llm-gateway-db": "workspace:*",
-        "@xartifact/x-llm-gateway-sdk": "workspace:*",
-        "@xartifact/x-llm-gateway-shared": "workspace:*",
+        "@xartifact/x-herald-db": "workspace:*",
+        "@xartifact/x-herald-sdk": "workspace:*",
+        "@xartifact/x-herald-shared": "workspace:*",
         "@xartifact/x-tinker-sdk": "^0.1.2",
         "@xartifact/x-tinker-shared": "^0.1.2",
         "@xyflow/react": "^12.10.1",
@@ -73,15 +73,15 @@
       ],
     },
     "apps/web": {
-      "name": "@xartifact/x-llm-gateway-web",
+      "name": "@xartifact/x-herald-web",
       "version": "0.0.0",
       "dependencies": {
         "@hookform/resolvers": "^5.4.0",
         "@monaco-editor/react": "^4.7.0",
         "@tanstack/react-query": "^5.90.20",
         "@tanstack/react-router": "^1.170.6",
-        "@xartifact/x-llm-gateway-shared": "workspace:*",
-        "@xartifact/x-llm-gateway-ui": "workspace:*",
+        "@xartifact/x-herald-shared": "workspace:*",
+        "@xartifact/x-herald-ui": "workspace:*",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "lucide-react": "^0.563.0",
@@ -106,7 +106,7 @@
       },
     },
     "packages/agent-extensions": {
-      "name": "@xartifact/x-llm-gateway-agent-extensions",
+      "name": "@xartifact/x-herald-agent-extensions",
       "version": "0.3.0",
       "dependencies": {
         "js-yaml": "^4.1.0",
@@ -114,7 +114,7 @@
       "devDependencies": {
         "@types/bun": "latest",
         "@types/js-yaml": "^4.0.9",
-        "@xartifact/x-llm-gateway-shared": "workspace:*",
+        "@xartifact/x-herald-shared": "workspace:*",
         "typescript": "^5.3.3",
       },
       "peerDependencies": {
@@ -127,7 +127,7 @@
       ],
     },
     "packages/ai-agent": {
-      "name": "@xartifact/x-llm-gateway-sdk",
+      "name": "@xartifact/x-herald-sdk",
       "version": "0.1.0",
       "devDependencies": {
         "@types/bun": "latest",
@@ -135,7 +135,7 @@
       },
     },
     "packages/db": {
-      "name": "@xartifact/x-llm-gateway-db",
+      "name": "@xartifact/x-herald-db",
       "version": "0.0.0",
       "dependencies": {
         "drizzle-orm": "^0.45.1",
@@ -155,7 +155,7 @@
       ],
     },
     "packages/docs": {
-      "name": "@xartifact/x-llm-gateway-docs",
+      "name": "@xartifact/x-herald-docs",
       "version": "0.1.0",
       "dependencies": {
         "@astrojs/starlight": "^0.30.0",
@@ -163,7 +163,7 @@
       },
     },
     "packages/shared": {
-      "name": "@xartifact/x-llm-gateway-shared",
+      "name": "@xartifact/x-herald-shared",
       "version": "0.0.0",
       "dependencies": {
         "zod": "^4.4.3",
@@ -174,7 +174,7 @@
       },
     },
     "packages/ui": {
-      "name": "@xartifact/x-llm-gateway-ui",
+      "name": "@xartifact/x-herald-ui",
       "version": "0.0.0",
       "dependencies": {
         "@dagrejs/dagre": "^3.0.0",
@@ -193,7 +193,7 @@
         "@rjsf/core": "^6.6.2",
         "@rjsf/utils": "^6.6.2",
         "@rjsf/validator-ajv8": "^6.6.2",
-        "@xartifact/x-llm-gateway-shared": "workspace:*",
+        "@xartifact/x-herald-shared": "workspace:*",
         "@xyflow/react": "^12.10.1",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
@@ -842,23 +842,23 @@
 
     "@x0k/json-schema-merge": ["@x0k/json-schema-merge@1.0.4", "", { "dependencies": { "@types/json-schema": "^7.0.15" } }, "sha512-KvmMgAftbVzATq4IRnkno/SKSu+gjaR2ZUPJG5JUlY4W3twRJo03sk2914u8scmosibBZ0m7s6euZlJuqpv8Ww=="],
 
-    "@xartifact/x-llm-gateway-agent-extensions": ["@xartifact/x-llm-gateway-agent-extensions@workspace:packages/agent-extensions"],
+    "@xartifact/x-herald-agent-extensions": ["@xartifact/x-herald-agent-extensions@workspace:packages/agent-extensions"],
 
-    "@xartifact/x-llm-gateway-cli": ["@xartifact/x-llm-gateway-cli@workspace:apps/cli"],
+    "@xartifact/x-herald-cli": ["@xartifact/x-herald-cli@workspace:apps/cli"],
 
-    "@xartifact/x-llm-gateway-core": ["@xartifact/x-llm-gateway-core@workspace:apps/gateway"],
+    "@xartifact/x-herald-core": ["@xartifact/x-herald-core@workspace:apps/gateway"],
 
-    "@xartifact/x-llm-gateway-db": ["@xartifact/x-llm-gateway-db@workspace:packages/db"],
+    "@xartifact/x-herald-db": ["@xartifact/x-herald-db@workspace:packages/db"],
 
-    "@xartifact/x-llm-gateway-docs": ["@xartifact/x-llm-gateway-docs@workspace:packages/docs"],
+    "@xartifact/x-herald-docs": ["@xartifact/x-herald-docs@workspace:packages/docs"],
 
-    "@xartifact/x-llm-gateway-sdk": ["@xartifact/x-llm-gateway-sdk@workspace:packages/ai-agent"],
+    "@xartifact/x-herald-sdk": ["@xartifact/x-herald-sdk@workspace:packages/ai-agent"],
 
-    "@xartifact/x-llm-gateway-shared": ["@xartifact/x-llm-gateway-shared@workspace:packages/shared"],
+    "@xartifact/x-herald-shared": ["@xartifact/x-herald-shared@workspace:packages/shared"],
 
-    "@xartifact/x-llm-gateway-ui": ["@xartifact/x-llm-gateway-ui@workspace:packages/ui"],
+    "@xartifact/x-herald-ui": ["@xartifact/x-herald-ui@workspace:packages/ui"],
 
-    "@xartifact/x-llm-gateway-web": ["@xartifact/x-llm-gateway-web@workspace:apps/web"],
+    "@xartifact/x-herald-web": ["@xartifact/x-herald-web@workspace:apps/web"],
 
     "@xartifact/x-tinker-sdk": ["@xartifact/x-tinker-sdk@0.1.2", "", { "dependencies": { "@xartifact/x-tinker-shared": "0.1.2" }, "peerDependencies": { "hono": "^4.12.27" } }, "sha512-H54nhICf1/8irOdGZkF8zGd4zbDCjWKwlzgCnNHc2lEGSO00qsw7L4M3tGDUA2zNHx7fMjnGybaVH2g+FoqaYA=="],
 

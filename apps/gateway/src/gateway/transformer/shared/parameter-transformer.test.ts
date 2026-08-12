@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'bun:test'
 
-import type { StandardRequest, TransformerContext } from '@xartifact/x-llm-gateway-shared'
+import type { StandardRequest, TransformerContext } from '@xartifact/x-herald-shared'
 
 import {
   getValueByPath,

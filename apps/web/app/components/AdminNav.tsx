@@ -1,8 +1,8 @@
 import { LogOut } from 'lucide-react'
 
-import { APP_VERSION, GIT_COMMIT_HASH } from '@xartifact/x-llm-gateway-shared'
+import { APP_VERSION, GIT_COMMIT_HASH } from '@xartifact/x-herald-shared'
 
-import { Button } from '@xartifact/x-llm-gateway-ui'
+import { Button } from '@xartifact/x-herald-ui'
 
 import { allNavItems } from './admin-nav-config'
 import { NavDesktopDropdowns } from './nav-desktop-dropdowns'
@@ -21,7 +21,7 @@ export default function AdminNav() {
         <div className="flex justify-between h-16">
           <div className="flex">
             <div className="shrink-0 flex items-center">
-              <h1 className="text-xl font-bold text-foreground">x-llm-gateway</h1>
+              <h1 className="text-xl font-bold text-foreground">x-herald</h1>
             </div>
             <NavDesktopDropdowns />
             <NavMobileMenu />

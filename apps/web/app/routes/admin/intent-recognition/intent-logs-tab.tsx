@@ -26,7 +26,7 @@ import {
   TableRow,
   TabsList,
   TabsTrigger,
-} from '@xartifact/x-llm-gateway-ui'
+} from '@xartifact/x-herald-ui'
 import type { IntentSource } from '../../../hooks/intent-logs'
 import { useIntentLogs, useIntentLogStats, type IntentLogRow } from '../../../hooks/intent-logs'
 

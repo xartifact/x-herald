@@ -10,7 +10,7 @@ import {
 } from 'drizzle-orm/pg-core'
 import { accessModels } from './model-groups'
 
-import type { CanvasGraph } from '@xartifact/x-llm-gateway-shared'
+import type { CanvasGraph } from '@xartifact/x-herald-shared'
 
 export const routeRules = pgTable('route_rules', {
   id: uuid('id').primaryKey().defaultRandom(),

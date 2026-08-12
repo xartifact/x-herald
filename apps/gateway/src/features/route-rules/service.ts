@@ -11,9 +11,9 @@
  *   - RouteRuleEngine 只读缓存，永不直接查 DB（避免请求路径里的重复 IO）
  */
 
-import { accessModels, and, eq, isNull, ne, routeRules } from '@xartifact/x-llm-gateway-db'
-import type { RouteRule } from '@xartifact/x-llm-gateway-db'
-import type { AccessModelRouteOverview, CanvasGraph } from '@xartifact/x-llm-gateway-shared'
+import { accessModels, and, eq, isNull, ne, routeRules } from '@xartifact/x-herald-db'
+import type { RouteRule } from '@xartifact/x-herald-db'
+import type { AccessModelRouteOverview, CanvasGraph } from '@xartifact/x-herald-shared'
 
 import type { Database } from '../../db/client'
 import { getDatabase } from '../../db/client'

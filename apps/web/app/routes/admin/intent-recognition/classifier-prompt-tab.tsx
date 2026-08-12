@@ -17,7 +17,7 @@ import {
   get,
   Textarea,
   put,
-} from '@xartifact/x-llm-gateway-ui'
+} from '@xartifact/x-herald-ui'
 import { AlertCircle, Check, Save } from 'lucide-react'
 
 interface ClassifierPromptData {

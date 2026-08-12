@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { TargetNodeDataSchema } from '@xartifact/x-llm-gateway-shared'
+import { TargetNodeDataSchema } from '@xartifact/x-herald-shared'
 
 import { ACTION_TYPES, targetUiSchema } from './targetSchema'
 

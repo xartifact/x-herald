@@ -1,14 +1,14 @@
-import { desc, eq, isNull } from '@xartifact/x-llm-gateway-db'
+import { desc, eq, isNull } from '@xartifact/x-herald-db'
 import { z } from 'zod'
 
 import type { Database } from '../../db/client'
 import { getDatabase } from '../../db/client'
 import rootLogger from '../../lib/logger'
-import { modelInstances } from '@xartifact/x-llm-gateway-db'
+import { modelInstances } from '@xartifact/x-herald-db'
 
-import { providers } from '@xartifact/x-llm-gateway-db'
+import { providers } from '@xartifact/x-herald-db'
 import type { ProtocolsConfig } from './db'
-import type { ProviderModelInfo } from '@xartifact/x-llm-gateway-shared'
+import type { ProviderModelInfo } from '@xartifact/x-herald-shared'
 import { normalizeProviderModel, buildInstanceMetadata } from './service-helpers'
 
 const logger = rootLogger.child({ module: 'providers-service' })
@@ -294,7 +294,7 @@ export async function syncModels(
   const database = db ?? getDatabase()
 
   if (data.groupId) {
-    const { modelGroups } = await import('@xartifact/x-llm-gateway-db')
+    const { modelGroups } = await import('@xartifact/x-herald-db')
     const group = await database
       .select()
       .from(modelGroups)
@@ -330,7 +330,7 @@ export async function syncModels(
       .returning({ id: modelInstances.id })
 
     if (data.groupId && inserted.length > 0) {
-      const { modelGroupMemberships } = await import('@xartifact/x-llm-gateway-db')
+      const { modelGroupMemberships } = await import('@xartifact/x-herald-db')
       await database
         .insert(modelGroupMemberships)
         .values(inserted.map((i) => ({ groupId: data.groupId as string, instanceId: i.id })))

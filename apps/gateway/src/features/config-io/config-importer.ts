@@ -1,5 +1,5 @@
-import { and, eq } from '@xartifact/x-llm-gateway-db'
-import type { CircuitBreakerConfig, TtfbTimeoutConfig } from '@xartifact/x-llm-gateway-shared'
+import { and, eq } from '@xartifact/x-herald-db'
+import type { CircuitBreakerConfig, TtfbTimeoutConfig } from '@xartifact/x-herald-shared'
 
 import { getDatabase } from '../../index'
 import { rootLogger } from '../../index'

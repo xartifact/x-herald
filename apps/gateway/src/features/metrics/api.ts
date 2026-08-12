@@ -1,11 +1,11 @@
-import { and, desc, gte, sql } from '@xartifact/x-llm-gateway-db'
+import { and, desc, gte, sql } from '@xartifact/x-herald-db'
 import { Hono } from 'hono'
 
 import { getDatabase } from '../../db/client'
 
 import { AnomalyDetector } from './anomaly-detector'
-import { anomalyEvents } from '@xartifact/x-llm-gateway-db'
-import { instancePerfSnapshots } from '@xartifact/x-llm-gateway-db'
+import { anomalyEvents } from '@xartifact/x-herald-db'
+import { instancePerfSnapshots } from '@xartifact/x-herald-db'
 
 export const metricsRoutes = new Hono()
 

@@ -22,7 +22,7 @@ const OMP_DIR = join(homedir(), '.omp', 'agent')
 
 /** Explicit override always wins. */
 function fromEnv(): Runtime | null {
-  const override = process.env.X_LLM_GATEWAY_CONFIG_DIR
+  const override = process.env.X_HERALD_CONFIG_DIR
   if (override) {
     const name: RuntimeName = override.includes('.omp') ? 'omp' : 'pi'
     return { name, configDir: override }
@@ -51,7 +51,7 @@ function fromDisk(): Runtime {
   }
   // Neither exists. Default to pi (the heritage runtime; user just hasn't
   // initialized either yet). The provider registration will still work via
-  // $X_LLM_GATEWAY_BASE_URL / $X_LLM_GATEWAY_API_KEY.
+  // $X_HERALD_BASE_URL / $X_HERALD_API_KEY.
   return { name: 'pi', configDir: PI_DIR }
 }
 

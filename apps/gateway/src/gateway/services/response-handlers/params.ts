@@ -1,7 +1,7 @@
 import type { Context } from 'hono'
 
-import type { VirtualKey } from '@xartifact/x-llm-gateway-db'
-import type { InstanceCost, TransformerContext } from '@xartifact/x-llm-gateway-shared'
+import type { VirtualKey } from '@xartifact/x-herald-db'
+import type { InstanceCost, TransformerContext } from '@xartifact/x-herald-shared'
 
 export interface ResponseHandlerParams {
   c: Context

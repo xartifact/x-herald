@@ -37,8 +37,8 @@ export class GatewayClient {
   private apiKey: string
 
   constructor(options: GatewayClientOptions = {}) {
-    this.baseUrl = options.baseUrl || process.env.XGATE_URL || 'http://localhost:3000'
-    this.apiKey = options.apiKey || process.env.XGATE_API_KEY || ''
+    this.baseUrl = options.baseUrl || process.env.X_HERALD_URL || 'http://localhost:3000'
+    this.apiKey = options.apiKey || process.env.X_HERALD_API_KEY || ''
   }
 
   private async request<T>(path: string, options: RequestInit = {}): Promise<T> {

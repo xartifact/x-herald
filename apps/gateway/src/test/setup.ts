@@ -6,7 +6,7 @@ BigInt.prototype.toJSON = function () {
 import { Hono } from 'hono'
 import { drizzle as drizzlePglite } from 'drizzle-orm/pglite'
 
-import { MIGRATIONS_FOLDER, runPgliteMigrations } from '@xartifact/x-llm-gateway-db'
+import { MIGRATIONS_FOLDER, runPgliteMigrations } from '@xartifact/x-herald-db'
 
 import { createEngine } from '../createEngine'
 import * as schema from '../db'

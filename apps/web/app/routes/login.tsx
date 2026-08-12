@@ -12,8 +12,8 @@ import {
   CardTitle,
   Input,
   Label,
-} from '@xartifact/x-llm-gateway-ui'
-import { useLogin } from '@xartifact/x-llm-gateway-ui'
+} from '@xartifact/x-herald-ui'
+import { useLogin } from '@xartifact/x-herald-ui'
 import { LogIn } from 'lucide-react'
 
 export function LoginPage() {
@@ -40,7 +40,7 @@ export function LoginPage() {
       <Card className="w-96">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">管理员登录</CardTitle>
-          <CardDescription>登录 x-llm-gateway 管理后台</CardDescription>
+          <CardDescription>登录 x-herald 管理后台</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent>

@@ -1,5 +1,5 @@
 import logger from '../../../../lib/logger'
-import type { TransformerContext, StandardResponse } from '@xartifact/x-llm-gateway-shared'
+import type { TransformerContext, StandardResponse } from '@xartifact/x-herald-shared'
 
 import { sanitizeContent } from './sanitize'
 import type { AnthropicResponse } from './types'

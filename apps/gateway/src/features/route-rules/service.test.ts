@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'bun:test'
 import { setupCrudTest, teardownCrudTest, type CrudTestContext } from '../../test/crud-helper'
 import { getDatabase } from '../../db/client'
-import { accessModels } from '@xartifact/x-llm-gateway-db'
+import { accessModels } from '@xartifact/x-herald-db'
 
 import {
   activateVersion,

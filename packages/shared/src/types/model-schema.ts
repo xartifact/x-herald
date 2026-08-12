@@ -1,7 +1,7 @@
 /**
  * v1/models 接口返回的模型 Schema。
  *
- * 与 `~/.pi/agent/extensions/x-llm-gateway/schemas/v1-models.schema.json` 保持一致。
+ * 与 `~/.pi/agent/extensions/x-herald/schemas/v1-models.schema.json` 保持一致。
  * - 顶层为 OpenAI 标准的 list 信封：`{ object: "list", data: Model[] }`
  * - `Model` 保留 OpenAI 必需字段（`id` / `object` / `owned_by`），并扩展
  *   `name` / `created` / `context_window` / `max_output_tokens` / `capabilities` /

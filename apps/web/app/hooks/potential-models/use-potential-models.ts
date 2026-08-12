@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
-import { get, post, put, del as deleteRequest } from '@xartifact/x-llm-gateway-ui'
+import { get, post, put, del as deleteRequest } from '@xartifact/x-herald-ui'
 
 import type {
   AccessModel,
@@ -11,7 +11,7 @@ import type {
   Pagination,
   PotentialModel,
   UpdatePotentialModelInput,
-} from '@xartifact/x-llm-gateway-shared'
+} from '@xartifact/x-herald-shared'
 
 interface PotentialModelsListResult {
   data: PotentialModel[]

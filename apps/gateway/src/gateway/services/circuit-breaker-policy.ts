@@ -1,6 +1,6 @@
 import logger from '../../lib/logger'
 import { getDatabase } from '../../db/client'
-import { circuitBreakerEvents } from '@xartifact/x-llm-gateway-db'
+import { circuitBreakerEvents } from '@xartifact/x-herald-db'
 import { getConfig } from '../../features/gateway-config/service'
 
 export const CB_CONFIG_KEY = 'CIRCUIT_BREAKER_CONFIG'

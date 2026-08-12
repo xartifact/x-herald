@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 
-import type { VirtualKey } from '@xartifact/x-llm-gateway-db'
+import type { VirtualKey } from '@xartifact/x-herald-db'
 
 import { handleOpenAIChatCompletion } from '../handlers/openai/chat-completion-handler'
 import { handleResponsesAPI } from '../handlers/openai/responses-handler'

@@ -1,10 +1,10 @@
-import { desc, eq, gte, sql, and } from '@xartifact/x-llm-gateway-db'
+import { desc, eq, gte, sql, and } from '@xartifact/x-herald-db'
 import { Hono } from 'hono'
 
 import { getDatabase } from '../../db/client'
 import { circuitBreakerRegistry } from '../../gateway/services/circuit-breaker-state'
 
-import { circuitBreakerEvents } from '@xartifact/x-llm-gateway-db'
+import { circuitBreakerEvents } from '@xartifact/x-herald-db'
 
 const circuitBreakerRoutes = new Hono()
 

@@ -1,5 +1,5 @@
 {
-  "name": "x-llm-gateway",
+  "name": "x-herald",
   "version": "0.1.1",
   "private": true,
   "description": "Modern LLM Gateway with protocol conversion, smart routing, and high availability",

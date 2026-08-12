@@ -1,6 +1,6 @@
 import { UseFormReturn } from 'react-hook-form'
 
-import type { Provider } from '@xartifact/x-llm-gateway-shared'
+import type { Provider } from '@xartifact/x-herald-shared'
 import { Button } from '../../../shared/components/ui/button'
 import {
   Dialog,

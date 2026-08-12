@@ -1,8 +1,8 @@
-import { and, eq, gt, desc } from '@xartifact/x-llm-gateway-db'
+import { and, eq, gt, desc } from '@xartifact/x-herald-db'
 
 import { getDatabase } from '../../db/client'
 import logger from '../../lib/logger'
-import { circuitBreakerEvents } from '@xartifact/x-llm-gateway-db'
+import { circuitBreakerEvents } from '@xartifact/x-herald-db'
 
 import {
   runtimeConfig,

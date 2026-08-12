@@ -1,7 +1,7 @@
-import { eq, sql } from '@xartifact/x-llm-gateway-db'
+import { eq, sql } from '@xartifact/x-herald-db'
 import { Hono } from 'hono'
 
-import type { TtfbTimeoutConfig } from '@xartifact/x-llm-gateway-shared'
+import type { TtfbTimeoutConfig } from '@xartifact/x-herald-shared'
 
 import { getDatabase } from '../../db/client'
 import { rootLogger } from '../../lib'
@@ -14,7 +14,7 @@ import {
   validateTtfbTimeoutConfig,
 } from '../../gateway/services'
 import { getConfig, setConfig } from '../gateway-config/service'
-import { modelGroups, modelGroupMemberships } from '@xartifact/x-llm-gateway-db'
+import { modelGroups, modelGroupMemberships } from '@xartifact/x-herald-db'
 import {
   getActiveClassifierPrompt,
   updateClassifierPrompt,

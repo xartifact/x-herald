@@ -11,8 +11,8 @@
  * 按 node.type 查表分发每种叶子节点）。
  */
 
-import type { RouteCondition } from '@xartifact/x-llm-gateway-shared'
-import { inArray, modelInstances } from '@xartifact/x-llm-gateway-db'
+import type { RouteCondition } from '@xartifact/x-herald-shared'
+import { inArray, modelInstances } from '@xartifact/x-herald-db'
 import {
   getActiveRouteRule,
   peekActiveRouteRule,

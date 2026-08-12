@@ -3,8 +3,8 @@
  * 检测请求中的能力需求（视觉、TTS、Video），按能力路由到对应模型
  */
 import logger from '../../lib/logger'
-import type { CapabilityActionConfig } from '@xartifact/x-llm-gateway-shared'
-import type { StandardRequest } from '@xartifact/x-llm-gateway-shared'
+import type { CapabilityActionConfig } from '@xartifact/x-herald-shared'
+import type { StandardRequest } from '@xartifact/x-herald-shared'
 
 const serviceLogger = logger.child({ module: 'capability-router' })
 

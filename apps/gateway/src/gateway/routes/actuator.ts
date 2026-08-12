@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 
-import type { VirtualKey } from '@xartifact/x-llm-gateway-db'
+import type { VirtualKey } from '@xartifact/x-herald-db'
 
 import { fetchAccessibleModels } from '../services/model-list'
 
@@ -18,7 +18,7 @@ const actuatorRoutes = new Hono<{
 actuatorRoutes.get('/actuator', (c) => {
   return c.json({
     gateway: {
-      name: 'x-llm-gateway',
+      name: 'x-herald',
       description: 'Unified LLM Gateway with multi-protocol support',
     },
     protocols: [

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 
-import { get } from '@xartifact/x-llm-gateway-ui'
-import type { AccessModelRouteOverview } from '@xartifact/x-llm-gateway-shared'
+import { get } from '@xartifact/x-herald-ui'
+import type { AccessModelRouteOverview } from '@xartifact/x-herald-shared'
 
 export const routeOverviewKey = ['route-overview'] as const
 

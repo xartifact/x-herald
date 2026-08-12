@@ -5,17 +5,12 @@
  * Insert path is fire-and-forget — failures are logged, never re-thrown to the caller.
  */
 
-import { and, desc, eq, gte, lte, sql } from '@xartifact/x-llm-gateway-db'
+import { and, desc, eq, gte, lte, sql } from '@xartifact/x-herald-db'
 
 import { getDatabase } from '../../../db/client'
 import rootLogger from '../../../lib/logger'
-import {
-  intentLogs,
-  modelGroups,
-  virtualKeys,
-  type IntentSource,
-} from '@xartifact/x-llm-gateway-db'
-import type { NewIntentLog } from '@xartifact/x-llm-gateway-db'
+import { intentLogs, modelGroups, virtualKeys, type IntentSource } from '@xartifact/x-herald-db'
+import type { NewIntentLog } from '@xartifact/x-herald-db'
 
 const logger = rootLogger.child({ module: 'intent-log-service' })
 

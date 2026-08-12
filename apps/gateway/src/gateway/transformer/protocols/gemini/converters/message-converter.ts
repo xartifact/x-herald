@@ -1,4 +1,4 @@
-import type { StandardMessage } from '@xartifact/x-llm-gateway-shared'
+import type { StandardMessage } from '@xartifact/x-herald-shared'
 
 import type { GeminiContent } from '../types'
 

@@ -1,4 +1,4 @@
-import type { ImageContent, MessageContent, TextContent } from '@xartifact/x-llm-gateway-shared'
+import type { ImageContent, MessageContent, TextContent } from '@xartifact/x-herald-shared'
 
 /**
  * Convert OpenAI content to Standard format

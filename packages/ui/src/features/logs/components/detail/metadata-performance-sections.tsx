@@ -1,5 +1,5 @@
 import { cn } from '../../../../shared/lib/utils'
-import type { Log } from '@xartifact/x-llm-gateway-shared'
+import type { Log } from '@xartifact/x-herald-shared'
 
 import { LatencyBreakdown } from './latency-breakdown'
 import { InfoRow, Section } from './log-info-row'

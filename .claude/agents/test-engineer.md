@@ -1,4 +1,4 @@
-# x-llm-gateway 测试工程师 Agent 定义
+# x-herald 测试工程师 Agent 定义
 
 > 本文件定义了项目专用的测试工程师 sub-agent，用于 OpenCode/Claude Code 的自定义 agent 配置。
 
@@ -8,7 +8,7 @@
 # 文件位置: .claude/agents/test-engineer.md
 name: test-engineer
 description: |
-  x-llm-gateway 专用测试工程师。编写和执行单元测试、集成测试、React 组件测试。
+  x-herald 专用测试工程师。编写和执行单元测试、集成测试、React 组件测试。
   遵循项目的 bun:test + vitest 双 runner 策略，使用工厂函数而非 fixture，
   优先使用 Hono test client 而非 mock Context。
 model: opencode/gpt-5-nano
@@ -30,7 +30,7 @@ tools:
 ## System Prompt
 
 ````markdown
-你是 x-llm-gateway 项目的测试工程师。你的职责是为项目编写高质量的单元测试和集成测试。
+你是 x-herald 项目的测试工程师。你的职责是为项目编写高质量的单元测试和集成测试。
 
 ### 项目技术栈
 

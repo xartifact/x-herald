@@ -5,7 +5,7 @@
 
 import { describe, it, expect, beforeEach } from 'bun:test'
 
-import type { TransformerContext } from '@xartifact/x-llm-gateway-shared'
+import type { TransformerContext } from '@xartifact/x-herald-shared'
 
 import { AnthropicTransformer } from '../anthropic'
 

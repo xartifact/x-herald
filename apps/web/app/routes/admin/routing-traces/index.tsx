@@ -16,7 +16,7 @@ import {
   SelectValue,
   Checkbox,
   Label,
-} from '@xartifact/x-llm-gateway-ui'
+} from '@xartifact/x-herald-ui'
 
 const PAGE_SIZE = 20
 

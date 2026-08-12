@@ -13,7 +13,7 @@
 import promClient from 'prom-client'
 
 const registry = new promClient.Registry()
-registry.setDefaultLabels({ app: 'x-llm-gateway' })
+registry.setDefaultLabels({ app: 'x-herald' })
 
 // Default Node.js process metrics (CPU, memory, GC, event loop, etc.)
 let defaultMetricsEnabled = false

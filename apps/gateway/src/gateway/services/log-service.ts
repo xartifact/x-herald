@@ -1,14 +1,14 @@
-import { eq } from '@xartifact/x-llm-gateway-db'
+import { eq } from '@xartifact/x-herald-db'
 
 import { IS_PRODUCTION } from '../../config/env'
 import { getDatabase } from '../../db/client'
 import logger from '../../lib/logger'
-import type { VirtualKey } from '@xartifact/x-llm-gateway-db'
+import type { VirtualKey } from '@xartifact/x-herald-db'
 import { trackKeyUsage } from '../../features/keys/usage-tracker'
-import { requestLogs, requestAttempts } from '@xartifact/x-llm-gateway-db'
+import { requestLogs, requestAttempts } from '@xartifact/x-herald-db'
 import type { FailoverReason } from '../../features/logs/db'
 import { costService } from '../../features/costs/service'
-import type { InstanceCost } from '@xartifact/x-llm-gateway-shared'
+import type { InstanceCost } from '@xartifact/x-herald-shared'
 
 import { extractMetadata } from './metadata-extractor'
 import { rateLimitEngine } from './rate-limit-engine'
@@ -25,7 +25,7 @@ function getXTinkerReporter() {
     require('@xartifact/x-tinker-sdk') as typeof import('@xartifact/x-tinker-sdk')
   xTinkerReporter = new ErrorReporter({
     serverUrl: url,
-    projectId: process.env.X_TINKER_PROJECT_ID || 'x-llm-gateway',
+    projectId: process.env.X_TINKER_PROJECT_ID || 'x-herald',
   })
   return xTinkerReporter
 }

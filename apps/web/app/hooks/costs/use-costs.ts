@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 
-import { get } from '@xartifact/x-llm-gateway-ui'
+import { get } from '@xartifact/x-herald-ui'
 
 export const costKeys = {
   all: ['costs'] as const,

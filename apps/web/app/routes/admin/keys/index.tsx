@@ -5,7 +5,7 @@ import { Plus, Search, Loader2 } from 'lucide-react'
 
 import { useKeys, useCreateKey, useUpdateKey, useDeleteKey, useResetKey } from '../../../hooks/keys'
 import { useKeysStats } from '../../../hooks/logs'
-import type { KeyFormData } from '@xartifact/x-llm-gateway-ui'
+import type { KeyFormData } from '@xartifact/x-herald-ui'
 import {
   Button,
   Card,
@@ -18,7 +18,7 @@ import {
   ListPagination,
   PageHeader,
   EmptyState,
-} from '@xartifact/x-llm-gateway-ui'
+} from '@xartifact/x-herald-ui'
 import { keySchema, type KeyFormSchema } from './key-form-schema'
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50]

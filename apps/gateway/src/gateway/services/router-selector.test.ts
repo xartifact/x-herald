@@ -1,6 +1,6 @@
 import { describe, it, expect, mock, beforeEach, afterEach } from 'bun:test'
 
-import type { ModelGroup, ModelInstance } from '@xartifact/x-llm-gateway-db'
+import type { ModelGroup, ModelInstance } from '@xartifact/x-herald-db'
 import type { InstancePerfData } from '../../features/metrics/services/instance-perf-cache'
 
 mock.module('../../features/metrics/services/instance-perf-cache', () => ({
@@ -47,7 +47,7 @@ mock.module('./circuit-breaker-policy', () => ({
 import { circuitBreakerRegistry } from './circuit-breaker-state'
 import { fetchGroupInstancesPerf } from '../../features/metrics/services/instance-perf-cache'
 
-type ProviderSelect = typeof import('@xartifact/x-llm-gateway-db').providers.$inferSelect
+type ProviderSelect = typeof import('@xartifact/x-herald-db').providers.$inferSelect
 
 function createTestProvider(overrides: Partial<ProviderSelect> = {}): ProviderSelect {
   return {

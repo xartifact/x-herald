@@ -15,8 +15,8 @@
     "noEmit": true,
     "types": ["@types/bun"],
     "paths": {
-      "@xartifact/x-llm-gateway-shared": ["../shared/src"],
-      "@xartifact/x-llm-gateway-ui": ["."]
+      "@xartifact/x-herald-shared": ["../shared/src"],
+      "@xartifact/x-herald-ui": ["."]
     }
   },
   "include": ["src"],

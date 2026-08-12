@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 
-import { get } from '@xartifact/x-llm-gateway-ui'
+import { get } from '@xartifact/x-herald-ui'
 
 // 与后端 DB schema（packages/db/src/schema/intent-logs.ts）保持一致；
 // 不直接依赖 db 包是因为 web app 当前不引入它。

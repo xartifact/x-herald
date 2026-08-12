@@ -10,8 +10,8 @@ import {
 } from '../../test/crud-helper'
 import { authenticatedRequest } from '../../test/hono-helper'
 import { getDatabase } from '../../db/client'
-import { accessModels } from '@xartifact/x-llm-gateway-db'
-import type { CanvasGraph } from '@xartifact/x-llm-gateway-shared'
+import { accessModels } from '@xartifact/x-herald-db'
+import type { CanvasGraph } from '@xartifact/x-herald-shared'
 
 interface RouteRuleDto {
   id: string

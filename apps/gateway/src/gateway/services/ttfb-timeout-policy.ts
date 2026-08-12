@@ -1,7 +1,4 @@
-import {
-  DEFAULT_TTFB_TIMEOUT_CONFIG,
-  type TtfbTimeoutConfig,
-} from '@xartifact/x-llm-gateway-shared'
+import { DEFAULT_TTFB_TIMEOUT_CONFIG, type TtfbTimeoutConfig } from '@xartifact/x-herald-shared'
 
 import { getConfig } from '../../features/gateway-config/service'
 import logger from '../../lib/logger'

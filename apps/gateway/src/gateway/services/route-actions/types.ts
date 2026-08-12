@@ -1,4 +1,4 @@
-import type { RouteAction, RouteActionType, RouteCondition } from '@xartifact/x-llm-gateway-shared'
+import type { RouteAction, RouteActionType, RouteCondition } from '@xartifact/x-herald-shared'
 import type { ModelMappingResult } from '../model-mapping'
 import type { RouteMatcher } from '../route-rule-compiler'
 import type { RouteResult, RoutingContext } from '../router-selector'

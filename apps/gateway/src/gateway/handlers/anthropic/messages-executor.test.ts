@@ -1,6 +1,6 @@
 import { describe, it, expect, mock, beforeEach, afterAll } from 'bun:test'
 import type { Context } from 'hono'
-import type { TransformerContext } from '@xartifact/x-llm-gateway-shared'
+import type { TransformerContext } from '@xartifact/x-herald-shared'
 import {
   createTestProvider,
   createTestModelGroup,

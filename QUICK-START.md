@@ -189,7 +189,7 @@ docker-compose down
 
 # 删除数据卷
 
-docker volume rm x-llm-gateway_postgres_data
+docker volume rm x-herald_postgres_data
 
 # 重新启动
 

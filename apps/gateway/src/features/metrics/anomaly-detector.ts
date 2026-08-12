@@ -1,9 +1,9 @@
-import { and, desc, eq, gte } from '@xartifact/x-llm-gateway-db'
+import { and, desc, eq, gte } from '@xartifact/x-herald-db'
 
 import { getDatabase } from '../../db/client'
 
-import { anomalyEvents, type AnomalyEvent } from '@xartifact/x-llm-gateway-db'
-import { instancePerfSnapshots } from '@xartifact/x-llm-gateway-db'
+import { anomalyEvents, type AnomalyEvent } from '@xartifact/x-herald-db'
+import { instancePerfSnapshots } from '@xartifact/x-herald-db'
 
 // Detection rules
 interface DetectionRule {
@@ -111,5 +111,5 @@ export class AnomalyDetector {
   }
 }
 
-export type { AnomalyEvent } from '@xartifact/x-llm-gateway-db'
-export { anomalyEvents } from '@xartifact/x-llm-gateway-db'
+export type { AnomalyEvent } from '@xartifact/x-herald-db'
+export { anomalyEvents } from '@xartifact/x-herald-db'

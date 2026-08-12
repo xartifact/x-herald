@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 
 import logger from '../lib/logger'
-import type { VirtualKey } from '@xartifact/x-llm-gateway-db'
+import type { VirtualKey } from '@xartifact/x-herald-db'
 
 import { virtualKeyMiddleware } from '../middleware/virtual-key'
 import actuatorRoutes from './routes/actuator'
@@ -9,7 +9,7 @@ import anthropicRoutes from './routes/anthropic'
 import openaiRoutes from './routes/openai'
 import { logRequest } from './services/log-service'
 import { fetchAccessibleModels, type AccessibleModel } from './services/model-list'
-import type { ModelSchema } from '@xartifact/x-llm-gateway-shared'
+import type { ModelSchema } from '@xartifact/x-herald-shared'
 
 const ID_PATTERN = /^[A-Za-z0-9._:/\\-]+$/
 
@@ -20,7 +20,7 @@ function toModelSchema(m: AccessibleModel): ModelSchema | null {
   const entry: ModelSchema = {
     id: m.name,
     object: 'model',
-    owned_by: 'x-llm-gateway',
+    owned_by: 'x-herald',
     context_length: caps?.contextWindow ?? 0,
     context_window: caps?.contextWindow ?? 0,
     max_output_tokens: caps?.maxOutputTokens ?? 0,

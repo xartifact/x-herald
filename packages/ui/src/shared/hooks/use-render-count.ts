@@ -1,4 +1,4 @@
-import { IS_DEVELOPMENT } from '@xartifact/x-llm-gateway-shared'
+import { IS_DEVELOPMENT } from '@xartifact/x-herald-shared'
 
 interface RenderStats {
   renders: number

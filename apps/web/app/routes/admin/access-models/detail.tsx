@@ -11,7 +11,7 @@ import {
   TabsList,
   TabsTrigger,
   TabsContent,
-} from '@xartifact/x-llm-gateway-ui'
+} from '@xartifact/x-herald-ui'
 
 import { RouteRulesTab } from './route-rules-tab'
 

@@ -1,5 +1,5 @@
 /**
- * `/x-gate` admin command family. Shared handlers; the runtime injects
+ * `/x-herald` admin command family. Shared handlers; the runtime injects
  * both the extension API (for `registerProvider`) and the command context
  * (for UI), so neither is referenced statically here.
  */
@@ -62,7 +62,7 @@ async function handleDiagnose(ctx: ExtensionCommandContext): Promise<void> {
     return
   }
   // Long report → widget above editor; the summary goes to a notification.
-  ctx.ui.setWidget('x-gate-diagnose', report.lines)
+  ctx.ui.setWidget('x-herald-diagnose', report.lines)
   ctx.ui.notify(
     report.fail === 0
       ? `Diagnose: ${report.pass}/${report.total} pass — see widget above editor`
@@ -89,7 +89,7 @@ async function handleModels(ctx: ExtensionCommandContext): Promise<void> {
     return
   }
   // 每个模型一行：id + context window + max output + 能力标记。
-  const lines = [`x-gate models — ${baseUrl}`, `models: ${entries.length}`, '']
+  const lines = [`x-herald models — ${baseUrl}`, `models: ${entries.length}`, '']
   for (const m of entries) {
     const caps = m.capabilities ?? {}
     const flags = [
@@ -104,19 +104,19 @@ async function handleModels(ctx: ExtensionCommandContext): Promise<void> {
         `max ${String(m.max_output_tokens ?? '-').padStart(7)}${flags ? `  ${flags}` : ''}`,
     )
   }
-  ctx.ui.setWidget('x-gate-models', lines)
+  ctx.ui.setWidget('x-herald-models', lines)
   ctx.ui.notify(`Models: ${entries.length} from ${baseUrl} — see widget above editor`, 'info')
 }
 
 function handleHelp(ctx: ExtensionCommandContext): void {
   ctx.ui.notify(
     [
-      'x-gate sub-commands:',
-      '  /x-gate refresh   re-fetch /models and re-register the provider',
-      '  /x-gate models    list models from the gateway catalogue (widget)',
-      '  /x-gate diagnose  validate /models against the v1 schema (widget)',
-      '  /x-gate version   show extension version',
-      '  /x-gate help      show this help',
+      'x-herald sub-commands:',
+      '  /x-herald refresh   re-fetch /models and re-register the provider',
+      '  /x-herald models    list models from the gateway catalogue (widget)',
+      '  /x-herald diagnose  validate /models against the v1 schema (widget)',
+      '  /x-herald version   show extension version',
+      '  /x-herald help      show this help',
     ].join('\n'),
     'info',
   )
@@ -130,8 +130,8 @@ function handleVersion(ctx: ExtensionCommandContext): void {
 // ---------------------------------------------------------------------------
 
 export function registerXGateCommand(pi: ExtensionAPI): void {
-  pi.registerCommand('x-gate', {
-    description: 'x-llm-gateway admin: refresh | models | diagnose | help',
+  pi.registerCommand('x-herald', {
+    description: 'x-herald admin: refresh | models | diagnose | help',
     getArgumentCompletions(prefix) {
       const items = [
         {
@@ -175,7 +175,7 @@ export function registerXGateCommand(pi: ExtensionAPI): void {
           handleHelp(ctx)
           return
         default:
-          ctx.ui.notify(`Unknown sub-command: "${sub}". Try /x-gate help.`, 'warning')
+          ctx.ui.notify(`Unknown sub-command: "${sub}". Try /x-herald help.`, 'warning')
           handleHelp(ctx)
       }
     },

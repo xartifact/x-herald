@@ -1,15 +1,15 @@
-import { and, eq, inArray, isNull, ne } from '@xartifact/x-llm-gateway-db'
+import { and, eq, inArray, isNull, ne } from '@xartifact/x-herald-db'
 
 import { getDatabase } from '../../db/client'
 import { CATCHALL_VM_NAME } from '../../features/access-models/constants'
-import type { VirtualKey } from '@xartifact/x-llm-gateway-db'
+import type { VirtualKey } from '@xartifact/x-herald-db'
 import {
   modelGroups,
   accessModels,
   modelInstances,
   modelGroupMemberships,
   providers,
-} from '@xartifact/x-llm-gateway-db'
+} from '@xartifact/x-herald-db'
 import type {
   ModelCost,
   ModelCostTier,
@@ -17,7 +17,7 @@ import type {
   ModelHeaders,
   ModelThinkingLevelMap,
   InstanceConfig,
-} from '@xartifact/x-llm-gateway-shared'
+} from '@xartifact/x-herald-shared'
 import { getRouteRuleEngine } from './route-rule-engine'
 
 export interface ModelCapabilities {

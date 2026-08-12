@@ -12,12 +12,12 @@
  *   - 胜出的 attempt = status='success' 的 candidateIndex==0 行
  */
 
-import { and, desc, eq, lt, or, sql } from '@xartifact/x-llm-gateway-db'
+import { and, desc, eq, lt, or, sql } from '@xartifact/x-herald-db'
 import type { SQL } from 'drizzle-orm'
-import type { RouteCondition } from '@xartifact/x-llm-gateway-shared'
+import type { RouteCondition } from '@xartifact/x-herald-shared'
 
 import { getDatabase } from '../../db/client'
-import { requestAttempts, requestLogs } from '@xartifact/x-llm-gateway-db'
+import { requestAttempts, requestLogs } from '@xartifact/x-herald-db'
 
 export interface RoutingTraceFilters {
   startDate?: string

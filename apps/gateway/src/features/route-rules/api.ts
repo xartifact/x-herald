@@ -1,8 +1,8 @@
 import { Hono } from 'hono'
 import type { Context } from 'hono'
 import { z } from 'zod'
-import { CanvasGraphSchema } from '@xartifact/x-llm-gateway-shared'
-import type { RouteAction } from '@xartifact/x-llm-gateway-shared'
+import { CanvasGraphSchema } from '@xartifact/x-herald-shared'
+import type { RouteAction } from '@xartifact/x-herald-shared'
 
 import { activateVersion, deleteVersion, getVersion, listVersions, saveDraft } from './service'
 import { AppError } from '../../middleware/error'

@@ -1,6 +1,6 @@
 import { ChevronRight } from 'lucide-react'
 import { Badge } from '../../../../shared/components/ui/badge'
-import type { Log } from '@xartifact/x-llm-gateway-shared'
+import type { Log } from '@xartifact/x-herald-shared'
 import { InfoRow, Section } from './log-info-row'
 
 interface RequestMetaSectionProps {

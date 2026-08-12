@@ -12,7 +12,7 @@ import {
   TableRow,
 } from '../../../shared/components/ui/index'
 
-import type { ProviderModelInfo } from '@xartifact/x-llm-gateway-shared'
+import type { ProviderModelInfo } from '@xartifact/x-herald-shared'
 
 interface SyncSelectionHandlers {
   selected: Set<string>

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { Button } from '@xartifact/x-llm-gateway-ui'
+import { Button } from '@xartifact/x-herald-ui'
 import { Check, Copy } from 'lucide-react'
 
 interface CopyTextButtonProps {

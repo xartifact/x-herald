@@ -1,5 +1,5 @@
 import type { Edge, Node } from '@xyflow/react'
-import { NodeTypeRegistry, getValidHandleIds, type NodeType } from '@xartifact/x-llm-gateway-shared'
+import { NodeTypeRegistry, getValidHandleIds, type NodeType } from '@xartifact/x-herald-shared'
 
 interface IntentConfigShape {
   categories?: string[]

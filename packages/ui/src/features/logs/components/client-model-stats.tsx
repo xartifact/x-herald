@@ -3,7 +3,7 @@ import { useState, useMemo } from 'react'
 import { BarChart3, Clock, Hash, Activity, ArrowUpDown } from 'lucide-react'
 
 import { cn } from '../../../shared/lib/utils'
-import type { ClientModelStat } from '@xartifact/x-llm-gateway-shared'
+import type { ClientModelStat } from '@xartifact/x-herald-shared'
 import { Badge } from '../../../shared/components/ui/badge'
 import { Button } from '../../../shared/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/components/ui/card'

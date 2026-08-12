@@ -12,8 +12,8 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "paths": {
-      "@xartifact/x-llm-gateway-shared": ["../../packages/shared/src"],
-      "@xartifact/x-llm-gateway-ui": ["../../packages/ui/src"]
+      "@xartifact/x-herald-shared": ["../../packages/shared/src"],
+      "@xartifact/x-herald-ui": ["../../packages/ui/src"]
     }
   },
   "include": ["app", "vite.config.ts"]

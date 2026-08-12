@@ -17,8 +17,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@xartifact/x-llm-gateway-ui'
-import type { LogListItem } from '@xartifact/x-llm-gateway-shared'
+} from '@xartifact/x-herald-ui'
+import type { LogListItem } from '@xartifact/x-herald-shared'
 
 const CLIENT_REGISTRY: Record<string, string> = {
   'claude-code': 'Claude Code',

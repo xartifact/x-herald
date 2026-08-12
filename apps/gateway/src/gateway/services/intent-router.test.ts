@@ -1,7 +1,7 @@
 import { describe, it, expect, mock, beforeEach, afterAll } from 'bun:test'
 
-import type { IntentActionConfig } from '@xartifact/x-llm-gateway-shared'
-import type { StandardRequest } from '@xartifact/x-llm-gateway-shared'
+import type { IntentActionConfig } from '@xartifact/x-herald-shared'
+import type { StandardRequest } from '@xartifact/x-herald-shared'
 
 // =============================================================================
 // Mock: getDatabase —— 注入最小的 fake DB，仅支持本测试需要的 query chains。

@@ -1,13 +1,13 @@
 import { Pencil, Trash2, RefreshCw, BarChart2 } from 'lucide-react'
 
-import type { KeyStat } from '@xartifact/x-llm-gateway-shared'
+import type { KeyStat } from '@xartifact/x-herald-shared'
 import { Badge } from '../../../shared/components/ui/badge'
 import { Button } from '../../../shared/components/ui/button'
 import { TableCell, TableRow } from '../../../shared/components/ui/table'
 
 import { KeyDisplay } from './key-display'
 // TODO(6): from apps/web
-import type { VirtualKey } from '@xartifact/x-llm-gateway-shared'
+import type { VirtualKey } from '@xartifact/x-herald-shared'
 
 function formatRelativeTime(dateStr: string | null): string {
   if (!dateStr) return '从未使用'

@@ -1,5 +1,5 @@
 {
-  "name": "@xartifact/x-llm-gateway-db",
+  "name": "@xartifact/x-herald-db",
   "version": "0.0.0",
   "private": true,
   "type": "module",

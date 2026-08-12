@@ -1,11 +1,11 @@
-import { eq, and } from '@xartifact/x-llm-gateway-db'
-import type { Message, ToolCall, ToolDefinition } from '@xartifact/x-llm-gateway-sdk'
+import { eq, and } from '@xartifact/x-herald-db'
+import type { Message, ToolCall, ToolDefinition } from '@xartifact/x-herald-sdk'
 
 import { getDatabase } from '../db/client'
 import rootLogger from '../lib/logger'
 import { getConfig } from '../features/gateway-config/service'
-import { modelInstances, modelGroupMemberships } from '@xartifact/x-llm-gateway-db'
-import { providers } from '@xartifact/x-llm-gateway-db'
+import { modelInstances, modelGroupMemberships } from '@xartifact/x-herald-db'
+import { providers } from '@xartifact/x-herald-db'
 
 const logger = rootLogger.child({ module: 'ai-caller' })
 

@@ -1,6 +1,6 @@
 import { Separator } from '../../../../shared/components/ui/separator'
 import { cn } from '../../../../shared/lib/utils'
-import type { Log } from '@xartifact/x-llm-gateway-shared'
+import type { Log } from '@xartifact/x-herald-shared'
 
 interface LogSheetStatusBarProps {
   log: Log

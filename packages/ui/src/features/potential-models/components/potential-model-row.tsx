@@ -5,7 +5,7 @@ import { Button } from '../../../shared/components/ui/button'
 import { Switch } from '../../../shared/components/ui/switch'
 import { TableCell, TableRow } from '../../../shared/components/ui/table'
 
-import type { AccessModel, PotentialModel } from '@xartifact/x-llm-gateway-shared'
+import type { AccessModel, PotentialModel } from '@xartifact/x-herald-shared'
 
 interface PotentialModelRowProps {
   pm: PotentialModel

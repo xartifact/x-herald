@@ -12,7 +12,7 @@ import {
   TableRow,
 } from '../../../shared/components/ui/table'
 
-import type { RoutingTraceSummary } from '@xartifact/x-llm-gateway-shared'
+import type { RoutingTraceSummary } from '@xartifact/x-herald-shared'
 
 interface RoutingTraceTableProps {
   traces: RoutingTraceSummary[]

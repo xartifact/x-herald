@@ -8,8 +8,8 @@ import {
   ClientModelList,
   ClientModelSummary,
   PageHeader,
-} from '@xartifact/x-llm-gateway-ui'
-import type { FilterConfig } from '@xartifact/x-llm-gateway-ui'
+} from '@xartifact/x-herald-ui'
+import type { FilterConfig } from '@xartifact/x-herald-ui'
 
 function buildQueryParams(timeRange: string): Record<string, string> {
   if (timeRange === 'all') return {}

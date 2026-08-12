@@ -1,9 +1,5 @@
 import logger from '../../../../lib/logger'
-import type {
-  TransformerContext,
-  StreamChunk,
-  StandardMessage,
-} from '@xartifact/x-llm-gateway-shared'
+import type { TransformerContext, StreamChunk, StandardMessage } from '@xartifact/x-herald-shared'
 
 import type { OpenAIStreamChunk } from './types'
 import { parseToolArguments } from '../../shared/tool-arguments-parser'

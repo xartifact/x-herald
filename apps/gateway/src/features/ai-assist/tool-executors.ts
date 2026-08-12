@@ -1,10 +1,10 @@
-import { eq, and } from '@xartifact/x-llm-gateway-db'
-import type { ToolExecutor } from '@xartifact/x-llm-gateway-sdk'
-import { builtInTools } from '@xartifact/x-llm-gateway-sdk'
+import { eq, and } from '@xartifact/x-herald-db'
+import type { ToolExecutor } from '@xartifact/x-herald-sdk'
+import { builtInTools } from '@xartifact/x-herald-sdk'
 
 import { getDatabase } from '../../db/client'
-import { requestLogs, requestAttempts } from '@xartifact/x-llm-gateway-db'
-import { modelInstances } from '@xartifact/x-llm-gateway-db'
+import { requestLogs, requestAttempts } from '@xartifact/x-herald-db'
+import { modelInstances } from '@xartifact/x-herald-db'
 
 export const diagnoseErrorExecutor: ToolExecutor = {
   tool: builtInTools.diagnoseError,

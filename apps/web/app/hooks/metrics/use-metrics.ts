@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { get, patch, post } from '@xartifact/x-llm-gateway-ui'
+import { get, patch, post } from '@xartifact/x-herald-ui'
 
 const API_BASE = '/api/metrics'
 

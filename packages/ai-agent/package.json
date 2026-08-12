@@ -1,5 +1,5 @@
 {
-  "name": "@xartifact/x-llm-gateway-sdk",
+  "name": "@xartifact/x-herald-sdk",
   "version": "0.1.0",
   "type": "module",
   "main": "./src/index.ts",

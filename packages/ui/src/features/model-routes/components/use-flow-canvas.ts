@@ -13,7 +13,7 @@ import {
   type Node,
   type NodeChange,
 } from '@xyflow/react'
-import type { CanvasGraph } from '@xartifact/x-llm-gateway-shared'
+import type { CanvasGraph } from '@xartifact/x-herald-shared'
 import { toast } from 'sonner'
 
 import { generateId } from '../../../shared/lib/utils'

@@ -7,7 +7,7 @@ import {
   PageHeader,
   EmptyState,
   Button,
-} from '@xartifact/x-llm-gateway-ui'
+} from '@xartifact/x-herald-ui'
 
 export function RoutingTraceDetailPage() {
   const params = useParams({ strict: false }) as { logId?: string }

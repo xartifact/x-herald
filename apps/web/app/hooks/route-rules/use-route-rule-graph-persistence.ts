@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 
-import type { CanvasGraph } from '@xartifact/x-llm-gateway-shared'
+import type { CanvasGraph } from '@xartifact/x-herald-shared'
 
 import {
   useActivateRouteRuleVersion,

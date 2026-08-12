@@ -9,7 +9,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '../../../shared/components/ui/dialog'
-import type { LogStorage } from '@xartifact/x-llm-gateway-shared'
+import type { LogStorage } from '@xartifact/x-herald-shared'
 
 interface LogCleanupDialogProps {
   open: boolean

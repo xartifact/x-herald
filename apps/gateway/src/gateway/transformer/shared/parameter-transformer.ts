@@ -6,7 +6,7 @@
 import logger from '../../../lib/logger'
 // TODO(3.6): update import when features move to engine
 import type { InstanceConfig } from '../../../features/model-groups/db'
-import type { StandardRequest, TransformerContext } from '@xartifact/x-llm-gateway-shared'
+import type { StandardRequest, TransformerContext } from '@xartifact/x-herald-shared'
 
 /**
  * 参数转换规则

@@ -1,5 +1,5 @@
 import logger from '../../../../lib/logger'
-import type { TransformerContext, StandardRequest } from '@xartifact/x-llm-gateway-shared'
+import type { TransformerContext, StandardRequest } from '@xartifact/x-herald-shared'
 
 import { convertToAnthropicMessages } from './converters/message-converter'
 import { convertToAnthropicTool, convertToAnthropicToolChoice } from './converters/tool-converter'

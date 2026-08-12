@@ -235,7 +235,7 @@ export async function createEngine(options: CreateEngineOptions = {}): Promise<E
   // 10. API Root route
   app.get('/api', (c) => {
     return c.json({
-      name: 'x-llm-gateway API',
+      name: 'x-herald API',
       version: APP_VERSION,
       status: 'running',
       timestamp: new Date().toISOString(),

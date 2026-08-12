@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { HeadersViewer } from '../../../../shared'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../../shared/components/ui/tabs'
 import { cn } from '../../../../shared/lib/utils'
-import type { Log } from '@xartifact/x-llm-gateway-shared'
+import type { Log } from '@xartifact/x-herald-shared'
 
 import { BodySubTabs } from './body-sub-tabs'
 import { MessageAnalysisPanel } from './message-analysis-panel'

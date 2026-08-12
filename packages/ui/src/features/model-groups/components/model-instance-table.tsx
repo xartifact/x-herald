@@ -13,7 +13,7 @@ import {
   TableRow,
 } from '../../../shared/components/ui/table'
 
-import type { ModelInstance } from '@xartifact/x-llm-gateway-shared'
+import type { ModelInstance } from '@xartifact/x-herald-shared'
 
 interface ModelInstanceTableProps {
   instances: ModelInstance[]

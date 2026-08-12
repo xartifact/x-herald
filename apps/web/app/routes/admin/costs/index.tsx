@@ -10,15 +10,15 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@xartifact/x-llm-gateway-ui'
+} from '@xartifact/x-herald-ui'
 import {
   useCostSummary,
   useCostByKey,
   useCostByProvider,
   useCostByModel,
 } from '../../../hooks/costs'
-import { CostDateFilter, CostSummaryCards, CostBreakdownTable } from '@xartifact/x-llm-gateway-ui'
-import type { DateRangeFilter } from '@xartifact/x-llm-gateway-ui'
+import { CostDateFilter, CostSummaryCards, CostBreakdownTable } from '@xartifact/x-herald-ui'
+import type { DateRangeFilter } from '@xartifact/x-herald-ui'
 
 function buildQueryParams(filter: DateRangeFilter): { startDate?: string; endDate?: string } {
   const params: { startDate?: string; endDate?: string } = {}

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@xartifact/x-llm-gateway-ui'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@xartifact/x-herald-ui'
 import { ClipboardList, FileText } from 'lucide-react'
 
 import { ClassifierPromptTab } from './classifier-prompt-tab'

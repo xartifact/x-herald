@@ -3,13 +3,13 @@
  * 支持动态配置，带内存缓存
  */
 
-import { eq } from '@xartifact/x-llm-gateway-db'
+import { eq } from '@xartifact/x-herald-db'
 
 import type { Database } from '../../db/client'
 import { getDatabase } from '../../db/client'
 import logger from '../../lib/logger'
 
-import { gatewayConfigs } from '@xartifact/x-llm-gateway-db'
+import { gatewayConfigs } from '@xartifact/x-herald-db'
 
 // 内存缓存
 const configCache = new Map<string, unknown>()

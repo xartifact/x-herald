@@ -4,7 +4,7 @@ import {
   ProviderQualityTable,
   InstancePerfChart,
   PageHeader,
-} from '@xartifact/x-llm-gateway-ui'
+} from '@xartifact/x-herald-ui'
 import { useMetricsSummary, useInstancesSummary } from '../../../hooks/metrics'
 
 export function MetricsPage() {

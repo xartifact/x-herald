@@ -1,4 +1,4 @@
-import { Input } from '@xartifact/x-llm-gateway-ui'
+import { Input } from '@xartifact/x-herald-ui'
 
 import type { WidgetProps } from '@rjsf/utils'
 

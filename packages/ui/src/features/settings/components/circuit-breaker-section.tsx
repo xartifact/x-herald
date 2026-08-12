@@ -13,7 +13,7 @@ import {
 import { Input } from '../../../shared/components/ui/input'
 import { Label } from '../../../shared/components/ui/label'
 
-import type { SettingsData } from '@xartifact/x-llm-gateway-shared'
+import type { SettingsData } from '@xartifact/x-herald-shared'
 import { useUpdateSettings } from '../hooks/use-settings'
 
 interface CbFormState {

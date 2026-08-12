@@ -11,7 +11,7 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 
-import type { AccessModelRouteOverview } from '@xartifact/x-llm-gateway-shared'
+import type { AccessModelRouteOverview } from '@xartifact/x-herald-shared'
 
 import { runAutoLayout } from '../lib/layout-flow'
 import { nodeTypes } from './flow-editor-constants'

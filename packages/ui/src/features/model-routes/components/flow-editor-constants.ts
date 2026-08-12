@@ -1,4 +1,4 @@
-import type { NodeType } from '@xartifact/x-llm-gateway-shared'
+import type { NodeType } from '@xartifact/x-herald-shared'
 import { NodeTypeUIRegistry } from './node-type-ui-registry'
 
 const NODE_TYPE_KEYS = Object.keys(NodeTypeUIRegistry) as NodeType[]

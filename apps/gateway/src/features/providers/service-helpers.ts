@@ -1,8 +1,4 @@
-import type {
-  InstanceCost,
-  InstanceCostTier,
-  ProviderModelInfo,
-} from '@xartifact/x-llm-gateway-shared'
+import type { InstanceCost, InstanceCostTier, ProviderModelInfo } from '@xartifact/x-herald-shared'
 
 /**
  * 供应商模型字段别名注册表。

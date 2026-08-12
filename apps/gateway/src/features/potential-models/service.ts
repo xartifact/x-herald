@@ -15,7 +15,7 @@
  *  - convertToAccessModel 跨表写入包在一个事务里（access_model 创建 + potential_models 删除）
  */
 
-import { and, eq, sql, lt, inArray, desc } from '@xartifact/x-llm-gateway-db'
+import { and, eq, sql, lt, inArray, desc } from '@xartifact/x-herald-db'
 import type { Database } from '../../db/client'
 import { getDatabase } from '../../db/client'
 import rootLogger from '../../lib/logger'
@@ -24,7 +24,7 @@ import {
   accessModels,
   type PotentialModel,
   type PotentialModelAction,
-} from '@xartifact/x-llm-gateway-db'
+} from '@xartifact/x-herald-db'
 
 import { createAccessModel } from '../access-models/service'
 

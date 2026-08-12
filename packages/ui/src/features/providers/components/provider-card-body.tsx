@@ -1,12 +1,12 @@
 import { Eye, EyeOff, Plus } from 'lucide-react'
 
-import type { ModelInstance } from '@xartifact/x-llm-gateway-shared'
+import type { ModelInstance } from '@xartifact/x-herald-shared'
 import { Button } from '../../../shared/components/ui/button'
 import { Separator } from '../../../shared/components/ui/separator'
 
 import { ProviderInstanceTable } from './provider-instance-table'
 // TODO(6): from apps/web
-import type { Provider } from '@xartifact/x-llm-gateway-shared'
+import type { Provider } from '@xartifact/x-herald-shared'
 
 interface InstanceHandlers {
   onAdd: () => void

@@ -59,7 +59,7 @@ function makeCtx() {
 
 // ── tests ────────────────────────────────────────────────────────────────────
 
-describe('/x-gate models', () => {
+describe('/x-herald models', () => {
   it('lists models in a widget with a notification summary', async () => {
     fetchResult = async () => [
       {
@@ -78,8 +78,8 @@ describe('/x-gate models', () => {
     const { ctx, notifications, widgets } = makeCtx()
     await handler!('models', ctx)
 
-    const widget = widgets.get('x-gate-models') ?? []
-    expect(widget[0]).toBe('x-gate models — http://localhost:5005/api/v1')
+    const widget = widgets.get('x-herald-models') ?? []
+    expect(widget[0]).toBe('x-herald models — http://localhost:5005/api/v1')
     expect(widget[1]).toBe('models: 2')
     expect(widget.join('\n')).toContain('Explorer')
     expect(widget.join('\n')).toMatch(/ctx\s+1048576/)
@@ -96,7 +96,7 @@ describe('/x-gate models', () => {
     await handler!('models', ctx)
 
     expect(notifications).toEqual([['Gateway returned an empty list.', 'warning']])
-    expect(widgets.has('x-gate-models')).toBe(false)
+    expect(widgets.has('x-herald-models')).toBe(false)
   })
 
   it('notifies an error when the fetch fails', async () => {
@@ -117,7 +117,7 @@ describe('/x-gate models', () => {
       const { ctx, notifications, widgets } = makeCtx()
       await handler!('models', ctx)
       expect(notifications).toEqual([['No API key configured.', 'error']])
-      expect(widgets.has('x-gate-models')).toBe(false)
+      expect(widgets.has('x-herald-models')).toBe(false)
     } finally {
       currentApiKey = 'sk-test'
     }

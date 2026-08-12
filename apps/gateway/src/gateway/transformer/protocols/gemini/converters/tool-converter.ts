@@ -1,4 +1,4 @@
-import type { ToolDefinition } from '@xartifact/x-llm-gateway-shared'
+import type { ToolDefinition } from '@xartifact/x-herald-shared'
 
 import type { GeminiTool } from '../types'
 

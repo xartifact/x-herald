@@ -5,7 +5,7 @@
  * 传入，没必要每次 get() 都重新构造一个实例。
  */
 
-import type { RouteActionType } from '@xartifact/x-llm-gateway-shared'
+import type { RouteActionType } from '@xartifact/x-herald-shared'
 import type { RouteActionHandler } from './types'
 
 class RouteActionHandlerRegistryImpl {

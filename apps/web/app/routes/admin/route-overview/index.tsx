@@ -1,6 +1,6 @@
 import { Loader2 } from 'lucide-react'
 
-import { RouteOverviewCanvas, Card, CardContent } from '@xartifact/x-llm-gateway-ui'
+import { RouteOverviewCanvas, Card, CardContent } from '@xartifact/x-herald-ui'
 
 import { useRouteOverview } from '../../../hooks/use-route-overview'
 

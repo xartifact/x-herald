@@ -3,13 +3,13 @@
  * 通过规则引擎将接入模型请求路由到模型组或模型实例
  */
 
-import { and, eq, isNull } from '@xartifact/x-llm-gateway-db'
+import { and, eq, isNull } from '@xartifact/x-herald-db'
 
 import { getDatabase } from '../../db/client'
 import logger from '../../lib/logger'
 import { CATCHALL_VM_NAME } from '../../features/access-models/constants'
 import { fetchPerfContext } from '../../features/metrics/services/perf-context-fetcher'
-import { accessModels } from '@xartifact/x-llm-gateway-db'
+import { accessModels } from '@xartifact/x-herald-db'
 
 import { RequestRejectedError, type RouteResult, type RoutingContext } from './model-group-router'
 import { ModelNotFoundError, NoAvailableInstanceError } from './router-selector'
@@ -17,7 +17,7 @@ import type { ModelMappingResult } from './model-mapping'
 import { getRouteRuleEngine } from './route-rule-engine'
 import { gatewayBusinessMetrics } from '../../features/metrics/gateway-business-metrics'
 import { lookupActivePotentialTarget, recordPotentialHit } from '../../features/potential-models'
-import type { RouteAction } from '@xartifact/x-llm-gateway-shared'
+import type { RouteAction } from '@xartifact/x-herald-shared'
 import {
   buildFailureSnapshot,
   resolveGroupCandidates,

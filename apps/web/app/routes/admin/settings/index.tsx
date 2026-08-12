@@ -10,7 +10,7 @@ import {
   AlertTitle,
   AlertDescription,
   PageHeader,
-} from '@xartifact/x-llm-gateway-ui'
+} from '@xartifact/x-herald-ui'
 import { AlertCircle, Loader2 } from 'lucide-react'
 
 export function SettingsPage() {

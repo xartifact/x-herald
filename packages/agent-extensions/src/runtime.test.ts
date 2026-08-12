@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'bun:test'
 
 import { detectRuntime } from './runtime'
 
-const KEY = 'X_LLM_GATEWAY_CONFIG_DIR'
+const KEY = 'X_HERALD_CONFIG_DIR'
 let prev: string | undefined
 
 afterEach(() => {
@@ -11,7 +11,7 @@ afterEach(() => {
 })
 
 describe('detectRuntime', () => {
-  it('honors X_LLM_GATEWAY_CONFIG_DIR containing .omp → omp', () => {
+  it('honors X_HERALD_CONFIG_DIR containing .omp → omp', () => {
     prev = process.env[KEY]
     process.env[KEY] = '/tmp/.omp/agent'
     const r = detectRuntime()
@@ -19,7 +19,7 @@ describe('detectRuntime', () => {
     expect(r.configDir).toBe('/tmp/.omp/agent')
   })
 
-  it('honors X_LLM_GATEWAY_CONFIG_DIR without .omp → pi', () => {
+  it('honors X_HERALD_CONFIG_DIR without .omp → pi', () => {
     prev = process.env[KEY]
     process.env[KEY] = '/tmp/pi-home/agent'
     const r = detectRuntime()

@@ -6,7 +6,7 @@ import {
   type RouteMatcher,
 } from './route-rule-compiler'
 import { evaluateConditions, type RouteContext } from './route-rule-engine'
-import type { CanvasGraph } from '@xartifact/x-llm-gateway-shared'
+import type { CanvasGraph } from '@xartifact/x-herald-shared'
 
 /** 纯函数版的"按 modelName 匹配第一条满足条件的 matcher"，供测试直接断言编译结果。 */
 function matchByModelName(

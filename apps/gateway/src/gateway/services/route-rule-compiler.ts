@@ -17,7 +17,7 @@ import {
   type NodeType,
   type RouteAction,
   type RouteCondition,
-} from '@xartifact/x-llm-gateway-shared'
+} from '@xartifact/x-herald-shared'
 
 export interface RouteMatcher {
   id: string

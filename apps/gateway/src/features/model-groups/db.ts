@@ -39,7 +39,7 @@ export interface RoutingConfig {
   fallbackEnabled: boolean
 }
 
-export type { ModelGroup, NewModelGroup } from '@xartifact/x-llm-gateway-db'
+export type { ModelGroup, NewModelGroup } from '@xartifact/x-herald-db'
 
 /**
  * 模型实例 (Model Instance)
@@ -136,8 +136,8 @@ export interface InstanceConfig {
   responseTransform?: string
 }
 
-export type { ModelInstance, NewModelInstance } from '@xartifact/x-llm-gateway-db'
+export type { ModelInstance, NewModelInstance } from '@xartifact/x-herald-db'
 
-export type { ModelGroupMembership, NewModelGroupMembership } from '@xartifact/x-llm-gateway-db'
+export type { ModelGroupMembership, NewModelGroupMembership } from '@xartifact/x-herald-db'
 
-export type { AccessModel, NewAccessModel } from '@xartifact/x-llm-gateway-db'
+export type { AccessModel, NewAccessModel } from '@xartifact/x-herald-db'

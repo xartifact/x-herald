@@ -3,7 +3,7 @@ import type {
   TransformerContext,
   StandardResponse,
   StandardMessage,
-} from '@xartifact/x-llm-gateway-shared'
+} from '@xartifact/x-herald-shared'
 
 import type { OpenAIChoice } from './types'
 import { getValueByPath, setValueByPath } from '../../shared/parameter-transformer'

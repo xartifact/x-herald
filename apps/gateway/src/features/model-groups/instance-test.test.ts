@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test'
 
-import { modelInstances, providers } from '@xartifact/x-llm-gateway-db'
+import { modelInstances, providers } from '@xartifact/x-herald-db'
 
 import { getDatabase } from '../../db/client'
 import { createMockUpstream, openaiChatCompletion } from '../../test/mock-upstream'

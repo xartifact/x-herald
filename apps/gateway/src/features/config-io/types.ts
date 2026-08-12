@@ -1,4 +1,4 @@
-export type { ExportFormat, ImportResult } from '@xartifact/x-llm-gateway-shared'
+export type { ExportFormat, ImportResult } from '@xartifact/x-herald-shared'
 
 // v2: 移除 modelRoutes 段 —— 路由规则的单一事实源已迁移到 canvas_states，
 // model_routes 表本身也已删除，导出/导入不再涉及路由规则。

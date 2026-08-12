@@ -20,7 +20,7 @@ import {
   lt,
   or,
   type SQL,
-} from '@xartifact/x-llm-gateway-db'
+} from '@xartifact/x-herald-db'
 
 import type { Database } from '../../db/client'
 import { buildCursorPredicate, getRoutingTraceDetail, listRoutingTraces } from './service'

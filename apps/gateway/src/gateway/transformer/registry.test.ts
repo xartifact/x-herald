@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'bun:test'
-import type { Transformer } from '@xartifact/x-llm-gateway-shared'
+import type { Transformer } from '@xartifact/x-herald-shared'
 import {
   transformerRegistry,
   registerTransformer,

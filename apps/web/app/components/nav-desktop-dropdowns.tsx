@@ -2,13 +2,13 @@ import { useState } from 'react'
 
 import { ChevronDown } from 'lucide-react'
 
-import { cn } from '@xartifact/x-llm-gateway-ui'
+import { cn } from '@xartifact/x-herald-ui'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@xartifact/x-llm-gateway-ui'
+} from '@xartifact/x-herald-ui'
 
 import { navGroups, allNavItems } from './admin-nav-config'
 import type { NavGroup } from './admin-nav-config'

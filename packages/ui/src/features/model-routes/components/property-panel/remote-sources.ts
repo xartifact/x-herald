@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 
-import { CATCHALL_VM_NAME } from '@xartifact/x-llm-gateway-shared'
+import { CATCHALL_VM_NAME } from '@xartifact/x-herald-shared'
 
 import { useAccessModels } from '../../../access-models/hooks/use-access-models'
 import { useModelGroups, useModelInstances } from '../../../model-groups/hooks/use-model-groups'

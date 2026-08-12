@@ -5,7 +5,7 @@
 
 ## 背景
 
-`x-llm-gateway` 将作为开源项目面向国际化用户。当前代码库存在两层问题：
+`x-herald` 将作为开源项目面向国际化用户。当前代码库存在两层问题：
 
 1. **时区硬编码**：17 处 `toLocaleString('zh-CN')` 等调用无视用户实际时区；后端"今日熔断"按服务端时区计算；DB 使用 `timestamp without time zone` 无时区信息
 2. **零 i18n 基础**：所有 UI 文案硬编码中文（约 200+ 处）；无 locale / timezone 偏好存储；无 `Accept-Language` 处理

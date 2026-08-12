@@ -1,9 +1,9 @@
 {
-  "name": "@xartifact/x-llm-gateway-cli",
+  "name": "@xartifact/x-herald-cli",
   "version": "0.1.0",
   "private": true,
   "bin": {
-    "xgate": "./src/index.ts"
+    "x-herald": "./src/index.ts"
   },
   "type": "module",
   "main": "./src/index.ts",

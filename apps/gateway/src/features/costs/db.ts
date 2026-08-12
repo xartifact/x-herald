@@ -1,1 +1,1 @@
-export type { CostRecord, NewCostRecord } from '@xartifact/x-llm-gateway-db'
+export type { CostRecord, NewCostRecord } from '@xartifact/x-herald-db'

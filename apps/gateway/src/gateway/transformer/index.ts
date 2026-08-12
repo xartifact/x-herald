@@ -25,7 +25,7 @@ export { GeminiTransformer } from './protocols/gemini'
 
 export function createTransformerContext(
   requestId: string,
-): import('@xartifact/x-llm-gateway-shared').TransformerContext {
+): import('@xartifact/x-herald-shared').TransformerContext {
   return {
     requestId,
     startTime: Date.now(),

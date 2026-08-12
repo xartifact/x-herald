@@ -1,4 +1,4 @@
-import type { TransformerContext, StandardRequest } from '@xartifact/x-llm-gateway-shared'
+import type { TransformerContext, StandardRequest } from '@xartifact/x-herald-shared'
 
 export async function adaptGeminiRequest(
   _request: StandardRequest,

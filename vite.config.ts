@@ -10,10 +10,10 @@ export default defineConfig({
   resolve: {
     dedupe: ['@tanstack/react-query', 'react', 'react-dom'],
     alias: {
-      '@xartifact/x-llm-gateway-ui': path.resolve(__dirname, 'packages/ui/src'),
-      '@xartifact/x-llm-gateway-shared': path.resolve(__dirname, 'packages/shared/src'),
-      '@xartifact/x-llm-gateway-db': path.resolve(__dirname, 'packages/db/src'),
-      '@xartifact/x-llm-gateway-core': path.resolve(__dirname, 'apps/gateway/src'),
+      '@xartifact/x-herald-ui': path.resolve(__dirname, 'packages/ui/src'),
+      '@xartifact/x-herald-shared': path.resolve(__dirname, 'packages/shared/src'),
+      '@xartifact/x-herald-db': path.resolve(__dirname, 'packages/db/src'),
+      '@xartifact/x-herald-core': path.resolve(__dirname, 'apps/gateway/src'),
     },
   },
   test: {

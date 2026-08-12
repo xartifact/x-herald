@@ -6,7 +6,7 @@ import { Badge } from '../../../../shared/components/ui/badge'
 import { Button } from '../../../../shared/components/ui/button'
 import { Card, CardContent, CardHeader } from '../../../../shared/components/ui/card'
 import { Checkbox } from '../../../../shared/components/ui/checkbox'
-import type { LogMetadata } from '@xartifact/x-llm-gateway-shared'
+import type { LogMetadata } from '@xartifact/x-herald-shared'
 
 import { borderColor, extractMessageText, roleColors } from './timeline-message-card-utils'
 

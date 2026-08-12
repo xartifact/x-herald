@@ -5,10 +5,10 @@
  * to refresh — each gauge is a single COUNT or .size lookup.
  */
 
-import { sql } from '@xartifact/x-llm-gateway-db'
+import { sql } from '@xartifact/x-herald-db'
 
 import { getDatabase } from '../../db/client'
-import { accessModels, modelGroups, virtualKeys } from '@xartifact/x-llm-gateway-db'
+import { accessModels, modelGroups, virtualKeys } from '@xartifact/x-herald-db'
 import { peekAllActiveRouteRules } from '../../features/route-rules/service'
 import { getRouteRuleEngine } from '../../gateway/services/route-rule-engine'
 import { getMetricsRegistry } from './prometheus-service'

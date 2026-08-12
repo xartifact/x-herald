@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import * as z from 'zod'
 
-import { useKeysStats } from '@xartifact/x-llm-gateway-ui'
+import { useKeysStats } from '@xartifact/x-herald-ui'
 
 import { useKeys, useCreateKey, useUpdateKey, useDeleteKey, useResetKey } from './use-keys'
 

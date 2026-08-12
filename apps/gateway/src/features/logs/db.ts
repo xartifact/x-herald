@@ -150,4 +150,4 @@ export type {
   NewClientRequestedModel,
   ModelRequestStat,
   NewModelRequestStat,
-} from '@xartifact/x-llm-gateway-db'
+} from '@xartifact/x-herald-db'

@@ -77,7 +77,7 @@ describe('config-io API', () => {
       const disposition = res.headers.get('Content-Disposition')
       expect(disposition).not.toBeNull()
       expect(disposition).toContain('attachment')
-      expect(disposition).toContain('x-llm-gateway-config')
+      expect(disposition).toContain('x-herald-config')
       expect(disposition).toContain('.json')
     })
 

@@ -22,7 +22,7 @@ import {
   ListPagination,
   PageHeader,
   EmptyState,
-} from '@xartifact/x-llm-gateway-ui'
+} from '@xartifact/x-herald-ui'
 
 import {
   usePotentialModels,
@@ -36,7 +36,7 @@ import type {
   ListPotentialModelsQuery,
   PotentialModel,
   PotentialModelAction,
-} from '@xartifact/x-llm-gateway-shared'
+} from '@xartifact/x-herald-shared'
 
 const PAGE_SIZE_OPTIONS = [20, 50, 100]
 

@@ -15,7 +15,7 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { AlertTriangle, Maximize2, Wand2 } from 'lucide-react'
-import { NodeTypeRegistry, type CanvasGraph, type NodeType } from '@xartifact/x-llm-gateway-shared'
+import { NodeTypeRegistry, type CanvasGraph, type NodeType } from '@xartifact/x-herald-shared'
 
 import { decorateNodesWithValidation } from '../lib/validation-display'
 import type { ValidationError } from '../lib/compile-flow'

@@ -2,8 +2,8 @@ import { useState, useMemo, useCallback } from 'react'
 
 import { useForm } from 'react-hook-form'
 
-import type { InstanceFormData } from '@xartifact/x-llm-gateway-ui'
-import type { ModelInstance } from '@xartifact/x-llm-gateway-shared'
+import type { InstanceFormData } from '@xartifact/x-herald-ui'
+import type { ModelInstance } from '@xartifact/x-herald-shared'
 import {
   useModelInstances,
   useModelGroups,
@@ -11,7 +11,7 @@ import {
   useUpdateModelInstance,
   useDeleteModelInstance,
   useToggleModelInstance,
-} from '@xartifact/x-llm-gateway-ui'
+} from '@xartifact/x-herald-ui'
 
 export function useProviderInstanceState() {
   const [instanceDialogOpen, setInstanceDialogOpen] = useState(false)

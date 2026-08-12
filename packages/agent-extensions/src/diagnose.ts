@@ -48,7 +48,7 @@ export function diagnoseEntries(
 ): DiagnoseReport {
   if (entries.length === 0) {
     return {
-      lines: [`x-gate diagnose — ${baseUrl}`, 'models: 0', '', '0/0 pass'],
+      lines: [`x-herald diagnose — ${baseUrl}`, 'models: 0', '', '0/0 pass'],
       pass: 0,
       fail: 0,
       total: 0,
@@ -56,7 +56,7 @@ export function diagnoseEntries(
   }
 
   const lines: string[] = []
-  lines.push(`x-gate diagnose — ${baseUrl}`)
+  lines.push(`x-herald diagnose — ${baseUrl}`)
   lines.push(`models: ${entries.length}`)
   lines.push('')
 

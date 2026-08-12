@@ -14,7 +14,7 @@ import {
   Badge,
   PageHeader,
   EmptyState,
-} from '@xartifact/x-llm-gateway-ui'
+} from '@xartifact/x-herald-ui'
 
 interface FilterState {
   sortField: 'avgResponseTime' | 'p95ResponseTime' | 'requestCount' | 'successRate'

@@ -3,7 +3,7 @@ import type {
   MessageContent,
   StandardMessage,
   TextContent,
-} from '@xartifact/x-llm-gateway-shared'
+} from '@xartifact/x-herald-shared'
 
 import type { AnthropicMessage } from '../types'
 

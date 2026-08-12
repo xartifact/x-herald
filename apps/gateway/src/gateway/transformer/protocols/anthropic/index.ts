@@ -3,7 +3,7 @@ import type {
   TransformerContext,
   StandardRequest,
   StandardResponse,
-} from '@xartifact/x-llm-gateway-shared'
+} from '@xartifact/x-herald-shared'
 
 import { adaptAnthropicRequest } from './egress'
 import { normalizeAnthropicRequest } from './ingress'

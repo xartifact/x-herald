@@ -2,8 +2,8 @@ import { useState } from 'react'
 
 import { useForm } from 'react-hook-form'
 
-import type { GroupFormData } from '@xartifact/x-llm-gateway-ui'
-import type { ModelGroup } from '@xartifact/x-llm-gateway-shared'
+import type { GroupFormData } from '@xartifact/x-herald-ui'
+import type { ModelGroup } from '@xartifact/x-herald-shared'
 import {
   useModelGroups,
   useCreateModelGroup,

@@ -2,7 +2,7 @@ import { useState } from 'react'
 
 import { Plus, Trash2 } from 'lucide-react'
 
-import { Button, Input, Label } from '@xartifact/x-llm-gateway-ui'
+import { Button, Input, Label } from '@xartifact/x-herald-ui'
 
 import type { FieldProps } from '@rjsf/utils'
 

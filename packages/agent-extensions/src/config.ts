@@ -5,7 +5,7 @@
  *   1. Per-runtime provider file (models.json under pi OR models.yml under omp)
  *      → $ENV_VAR references are resolved here.
  *   2. Per-runtime auth file (auth.json under pi ONLY — omp uses SQLite AuthStorage).
- *   3. Process env (X_LLM_GATEWAY_BASE_URL, X_LLM_GATEWAY_API_KEY).
+ *   3. Process env (X_HERALD_BASE_URL, X_HERALD_API_KEY).
  *   4. Built-in defaults.
  *
  * Format handling:
@@ -108,12 +108,12 @@ export async function resolveProviderConfig(): Promise<ResolvedProviderConfig> {
   const auth = await loadAuthFile(runtime.configDir)
   const entry = extractProviderEntry(models)
 
-  const baseUrl = entry.baseUrl ?? process.env.X_LLM_GATEWAY_BASE_URL ?? DEFAULT_BASE_URL
+  const baseUrl = entry.baseUrl ?? process.env.X_HERALD_BASE_URL ?? DEFAULT_BASE_URL
 
   const apiKey =
     resolveEnvRef(entry.apiKey) ??
     auth?.[PROVIDER_ID]?.key ??
-    resolveEnvRef(process.env.X_LLM_GATEWAY_API_KEY)
+    resolveEnvRef(process.env.X_HERALD_API_KEY)
 
   const api = entry.api ?? 'openai-completions'
 

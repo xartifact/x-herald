@@ -15,7 +15,7 @@ configIORoutes.get('/export', async (c) => {
   try {
     const data = await exportConfig()
     const date = new Date().toISOString().slice(0, 10)
-    const filename = `x-llm-gateway-config-${date}.json`
+    const filename = `x-herald-config-${date}.json`
 
     logger.info('Config exported successfully')
 

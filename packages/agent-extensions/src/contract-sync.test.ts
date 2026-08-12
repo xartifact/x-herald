@@ -9,7 +9,7 @@
  * 任何一处漂移都会在这里编译期或运行期失败。
  */
 import { describe, expect, it } from 'bun:test'
-import type { ModelSchema } from '@xartifact/x-llm-gateway-shared'
+import type { ModelSchema } from '@xartifact/x-herald-shared'
 
 import { REQUIRED_CAPS, REQUIRED_MODEL } from './diagnose'
 import type { GatewayModelEntry } from './types'

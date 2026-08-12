@@ -7,7 +7,7 @@ import {
   createTestModelGroup,
   createTestModelInstance,
 } from '../../../test/factories'
-import type { VirtualKey } from '@xartifact/x-llm-gateway-db'
+import type { VirtualKey } from '@xartifact/x-herald-db'
 import type { RouteResult } from '../../services/router-selector'
 
 // ---------------------------------------------------------------------------

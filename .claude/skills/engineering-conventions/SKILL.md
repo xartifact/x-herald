@@ -1,9 +1,9 @@
 ---
 name: engineering-conventions
-description: Engineering invariants and coding conventions for x-llm-gateway. Covers import ordering, naming, error handling, shared constants, file organization, and architectural rules that must be followed in all new code.
+description: Engineering invariants and coding conventions for x-herald. Covers import ordering, naming, error handling, shared constants, file organization, and architectural rules that must be followed in all new code.
 ---
 
-# x-llm-gateway Engineering Conventions
+# x-herald Engineering Conventions
 
 ## File Organization
 

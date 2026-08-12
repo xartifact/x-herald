@@ -8,11 +8,7 @@ import {
   TableRow,
 } from '../../../shared/components/ui/table'
 
-import type {
-  AccessModel,
-  PotentialModel,
-  PotentialModelAction,
-} from '@xartifact/x-llm-gateway-shared'
+import type { AccessModel, PotentialModel, PotentialModelAction } from '@xartifact/x-herald-shared'
 
 import { PotentialModelRow } from './potential-model-row'
 

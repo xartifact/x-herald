@@ -1,4 +1,4 @@
-import type { RouteAction } from '@xartifact/x-llm-gateway-shared'
+import type { RouteAction } from '@xartifact/x-herald-shared'
 import logger from '../../../lib/logger'
 import { NoAvailableInstanceError } from '../router-selector'
 import type { RouteResult } from '../router-selector'

@@ -1,4 +1,4 @@
-import type { ImageContent, StandardMessage, TextContent } from '@xartifact/x-llm-gateway-shared'
+import type { ImageContent, StandardMessage, TextContent } from '@xartifact/x-herald-shared'
 
 import type { OpenAIMessage } from '../types'
 import { convertContent } from './content-converter'

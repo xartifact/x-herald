@@ -1,9 +1,9 @@
-import { eq, isNull } from '@xartifact/x-llm-gateway-db'
+import { eq, isNull } from '@xartifact/x-herald-db'
 
 import type { Database } from '../../db/client'
 import { getDatabase } from '../../db/client'
 import rootLogger from '../../lib/logger'
-import { accessModels } from '@xartifact/x-llm-gateway-db'
+import { accessModels } from '@xartifact/x-herald-db'
 import type { ModelCapabilities } from '../model-groups/db'
 
 import { CATCHALL_VM_NAME, DEFAULT_ACCESS_MODEL_CAPABILITIES } from './constants'

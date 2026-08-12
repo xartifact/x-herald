@@ -1,5 +1,5 @@
 import type { UiSchema } from '@rjsf/utils'
-import { ConditionNodeDataSchema } from '@xartifact/x-llm-gateway-shared'
+import { ConditionNodeDataSchema } from '@xartifact/x-herald-shared'
 
 import { FIELDS, NUMERIC_OPERATORS, STRING_OPERATORS } from '../condition-fields'
 import { zodToRjsfSchema } from '../zod-to-rjsf'

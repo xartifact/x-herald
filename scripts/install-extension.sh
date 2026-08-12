@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 安装 x-llm-gateway agent extension 到 pi / omp 运行时目录。
+# 安装 x-herald agent extension 到 pi / omp 运行时目录。
 #
 # 目标布局（与扩展 README 一致）：
 #   ~/.pi/agent/extensions/x-llm-gateway/   (pi)
@@ -93,5 +93,5 @@ for runtime in "${RUNTIMES[@]}"; do
     fi
   fi
 
-  echo "installed x-llm-gateway extension -> $dest"
+  echo "installed x-herald extension -> $dest"
 done

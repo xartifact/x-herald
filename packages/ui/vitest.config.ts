@@ -11,8 +11,8 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@xartifact/x-llm-gateway-ui': path.resolve(__dirname, 'src'),
-      '@xartifact/x-llm-gateway-shared': path.resolve(__dirname, '../shared/src'),
+      '@xartifact/x-herald-ui': path.resolve(__dirname, 'src'),
+      '@xartifact/x-herald-shared': path.resolve(__dirname, '../shared/src'),
     },
   },
 })

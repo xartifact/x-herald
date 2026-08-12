@@ -9,7 +9,7 @@ import type {
   StandardResponse,
   Transformer,
   TransformerContext,
-} from '@xartifact/x-llm-gateway-shared'
+} from '@xartifact/x-herald-shared'
 
 import { getTransformer } from './registry'
 

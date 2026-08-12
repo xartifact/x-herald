@@ -1,11 +1,11 @@
-import type { InstanceCost } from '@xartifact/x-llm-gateway-shared'
-import { and, gte, lte, sql } from '@xartifact/x-llm-gateway-db'
+import type { InstanceCost } from '@xartifact/x-herald-shared'
+import { and, gte, lte, sql } from '@xartifact/x-herald-db'
 
 import type { Database } from '../../db/client'
 import type { DbClient } from '../../db/client'
 import { getDatabase } from '../../db/client'
 import logger from '../../lib/logger'
-import { costRecords } from '@xartifact/x-llm-gateway-db'
+import { costRecords } from '@xartifact/x-herald-db'
 export interface ProviderPricing {
   inputPer1k: number
   outputPer1k: number

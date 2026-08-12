@@ -1,5 +1,5 @@
 import type { UiSchema } from '@rjsf/utils'
-import { StrategyNodeDataSchema } from '@xartifact/x-llm-gateway-shared'
+import { StrategyNodeDataSchema } from '@xartifact/x-herald-shared'
 
 import { zodToRjsfSchema } from '../zod-to-rjsf'
 

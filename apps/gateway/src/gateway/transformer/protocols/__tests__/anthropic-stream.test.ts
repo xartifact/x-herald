@@ -5,7 +5,7 @@
 
 import { describe, it, expect } from 'bun:test'
 
-import type { TransformerContext } from '@xartifact/x-llm-gateway-shared'
+import type { TransformerContext } from '@xartifact/x-herald-shared'
 
 interface ChatCompletionChunk {
   object?: string

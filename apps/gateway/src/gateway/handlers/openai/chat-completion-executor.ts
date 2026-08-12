@@ -1,11 +1,11 @@
 import type { Context } from 'hono'
 
 import logger from '../../../lib/logger'
-import type { VirtualKey } from '@xartifact/x-llm-gateway-db'
-import type { ModelGroup, ModelInstance } from '@xartifact/x-llm-gateway-db'
-import type { providers } from '@xartifact/x-llm-gateway-db'
-import type { StandardRequest } from '@xartifact/x-llm-gateway-shared'
-import type { TransformerContext } from '@xartifact/x-llm-gateway-shared'
+import type { VirtualKey } from '@xartifact/x-herald-db'
+import type { ModelGroup, ModelInstance } from '@xartifact/x-herald-db'
+import type { providers } from '@xartifact/x-herald-db'
+import type { StandardRequest } from '@xartifact/x-herald-shared'
+import type { TransformerContext } from '@xartifact/x-herald-shared'
 
 import { circuitBreakerRegistry } from '../../services/circuit-breaker'
 import {

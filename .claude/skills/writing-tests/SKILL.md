@@ -1,9 +1,9 @@
 ---
 name: writing-tests
-description: Unit and integration testing conventions for x-llm-gateway. Use when writing tests for Bun+Hono backend services, React components, or failover/circuit-breaker/cache logic. Covers test runner setup, directory structure, mocking strategy, naming conventions, and factory helpers.
+description: Unit and integration testing conventions for x-herald. Use when writing tests for Bun+Hono backend services, React components, or failover/circuit-breaker/cache logic. Covers test runner setup, directory structure, mocking strategy, naming conventions, and factory helpers.
 ---
 
-# x-llm-gateway Testing Conventions
+# x-herald Testing Conventions
 
 ## Test Runner Strategy
 

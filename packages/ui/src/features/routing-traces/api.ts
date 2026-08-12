@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 
 import { get } from '../../shared/lib/api-client'
-import type { RouteCondition, RoutingTraceSummary } from '@xartifact/x-llm-gateway-shared'
+import type { RouteCondition, RoutingTraceSummary } from '@xartifact/x-herald-shared'
 
 export interface RoutingTraceFilters {
   modelName?: string

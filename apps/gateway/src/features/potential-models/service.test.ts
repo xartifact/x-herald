@@ -16,9 +16,9 @@ import {
   installCleanupJob,
   stopCleanupJob,
 } from './service'
-import { accessModels, potentialModels, virtualKeys } from '@xartifact/x-llm-gateway-db'
+import { accessModels, potentialModels, virtualKeys } from '@xartifact/x-herald-db'
 import { sql } from 'drizzle-orm'
-import type { AccessModel } from '@xartifact/x-llm-gateway-db'
+import type { AccessModel } from '@xartifact/x-herald-db'
 
 let engine: TestEngineHandle
 

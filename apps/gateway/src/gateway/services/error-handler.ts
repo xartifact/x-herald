@@ -1,6 +1,6 @@
 import type { Context } from 'hono'
 
-import type { VirtualKey } from '@xartifact/x-llm-gateway-db'
+import type { VirtualKey } from '@xartifact/x-herald-db'
 
 import {
   normalizeProviderErrorMessage,

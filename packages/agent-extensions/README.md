@@ -1,9 +1,9 @@
-# x-llm-gateway agent extension
+# x-herald agent extension
 
-Auto-discovers the model catalogue for the `x-llm-gateway` provider from its
+Auto-discovers the model catalogue for the `x-herald` provider from its
 OpenAI-compatible `/models` endpoint, replacing the hard-coded `models` list in
 the runtime's model config. The package is the single home for all
-x-llm-gateway agent-runtime extensions (pi/omp today; openclaw, hermes, ...
+x-herald agent-runtime extensions (pi/omp today; openclaw, hermes, ...
 later) — the extension adapts internally via runtime detection, and new
 runtimes slot into that detection without changing the package layout.
 
@@ -25,7 +25,7 @@ gateway adds or removes a model:
   with a `baseUrl` + `apiKey` in `models.yml`, so either path keeps the
   catalogue fresh.
 
-`/x-gate refresh` re-fetches and re-registers on demand.
+`/x-herald refresh` re-fetches and re-registers on demand.
 
 ## Repository layout
 
@@ -43,7 +43,7 @@ packages/agent-extensions/          # single home for all agent-runtime extensio
     ├── gateway.ts                  # /models HTTP client + provider config builder
     ├── model-mapping.ts            # GatewayModelEntry → ProviderModelConfig
     ├── diagnose.ts                 # schema-level validation report
-    ├── commands.ts                 # /x-gate admin commands
+    ├── commands.ts                 # /x-herald admin commands
     ├── types.ts                    # constants + response types (mirror of shared ModelSchema)
     └── agent-shim.d.ts             # narrow ambient types for the runtime APIs
 ```
@@ -51,7 +51,7 @@ packages/agent-extensions/          # single home for all agent-runtime extensio
 The extension adapts internally: `runtime.ts` detects which agent is hosting
 it (pi vs omp; more runtimes slot into the same detection) and `entry.ts`
 wires the runtime-appropriate discovery mechanism. The deployment target
-directory is always `~/.<agent>/agent/extensions/x-llm-gateway/` regardless of
+directory is always `~/.<agent>/agent/extensions/x-herald/` regardless of
 host.
 
 The canonical JSON Schema at `schemas/v1-models.schema.json` is the single
@@ -73,7 +73,7 @@ validates live responses against it (closed set), and the extension's
 ./scripts/install-extension.sh --symlink
 ```
 
-The script copies the extension to `~/.pi/agent/extensions/x-llm-gateway/` (or
+The script copies the extension to `~/.pi/agent/extensions/x-herald/` (or
 `~/.omp/...`) together with its only runtime dependency (`js-yaml`). Reload the
 runtime afterwards (`/reload` in pi, restart omp).
 
@@ -81,8 +81,8 @@ runtime afterwards (`/reload` in pi, restart omp).
 
 | Setting    | Order (first wins)                                                |
 | ---------- | ----------------------------------------------------------------- |
-| `baseUrl`  | `models.json` / `models.yml` → `$X_LLM_GATEWAY_BASE_URL` → `http://localhost:5005/api/v1` |
-| `apiKey`   | `models.{json,yml}.apiKey` → `auth.json["x-llm-gateway"].key` [pi] → `$X_LLM_GATEWAY_API_KEY` |
+| `baseUrl`  | `models.json` / `models.yml` → `$X_HERALD_BASE_URL` → `http://localhost:5005/api/v1` |
+| `apiKey`   | `models.{json,yml}.apiKey` → `auth.json["x-herald"].key` [pi] → `$X_HERALD_API_KEY` |
 | `api`      | `models.{json,yml}.api` → `"openai-completions"`                       |
 
 `models.json` is the pi convention, `models.yml` the omp one; both `apiKey`
@@ -97,7 +97,7 @@ The default `baseUrl` targets `localhost:5005` — the deployment topology
 running the gateway in dev (`bun run dev:gateway`, port 3000), override:
 
 ```bash
-export X_LLM_GATEWAY_BASE_URL=http://localhost:3000/api/v1
+export X_HERALD_BASE_URL=http://localhost:3000/api/v1
 ```
 
 ## Fallback behavior
@@ -105,7 +105,7 @@ export X_LLM_GATEWAY_BASE_URL=http://localhost:3000/api/v1
 If `/models` fails (network error, timeout, malformed response, empty list)
 the extension does **not** call `registerProvider`. The static list from
 `models.json` stays active and pi starts normally. A warning is written to
-stderr with the `[x-llm-gateway]` prefix. Under omp, the SQLite model cache
+stderr with the `[x-herald]` prefix. Under omp, the SQLite model cache
 keeps the last good catalogue for up to 24 h.
 
 ## Gateway response shape
@@ -116,7 +116,7 @@ keeps the last good catalogue for up to 24 h.
   "data": [
     {
       "id": "Plan",
-      "owned_by": "x-llm-gateway",
+      "owned_by": "x-herald",
       "context_window": 8192,
       "max_output_tokens": 4096,
       "capabilities": {
@@ -135,7 +135,7 @@ Newer gateway versions additionally emit camelCase mirrors of the snake_case
 keys (`contextWindow`, `maxTokens`, `reasoning`, `input`, `maxTokensField`)
 plus the OpenAI-standard `context_length` and `mediaInput`. The schema and the
 mapper accept them: snake_case wins, camelCase is a fallback. Unknown extra
-fields are reported by `/x-gate diagnose` as drift, never fatal.
+fields are reported by `/x-herald diagnose` as drift, never fatal.
 
 Field mapping (per model):
 
@@ -172,24 +172,24 @@ cd packages/agent-extensions && bun test
 bun run ci
 ```
 
-## Admin commands under `/x-gate`
+## Admin commands under `/x-herald`
 
 | Sub-command       | What it does                                                              |
 | ----------------- | ------------------------------------------------------------------------- |
-| `/x-gate refresh` | Re-fetch `/models` and re-register the provider (no `/reload` needed).    |
-| `/x-gate diagnose`| Fetch `/models` and validate against `schemas/v1-models.schema.json`. Result is rendered in a widget above the editor; notification shows pass/fail count. |
-| `/x-gate version` | Show extension version.                                                   |
-| `/x-gate help`    | Show sub-command reference.                                               |
+| `/x-herald refresh` | Re-fetch `/models` and re-register the provider (no `/reload` needed).    |
+| `/x-herald diagnose`| Fetch `/models` and validate against `schemas/v1-models.schema.json`. Result is rendered in a widget above the editor; notification shows pass/fail count. |
+| `/x-herald version` | Show extension version.                                                   |
+| `/x-herald help`    | Show sub-command reference.                                               |
 
-Autocomplete (when typing `/x-gate `) suggests `refresh`, `diagnose`, `version`, `help`.
+Autocomplete (when typing `/x-herald `) suggests `refresh`, `diagnose`, `version`, `help`.
 
 ## Refreshing the model list
 
 | Command            | What reloads                | When to use                            |
 | ------------------ | --------------------------- | -------------------------------------- |
-| `/x-gate refresh`  | Only the model catalogue    | Gateway added/removed/updated a model  |
+| `/x-herald refresh`  | Only the model catalogue    | Gateway added/removed/updated a model  |
 | `/reload`          | Extensions + skills + models | Extension code changed; full restart   |
 | Restart `pi`       | Everything                  | Last resort                            |
 
-`/x-gate refresh` calls `pi.registerProvider(...)` again at runtime,
+`/x-herald refresh` calls `pi.registerProvider(...)` again at runtime,
 which pi applies immediately — no `/reload` required.

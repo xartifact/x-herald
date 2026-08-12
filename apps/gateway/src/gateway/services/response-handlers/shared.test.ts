@@ -92,6 +92,32 @@ describe('mergeResponseHeaders', () => {
 
     expect(result).toEqual({ 'x-gateway': 'true' })
   })
+
+  it('strips hop-by-hop and body headers that no longer hold after gateway re-encodes', () => {
+    const providerHeaders = {
+      'content-type': 'application/json',
+      'content-encoding': 'gzip',
+      'content-length': '12345',
+      'transfer-encoding': 'chunked',
+      connection: 'keep-alive',
+      'keep-alive': 'timeout=5',
+      'x-request-id': 'req-123',
+    }
+    const result = mergeResponseHeaders({}, providerHeaders)
+
+    expect(result).toEqual({
+      'content-type': 'application/json',
+      'x-request-id': 'req-123',
+    })
+  })
+
+  it('lets gateway headers override provider values even for filtered keys', () => {
+    const providerHeaders = { 'content-encoding': 'gzip' }
+    const gatewayHeaders = { 'content-encoding': 'identity' }
+    const result = mergeResponseHeaders(gatewayHeaders, providerHeaders)
+
+    expect(result).toEqual({ 'content-encoding': 'identity' })
+  })
 })
 
 /* ------------------------------------------------------------------ */

@@ -14,11 +14,34 @@ export function extractProviderResponseHeaders(response: Response): Record<strin
 }
 
 /**
- * 透传 Provider 响应头（不过滤任何 header）
+ * 透传 Provider 响应头，过滤 hop-by-hop 传输头与 body 相关头。
+ *
+ * 网关读取上游 body 时 Bun 已自动解压（content-encoding: gzip/br），随后用
+ * 重新生成的 body 响应客户端——此时透传 content-encoding 会让客户端对
+ * 已解码的 body 再解压一次（损坏），content-length 是旧长度（不匹配），
+ * transfer-encoding/connection 等描述的是上游连接的传输层状态（不适用）。
+ * 仅网关重新生成 body 时（非流式 c.json / 流式 new Response(stream)）调用，
+ * 因此这些头一律剥离。
  */
+const HOP_BY_HOP_HEADERS: Record<string, true> = {
+  connection: true,
+  'keep-alive': true,
+  'proxy-authenticate': true,
+  'proxy-authorization': true,
+  te: true,
+  trailer: true,
+  'transfer-encoding': true,
+  upgrade: true,
+  // body 由网关重新生成，编码与长度不再成立
+  'content-encoding': true,
+  'content-length': true,
+  'content-range': true,
+}
+
 function filterProviderHeaders(providerHeaders: Record<string, string>): Record<string, string> {
   const result: Record<string, string> = {}
   for (const [key, value] of Object.entries(providerHeaders)) {
+    if (HOP_BY_HOP_HEADERS[key]) continue
     if (value && value.trim() !== '') {
       result[key] = value
     }

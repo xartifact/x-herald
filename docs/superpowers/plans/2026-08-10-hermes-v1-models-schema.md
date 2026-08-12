@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 让 x-llm-gateway 的 `/api/v1/models` 返回 Hermes 可自动发现的上下文元数据（`context_length` 键 + 单模型端点 + 真实值来源），使 `get_model_context_length('Agent', base_url)` 返回 1048576 且不再打 "Could not determine context length" 警告。
+**Goal:** 让 x-herald 的 `/api/v1/models` 返回 Hermes 可自动发现的上下文元数据（`context_length` 键 + 单模型端点 + 真实值来源），使 `get_model_context_length('Agent', base_url)` 返回 1048576 且不再打 "Could not determine context length" 警告。
 
 **Architecture:** 三个改动点，全部落在现有模型广播链路上：(1) 共享 `ModelSchema` 接口与 `toModelSchema` 输出加 `context_length`（键序在 `context_window` 之前，绕开 Hermes 路径 A 的 JSON 顺序陷阱）；(2) 新增单模型端点 `GET /api/v1/models/:id`（Hermes 路径 C 的阻断点，必须返回 JSON，未知模型也 JSON 404，绝不落 SPA HTML 兜底）；(3) `fetchAccessibleModels` 从路由目标实例的 `metadata`/`config` 读上游真实 context 值合并进广播值（`syncModels` 管线已把 OpenRouter 等上游 `context_length` 写入 `instance.metadata.contextWindow`，只差读取侧）。
 
@@ -126,7 +126,7 @@ cd apps/gateway && bun test src/__tests__/v1-models.test.ts -t "context_length"
 const entry: ModelSchema = {
   id: m.name,
   object: 'model',
-  owned_by: 'x-llm-gateway',
+  owned_by: 'x-herald',
   context_length: caps?.contextWindow ?? 0,
   context_window: caps?.contextWindow ?? 0,
   max_output_tokens: caps?.maxOutputTokens ?? 0,
@@ -322,7 +322,7 @@ git commit -m "feat(gateway): add single-model GET v1/models/:id endpoint"
 
 **Interfaces:**
 
-- Consumes: `modelInstances`/`modelGroupMemberships`/`providers`（`@xartifact/x-llm-gateway-db` 或 `../db` 均可，`model-list.ts` 现有 import 源为 `@xartifact/x-llm-gateway-db`）；`InstanceConfig.capabilityOverrides.contextWindow/maxTokens`（shared，现有）
+- Consumes: `modelInstances`/`modelGroupMemberships`/`providers`（`@xartifact/x-herald-db` 或 `../db` 均可，`model-list.ts` 现有 import 源为 `@xartifact/x-herald-db`）；`InstanceConfig.capabilityOverrides.contextWindow/maxTokens`（shared，现有）
 - Produces: `fetchAccessibleModels` 返回的 `AccessibleModel.capabilities.contextWindow/maxOutputTokens` 被实例真实值覆盖（无实例值时行为不变）
 
 - [ ] **Step 1: 写失败测试**
@@ -332,7 +332,7 @@ git commit -m "feat(gateway): add single-model GET v1/models/:id endpoint"
 ```ts
 import { getDatabase } from '../db/client'
 import { modelInstances, accessModels } from '../db'
-import { eq } from '@xartifact/x-llm-gateway-db'
+import { eq } from '@xartifact/x-herald-db'
 ```
 
 在 Task 2 的 describe 之后新增：
@@ -448,8 +448,8 @@ import {
   modelInstances,
   modelGroupMemberships,
   providers,
-} from '@xartifact/x-llm-gateway-db'
-import type { InstanceConfig } from '@xartifact/x-llm-gateway-shared'
+} from '@xartifact/x-herald-db'
+import type { InstanceConfig } from '@xartifact/x-herald-shared'
 ```
 
 b) 文件级新增两个小助手（放在 `normalizeCapabilities` 之后）：

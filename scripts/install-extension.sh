@@ -2,8 +2,8 @@
 # 安装 x-herald agent extension 到 pi / omp 运行时目录。
 #
 # 目标布局（与扩展 README 一致）：
-#   ~/.pi/agent/extensions/x-llm-gateway/   (pi)
-#   ~/.omp/agent/extensions/x-llm-gateway/  (omp)
+#   ~/.pi/agent/extensions/x-herald/   (pi)
+#   ~/.omp/agent/extensions/x-herald/  (omp)
 #
 # 用法：
 #   ./scripts/install-extension.sh                # 安装到 pi 和 omp（存在即装）
@@ -59,7 +59,7 @@ for runtime in "${RUNTIMES[@]}"; do
     echo "skip $runtime (no $home_dir)"
     continue
   fi
-  dest="$home_dir/agent/extensions/x-llm-gateway"
+  dest="$home_dir/agent/extensions/x-herald"
   mkdir -p "$dest"
 
   if [[ $SYMLINK -eq 1 ]]; then

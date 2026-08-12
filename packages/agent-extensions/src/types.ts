@@ -9,7 +9,7 @@
 // Provider identity
 // ---------------------------------------------------------------------------
 
-export const PROVIDER_ID = 'x-llm-gateway'
+export const PROVIDER_ID = 'x-herald'
 export const PROVIDER_NAME = 'X-Herald'
 
 // ---------------------------------------------------------------------------

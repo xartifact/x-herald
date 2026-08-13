@@ -395,6 +395,7 @@ export class AnthropicMessagesExecutor {
       logId: this.logId,
       attemptId: this.attemptId,
       retryCount: config.retryCount,
+      routingTrace: config.routeChain,
     })
   }
 
@@ -421,6 +422,7 @@ export class AnthropicMessagesExecutor {
       logId: this.logId,
       attemptId: this.attemptId,
       retryCount: config.retryCount,
+      routingTrace: config.routeChain,
     })
   }
 

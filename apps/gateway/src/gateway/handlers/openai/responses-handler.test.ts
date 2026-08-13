@@ -469,6 +469,9 @@ describe('handleResponsesAPI', () => {
 
     expect(handleProviderErrorMock).toHaveBeenCalled()
     expect(handleProviderErrorPassthroughMock).not.toHaveBeenCalled()
+    const params = handleProviderErrorMock.mock.calls[0][0] as Record<string, unknown>
+    expect(params.routingTrace).toMatchObject({ requestedModel: 'gpt-4' })
+    expect(params.routingTrace).toHaveProperty('chain')
   })
 
   it('calls handleProviderErrorPassthrough when upstream returns non-ok and passthrough is enabled', async () => {
@@ -489,6 +492,9 @@ describe('handleResponsesAPI', () => {
 
     expect(handleProviderErrorPassthroughMock).toHaveBeenCalled()
     expect(handleProviderErrorMock).not.toHaveBeenCalled()
+    const params = handleProviderErrorPassthroughMock.mock.calls[0][0] as Record<string, unknown>
+    expect(params.routingTrace).toMatchObject({ requestedModel: 'gpt-4' })
+    expect(params.routingTrace).toHaveProperty('chain')
   })
 
   // 8. Retry/abort timeout → calls handleGatewayError with timeout message

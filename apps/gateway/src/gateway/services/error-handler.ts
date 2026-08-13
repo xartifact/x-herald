@@ -68,6 +68,8 @@ export interface ProviderErrorParams {
   logId?: string
   attemptId?: string
   retryCount?: number
+  /** 路由链路快照，透传到日志 metadata 的 routing.routeChain，让失败请求在 routing-traces 可见 */
+  routingTrace?: RouteChainSnapshot
 }
 
 export type { ProviderErrorParams as ProviderErrorHandlerParams }
@@ -296,6 +298,7 @@ export async function handleProviderError(params: ProviderErrorParams): Promise<
   await logRequest({
     virtualKey,
     modelName: originalModelName,
+    originalModelName,
     providerId: provider.id,
     providerName: provider.name,
     status: 'failure',
@@ -321,6 +324,7 @@ export async function handleProviderError(params: ProviderErrorParams): Promise<
     logId,
     attemptId,
     retryCount,
+    routingTrace: params.routingTrace ? { routeChain: params.routingTrace } : undefined,
   })
 
   return c.json(
@@ -377,6 +381,7 @@ export async function handleProviderErrorPassthrough(
   await logRequest({
     virtualKey,
     modelName: originalModelName,
+    originalModelName,
     providerId: provider.id,
     providerName: provider.name,
     status: 'failure',
@@ -401,6 +406,7 @@ export async function handleProviderErrorPassthrough(
     logId,
     attemptId,
     retryCount,
+    routingTrace: params.routingTrace ? { routeChain: params.routingTrace } : undefined,
   })
 
   const passthroughHeaders: Record<string, string> = {}

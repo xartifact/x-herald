@@ -369,6 +369,7 @@ export class ChatCompletionCandidateExecutor {
       logId: this.logId,
       attemptId: this.attemptId,
       retryCount: config.retryCount,
+      routingTrace: config.routeChain,
     })
   }
 
@@ -395,6 +396,7 @@ export class ChatCompletionCandidateExecutor {
       logId: this.logId,
       attemptId: this.attemptId,
       retryCount: config.retryCount,
+      routingTrace: config.routeChain,
     })
   }
 

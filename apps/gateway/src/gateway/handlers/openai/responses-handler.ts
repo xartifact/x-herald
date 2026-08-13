@@ -17,6 +17,7 @@ import {
 import { shouldFilterHeader } from '../../services/headers'
 import { logStartAsync } from '../../services/log-service'
 import type { ModelMappingResult } from '../../services/model-mapping'
+import { buildRouteChainSnapshot } from '../../services/routing-trace-recorder'
 import { ModelNotFoundError } from '../../services/model-group-router'
 import { getProviderProtocol, getProviderUrl, getEndpoint } from '../../services/protocol-detector'
 import {
@@ -278,6 +279,20 @@ export async function handleResponsesAPI(
     })
     if (!routeResult) throw new ModelNotFoundError(standardReq.model)
 
+    const routeChain = buildRouteChainSnapshot(
+      [routeResult],
+      standardReq.model,
+      undefined,
+      routeResult.matchedRule
+        ? {
+            id: routeResult.matchedRule.id,
+            name: routeResult.matchedRule.name,
+            priority: routeResult.matchedRule.priority,
+            conditions: routeResult.matchedRule.conditions,
+          }
+        : undefined,
+    )
+
     const { instance, provider, group, decision, mapping, matchedRule } = routeResult
     logger.debug(
       {
@@ -494,6 +509,7 @@ export async function handleResponsesAPI(
         logId,
         attemptId,
         retryCount,
+        routingTrace: routeChain,
       })
     }
 
@@ -537,6 +553,7 @@ export async function handleResponsesAPI(
         actualModelName: instance.actualModelName,
         strategy: decision.strategy,
         instanceCost: instance.costPer1kTokens,
+        routeChain,
       },
     }
 

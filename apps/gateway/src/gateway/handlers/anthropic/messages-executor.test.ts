@@ -527,7 +527,11 @@ describe('AnthropicMessagesExecutor', () => {
 
   describe('providerError', () => {
     it('calls handleProviderError when passthrough disabled', async () => {
-      const config = createExecutorConfig({ isPassthroughEnabled: false })
+      const routeChain = {
+        requestedModel: 'claude-3',
+        chain: [],
+      }
+      const config = createExecutorConfig({ isPassthroughEnabled: false, routeChain })
       const executor = new AnthropicMessagesExecutor(config)
       executor.logId = 'log-1'
       executor.attemptId = 'attempt-1'
@@ -537,10 +541,16 @@ describe('AnthropicMessagesExecutor', () => {
 
       expect(mockHandleProviderError).toHaveBeenCalled()
       expect(mockHandleProviderErrorPassthrough).not.toHaveBeenCalled()
+      const params = getMockCalls(mockHandleProviderError)[0][0] as Record<string, unknown>
+      expect(params.routingTrace).toBe(routeChain)
     })
 
     it('calls handleProviderErrorPassthrough when passthrough enabled', async () => {
-      const config = createExecutorConfig({ isPassthroughEnabled: true })
+      const routeChain = {
+        requestedModel: 'claude-3',
+        chain: [],
+      }
+      const config = createExecutorConfig({ isPassthroughEnabled: true, routeChain })
       const executor = new AnthropicMessagesExecutor(config)
       executor.logId = 'log-1'
       executor.attemptId = 'attempt-1'
@@ -550,6 +560,11 @@ describe('AnthropicMessagesExecutor', () => {
 
       expect(mockHandleProviderErrorPassthrough).toHaveBeenCalled()
       expect(mockHandleProviderError).not.toHaveBeenCalled()
+      const params = getMockCalls(mockHandleProviderErrorPassthrough)[0][0] as Record<
+        string,
+        unknown
+      >
+      expect(params.routingTrace).toBe(routeChain)
     })
   })
 })

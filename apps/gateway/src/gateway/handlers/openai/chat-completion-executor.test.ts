@@ -186,6 +186,7 @@ function createBaseExecutorConfig(overrides: Record<string, unknown> = {}): Exec
     retryCount: overrides.retryCount ?? 0,
     requestGroupId: overrides.requestGroupId ?? 'group-1',
     candidateIndex: overrides.candidateIndex ?? 0,
+    routeChain: overrides.routeChain as ExecutorConfig['routeChain'],
   } as ExecutorConfig
 }
 
@@ -362,5 +363,63 @@ describe('ChatCompletionCandidateExecutor', () => {
     expect(params.logId).toBe('log-1')
     expect(params.retryCount).toBe(0)
     expect(result.status).toBe(500)
+  })
+
+  it('providerError() passes routingTrace (routeChain) to handleProviderError', async () => {
+    const routeChain = {
+      requestedModel: 'gpt-4',
+      chain: [
+        {
+          index: 0,
+          kind: 'single' as const,
+          actionType: 'route_to_group',
+          candidates: [
+            {
+              candidateIndex: 0,
+              chainStepIndex: 0,
+              chainStepKind: 'single' as const,
+              instanceId: 'inst-1',
+              instanceName: 'inst-1',
+              providerId: 'prov-1',
+              providerName: 'prov-1',
+              priority: 0,
+              strategy: 'priority',
+              groupName: 'g1',
+            },
+          ],
+        },
+      ],
+    }
+    const config = createBaseExecutorConfig({
+      isPassthroughEnabled: false,
+      routeChain,
+    })
+    const executor = new ChatCompletionCandidateExecutor(config)
+    await executor.prepareRequest()
+    await executor.providerError(new Response('err', { status: 400 }), {})
+
+    expect(mockHandleProviderError).toHaveBeenCalled()
+    const calls = getMockCalls(mockHandleProviderError)
+    const params = calls[0][0] as Record<string, unknown>
+    expect(params.routingTrace).toBe(routeChain)
+  })
+
+  it('providerErrorPassthrough() passes routingTrace (routeChain) to handleProviderErrorPassthrough', async () => {
+    const routeChain = {
+      requestedModel: 'gpt-4',
+      chain: [],
+    }
+    const config = createBaseExecutorConfig({
+      isPassthroughEnabled: true,
+      routeChain,
+    })
+    const executor = new ChatCompletionCandidateExecutor(config)
+    await executor.prepareRequest()
+    await executor.providerErrorPassthrough(new Response('err', { status: 400 }), {})
+
+    expect(mockHandleProviderErrorPassthrough).toHaveBeenCalled()
+    const calls = getMockCalls(mockHandleProviderErrorPassthrough)
+    const params = calls[0][0] as Record<string, unknown>
+    expect(params.routingTrace).toBe(routeChain)
   })
 })

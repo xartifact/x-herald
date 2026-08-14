@@ -24,20 +24,20 @@ bun run dev:web    # 仅启动 web SPA 前端
 ### 构建和类型检查
 
 ```bash
-bun run build           # 构建 web SPA (vp build)
+bun run build           # 构建 web SPA (vite build)
 bun run typecheck       # 全 monorepo TypeScript 类型检查
-bun run lint            # 运行 oxlint (vp lint .)
-bun run lint:fix        # 自动修复 lint 问题 (vp lint . --fix)
-bun run format          # 格式化代码 (vp fmt .)
-bun run format:check    # 检查格式 (vp fmt --check .)
-bun run check           # 格式 + lint + 类型检查 (vp check .)
+bun run lint            # 运行 oxlint
+bun run lint:fix        # 自动修复 lint 问题
+bun run format          # 格式化代码 (oxfmt)
+bun run format:check    # 检查格式
+bun run check           # lint + 格式 + 类型检查
 ```
 
 ### 数据库
 
 ```bash
 cd apps/gateway
-bun run db:migrate      # 推送 schema 更改（开发用）
+bun run db:migrate      # 推送 schema 更改（开发用；实际执行 packages/db 的 drizzle-kit push）
 ```
 
 ## 项目架构
@@ -47,21 +47,26 @@ bun run db:migrate      # 推送 schema 更改（开发用）
 ```
 x-herald/
 ├── apps/
-│   ├── gateway/                # @xartifact/x-herald-gateway — 网关内核（Hono + Bun.serve）
+│   ├── gateway/                # @xartifact/x-herald-core — 网关内核（Hono + Bun.serve）
 │   │   └── src/
 │   │       ├── server.ts       # 入口文件
-│   │       ├── createEngine.ts # 引擎工厂
-│   │       ├── gateway/        # 网关核心逻辑
-│   │       ├── features/       # 功能模块（auth, providers, keys, logs...）
-│   │       ├── db/             # 数据库连接、schema、迁移
-│   │       └── middleware/     # Hono 中间件
-│   ├── web/                    # 管理界面 SPA
+│   │       ├── createEngine.ts # 引擎工厂（装配中间件/路由/运行时策略）
+│   │       ├── gateway/        # 网关核心（routes / handlers / transformer / services）
+│   │       ├── features/       # 功能模块（auth, providers, keys, logs, metrics...）
+│   │       ├── middleware/     # Hono 中间件（virtual-key, cors, error, logger）
+│   │       ├── config/         # 配置加载与校验
+│   │       └── test/           # 测试基础设施（factories, mock-upstream, helpers）
+│   ├── web/                    # @xartifact/x-herald-web — 管理界面 SPA
 │   │   └── app/
-│   │       └── routes/         # 代码路由（admin, login, __root）
-│   └── cli/                    # CLI 工具
+│   │       ├── routes/         # TanStack Router 文件路由（admin/, login）
+│   │       └── api/            # API 客户端
+│   └── cli/                    # @xartifact/x-herald-cli — CLI（commander + @clack/prompts）
 ├── packages/
-│   ├── shared/                 # @xartifact/x-herald-shared — 类型/常量
-│   └── ui/                     # @xartifact/x-herald-ui — shadcn 组件库
+│   ├── shared/                 # @xartifact/x-herald-shared — 类型/常量/Zod schema
+│   ├── db/                     # @xartifact/x-herald-db — Drizzle schema + 迁移（单一真实源）
+│   ├── ui/                     # @xartifact/x-herald-ui — shadcn 组件库
+│   ├── ai-agent/               # AI 代理（agent / tools / skills）
+│   └── agent-extensions/       # 代理扩展
 └── docs/                       # 项目文档
 ```
 
@@ -72,29 +77,65 @@ x-herald/
 - Runtime: Bun 1.3.6+
 - 框架: Hono 4.0+ (轻量级 API 框架)
 - 服务器: Bun.serve() (直接运行 TypeScript)
-- 数据库: PostgreSQL 16 / PGlite（嵌入式）
-- ORM: Drizzle ORM 0.45+
-- 认证: JWT
-- 日志: Pino
+- 数据库: PostgreSQL 16（生产）/ PGlite（嵌入式，开发与测试）
+- ORM: Drizzle ORM 0.45+ + drizzle-kit 迁移，postgres 驱动
+- 校验: Zod 4（shared 契约 + 运行时）
+- 认证: JWT（管理 API）/ 虚拟密钥（代理 API）
+- 日志: Pino + pino-pretty
+- 指标: prom-client + Prometheus /metrics 端点
+- 容错解析: json5 / jsonrepair
 
 **前端**
 
-- 框架: TanStack Router (文件路由)
+- 框架: TanStack Router 1.x (文件路由)
 - UI: React 19
-- 构建: Vite+ (统一工具链: dev / build / test / lint / fmt)
-- 组件库: shadcn/ui (new-york 风格)
+- 构建: Vite 6
+- 组件库: shadcn/ui (new-york 风格, Radix UI primitives)
 - 样式: TailwindCSS v4
 - 数据获取: TanStack Query v5
-- 表单: react-hook-form + zod
+- 表单: react-hook-form + @hookform/resolvers + zod
 - 图标: lucide-react
 - Toast: sonner
+- 可视化: @xyflow/react（流程图）+ recharts（图表）
+- 编辑器: monaco-editor；JSON Schema 表单: @rjsf
+
+**CLI**
+
+- commander + @clack/prompts
+
+**工具链**
+
+- Lint: oxlint；Format: oxfmt；测试: bun:test / vitest / Playwright
 
 ### 架构特点
 
-1. **引擎 + SPA 分离**：gateway 是纯 API 服务器，web SPA 是独立的前端应用
-2. **Bun 直接运行 TS**：无需编译步骤，Bun 直接执行 TypeScript
-3. **功能驱动开发**：按功能模块组织代码，每个功能同时完成前后端
-4. **Clean Architecture**：业务逻辑与框架解耦
+1. **透明代理**（第一原则）：请求按原协议透传，协议转换只在必要时发生
+2. **引擎 + SPA 分离**：gateway 是纯 API 服务器，web SPA 是独立的前端应用
+3. **Bun 直接运行 TS**：无需编译步骤，Bun 直接执行 TypeScript
+4. **功能驱动开发**：按功能模块组织代码，每个功能同时完成前后端
+5. **Clean Architecture**：业务逻辑与框架解耦
+6. **单一真实源**：DB schema/迁移集中在 packages/db，类型/契约集中在 packages/shared
+
+## 核心请求链路（代理管线）
+
+客户端请求经 `/api/v1` 进入，按以下管线处理：
+
+1. **虚拟密钥认证**（middleware/virtual-key）— sk- 前缀密钥校验（30s 内存缓存），密钥级 RPM/RPD/Token 限流（rate-limit-engine，响应携带 X-RateLimit-* 头）
+2. **协议识别**（services/protocol-detector）— 按 URL 路径 + 请求体区分 OpenAI / Anthropic / Gemini
+3. **标准化**（transformer chain）— 外部协议 → StandardRequest（ingress），跨协议转换经标准格式中转
+4. **路由决策**（access-model-router + route-rule-engine）—
+   - 接入模型（access_models）解析；未接入模型记录为 potential-models，可被 route_to 覆盖
+   - RouteRuleEngine：按 accessModelId 把 active route_rules 图编译为 RouteMatcher[] 内存缓存（订阅变更自动重建，请求路径只读缓存）
+   - 匹配条件：request.model / context.apiKeyName / context.streaming / context.hour / context.clientType / perf.*（异常分数、成功率、TTFB P95、健康度）
+   - route-actions 按 action.type 查表分发：route-to-group / route-to-instance / intent / capability / fallback / reject
+   - **意图路由**（intent-router）：可选，用小模型分类器（如 qwythos-9b）分析最近 N 条消息（窗口 10，剥离 system-reminder / tool 噪声块），按意图分发到目标模型组
+5. **模型组路由**（router-selector / model-group-router）— 组内实例选择，支持 capability 过滤与性能上下文（anomaly-detector 异常分数、成功率、TTFB）
+6. **高可用**（circuit-breaker）— 熔断状态内存化 + DB 持久化恢复；故障转移按策略降级到备选实例
+7. **协议适配**（transformer egress）— StandardRequest → Provider 协议（OpenAI / Anthropic / Gemini）
+8. **上游调用与响应处理**（response-handlers）— 流式（SSE 转发/转换，StreamResponseCollector 采集 TTFB/thinking 时长）与非流式；模型重映射、响应头合并/过滤
+9. **可观测性**（log-event-bus + log-service + metrics）— 请求日志、用量统计、成本核算（costs）、Prometheus 指标、routing-traces
+
+管理 API（/api/*）经 JWT 认证挂载于引擎工厂（createEngine），覆盖 providers / model-groups / keys / logs / settings / access-models / route-rules / metrics / circuit-breaker / costs / config-io / ai-assist 等资源。
 
 ## 代码组织
 
@@ -103,34 +144,43 @@ x-herald/
 ```
 src/
 ├── server.ts                 # 入口文件（Bun.serve）
-├── createEngine.ts           # 引擎工厂（Hono app 创建）
-├── config/                   # 配置管理
-├── db/                       # 数据库连接、schema、迁移
-│   ├── client.ts             # 数据库客户端
-│   ├── schema/               # Drizzle schema 定义
-│   └── migrations/           # SQL 迁移文件
+├── createEngine.ts           # 引擎工厂（加载配置/DB/运行时策略，装配 Hono app）
+├── config/                   # 配置加载、校验、环境变量
 ├── gateway/                  # 网关核心
-│   ├── api/                  # Gateway API 路由（/api/v1/*）
-│   ├── handlers/             # 请求处理器
-│   ├── transformer/          # 协议转换器
-│   └── services/             # 网关服务（熔断器、流清理等）
-├── features/                 # 功能模块
-│   ├── auth/                 # 认证
+│   ├── api.ts                # Gateway API v1 路由（/api/v1，挂虚拟密钥中间件）
+│   ├── routes/               # actuator / openai / anthropic 兼容端点
+│   ├── handlers/             # 请求处理器（openai/、anthropic/、shared/）
+│   ├── transformer/          # 协议转换器（protocols/openai|anthropic|gemini，chain 执行器）
+│   └── services/             # 网关服务（intent-router、route-rule-engine、router-selector、
+│                             #   circuit-breaker、rate-limit-engine、log-event-bus、
+│                             #   response-handlers、route-actions 等）
+├── features/                 # 功能模块（每模块 api.ts + service.ts + db.ts + 测试）
+│   ├── auth/                 # JWT 认证（中间件 + API）
 │   ├── providers/            # 服务商管理
-│   ├── model-groups/         # 模型组管理
-│   ├── keys/                 # 虚拟密钥
-│   ├── logs/                 # 请求日志
-│   ├── settings/             # 系统设置
-│   ├── access-models/        # 访问模型
-│   ├── model-routes/         # 路由规则
+│   ├── model-groups/         # 模型组/模型实例管理
+│   ├── access-models/        # 接入模型
+│   ├── route-rules/          # 路由规则（RouteRuleEngine 数据源）
+│   ├── keys/                 # 虚拟密钥（含 usage-tracker）
+│   ├── logs/                 # 请求日志（含 log-cleanup）
+│   ├── metrics/              # Prometheus 指标、异常检测、性能上下文
+│   ├── circuit-breaker/      # 熔断器管理
+│   ├── costs/                # 成本核算
+│   ├── settings/             # 系统设置（含 classifier-prompt 服务）
+│   ├── routing-traces/       # 路由追踪
+│   ├── potential-models/     # 潜在模型探测
 │   ├── config-io/            # 配置导入导出
-│   ├── circuit-breaker/      # 熔断器
-│   ├── metrics/              # 性能指标
-│   └── ai-assist/            # AI 辅助
-└── middleware/                # Hono 中间件
-    ├── cors.ts               # CORS
-    ├── error.ts              # 错误处理
-    └── logger.ts             # 请求日志
+│   ├── ai-assist/            # AI 辅助（错误诊断等）
+│   ├── health/               # 健康检查
+│   ├── route-overview/       # 路由总览
+│   └── gateway-config/       # 网关配置
+├── middleware/               # Hono 中间件
+│   ├── virtual-key.ts        # 虚拟密钥认证 + 限流
+│   ├── cors.ts               # CORS
+│   ├── error.ts              # 错误处理
+│   └── logger.ts             # 请求日志
+├── lib/                      # 通用（logger, ai-caller, llm-adapter）
+├── db/                       # DB client 封装（getDatabase 单例；schema/迁移在 packages/db）
+└── test/                     # 测试基础设施（factories, mock-upstream, proxy-test-helpers）
 ```
 
 ### 前端代码结构（apps/web）
@@ -139,21 +189,33 @@ src/
 app/
 ├── routes/                   # TanStack Router 文件路由
 │   ├── __root.tsx            # 根布局
+│   ├── login.tsx             # 登录页
 │   ├── admin.tsx             # 管理界面布局
-│   └── admin/                # 管理页面
+│   └── admin/                # 管理页面（目录路由）
 │       ├── index.tsx         # Dashboard
-│       ├── providers.tsx     # 服务商管理
-│       ├── model-groups.tsx  # 模型组管理
-│       ├── model-routes.tsx  # 路由规则
-│       ├── keys.tsx          # 密钥管理
-│       └── ...
+│       ├── providers/        # 服务商管理
+│       ├── model-groups/     # 模型组管理
+│       ├── access-models/    # 接入模型 + 路由规则
+│       ├── keys/             # 密钥管理
+│       ├── logs/             # 请求日志
+│       ├── metrics/          # 性能指标
+│       ├── costs/            # 成本
+│       ├── circuit-breaker/  # 熔断器
+│       ├── routing-traces/   # 路由追踪
+│       ├── intent-recognition/ # 意图识别（日志 + 分类器提示词）
+│       ├── potential-models/ # 潜在模型
+│       ├── ai-assist/        # AI 辅助
+│       └── ...               # provider-stats / route-overview / settings / client-models
 └── api/                      # API 客户端
 ```
 
 ### 共享包
 
-- **@xartifact/x-herald-shared**：类型定义、常量、Zod schema
+- **@xartifact/x-herald-shared**：类型定义、常量、Zod schema（前后端契约单一来源，仅依赖 zod）
+- **@xartifact/x-herald-db**：Drizzle schema + 迁移（唯一迁移源，dev/test 共用）
 - **@xartifact/x-herald-ui**：shadcn/ui 组件库、admin 组件
+- **@xartifact/x-herald-ai-agent**（packages/ai-agent）：AI 代理（agent / tools / skills）
+- **packages/agent-extensions**：代理扩展
 
 ## 开发规范
 
@@ -223,7 +285,9 @@ chore: 构建/工具/其他
 - `README.md` - 项目概览和快速开始
 - `docs/DEVELOPMENT-ROADMAP.md` - 详细开发路线图
 - `docs/unified-port-architecture.md` - 统一端口架构
-- `.claude/rules/*.md` - 详细开发规范
+- `docs/troubleshooting-thinking-mode-400.md` - Thinking 模式 400 排障手册（reasoning_content）
+  - 配套 skill: `.claude/skills/debugging-thinking-mode-400/SKILL.md`
+- `.claude/skills/debugging-thinking-mode-400/SKILL.md` - thinking 模式 400 排查 skill
 
 ## 环境变量
 
@@ -243,7 +307,7 @@ cp .env.example .env
 
 - 不要创建总结文档（已在规范中明确）
 - 所有命令使用 Bun，不使用 npm/yarn/pnpm
-- 模型系统使用新的 model_groups + model_instances（旧的 models + model_routes 已废弃）
+- 模型系统使用 model_groups + model_instances；路由规则使用 route_rules（旧的 models / model_routes / canvas_states 已废弃删除）
 - 参考资料链接：
   - Hono: <https://hono.dev/llms.txt>
   - TanStack Router: <https://tanstack.com/router>
@@ -283,7 +347,7 @@ cp .env.example .env
 
 ### 核心规则
 
-- 后端测试用 `bun:test`，React 组件测试用 `vite-plus/test`（仅 `*.ui.test.tsx`）
+- 后端测试用 `bun:test`，React 组件测试用 `vitest`（仅 `*.ui.test.tsx`）
 - 测试文件与源文件同目录：`foo.ts` → `foo.test.ts`
 - Mock 优先级：真实代码 > Hono test client > `mock.module()` > `vi.mock()` > MSW
 - 使用工厂函数（`apps/gateway/src/test/factories.ts`），不用 JSON fixture
@@ -291,7 +355,7 @@ cp .env.example .env
 
 ### 测试命令
 
-- 后端测试: `cd apps/gateway && bun test src/features/gateway/failover/failover-executor.test.ts`
+- 后端测试: `cd apps/gateway && bun test src/gateway/services/router-selector.test.ts`
 - UI 组件测试: `bun run test:ui`
 - E2E 测试: `cd apps/web && bunx playwright test`
 - 类型检查: `bun run typecheck`
@@ -301,10 +365,13 @@ cp .env.example .env
 代理全链路测试使用 Mock 上游服务器（`apps/gateway/src/test/mock-upstream.ts`）模拟真实 LLM API 响应：
 
 - `test/mock-upstream.ts` — Bun.serve() Mock 上游，支持 OpenAI/Anthropic 响应模板、SSE 流式、错误注入
-- `test/proxy-test-helpers.ts` — `createProxyTestEnv()` 一键创建 Provider→Group→Instance→AccessModel→ModelRoute→VirtualKey 完整链路
+- `test/proxy-test-helpers.ts` — `createProxyTestEnv()` 一键创建 Provider→Group→Instance→AccessModel→RouteRule→VirtualKey 完整链路
 - `src/__tests__/proxy.test.ts` — 全链路集成测试（passthrough + 跨协议转换 + 鉴权）
 - `src/__tests__/proxy-streaming.test.ts` — SSE 流式代理测试
 - `src/__tests__/proxy-failover.test.ts` — 故障转移/错误/超时测试
+- `src/__tests__/proxy-cross-provider-failover.test.ts` — 跨服务商故障转移测试
+- `src/__tests__/proxy-intent.test.ts` — 意图路由测试
+- `src/__tests__/v1-models.test.ts` — /v1/models 端点测试
 
 ### 测试基础设施
 
@@ -315,6 +382,9 @@ cp .env.example .env
 | `apps/gateway/src/test/setup.ts`                  | bun:test 全局 setup  |
 | `apps/gateway/src/test/mock-upstream.ts`          | Mock 上游 LLM 服务器 |
 | `apps/gateway/src/test/proxy-test-helpers.ts`     | 代理全链路测试环境   |
+| `apps/gateway/src/test/mock-db.ts`                | Mock 数据库          |
+| `apps/gateway/src/test/scenario-builder.ts`       | 场景构建器           |
+| `apps/gateway/src/test/transactional-context.ts`  | 事务上下文           |
 | `.claude/skills/writing-tests/SKILL.md`           | 测试编写规范         |
 | `.claude/skills/engineering-conventions/SKILL.md` | 工程编码规范         |
 

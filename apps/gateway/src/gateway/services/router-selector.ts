@@ -5,7 +5,7 @@ import {
 } from '../../features/metrics/services/instance-perf-cache'
 import type { ModelGroup, ModelInstance } from '@xartifact/x-herald-db'
 import { providers } from '@xartifact/x-herald-db'
-import type { RouteCondition, StandardRequest } from '@xartifact/x-herald-shared'
+import type { RouteCondition, StandardRequest, IntentTraceInfo } from '@xartifact/x-herald-shared'
 
 import { circuitBreakerRegistry } from './circuit-breaker'
 import type { ModelMappingResult } from './model-mapping'
@@ -40,16 +40,19 @@ export interface RouteResult {
   /** 意图路由特有：分类结果与来源（供 routing-trace 展示决策细节） */
   intentName?: string
   intentSource?: string
+  /** 意图路由决策依据：用户消息 + 分类器响应/置信度（供 routing-trace 展示"为什么命中"） */
+  intentTrace?: IntentTraceInfo
   /** 能力路由特有：命中的能力列表（供 routing-trace 展示决策细节） */
   capabilities?: string[]
 }
-
 export interface RoutingContext {
   requestedModel: string
   streaming: boolean
   hasTools: boolean
   hasVision: boolean
   virtualKeyId: string
+  /** 一次客户端请求的分组 ID（intent_logs 关联用；由顶层 handler 生成传入） */
+  requestGroupId?: string
   preferredProvider?: string
   request?: StandardRequest
   maxResponseTime?: number

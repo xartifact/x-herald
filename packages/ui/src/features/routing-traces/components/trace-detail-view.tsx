@@ -25,8 +25,8 @@ import {
   NUMERIC_OPERATORS,
 } from '../../model-routes/components/property-panel/condition-fields'
 
+import type { ReactNode } from 'react'
 import type { RoutingTraceDetailResponse } from '../api'
-
 type RouteConditionLike = NonNullable<
   NonNullable<RoutingTraceDetailResponse['matchedRule']>['conditions']
 >[number]
@@ -135,6 +135,48 @@ function hasDecisionDetail(step: ChainStepLike): boolean {
   return !!step.intentName || (step.capabilities?.length ?? 0) > 0 || step.actionType === 'reject'
 }
 
+/** 意图路由决策依据展示——用户消息 + 分类器原始响应/置信度，回答"为什么命中该意图" */
+function IntentEvidence({ step }: { step: ChainStepLike }) {
+  const t = step.intentTrace
+  if (!t) return null
+
+  const rows: Array<{ label: string; value: ReactNode; mono?: boolean }> = []
+  if (t.userMessage) rows.push({ label: '用户消息', value: t.userMessage })
+  if (t.capabilities && t.capabilities.length > 0)
+    rows.push({ label: '能力', value: t.capabilities.join('、') })
+  if (t.confidence !== undefined)
+    rows.push({
+      label: '置信度',
+      value: `${Math.round(t.confidence * 100)}%`,
+      mono: true,
+    })
+  if (t.classifierCategory)
+    rows.push({ label: '分类器输出', value: t.classifierCategory, mono: true })
+  if (t.classifierRawResponse)
+    rows.push({ label: '分类器原文', value: t.classifierRawResponse, mono: true })
+  if (t.classifierModelName)
+    rows.push({ label: '分类模型', value: t.classifierModelName, mono: true })
+  if (t.classifierLatencyMs !== undefined)
+    rows.push({ label: '分类耗时', value: formatDuration(t.classifierLatencyMs), mono: true })
+  if (t.classifierStatusCode !== undefined && t.classifierStatusCode !== null)
+    rows.push({ label: '分类器状态', value: String(t.classifierStatusCode), mono: true })
+
+  if (rows.length === 0) return null
+
+  return (
+    <div className="mt-2 rounded-md bg-muted/40 px-3 py-2 space-y-1 border border-border/60">
+      {rows.map((r) => (
+        <div key={r.label} className="flex gap-2 text-xs">
+          <span className="text-muted-foreground flex-shrink-0 w-16">{r.label}</span>
+          <span className={`text-foreground/90 min-w-0 break-words ${r.mono ? 'font-mono' : ''}`}>
+            {r.value}
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 /** 意图/能力/拒绝节点的决策信息卡片——不管这一步最终有没有产出候选实例都要展示 */
 function DecisionCard({ step }: { step: ChainStepLike }) {
   const isReject = step.actionType === 'reject'
@@ -182,6 +224,8 @@ function DecisionCard({ step }: { step: ChainStepLike }) {
             )}
           </div>
         </div>
+        {/* 意图命中的完整依据：用户消息 + 分类器响应 */}
+        {isIntent && <IntentEvidence step={step} />}
       </CardContent>
     </Card>
   )

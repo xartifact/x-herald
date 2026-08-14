@@ -150,13 +150,14 @@ describe('AccessModelRouter - intent action', () => {
       } as RouteAction,
     })
 
+    const requestGroupId = crypto.randomUUID()
     const candidates = await accessModelRouter.routeCandidates({
       requestedModel: 'intent-am',
       streaming: false,
       hasTools: false,
       hasVision: false,
-      virtualKeyId:
-        (await getDatabase().select().from(virtualKeys).limit(1))[0]?.id ?? 'test-key-id',
+      requestGroupId,
+      virtualKeyId: crypto.randomUUID(),
       request: {
         model: 'gpt-4-coding',
         messages: [{ role: 'user', content: 'code' }],
@@ -166,6 +167,22 @@ describe('AccessModelRouter - intent action', () => {
 
     expect(candidates.length).toBeGreaterThan(0)
     expect(candidates[0].group.id).toBe(codingGroupId)
+    // requestGroupId 应透传到 intent_logs（fire-and-forget，轮询等落库）
+    const startedAt = Date.now()
+    let intentRow: { requestGroupId: string | null } | undefined
+    while (Date.now() - startedAt < 3000) {
+      const rows = await getDatabase()
+        .select({ requestGroupId: intentLogs.requestGroupId })
+        .from(intentLogs)
+        .where(eq(intentLogs.requestGroupId, requestGroupId))
+        .limit(1)
+      intentRow = rows[0]
+      if (intentRow) break
+      const { promise, resolve } = Promise.withResolvers<void>()
+      setTimeout(resolve, 100)
+      await promise
+    }
+    expect(intentRow?.requestGroupId).toBe(requestGroupId)
   })
 
   it('still persists an intent_logs record when the canvas rule id is not a UUID (e.g. "new-<uuid>")', async () => {

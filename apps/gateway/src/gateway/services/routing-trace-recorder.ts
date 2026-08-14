@@ -17,8 +17,7 @@
  *   - 顶层 handler 把 snapshot 透传到 `logStartAsync({ routingTrace: { routeChain: ... } })`
  */
 
-import type { RouteCondition } from '@xartifact/x-herald-shared'
-
+import type { IntentTraceInfo, RouteCondition } from '@xartifact/x-herald-shared'
 import type { RouteResult } from './router-selector'
 
 export interface PlannedCandidate {
@@ -42,6 +41,8 @@ export interface PlannedChainStep {
   resolvedGroupName?: string
   intentName?: string
   intentSource?: string
+  /** 意图路由决策依据（用户消息 + 分类器响应/置信度），供"为什么命中该意图"展示 */
+  intentTrace?: IntentTraceInfo
   capabilities?: string[]
   candidates: PlannedCandidate[]
 }
@@ -119,6 +120,7 @@ export function buildRouteChainSnapshot(
         resolvedGroupName: r.group?.displayName || r.group?.name,
         intentName: r.intentName,
         intentSource: r.intentSource,
+        intentTrace: r.intentTrace,
         capabilities: r.capabilities,
         candidates: [],
       })

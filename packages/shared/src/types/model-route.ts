@@ -53,6 +53,36 @@ export type IntentActionConfig = {
 }
 
 /**
+ * 意图路由决策的依据（供 routing-trace 展示"为什么命中该意图"）。
+ *
+ * 由 intent-handler 在分类后写入 RouteResult，经 routing-trace-recorder
+ * 落到 routeChain 的 chain step 上。分类器原始请求/响应体可能较大，
+ * 只在 detail 查询层按需返回（列表接口不携带）。
+ */
+export interface IntentTraceInfo {
+  /** 分类器判定的意图名（如 "编码任务"） */
+  intentName: string
+  /** 判定来源：classifier / model_name / capability / fallback / default / agent_directive */
+  intentSource: string
+  /** 分类器 JSON 里返回的 confidence（0~1），解析失败为 0 */
+  confidence?: number
+  /** 用户消息（去除 system-reminder / tool 噪声后的纯净文本） */
+  userMessage?: string
+  /** 用户消息中检测到的能力（vision / audio / tool_use 等） */
+  capabilities?: string[]
+  /** 分类器输出原文（未标准化大小写的 category） */
+  classifierCategory?: string | null
+  /** 分类器返回的原始响应文本（rawText，content 或 reasoning_content） */
+  classifierRawResponse?: string | null
+  /** 分类器使用的模型名 */
+  classifierModelName?: string | null
+  /** 分类器调用耗时 ms */
+  classifierLatencyMs?: number
+  /** 分类器 HTTP 状态码 */
+  classifierStatusCode?: number | null
+}
+
+/**
  * 能力 action 配置
  */
 export const CapabilityActionConfigSchema = z.object({

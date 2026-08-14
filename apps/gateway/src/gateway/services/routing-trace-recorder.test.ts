@@ -109,6 +109,39 @@ describe('buildRouteChainSnapshot', () => {
     expect(trace.chain[0].intentSource).toBe('classifier')
   })
 
+  it('carries intentTrace (classifier evidence) onto the chain step', () => {
+    const candidates = [
+      {
+        ...baseCandidate,
+        instance: { id: 'i-1', name: 'inst-1', priority: 10 },
+        group: { id: 'g-coding', name: 'coding-group', displayName: 'Coding' },
+        intentName: 'coding',
+        intentSource: 'classifier',
+        intentTrace: {
+          intentName: 'coding',
+          intentSource: 'classifier',
+          confidence: 0.92,
+          userMessage: '写一个排序函数',
+          capabilities: ['tool_use'],
+          classifierCategory: 'coding',
+          classifierRawResponse: '{"category":"coding","confidence":0.92}',
+          classifierModelName: 'qwythos-9b',
+          classifierLatencyMs: 123,
+          classifierStatusCode: 200,
+        },
+      },
+    ] as unknown as RouteResult[]
+    const trace = buildRouteChainSnapshot(candidates, 'my-assistant')
+    expect(trace.chain[0].intentTrace).toMatchObject({
+      intentName: 'coding',
+      confidence: 0.92,
+      userMessage: '写一个排序函数',
+      classifierRawResponse: '{"category":"coding","confidence":0.92}',
+      classifierModelName: 'qwythos-9b',
+      classifierStatusCode: 200,
+    })
+  })
+
   it('carries capabilities onto the chain step for capability routing', () => {
     const candidates = [
       {

@@ -26,6 +26,7 @@ function recordIntentResult(
   actualGroupId?: string,
 ): void {
   recordIntentDecision({
+    requestGroupId: ctx.routingContext.requestGroupId,
     virtualKeyId: ctx.routingContext.virtualKeyId,
     accessModelId: ctx.am.id,
     accessModelName: ctx.am.name,
@@ -71,6 +72,19 @@ function attachIntentMetadata(
     },
     intentName: intent.intentName,
     intentSource: intent.source,
+    // 意图路由决策依据：用户消息 + 分类器原始响应/置信度/模型，供 routing-trace 展示
+    intentTrace: {
+      intentName: intent.intentName,
+      intentSource: intent.source,
+      confidence: intent.confidence,
+      userMessage: intent.userMessage,
+      capabilities: intent.userMessageCapabilities,
+      classifierCategory: intent.classifierCategory,
+      classifierRawResponse: intent.classifierRawResponse,
+      classifierModelName: intent.classifierModelName,
+      classifierLatencyMs: intent.classifierLatencyMs,
+      classifierStatusCode: intent.classifierStatusCode,
+    },
   }))
 }
 

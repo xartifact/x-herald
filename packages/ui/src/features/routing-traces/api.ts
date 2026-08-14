@@ -36,6 +36,18 @@ export interface RoutingTraceDetailResponse extends RoutingTraceSummary {
     resolvedGroupName?: string
     intentName?: string
     intentSource?: string
+    intentTrace?: {
+      intentName?: string
+      intentSource?: string
+      confidence?: number
+      userMessage?: string
+      capabilities?: string[]
+      classifierCategory?: string | null
+      classifierRawResponse?: string | null
+      classifierModelName?: string | null
+      classifierLatencyMs?: number
+      classifierStatusCode?: number | null
+    }
     capabilities?: string[]
     candidates: Array<{
       candidateIndex: number

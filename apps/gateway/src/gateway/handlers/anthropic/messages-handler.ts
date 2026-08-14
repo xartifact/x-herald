@@ -74,11 +74,12 @@ export async function handleAnthropicMessages(
         403,
       )
     }
-
+    const requestGroupId = crypto.randomUUID()
     const candidates = await accessModelRouter.routeCandidates({
       requestedModel: standardReq.model,
       streaming: standardReq.stream || false,
       hasTools: !!standardReq.tools?.length,
+      requestGroupId,
       request: standardReq,
       hasVision: standardReq.messages.some(
         (m) => Array.isArray(m.content) && m.content.some((c) => c.type === 'image_url'),
@@ -103,7 +104,6 @@ export async function handleAnthropicMessages(
     )
 
     const config = loadConfig()
-    const requestGroupId = crypto.randomUUID()
     const abortManager = new AbortManager(c.req.raw.signal)
     abortManager.registerClientDisconnect()
 

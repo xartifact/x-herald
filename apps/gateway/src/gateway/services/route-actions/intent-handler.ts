@@ -56,11 +56,21 @@ function recordIntentResult(
   })
 }
 
+/** 构造意图路由的 step 级决策依据（"为什么命中该 intent"），被成功 + 失败路径共用 */
+function intentDecisionReason(intent: IntentResult): string {
+  const confidence = intent.confidence != null ? Math.round(intent.confidence * 100) : null
+  return `intent classified as '${intent.intentName}' via ${
+    intent.source
+  }${confidence != null ? ` (${confidence}% confidence)` : ''}`
+}
+
 function attachIntentMetadata(
   candidates: RouteResult[],
   intent: IntentResult,
   ctx: RouteActionResolutionContext,
 ): RouteResult[] {
+  // step 级决策依据（"为什么命中此 intent"）—— 同 step 的所有候选共享
+  const stepDecisionReason = intentDecisionReason(intent)
   return candidates.map((r) => ({
     ...r,
     mapping: ctx.mapping,
@@ -85,6 +95,8 @@ function attachIntentMetadata(
       classifierLatencyMs: intent.classifierLatencyMs,
       classifierStatusCode: intent.classifierStatusCode,
     },
+    // step 级决策依据（"为什么命中此 intent"）—— 同 step 的所有候选共享
+    decisionReason: stepDecisionReason,
   }))
 }
 
@@ -133,6 +145,7 @@ export class IntentActionHandler implements RouteActionHandler {
               resolvedGroupId: intentResult.groupId,
               intentName: intentResult.intentName,
               intentSource: intentResult.source,
+              decisionReason: intentDecisionReason(intentResult),
             },
           }),
         )
@@ -161,6 +174,7 @@ export class IntentActionHandler implements RouteActionHandler {
             resolvedGroupId: intentResult.groupId,
             intentName: intentResult.intentName,
             intentSource: intentResult.source,
+            decisionReason: intentDecisionReason(intentResult),
           },
         }),
     )

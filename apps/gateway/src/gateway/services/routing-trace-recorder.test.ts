@@ -34,6 +34,41 @@ describe('buildRouteChainSnapshot', () => {
     expect(trace.chain[0].candidates[0].candidateIndex).toBe(0)
   })
 
+  it('carries decision.reason onto the candidate as selectionReason', () => {
+    const candidates = [
+      {
+        ...baseCandidate,
+        decision: {
+          strategy: 'smart',
+          reason: 'primary selection: smart score 72.30',
+          candidates: 3,
+        },
+      },
+    ] as unknown as RouteResult[]
+    const trace = buildRouteChainSnapshot(candidates, 'gpt-4')
+    expect(trace.chain[0].candidates[0].selectionReason).toBe(
+      'primary selection: smart score 72.30',
+    )
+  })
+
+  it('captures group-level filter rejections on the step (filteredOut)', () => {
+    const candidates = [
+      {
+        ...baseCandidate,
+        rejections: [
+          { instanceName: 'inst-2', reason: 'streaming not supported' },
+          { instanceName: 'inst-3', reason: 'circuit breaker open' },
+        ],
+      },
+    ] as unknown as RouteResult[]
+    const trace = buildRouteChainSnapshot(candidates, 'gpt-4')
+    expect(trace.chain[0].filteredOut).toEqual([
+      { instanceName: 'inst-2', reason: 'streaming not supported' },
+      { instanceName: 'inst-3', reason: 'circuit breaker open' },
+    ])
+    expect(trace.chain[0].candidates).toHaveLength(1)
+  })
+
   it('splits primary and backup into separate chain steps, primary first', () => {
     const candidates = [
       {

@@ -31,6 +31,10 @@ export interface PlannedCandidate {
   priority: number
   strategy: string
   groupName: string
+  /** 该实例被选中/排序的决策依据（如 "smart selection (score: 63.5)"） */
+  selectionReason?: string
+  /** 该实例在能力/熔断/状态过滤中被排除的原因（如 "streaming not supported"） */
+  rejectionReason?: string
 }
 
 export interface PlannedChainStep {
@@ -41,10 +45,13 @@ export interface PlannedChainStep {
   resolvedGroupName?: string
   intentName?: string
   intentSource?: string
-  /** 意图路由决策依据（用户消息 + 分类器响应/置信度），供"为什么命中该意图"展示 */
   intentTrace?: IntentTraceInfo
   capabilities?: string[]
+  /** step 级决策依据（capability/intent 命中逻辑）；route_to_group/route_to_instance 不设 */
+  decisionReason?: string
   candidates: PlannedCandidate[]
+  /** 本 step 组内被能力/熔断/状态过滤掉的实例及原因（"为什么没选它"） */
+  filteredOut?: Array<{ instanceName: string; reason: string }>
 }
 
 export interface RouteChainSnapshot {
@@ -75,6 +82,8 @@ export interface FailedStepInfo {
   intentName?: string
   intentSource?: string
   capabilities?: string[]
+  /** step 级决策依据（reject 节点原因 / capability/intent 命中后但目标组空） */
+  decisionReason?: string
 }
 
 /**
@@ -122,7 +131,11 @@ export function buildRouteChainSnapshot(
         intentSource: r.intentSource,
         intentTrace: r.intentTrace,
         capabilities: r.capabilities,
+        // step 级决策依据（capability/intent 命中逻辑），由 handler 写到首个候选上
+        decisionReason: r.decisionReason,
         candidates: [],
+        // 该 step 首个候选携带同组被过滤实例（同一组的后续候选不复述）
+        filteredOut: r.rejections,
       })
     }
     steps[stepIdx].candidates.push({
@@ -136,6 +149,8 @@ export function buildRouteChainSnapshot(
       priority: r.instance.priority,
       strategy: r.decision.strategy,
       groupName: r.group?.displayName || r.group?.name || '',
+      // 决策依据（如 "smart selection (score: 63.5)"），供 routing-trace 展示"为什么选它"
+      selectionReason: r.decision.reason,
     })
   }
 

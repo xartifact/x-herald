@@ -7,7 +7,7 @@ import { modelGroups, modelInstances, modelGroupMemberships } from '@xartifact/x
 import type { ModelGroup, ModelInstance } from '@xartifact/x-herald-db'
 import { providers } from '@xartifact/x-herald-db'
 
-import { selectByStrategy, filterCandidates } from './router-selector'
+import { selectByStrategy, filterCandidates, buildSelectionReason } from './router-selector'
 import {
   ModelNotFoundError,
   ModelDisabledError,
@@ -96,10 +96,7 @@ export class ModelGroupRouter {
       group,
       decision: {
         strategy,
-        reason:
-          idx === 0
-            ? `${strategy} selection (priority: ${c.instance.priority})`
-            : `${strategy} failover candidate #${idx + 1}`,
+        reason: buildSelectionReason(strategy, c, idx, perfMap.get(c.instance.id)),
         candidates: filtered.length,
       },
       mapping: {
@@ -109,6 +106,8 @@ export class ModelGroupRouter {
         mappingType: 'virtual' as const,
       },
       perf: perfMap.get(c.instance.id),
+      // 同组内被能力/熔断/状态过滤掉的实例及原因（首个候选携带，供 routing-trace 展示）
+      rejections,
     }))
   }
 

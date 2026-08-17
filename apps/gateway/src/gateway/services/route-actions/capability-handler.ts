@@ -30,6 +30,7 @@ export class CapabilityActionHandler implements RouteActionHandler {
     if (capResult.contextMode === 'stateless' && ctx.routingContext.request) {
       ctx.routingContext.request.messages = sliceToStatelessMessages(ctx.routingContext.request)
     }
+    const stepDecisionReason = `capability matched: ${capResult.capabilities.join(', ')}`
     const candidates = await ctx.deps.resolveGroupCandidates(
       capResult.groupId,
       ctx.routingContext,
@@ -40,11 +41,12 @@ export class CapabilityActionHandler implements RouteActionHandler {
             actionType: 'capability',
             resolvedGroupId: capResult.groupId,
             capabilities: capResult.capabilities,
+            decisionReason: stepDecisionReason,
           },
         }),
     )
 
-    // resolveGroupCandidates 保证正常返回时 candidates 非空（同上）
+    // step 级决策依据（"为什么命中此 capability"）—— 同 step 候选共享
     return candidates.map((r) => ({
       ...r,
       mapping: ctx.mapping,
@@ -55,6 +57,7 @@ export class CapabilityActionHandler implements RouteActionHandler {
         conditions: ctx.ruleMatch.conditions,
       },
       capabilities: capResult.capabilities,
+      decisionReason: stepDecisionReason,
     }))
   }
 }

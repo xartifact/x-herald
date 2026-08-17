@@ -7,7 +7,13 @@ mock.module('../../features/metrics/services/instance-perf-cache', () => ({
   fetchGroupInstancesPerf: mock(async () => new Map<string, InstancePerfData>()),
 }))
 
-import { filterCandidates, selectByStrategy, FAILOVER_STATUS_CODES } from './router-selector'
+import {
+  filterCandidates,
+  selectByStrategy,
+  buildSelectionReason,
+  FAILOVER_STATUS_CODES,
+} from './router-selector'
+import type { Candidate } from './router-selector'
 import {
   ModelNotFoundError,
   ModelDisabledError,
@@ -551,5 +557,85 @@ describe('FAILOVER_STATUS_CODES', () => {
     expect(FAILOVER_STATUS_CODES.has(400)).toBe(false)
     expect(FAILOVER_STATUS_CODES.has(401)).toBe(false)
     expect(FAILOVER_STATUS_CODES.has(200)).toBe(false)
+  })
+})
+
+describe('buildSelectionReason', () => {
+  function mkCandidate(overrides: Partial<ModelInstance> = {}): Candidate {
+    const instance = {
+      id: 'i-test',
+      name: 'inst-test',
+      priority: 3,
+      weight: 200,
+      costPer1kTokens: { input: 0.01, output: 0.02 },
+      createdAt: new Date('2026-01-15T00:00:00.000Z'),
+      ...overrides,
+    } as ModelInstance
+    return { instance, provider: createTestProvider(), group: createTestGroup() }
+  }
+  const candidate = mkCandidate()
+  const perf: InstancePerfData = {
+    ttfbAvg: 250,
+    ttfbP95: null,
+    latencyAvg: null,
+    successRate: 0.95,
+    avgRetryCount: 0.2,
+  }
+
+  it('priority: emits primary/failover prefix and created date', () => {
+    expect(buildSelectionReason('priority', candidate, 0, undefined)).toBe(
+      'primary selection: priority 3, created 2026-01-15',
+    )
+    expect(buildSelectionReason('priority', candidate, 1, undefined)).toContain(
+      'failover candidate #2',
+    )
+  })
+
+  it('round_robin: emits rotation label', () => {
+    expect(buildSelectionReason('round_robin', candidate, 0, undefined)).toBe(
+      'primary selection: round-robin rotation (priority 3, created 2026-01-15)',
+    )
+  })
+
+  it('weighted: emits weight value', () => {
+    expect(buildSelectionReason('weighted', candidate, 0, undefined)).toBe(
+      'primary selection: weighted random (weight 200)',
+    )
+  })
+
+  it('least_response_time: uses perf TTFB when available, falls back to priority otherwise', () => {
+    expect(buildSelectionReason('least_response_time', candidate, 0, perf)).toBe(
+      'primary selection: TTFB avg 250ms',
+    )
+    expect(buildSelectionReason('least_response_time', candidate, 0, undefined)).toBe(
+      'primary selection: no perf data, priority 3, created 2026-01-15',
+    )
+  })
+  it('cost_optimized: emits total cost when set, falls back otherwise', () => {
+    expect(buildSelectionReason('cost_optimized', candidate, 0, undefined)).toBe(
+      'primary selection: cost $0.0300/1k',
+    )
+    const noCost = mkCandidate({ id: 'i-nc', name: 'inst-nc', priority: 0, costPer1kTokens: null })
+    expect(buildSelectionReason('cost_optimized', noCost, 0, undefined)).toBe(
+      'primary selection: no cost data, priority 0, created 2026-01-15',
+    )
+  })
+
+  it('smart: emits score with formula breakdown', () => {
+    const reason = buildSelectionReason('smart', candidate, 0, perf)
+    expect(reason).toMatch(/^primary selection: smart score \d+\.\d{2} \(successRate\*50/)
+  })
+
+  it('direct: emits route_to_instance pinned label', () => {
+    expect(buildSelectionReason('direct', candidate, 0, undefined)).toBe(
+      "direct routing: instance 'inst-test' pinned by route_to_instance",
+    )
+  })
+
+  it('omits created date when instance has no createdAt', () => {
+    const noDate = mkCandidate({ id: 'i-nd', name: 'inst-nd', priority: 1, createdAt: null })
+    expect(buildSelectionReason('priority', noDate, 0, undefined)).toBe(
+      'primary selection: priority 1',
+    )
   })
 })

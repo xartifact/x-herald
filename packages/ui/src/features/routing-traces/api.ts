@@ -49,6 +49,8 @@ export interface RoutingTraceDetailResponse extends RoutingTraceSummary {
       classifierStatusCode?: number | null
     }
     capabilities?: string[]
+    decisionReason?: string
+    filteredOut?: Array<{ instanceName: string; reason: string }>
     candidates: Array<{
       candidateIndex: number
       chainStepIndex: number
@@ -60,6 +62,7 @@ export interface RoutingTraceDetailResponse extends RoutingTraceSummary {
       priority: number
       strategy: string
       groupName: string
+      selectionReason?: string
       matched: boolean
       status?: 'success' | 'failed' | 'pending'
       statusCode?: number

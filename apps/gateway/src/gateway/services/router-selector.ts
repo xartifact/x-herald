@@ -5,7 +5,12 @@ import {
 } from '../../features/metrics/services/instance-perf-cache'
 import type { ModelGroup, ModelInstance } from '@xartifact/x-herald-db'
 import { providers } from '@xartifact/x-herald-db'
-import type { RouteCondition, StandardRequest, IntentTraceInfo } from '@xartifact/x-herald-shared'
+import type {
+  RouteCondition,
+  StandardRequest,
+  IntentTraceInfo,
+  RoutingStrategy,
+} from '@xartifact/x-herald-shared'
 
 import { circuitBreakerRegistry } from './circuit-breaker'
 import type { ModelMappingResult } from './model-mapping'
@@ -44,6 +49,9 @@ export interface RouteResult {
   intentTrace?: IntentTraceInfo
   /** 能力路由特有：命中的能力列表（供 routing-trace 展示决策细节） */
   capabilities?: string[]
+  /** step 级决策依据（capability/intent 命中逻辑）；route_to_group/route_to_instance 不设 */
+  decisionReason?: string
+  /** 同组候选过滤时被排除的实例及其原因（供 routing-trace 展示"为什么没选它"） */
 }
 export interface RoutingContext {
   requestedModel: string
@@ -162,6 +170,55 @@ export async function selectByStrategy(
     case 'priority':
     default:
       return [...candidates].toSorted(byPriorityThenAge)
+  }
+}
+
+/**
+ * 生成单个候选实例的组内选择依据（供 routing-trace 展示"为什么选它"）。
+ * 按策略给出排序真正用到的量化指标：priority 数值 / 权重 / TTFB / 成本 / smart 评分。
+ *
+ * strategy 收紧为 RoutingStrategy（单一真实源，shared/src/types/model-group.ts）。
+ * 任何新增策略都会被 TS 静态检查拦截（satisfies never 兜底）——避免策略枚举与文案
+ * 不同步后静默回退到 default 分支。
+ */
+export function buildSelectionReason(
+  strategy: RoutingStrategy | 'direct',
+  c: Candidate,
+  idx: number,
+  perf: InstancePerfData | undefined,
+): string {
+  const head = idx === 0 ? 'primary selection' : `failover candidate #${idx + 1}`
+  const prio = c.instance.priority ?? 0
+  const created = c.instance.createdAt
+    ? `, created ${c.instance.createdAt.toISOString().slice(0, 10)}`
+    : ''
+  switch (strategy) {
+    case 'round_robin':
+      return `${head}: round-robin rotation (priority ${prio}${created})`
+    case 'weighted':
+      return `${head}: weighted random (weight ${c.instance.weight ?? 1})`
+    case 'least_response_time':
+      return perf?.ttfbAvg != null
+        ? `${head}: TTFB avg ${Math.round(perf.ttfbAvg)}ms`
+        : `${head}: no perf data, priority ${prio}${created}`
+    case 'cost_optimized': {
+      const cost = c.instance.costPer1kTokens
+      return cost != null
+        ? `${head}: cost $${(cost.input + cost.output).toFixed(4)}/1k`
+        : `${head}: no cost data, priority ${prio}${created}`
+    }
+    case 'smart':
+      return `${head}: smart score ${computeSmartScore(perf, c.instance).toFixed(2)} (successRate*50 + TTFB*30 + retry*15 + cost*5)`
+    case 'priority':
+      return `${head}: priority ${prio}${created}`
+    case 'direct':
+      // route_to_instance action 走的是直连实例，无组内排序；idx 恒为 0
+      return `direct routing: instance '${c.instance.name}' pinned by route_to_instance`
+    default: {
+      // 编译期检查：枚举加新成员但漏处理时编译失败
+      const _exhaustive: never = strategy
+      return `${head}: unknown strategy (${_exhaustive})`
+    }
   }
 }
 

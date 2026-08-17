@@ -253,6 +253,8 @@ export async function getRoutingTraceDetail(logId: string) {
             classifierStatusCode?: number | null
           }
           capabilities?: string[]
+          decisionReason?: string
+          filteredOut?: Array<{ instanceName: string; reason: string }>
           candidates?: Array<{
             candidateIndex: number
             chainStepIndex: number
@@ -264,6 +266,7 @@ export async function getRoutingTraceDetail(logId: string) {
             priority: number
             strategy: string
             groupName: string
+            selectionReason?: string
           }>
         }>
         outcome?: 'rejected' | 'all_failed'

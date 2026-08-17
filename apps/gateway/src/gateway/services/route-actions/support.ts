@@ -14,6 +14,7 @@ import {
 import { getDatabase } from '../../../db/client'
 import { modelGroupRouter } from '../model-group-router'
 import {
+  buildSelectionReason,
   ModelDisabledError,
   ModelNotFoundError,
   NoAvailableInstanceError,
@@ -191,14 +192,19 @@ export async function routeToInstance(
     createdAt: new Date(),
     updatedAt: new Date(),
   }
-
+  // 文案经 buildSelectionReason 统一（直接路由无组内排序，idx 恒为 0）
   return {
     instance,
     provider,
     group: resolvedGroup,
     decision: {
       strategy: 'direct',
-      reason: `Access model '${am.name}' → instance '${instance.name}'`,
+      reason: buildSelectionReason(
+        'direct',
+        { instance, provider, group: resolvedGroup },
+        0,
+        undefined,
+      ),
       candidates: 1,
       responseTime: 0,
     },

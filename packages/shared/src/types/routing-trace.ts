@@ -60,6 +60,9 @@ export interface ChainStep {
   intentSource?: string
   /** 能力路由特有 */
   capabilities?: string[]
+  /** step 级决策依据（"为什么命中此 action"）—— capability/intent 命中逻辑说明；
+   *  route_to_group/route_to_instance/reject/fallback 不设此字段，由 candidates[].selectionReason 表达。 */
+  decisionReason?: string
   /** 此 step 产出的候选实例 */
   candidates: ChainCandidate[]
 }

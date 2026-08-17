@@ -1,4 +1,5 @@
 import { useNavigate } from '@tanstack/react-router'
+import { useState } from 'react'
 import {
   Activity,
   AlertTriangle,
@@ -6,6 +7,8 @@ import {
   ArrowDown,
   Ban,
   CheckCircle2,
+  ChevronDown,
+  ChevronRight,
   Clock,
   ExternalLink,
   Globe,
@@ -177,6 +180,193 @@ function IntentEvidence({ step }: { step: ChainStepLike }) {
   )
 }
 
+/** 单个候选实例的渲染（状态/依据 + 右侧 HTTP 详情），被 StepGroup 复用 */
+function CandidateCard({
+  c,
+  isFinal,
+}: {
+  c: RoutingTraceDetailResponse['chain'][number]['candidates'][number]
+  isFinal: boolean
+}) {
+  const navigate = useNavigate()
+  const statusMeta = c.matched
+    ? (STATUS_META[c.status ?? 'pending'] ?? STATUS_META.pending)
+    : STATUS_META.pending
+  const StatusIcon = statusMeta.icon
+  const stepKindMeta = CHAIN_KIND_META[c.chainStepKind]
+  const StepIcon = stepKindMeta.icon
+
+  return (
+    <Card className={`border-l-4 ${isFinal ? 'border-l-success' : statusMeta.border}`}>
+      <CardContent className="py-3 px-4">
+        <div className="flex items-center justify-between gap-3">
+          {/* 左侧：候选序号 + 状态 */}
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div
+              className={`flex h-7 w-7 items-center justify-center rounded-full ${statusMeta.bg} flex-shrink-0`}
+            >
+              <StatusIcon className={`h-3.5 w-3.5 ${statusMeta.color}`} />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-mono text-muted-foreground">#{c.candidateIndex}</span>
+                <StepIcon className={`h-3 w-3 ${stepKindMeta.text}`} />
+                <span className="text-xs text-muted-foreground">{stepKindMeta.label}</span>
+                {isFinal && (
+                  <Badge variant="default" className="text-[10px] h-4">
+                    最终出口
+                  </Badge>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="text-sm font-medium truncate">{c.instanceName}</span>
+                <span className="text-xs text-muted-foreground">@ {c.providerName}</span>
+              </div>
+              {c.groupName && <div className="text-xs text-muted-foreground">{c.groupName}</div>}
+              {c.selectionReason && (
+                <div className="text-[11px] text-muted-foreground/90 mt-0.5">
+                  决策依据: {c.selectionReason}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 右侧：HTTP 状态 + 耗时 + 请求详情链接 */}
+          <div className="flex items-center gap-3 flex-shrink-0">
+            {c.matched ? (
+              <>
+                {c.statusCode !== undefined && (
+                  <Badge
+                    variant={c.statusCode < 400 ? 'default' : 'destructive'}
+                    className="text-[10px] font-mono"
+                  >
+                    {c.statusCode}
+                  </Badge>
+                )}
+                {c.failoverReason && (
+                  <Badge variant="secondary" className="text-[10px]">
+                    {c.failoverReason}
+                  </Badge>
+                )}
+                <span className="text-xs font-mono text-muted-foreground">
+                  {formatDuration(c.durationMs)}
+                </span>
+              </>
+            ) : (
+              <span className="text-xs text-muted-foreground">未执行</span>
+            )}
+            {c.requestLogId && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2"
+                onClick={() =>
+                  navigate({
+                    to: '/admin/logs/$logId',
+                    params: { logId: c.requestLogId! },
+                  })
+                }
+              >
+                <ExternalLink className="h-3 w-3" />
+                <span className="ml-1 text-xs">请求</span>
+              </Button>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+/** 把同 step 的候选 + 决策依据 + 过滤原因包装成可折叠容器（非首个 step 还会缩进） */
+function StepGroup({
+  step,
+  isFirstStep,
+  finalCandidateIndex,
+}: {
+  step: RoutingTraceDetailResponse['chain'][number]
+  isFirstStep: boolean
+  finalCandidateIndex?: number
+}) {
+  const [expanded, setExpanded] = useState(true)
+  const stepKindMeta = CHAIN_KIND_META[step.kind]
+  const StepIcon = stepKindMeta.icon
+  const showDecision = hasDecisionDetail(step)
+  const groupName = step.resolvedGroupName ?? step.resolvedGroupId ?? ''
+  const filteredCount = step.filteredOut?.length ?? 0
+  const attempted = step.candidates.filter((c) => c.matched).length
+  const total = step.candidates.length
+
+  return (
+    <div className={isFirstStep ? '' : 'pl-4 sm:pl-6 border-l-2 border-border/50 ml-2'}>
+      {/* step 头部：可折叠标题 + 计数 */}
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="flex items-center gap-2 w-full py-1.5 text-left hover:bg-muted/40 rounded-md px-2 transition-colors"
+        aria-expanded={expanded}
+      >
+        {expanded ? (
+          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+        ) : (
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+        )}
+        <StepIcon className={`h-3.5 w-3.5 ${stepKindMeta.text} flex-shrink-0`} />
+        <span className="text-xs font-medium">{stepKindMeta.label}</span>
+        {groupName && (
+          <Badge variant="outline" className="text-[10px] font-mono h-4">
+            {groupName}
+          </Badge>
+        )}
+        <span className="text-xs text-muted-foreground">
+          {attempted}/{total} 已尝试
+          {filteredCount > 0 && ` · ${filteredCount} 过滤`}
+        </span>
+        {step.decisionReason && (
+          <span
+            className="text-[11px] text-muted-foreground/90 truncate max-w-[420px]"
+            title={step.decisionReason}
+          >
+            · {step.decisionReason}
+          </span>
+        )}
+      </button>
+
+      {expanded && (
+        <div className="space-y-0 pt-1">
+          {showDecision && (
+            <>
+              <DecisionCard step={step} />
+              <TimelineConnector />
+            </>
+          )}
+          {step.candidates.map((c, i) => (
+            <div key={c.candidateIndex}>
+              <CandidateCard c={c} isFinal={finalCandidateIndex === c.candidateIndex} />
+              {step.filteredOut && step.filteredOut.length > 0 && i === 0 && (
+                <div className="ml-9 mt-1 mb-1 rounded-md bg-muted/40 px-2 py-1 border border-border/50">
+                  <div className="text-[11px] text-muted-foreground mb-0.5">
+                    同组未入选（过滤原因）:
+                  </div>
+                  {step.filteredOut.map((r) => (
+                    <div
+                      key={r.instanceName}
+                      className="text-[11px] text-foreground/80 flex gap-1.5"
+                    >
+                      <span className="font-mono flex-shrink-0">{r.instanceName}</span>
+                      <span className="text-muted-foreground truncate">{r.reason}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {i < step.candidates.length - 1 && <TimelineConnector />}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 /** 意图/能力/拒绝节点的决策信息卡片——不管这一步最终有没有产出候选实例都要展示 */
 function DecisionCard({ step }: { step: ChainStepLike }) {
   const isReject = step.actionType === 'reject'
@@ -232,10 +422,8 @@ function DecisionCard({ step }: { step: ChainStepLike }) {
 }
 
 export function RoutingTraceDetailView({ trace }: RoutingTraceDetailViewProps) {
-  const navigate = useNavigate()
   const totalCandidates = trace.chain.flatMap((s) => s.candidates).length
   const attempted = trace.chain.flatMap((s) => s.candidates).filter((c) => c.matched).length
-  const allCandidates = trace.chain.flatMap((s) => s.candidates)
 
   return (
     <div className="space-y-1">
@@ -304,111 +492,19 @@ export function RoutingTraceDetailView({ trace }: RoutingTraceDetailViewProps) {
 
         <TimelineConnector />
 
-        {/* Step 3-N: 链路候选执行（时间轴节点） */}
-        {allCandidates.map((c, idx) => {
-          const statusMeta = c.matched
-            ? (STATUS_META[c.status ?? 'pending'] ?? STATUS_META.pending)
-            : STATUS_META.pending
-          const StatusIcon = statusMeta.icon
-          const isFinal = trace.finalCandidate?.candidateIndex === c.candidateIndex
-          const stepKindMeta = CHAIN_KIND_META[c.chainStepKind]
-          const StepIcon = stepKindMeta.icon
-          const step = trace.chain[c.chainStepIndex]
-          const isFirstInStep =
-            idx === 0 || allCandidates[idx - 1].chainStepIndex !== c.chainStepIndex
-          const showDecision = isFirstInStep && step && hasDecisionDetail(step)
-
-          return (
-            <div key={c.candidateIndex}>
-              {showDecision && step && (
-                <>
-                  <DecisionCard step={step} />
-                  <TimelineConnector />
-                </>
-              )}
-              <Card className={`border-l-4 ${isFinal ? 'border-l-success' : statusMeta.border}`}>
-                <CardContent className="py-3 px-4">
-                  <div className="flex items-center justify-between gap-3">
-                    {/* 左侧：候选序号 + 状态 */}
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div
-                        className={`flex h-7 w-7 items-center justify-center rounded-full ${statusMeta.bg} flex-shrink-0`}
-                      >
-                        <StatusIcon className={`h-3.5 w-3.5 ${statusMeta.color}`} />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-mono text-muted-foreground">
-                            #{c.candidateIndex}
-                          </span>
-                          <StepIcon className={`h-3 w-3 ${stepKindMeta.text}`} />
-                          <span className="text-xs text-muted-foreground">
-                            {stepKindMeta.label}
-                          </span>
-                          {isFinal && (
-                            <Badge variant="default" className="text-[10px] h-4">
-                              最终出口
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className="text-sm font-medium truncate">{c.instanceName}</span>
-                          <span className="text-xs text-muted-foreground">@ {c.providerName}</span>
-                        </div>
-                        {c.groupName && (
-                          <div className="text-xs text-muted-foreground">{c.groupName}</div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* 右侧：HTTP 状态 + 耗时 + 请求详情链接 */}
-                    <div className="flex items-center gap-3 flex-shrink-0">
-                      {c.matched ? (
-                        <>
-                          {c.statusCode !== undefined && (
-                            <Badge
-                              variant={c.statusCode < 400 ? 'default' : 'destructive'}
-                              className="text-[10px] font-mono"
-                            >
-                              {c.statusCode}
-                            </Badge>
-                          )}
-                          {c.failoverReason && (
-                            <Badge variant="secondary" className="text-[10px]">
-                              {c.failoverReason}
-                            </Badge>
-                          )}
-                          <span className="text-xs font-mono text-muted-foreground">
-                            {formatDuration(c.durationMs)}
-                          </span>
-                        </>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">未执行</span>
-                      )}
-                      {c.requestLogId && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 px-2"
-                          onClick={() =>
-                            navigate({
-                              to: '/admin/logs/$logId',
-                              params: { logId: c.requestLogId! },
-                            })
-                          }
-                        >
-                          <ExternalLink className="h-3 w-3" />
-                          <span className="ml-1 text-xs">请求</span>
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              {idx < allCandidates.length - 1 && <TimelineConnector />}
-            </div>
-          )
-        })}
+        {/* Step 3-N: 链路步骤（按 step 分组，可折叠；非首个 step 缩进显示从属关系） */}
+        {trace.chain.map((step, stepIdx) => (
+          <div key={step.index}>
+            <StepGroup
+              step={step}
+              isFirstStep={stepIdx === 0}
+              finalCandidateIndex={trace.finalCandidate?.candidateIndex}
+            />
+            {stepIdx < trace.chain.length - 1 && step.candidates.length > 0 && (
+              <TimelineConnector />
+            )}
+          </div>
+        ))}
 
         {/* 路由在产出任何候选之前就结束的决策（reject / 目标组为空等）—— 这类 step 的
             candidates 恒为空，上面按候选遍历的循环天然不会渲染到它们 */}

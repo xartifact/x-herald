@@ -220,6 +220,7 @@ export function ModelGroupsPage() {
       },
       config: instance.config as any,
     })
+    setInstanceDialogOpen(true)
   }
 
   const handleDeleteInstance = async (instance: ModelInstance) => {

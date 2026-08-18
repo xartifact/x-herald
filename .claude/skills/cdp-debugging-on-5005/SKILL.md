@@ -1,6 +1,6 @@
 ---
 name: cdp-debugging-on-5005
-description: Use when debugging or scripting the x-herald admin SPA served on the unified host port 5005 via Chrome DevTools Protocol (CDP) — scraping admin pages, inspecting the React/TanStack Router DOM, driving Runtime.evaluate in a real browser, or reproducing the apps/web/cdp-uuid-lookup.mjs pattern against localhost:5005.
+description: Use when debugging or scripting the x-herald admin SPA served on the unified host port 5005 via Chrome DevTools Protocol (CDP) — scraping admin pages, inspecting the React/TanStack Router DOM, driving Runtime.evaluate in a real browser, or reproducing the apps/web/cdp-uuid-lookup.mjs pattern against 100.80.110.125:5005.
 ---
 
 # CDP Debugging on the Unified 5005 Port
@@ -22,7 +22,7 @@ The x-herald admin SPA and gateway API are served together on **port 5005** (the
 
 | Concern | Answer |
 | ------- | ------ |
-| Base URL | `http://localhost:5005` |
+| Base URL | `http://100.80.110.125:5005` |
 | Auth | POST `/api/auth/login` `{username,password}` → JWT → `localStorage.admin_token` |
 | Browser | `chromium.launch({ headless: true })` from `@playwright/test` |
 | Evaluate | `cdp.send('Runtime.evaluate', { expression, returnByValue: true })` |
@@ -38,19 +38,19 @@ const ctx = await browser.newContext({ viewport: { width: 1600, height: 1000 } }
 const page = await ctx.newPage()
 
 // 2) Auth: login via API once, then inject JWT into localStorage BEFORE the SPA router reads it
-const r = await fetch('http://localhost:5005/api/auth/login', {
+const r = await fetch('http://100.80.110.125:5005/api/auth/login', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ username: 'admin', password: process.env.ADMIN_PASSWORD }),
 })
 const { token } = await r.json()
-await page.goto('http://localhost:5005/login')
+await page.goto('http://100.80.110.125:5005/login')
 await page.evaluate((t) => localStorage.setItem('admin_token', t), token)
 
 const cdp = await ctx.newCDPSession(page)
 
 // 3) Per page: navigate, wait for render, drive Runtime.evaluate
-await page.goto('http://localhost:5005/admin/model-routes', { waitUntil: 'networkidle' })
+await page.goto('http://100.80.110.125:5005/admin/model-routes', { waitUntil: 'networkidle' })
 await page.waitForTimeout(800)
 const { result } = await cdp.send('Runtime.evaluate', {
   expression: `(() => {

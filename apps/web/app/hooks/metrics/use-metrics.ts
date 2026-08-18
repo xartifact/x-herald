@@ -93,7 +93,8 @@ export function useMetricsSummary() {
 export function useInstancesSummary() {
   return useQuery<{ data: InstanceSummary[] }>({
     queryKey: ['metrics', 'instances'],
-    queryFn: () => get<{ data: InstanceSummary[] }>(`${API_BASE}/instances`),
+    queryFn: () =>
+      get<{ data: InstanceSummary[] }>(`${API_BASE}/instances`, { extractData: false }),
     refetchInterval: 60_000,
   })
 }
@@ -112,7 +113,9 @@ export function useInstanceTimeseries(instanceId: string, period = '6h') {
         period: string
         data: TimeseriesPoint[]
         baseline: TimeseriesBaseline | null
-      }>(`${API_BASE}/instances/${instanceId}/timeseries?period=${period}`),
+      }>(`${API_BASE}/instances/${instanceId}/timeseries?period=${period}`, {
+        extractData: false,
+      }),
     enabled: !!instanceId,
     refetchInterval: 60_000,
   })
@@ -121,7 +124,10 @@ export function useInstanceTimeseries(instanceId: string, period = '6h') {
 export function useProviderQuality() {
   return useQuery<{ data: ProviderQuality[] }>({
     queryKey: ['metrics', 'providers', 'quality'],
-    queryFn: () => get<{ data: ProviderQuality[] }>(`${API_BASE}/providers/quality`),
+    queryFn: () =>
+      get<{ data: ProviderQuality[] }>(`${API_BASE}/providers/quality`, {
+        extractData: false,
+      }),
     refetchInterval: 60_000,
   })
 }

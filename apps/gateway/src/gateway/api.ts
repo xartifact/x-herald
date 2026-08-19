@@ -6,6 +6,7 @@ import type { VirtualKey } from '@xartifact/x-herald-db'
 import { virtualKeyMiddleware } from '../middleware/virtual-key'
 import actuatorRoutes from './routes/actuator'
 import anthropicRoutes from './routes/anthropic'
+import embeddingRoutes from './routes/embedding'
 import openaiRoutes from './routes/openai'
 import { logRequest } from './services/log-service'
 import { fetchAccessibleModels, type AccessibleModel } from './services/model-list'
@@ -66,6 +67,7 @@ gatewayRoutes.use('*', virtualKeyMiddleware)
 
 gatewayRoutes.route('/', actuatorRoutes)
 gatewayRoutes.route('/', openaiRoutes)
+gatewayRoutes.route('/', embeddingRoutes)
 gatewayRoutes.route('/', anthropicRoutes)
 
 /**

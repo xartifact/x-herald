@@ -19,7 +19,7 @@
   "main": "./index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "bun test --parallel=1"
+    "test": "bun test"
   },
   "dependencies": {
     "js-yaml": "^4.1.0"
@@ -32,13 +32,17 @@
   },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "*",
-    "@oh-my-pi/pi-coding-agent": "*"
+    "@oh-my-pi/pi-coding-agent": "*",
+    "prime-agent": "*"
   },
   "peerDependenciesMeta": {
     "@earendil-works/pi-coding-agent": {
       "optional": true
     },
     "@oh-my-pi/pi-coding-agent": {
+      "optional": true
+    },
+    "prime-agent": {
       "optional": true
     }
   },

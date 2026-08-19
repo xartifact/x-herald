@@ -96,7 +96,7 @@ export function resolveEnvRef(value: string | undefined): string | undefined {
 }
 
 export interface ResolvedProviderConfig {
-  runtime: 'pi' | 'omp'
+  runtime: 'pi' | 'omp' | 'prime'
   baseUrl: string
   apiKey: string | undefined
   api: string

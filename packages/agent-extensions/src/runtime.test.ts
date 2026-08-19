@@ -19,7 +19,15 @@ describe('detectRuntime', () => {
     expect(r.configDir).toBe('/tmp/.omp/agent')
   })
 
-  it('honors X_HERALD_CONFIG_DIR without .omp → pi', () => {
+  it('honors X_HERALD_CONFIG_DIR containing .prime → prime', () => {
+    prev = process.env[KEY]
+    process.env[KEY] = '/tmp/.prime/agent'
+    const r = detectRuntime()
+    expect(r.name).toBe('prime')
+    expect(r.configDir).toBe('/tmp/.prime/agent')
+  })
+
+  it('honors any other X_HERALD_CONFIG_DIR → pi', () => {
     prev = process.env[KEY]
     process.env[KEY] = '/tmp/pi-home/agent'
     const r = detectRuntime()
@@ -31,7 +39,7 @@ describe('detectRuntime', () => {
     prev = process.env[KEY]
     delete process.env[KEY]
     const r = detectRuntime()
-    expect(['pi', 'omp']).toContain(r.name)
+    expect(['pi', 'omp', 'prime']).toContain(r.name)
     expect(r.configDir.length).toBeGreaterThan(0)
   })
 })

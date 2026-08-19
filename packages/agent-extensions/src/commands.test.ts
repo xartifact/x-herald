@@ -1,33 +1,45 @@
-import { afterAll, describe, expect, it, mock } from 'bun:test'
+import { describe, expect, it } from 'bun:test'
 
 import type { ExtensionAPI, ExtensionCommandContext } from '@earendil-works/pi-coding-agent'
 
-import { registerXGateCommand } from './commands.ts'
+import { registerXGateCommand, type CommandDeps } from './commands.ts'
 import type { GatewayModelEntry } from './types.ts'
 
-// ── mocks ────────────────────────────────────────────────────────────────────
-// mock.module 跨测试文件持久（同 worker 顺序执行时污染后续文件），
-// afterAll 用官方 mock.restore() 还原真实模块。
+// ── harness ──────────────────────────────────────────────────────────────────
+// Dependencies are injected (registerXGateCommand's second arg) instead of
+// mock.module — bun's mock.module leaks across test files in the same worker
+// and mock.restore() does not undo it. This keeps commands tests isolated.
 
-afterAll(() => {
-  mock.restore()
-})
 let currentApiKey: string | undefined = 'sk-test'
-mock.module('./config.ts', () => ({
-  resolveProviderConfig: mock(async () => ({
+let fetchResult: () => Promise<GatewayModelEntry[]> = async () => []
+
+const deps: CommandDeps = {
+  resolveProviderConfig: async () => ({
     runtime: 'pi' as const,
     baseUrl: 'http://localhost:5005/api/v1',
     apiKey: currentApiKey,
     api: 'openai-completions',
-  })),
-}))
-
-let fetchResult: () => Promise<GatewayModelEntry[]> = async () => []
-mock.module('./gateway.ts', () => ({
-  fetchGatewayModels: mock(async () => fetchResult()),
-}))
-
-// ── harness ──────────────────────────────────────────────────────────────────
+  }),
+  fetchGatewayModels: async () => fetchResult(),
+  discoverModels: async () => [
+    {
+      id: 'Explorer',
+      name: 'Explorer',
+      reasoning: false,
+      input: ['text', 'image'],
+      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+      contextWindow: 1048576,
+      maxTokens: 131072,
+    },
+  ],
+  buildProviderConfig: (opts) => ({ ...opts }),
+  diagnoseEntries: (entries, baseUrl) => ({
+    total: entries.length,
+    pass: entries.length,
+    fail: 0,
+    lines: entries.map((e) => `ok ${e.id}`),
+  }),
+}
 
 let handler: ((args: string, ctx: ExtensionCommandContext) => void | Promise<void>) | null = null
 const fakePi: ExtensionAPI = {
@@ -40,15 +52,19 @@ const fakePi: ExtensionAPI = {
   sendUserMessage: () => {},
 }
 
-registerXGateCommand(fakePi)
+registerXGateCommand(fakePi, deps)
 
 function makeCtx() {
   const notifications: Array<[string, string | undefined]> = []
   const widgets = new Map<string, string[]>()
   const ctx: ExtensionCommandContext = {
     ui: {
-      notify: (message, level) => notifications.push([message, level]),
-      setWidget: (key, content) => widgets.set(key, content ?? []),
+      notify: (msg, level) => {
+        notifications.push([msg, level])
+      },
+      setWidget: (key, content) => {
+        widgets.set(key, content ?? [])
+      },
       setStatus: () => {},
     },
     cwd: '/tmp',
@@ -57,7 +73,7 @@ function makeCtx() {
   return { ctx, notifications, widgets }
 }
 
-// ── tests ────────────────────────────────────────────────────────────────────
+// ── tests ──────────────────────────────────────────────────────────────────
 
 describe('/x-herald models', () => {
   it('lists models in a widget with a notification summary', async () => {

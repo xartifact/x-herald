@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
-# 安装 x-herald agent extension 到 pi / omp 运行时目录。
+# 安装 x-herald agent extension 到 pi / omp / prime-agent 运行时目录。
 #
 # 目标布局（与扩展 README 一致）：
-#   ~/.pi/agent/extensions/x-herald/   (pi)
-#   ~/.omp/agent/extensions/x-herald/  (omp)
+#   ~/.pi/agent/extensions/x-herald/      (pi)
+#   ~/.omp/agent/extensions/x-herald/     (omp)
+#   ~/.prime/agent/extensions/x-herald/   (prime-agent)
 #
 # 用法：
-#   ./scripts/install-extension.sh                # 安装到 pi 和 omp（存在即装）
+#   ./scripts/install-extension.sh                # 安装到 pi/omp/prime（存在即装）
 #   ./scripts/install-extension.sh --runtime pi   # 只装 pi
 #   ./scripts/install-extension.sh --runtime omp  # 只装 omp
+#   ./scripts/install-extension.sh --runtime prime # 只装 prime-agent
 #   ./scripts/install-extension.sh --symlink      # dev 模式：symlink 源目录（改动即时生效）
 set -euo pipefail
 
@@ -26,15 +28,15 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --runtime)
       case "$2" in
-        pi | omp) RUNTIMES+=("$2"); shift 2 ;;
-        *) echo "unknown runtime: $2 (expected pi|omp)" >&2; exit 2 ;;
+        pi | omp | prime) RUNTIMES+=("$2"); shift 2 ;;
+        *) echo "unknown runtime: $2 (expected pi|omp|prime)" >&2; exit 2 ;;
       esac
       ;;
     --symlink) SYMLINK=1; shift ;;
     *) echo "unknown arg: $1" >&2; exit 2 ;;
   esac
 done
-[[ ${#RUNTIMES[@]} -eq 0 ]] && RUNTIMES=(pi omp)
+[[ ${#RUNTIMES[@]} -eq 0 ]] && RUNTIMES=(pi omp prime)
 
 # js-yaml 运行时依赖由 bun 提升到根 node_modules 的 .bun 虚拟目录
 # （bun install 的 workspace 布局），与 .npm/.pnpm 布局都不同，逐个探测。

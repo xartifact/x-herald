@@ -1,8 +1,8 @@
 /**
  * Constants and gateway response types. Pure data, no runtime-specific code.
  *
- * Shared by pi-coding-agent and oh-my-pi runtimes. The differences between
- * those runtimes are isolated in src/runtime.ts and src/config.ts.
+ * Shared by pi-coding-agent, oh-my-pi, and prime-agent runtimes. The
+ * differences between them are isolated in src/runtime.ts and src/config.ts.
  */
 
 // ---------------------------------------------------------------------------

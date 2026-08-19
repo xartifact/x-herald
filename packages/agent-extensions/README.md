@@ -3,9 +3,10 @@
 Auto-discovers the model catalogue for the `x-herald` provider from its
 OpenAI-compatible `/models` endpoint, replacing the hard-coded `models` list in
 the runtime's model config. The package is the single home for all
-x-herald agent-runtime extensions (pi/omp today; openclaw, hermes, ...
-later) — the extension adapts internally via runtime detection, and new
-runtimes slot into that detection without changing the package layout.
+x-herald agent-runtime extensions (pi/omp/prime-agent today; openclaw,
+hermes, ... later) — the extension adapts internally via runtime
+detection, and new runtimes slot into that detection without changing
+the package layout.
 
 ## Why
 
@@ -14,7 +15,7 @@ supports (context window, max output, vision/reasoning capabilities). Hard-codin
 that in `models.json` drifts the moment someone adds or removes a model on the
 gateway side.
 
-Model discovery is dynamic in both runtimes — no restart needed when the
+Model discovery is dynamic in all runtimes — no restart needed when the
 gateway adds or removes a model:
 
 - **pi** (0.83+): the provider is seeded at startup, then re-fetched via the
@@ -24,6 +25,9 @@ gateway adds or removes a model:
   24 h TTL). omp also auto-discovers any `api: openai-completions` provider
   with a `baseUrl` + `apiKey` in `models.yml`, so either path keeps the
   catalogue fresh.
+- **prime-agent**: shares pi's extension ABI (same registerProvider /
+  refreshModels surface), using `~/.prime/agent` for config; behaves like
+  pi (eager seed + refreshModels, no SQLite model cache).
 
 `/x-herald refresh` re-fetches and re-registers on demand.
 
@@ -31,9 +35,9 @@ gateway adds or removes a model:
 
 ```
 packages/agent-extensions/          # single home for all agent-runtime extensions
-├── package.json                    # workspace manifest (typecheck/test) + pi/omp extension entry
+├── package.json                    # workspace manifest (typecheck/test) + pi/omp/prime extension entry
 ├── tsconfig.json                   # dual-runtime (Node + Bun) TS config
-├── index.ts                        # entrypoint (auto-discovered by pi/omp)
+├── index.ts                        # entrypoint (auto-discovered by pi/omp/prime)
 ├── schemas/
 │   └── v1-models.schema.json       # canonical /v1/models JSON Schema
 └── src/
@@ -49,10 +53,10 @@ packages/agent-extensions/          # single home for all agent-runtime extensio
 ```
 
 The extension adapts internally: `runtime.ts` detects which agent is hosting
-it (pi vs omp; more runtimes slot into the same detection) and `entry.ts`
-wires the runtime-appropriate discovery mechanism. The deployment target
-directory is always `~/.<agent>/agent/extensions/x-herald/` regardless of
-host.
+it (pi vs omp vs prime-agent) and `entry.ts` wires the runtime-appropriate
+discovery mechanism (prime-agent takes the pi path — eager seed +
+refreshModels). The deployment target directory is always
+`~/.<agent>/agent/extensions/x-herald/` regardless of host.
 
 The canonical JSON Schema at `schemas/v1-models.schema.json` is the single
 source of truth for the `/v1/models` contract: the gateway's own
@@ -63,19 +67,21 @@ validates live responses against it (closed set), and the extension's
 ## Installation
 
 ```bash
-# copy the extension into every installed runtime (~/.pi, ~/.omp)
+# copy the extension into every installed runtime (~/.pi, ~/.omp, ~/.prime)
 ./scripts/install-extension.sh
 
 # a single runtime
 ./scripts/install-extension.sh --runtime omp
+./scripts/install-extension.sh --runtime prime
 
 # dev mode: symlink the source directory (edits apply on next /reload)
 ./scripts/install-extension.sh --symlink
 ```
 
 The script copies the extension to `~/.pi/agent/extensions/x-herald/` (or
-`~/.omp/...`) together with its only runtime dependency (`js-yaml`). Reload the
-runtime afterwards (`/reload` in pi, restart omp).
+`~/.omp/...` / `~/.prime/...`) together with its only runtime dependency
+(`js-yaml`). Reload the runtime afterwards (`/reload` in pi/prime-agent,
+restart omp).
 
 ## Configuration precedence
 
@@ -85,10 +91,12 @@ runtime afterwards (`/reload` in pi, restart omp).
 | `apiKey`   | `models.{json,yml}.apiKey` → `auth.json["x-herald"].key` [pi] → `$X_HERALD_API_KEY` |
 | `api`      | `models.{json,yml}.api` → `"openai-completions"`                       |
 
-`models.json` is the pi convention, `models.yml` the omp one; both `apiKey`
-fields may use `$ENV_VAR` / `${ENV_VAR}` syntax, resolved before the fetch.
-omp stores credentials in SQLite AuthStorage (not readable from extensions), so
-omp users inline `apiKey` in `models.yml` or use the env var.
+`models.json` is the pi/prime-agent convention, `models.yml` the omp one;
+both `apiKey` fields may use `$ENV_VAR` / `${ENV_VAR}` syntax, resolved
+before the fetch. omp and prime-agent store credentials in storage not
+readable from extensions (omp's SQLite AuthStorage; empty auth.json under
+prime until login), so their users inline `apiKey` in the models file or
+use the env var.
 
 ### Ports
 
@@ -104,9 +112,9 @@ export X_HERALD_BASE_URL=http://localhost:3000/api/v1
 
 If `/models` fails (network error, timeout, malformed response, empty list)
 the extension does **not** call `registerProvider`. The static list from
-`models.json` stays active and pi starts normally. A warning is written to
-stderr with the `[x-herald]` prefix. Under omp, the SQLite model cache
-keeps the last good catalogue for up to 24 h.
+`models.json` stays active and the runtime starts normally. A warning is
+written to stderr with the `[x-herald]` prefix. Under omp, the SQLite model
+cache keeps the last good catalogue for up to 24 h.
 
 ## Gateway response shape
 
@@ -189,7 +197,7 @@ Autocomplete (when typing `/x-herald `) suggests `refresh`, `diagnose`, `version
 | ------------------ | --------------------------- | -------------------------------------- |
 | `/x-herald refresh`  | Only the model catalogue    | Gateway added/removed/updated a model  |
 | `/reload`          | Extensions + skills + models | Extension code changed; full restart   |
-| Restart `pi`       | Everything                  | Last resort                            |
+| Restart the runtime | Everything                  | Last resort                            |
 
 `/x-herald refresh` calls `pi.registerProvider(...)` again at runtime,
-which pi applies immediately — no `/reload` required.
+which the runtime applies immediately — no `/reload` required.

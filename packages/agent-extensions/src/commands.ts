@@ -2,6 +2,11 @@
  * `/x-herald` admin command family. Shared handlers; the runtime injects
  * both the extension API (for `registerProvider`) and the command context
  * (for UI), so neither is referenced statically here.
+ *
+ * Dependencies (config/gateway/diagnose) are injectable so tests can drive
+ * the handlers without `mock.module` — bun's `mock.module` replaces modules
+ * process-wide and `mock.restore()` does NOT undo it, leaking mocks into
+ * other test files running in the same worker.
  */
 
 import type { ExtensionAPI, ExtensionCommandContext } from '@earendil-works/pi-coding-agent'
@@ -13,11 +18,35 @@ import { EXTENSION_VERSION } from './version.ts'
 import { PROVIDER_ID, PROVIDER_NAME } from './types.ts'
 
 // ---------------------------------------------------------------------------
+// Injectable dependencies
+// ---------------------------------------------------------------------------
+
+export interface CommandDeps {
+  resolveProviderConfig: typeof resolveProviderConfig
+  fetchGatewayModels: typeof fetchGatewayModels
+  discoverModels: typeof discoverModels
+  buildProviderConfig: typeof buildProviderConfig
+  diagnoseEntries: typeof diagnoseEntries
+}
+
+const defaultDeps: CommandDeps = {
+  resolveProviderConfig,
+  fetchGatewayModels,
+  discoverModels,
+  buildProviderConfig,
+  diagnoseEntries,
+}
+
+// ---------------------------------------------------------------------------
 // Sub-command handlers
 // ---------------------------------------------------------------------------
 
-async function handleRefresh(pi: ExtensionAPI, ctx: ExtensionCommandContext): Promise<void> {
-  const { baseUrl, apiKey, api } = await resolveProviderConfig()
+async function handleRefresh(
+  pi: ExtensionAPI,
+  ctx: ExtensionCommandContext,
+  deps: CommandDeps,
+): Promise<void> {
+  const { baseUrl, apiKey, api } = await deps.resolveProviderConfig()
   if (!apiKey) {
     ctx.ui.notify('No API key configured.', 'error')
     return
@@ -25,10 +54,10 @@ async function handleRefresh(pi: ExtensionAPI, ctx: ExtensionCommandContext): Pr
   try {
     // Re-register with the same hooks; pi merges, so the dynamic
     // discovery hooks registered at startup are preserved.
-    const fresh = await discoverModels(apiKey)
+    const fresh = await deps.discoverModels(apiKey)
     pi.registerProvider(
       PROVIDER_ID,
-      buildProviderConfig({
+      deps.buildProviderConfig({
         name: PROVIDER_NAME,
         baseUrl,
         apiKey,
@@ -42,21 +71,21 @@ async function handleRefresh(pi: ExtensionAPI, ctx: ExtensionCommandContext): Pr
     ctx.ui.notify(`Refresh failed: ${msg}`, 'error')
   }
 }
-async function handleDiagnose(ctx: ExtensionCommandContext): Promise<void> {
-  const { baseUrl, apiKey } = await resolveProviderConfig()
+async function handleDiagnose(ctx: ExtensionCommandContext, deps: CommandDeps): Promise<void> {
+  const { baseUrl, apiKey } = await deps.resolveProviderConfig()
   if (!apiKey) {
     ctx.ui.notify('No API key configured.', 'error')
     return
   }
   let entries
   try {
-    entries = await fetchGatewayModels(baseUrl, apiKey)
+    entries = await deps.fetchGatewayModels(baseUrl, apiKey)
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     ctx.ui.notify(`Diagnose failed: ${msg}`, 'error')
     return
   }
-  const report = diagnoseEntries(entries, baseUrl)
+  const report = deps.diagnoseEntries(entries, baseUrl)
   if (report.total === 0) {
     ctx.ui.notify('Gateway returned an empty list.', 'warning')
     return
@@ -70,15 +99,15 @@ async function handleDiagnose(ctx: ExtensionCommandContext): Promise<void> {
     report.fail === 0 ? 'info' : 'error',
   )
 }
-async function handleModels(ctx: ExtensionCommandContext): Promise<void> {
-  const { baseUrl, apiKey } = await resolveProviderConfig()
+async function handleModels(ctx: ExtensionCommandContext, deps: CommandDeps): Promise<void> {
+  const { baseUrl, apiKey } = await deps.resolveProviderConfig()
   if (!apiKey) {
     ctx.ui.notify('No API key configured.', 'error')
     return
   }
   let entries
   try {
-    entries = await fetchGatewayModels(baseUrl, apiKey)
+    entries = await deps.fetchGatewayModels(baseUrl, apiKey)
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     ctx.ui.notify(`Models fetch failed: ${msg}`, 'error')
@@ -129,7 +158,7 @@ function handleVersion(ctx: ExtensionCommandContext): void {
 // Registration
 // ---------------------------------------------------------------------------
 
-export function registerXGateCommand(pi: ExtensionAPI): void {
+export function registerXGateCommand(pi: ExtensionAPI, deps: CommandDeps = defaultDeps): void {
   pi.registerCommand('x-herald', {
     description: 'x-herald admin: refresh | models | diagnose | help',
     getArgumentCompletions(prefix) {
@@ -159,13 +188,13 @@ export function registerXGateCommand(pi: ExtensionAPI): void {
       const sub = (args.trim().split(/\s+/)[0] ?? '') as string
       switch (sub) {
         case 'refresh':
-          await handleRefresh(pi, ctx)
+          await handleRefresh(pi, ctx, deps)
           return
         case 'models':
-          await handleModels(ctx)
+          await handleModels(ctx, deps)
           return
         case 'diagnose':
-          await handleDiagnose(ctx)
+          await handleDiagnose(ctx, deps)
           return
         case 'version':
           handleVersion(ctx)

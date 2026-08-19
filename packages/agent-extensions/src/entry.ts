@@ -1,17 +1,17 @@
 /**
  * Extension entrypoint.
  *
- * Runs identically under both pi-coding-agent and oh-my-pi. The runtime
- * injects `pi: ExtensionAPI` and we never import either @earendil-works/
- * pi-coding-agent or @oh-my-pi/pi-coding-agent statically here — see
- * src/agent-shim.d.ts for the type alias both packages satisfy.
+ * Runs identically under pi-coding-agent, oh-my-pi, and prime-agent (a
+ * renamed fork of pi sharing the same extension ABI). The runtime injects
+ * `pi: ExtensionAPI` and we never import any runtime package statically
+ * here — see src/agent-shim.d.ts for the type aliases they satisfy.
  *
  * Behaviour:
  *   1. Resolve config from runtime-appropriate dir + files.
  *   2. Register the provider with the runtime's dynamic-discovery
- *      mechanism — pi: eager seed + `refreshModels` (model selector open);
- *      omp: `fetchDynamicModels` (SQLite model cache, 24 h TTL). New models
- *      added on the gateway appear without a restart.
+ *      mechanism — pi/prime: eager seed + `refreshModels` (model selector
+ *      open); omp: `fetchDynamicModels` (SQLite model cache, 24 h TTL).
+ *      New models added on the gateway appear without a restart.
  *   3. Register /x-herald admin commands.
  *
  * The /x-herald handlers in src/commands.ts re-resolve config + re-fetch on
@@ -41,8 +41,8 @@ export default async function (pi: ExtensionAPI): Promise<void> {
 
   // omp: the discovery hook owns the catalogue (cached in SQLite); skip
   // the eager fetch — omp fetches itself right after extension load.
-  // pi: seed the provider immediately so models exist before the first
-  // async refresh, and surface startup failures loudly.
+  // pi/prime: seed the provider immediately so models exist before the
+  // first async refresh, and surface startup failures loudly.
   let models: ProviderModelConfig[] = []
   if (detectRuntime().name !== 'omp') {
     try {

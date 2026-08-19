@@ -10,9 +10,7 @@ bun run check
 
 echo "==> agent-extensions tests"
 cd "$PROJECT_ROOT/packages/agent-extensions"
-# --parallel=1: mock.module 在并行 worker 间泄漏（同 worker 顺序复用），
-# 文件少、mock 敏感，串行保证确定性。
-bun test --parallel=1 --reporter=dots
+bun test --reporter=dots
 ext_status=$?
 if [ $ext_status -ne 0 ]; then
   exit $ext_status

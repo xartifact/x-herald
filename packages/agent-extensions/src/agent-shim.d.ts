@@ -1,13 +1,10 @@
 /**
- * Ambient module declarations for both supported agent runtimes.
- *
- * Both `@earendil-works/pi-coding-agent` and `@oh-my-pi/pi-coding-agent`
- * export the same shape for the surface this extension uses. We declare
- * both so TypeScript compiles regardless of which runtime is hosting the
- * extension; at runtime, the actual loaded runtime injects the real `pi`.
- *
- * The shim is intentionally narrow (only the API surface we touch) — at
- * runtime the full real package supplies the values.
+ * Ambient module declarations for the supported agent runtimes.
+ * Each of `@earendil-works/pi-coding-agent`, `@oh-my-pi/pi-coding-agent`,
+ * and `prime-agent` (a renamed fork of pi) export the same shape for the
+ * surface this extension uses. We declare all three so TypeScript compiles
+ * regardless of which runtime is hosting the extension; at runtime, the
+ * actual loaded runtime injects the real `pi`.
  */
 
 // Minimal subset of the model config that we send through `pi.registerProvider`.
@@ -81,5 +78,8 @@ declare module '@earendil-works/pi-coding-agent' {
 }
 
 declare module '@oh-my-pi/pi-coding-agent' {
+  export type { ProviderConfig, ProviderModelConfig, ExtensionAPI, ExtensionCommandContext }
+}
+declare module 'prime-agent' {
   export type { ProviderConfig, ProviderModelConfig, ExtensionAPI, ExtensionCommandContext }
 }

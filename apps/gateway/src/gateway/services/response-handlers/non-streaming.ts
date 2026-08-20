@@ -4,6 +4,8 @@ import { getTransformer } from '../../transformer'
 import { ProviderInvalidResponseError } from '../model-group-router'
 import { logRequest } from '../log-service'
 import type { ResponseHandlerParams } from './params'
+import { enforceEmbeddingDimensions } from './embedding-dimensions'
+
 import {
   extractProviderResponseHeaders,
   getClientNonStreamingHeaders,
@@ -134,16 +136,23 @@ async function handlePassthrough(
     string,
     unknown
   >
+
+  // 需求保障：客户端请求带 dimensions（matryoshka）时，确保响应向量长度恰好为目标维度。
+  // 首选路径是后端原生支持并已截断（透传），此处兜底处理后端忽略 dimensions 的情况。
+  // 纯增量：仅当请求体含 dimensions 且响应含 data[].embedding 时生效，chat 等其余路径不受影响。
+  const alignedData = enforceEmbeddingDimensions(providerResponseData, params.rawBody)
+  const responseBody = alignedData ?? providerResponseData
+
   for (const [key, value] of Object.entries(mergedHeaders)) c.header(key, value)
   await logRequest({
     ...buildBaseLogParams(params, responseTimeMs, providerResponseHeaders, mergedHeaders),
     streaming: false,
     providerResponseBody: providerResponseData,
-    responseBody: providerResponseData,
+    responseBody,
   })
-  if (isMapped && originalModelName && providerResponseData?.model !== undefined)
-    providerResponseData.model = originalModelName
-  return c.json(providerResponseData)
+  if (isMapped && originalModelName && responseBody?.model !== undefined)
+    responseBody.model = originalModelName
+  return c.json(responseBody)
 }
 
 async function handleTransformed(

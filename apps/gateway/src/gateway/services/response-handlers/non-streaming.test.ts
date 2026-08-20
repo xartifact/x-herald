@@ -152,6 +152,79 @@ describe('handleNonStreamingResponse', () => {
     expect(mockLogRequest).toHaveBeenCalledTimes(1)
   })
 
+  /* 3a. Passthrough + dimensions → 响应向量被截断到目标维度 */
+  it('truncates embedding vectors to requested dimensions in passthrough', async () => {
+    const params = createParams({
+      isPassthroughEnabled: true,
+      rawBody: { model: 'text-embedding-v4', input: 'hello', dimensions: 2048 },
+      response: new Response(
+        JSON.stringify({
+          object: 'list',
+          data: [
+            {
+              object: 'embedding',
+              embedding: Array.from({ length: 4096 }, (_, i) => i + 1),
+            },
+          ],
+          model: 'text-embedding-v4',
+        }),
+        { headers: { 'content-type': 'application/json' } },
+      ),
+    })
+
+    const result = await handleNonStreamingResponse(params)
+    const json = (await result.json()) as {
+      data: Array<{ embedding: number[] }>
+    }
+
+    expect(json.data[0].embedding).toHaveLength(2048)
+    expect(json.data[0].embedding[0]).toBe(1)
+    expect(json.data[0].embedding[2047]).toBe(2048)
+  })
+
+  /* 3b. Passthrough + dimensions → 后端返回不足维度时显式报错（拒绝零填充） */
+  it('rejects embedding vectors shorter than requested dimensions', async () => {
+    const params = createParams({
+      isPassthroughEnabled: true,
+      rawBody: { model: 'text-embedding-v4', input: 'hello', dimensions: 2048 },
+      response: new Response(
+        JSON.stringify({
+          object: 'list',
+          data: [{ object: 'embedding', embedding: Array.from({ length: 1024 }, () => 0.5) }],
+          model: 'text-embedding-v4',
+        }),
+        { headers: { 'content-type': 'application/json' } },
+      ),
+    })
+
+    await expect(handleNonStreamingResponse(params)).rejects.toThrow(
+      /1024-dimensional embedding but client requested 2048/,
+    )
+  })
+
+  /* 3c. Passthrough 无 dimensions → 响应原样透传，��做任何调整 */
+  it('leaves embedding response untouched when no dimensions requested', async () => {
+    const params = createParams({
+      isPassthroughEnabled: true,
+      rawBody: { model: 'text-embedding-v4', input: 'hello' },
+      response: new Response(
+        JSON.stringify({
+          object: 'list',
+          data: [{ object: 'embedding', embedding: Array.from({ length: 1024 }, () => 1) }],
+          model: 'text-embedding-v4',
+        }),
+        { headers: { 'content-type': 'application/json' } },
+      ),
+    })
+
+    const result = await handleNonStreamingResponse(params)
+    const json = (await result.json()) as {
+      data: Array<{ embedding: number[] }>
+    }
+
+    expect(json.data[0].embedding).toHaveLength(1024)
+  })
+
   /* 4. Transformed → calls getTransformer for both target and incoming protocols */
   it('calls getTransformer for target and incoming protocols in transformed path', async () => {
     const normalizeResponse = mock(async () => ({

@@ -1,10 +1,11 @@
 import logger from '../../../../lib/logger'
-import type { TransformerContext, StandardRequest } from '@xartifact/x-herald-shared'
+import type { MessageRole, TransformerContext, StandardRequest } from '@xartifact/x-herald-shared'
 
 import { convertToAnthropicMessages } from './converters/message-converter'
 import { convertToAnthropicTool, convertToAnthropicToolChoice } from './converters/tool-converter'
 import type { AnthropicMessage, AnthropicRequest } from './types'
 import { applyRequestInject } from '../../shared/parameter-transformer'
+import { applyRoleMapping } from '../../shared/role-normalizer'
 import { sanitizeToolSchema } from '../../shared/tool-schema-sanitizer'
 
 /**
@@ -51,8 +52,11 @@ export async function adaptAnthropicRequest(
   request: StandardRequest,
   ctx: TransformerContext,
 ): Promise<{ body: unknown; url?: string; headers?: Record<string, string> }> {
-  const systemMessages = request.messages.filter((m) => m.role === 'system')
-  const nonSystemMessages = request.messages.filter((m) => m.role !== 'system')
+  // 先应用角色归一化（如 developer→system），使 system 提取逻辑能正确识别
+  const roleMapping = ctx.instanceConfig?.roleMapping as Record<string, MessageRole> | undefined
+  const normalized = roleMapping ? applyRoleMapping(request, roleMapping) : request
+  const systemMessages = normalized.messages.filter((m) => m.role === 'system')
+  const nonSystemMessages = normalized.messages.filter((m) => m.role !== 'system')
 
   let systemContent: string | undefined
   if (request.system) {

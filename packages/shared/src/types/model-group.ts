@@ -138,8 +138,15 @@ export interface InstanceConfig {
 
   customHeaders?: Record<string, string>
 
-  supportsThinking?: boolean
+  /**
+   * 角色归一化映射：把入站消息的某个 role 映射为另一个 role。
+   * 例如 OpenAI SDK 新发的 `developer` 角色，某些上游（X-AIO 等）不支持，
+   * 可配置 `{ developer: 'system' }` 在 egress 前统一改写。
+   * 未配置时不改写任何角色（透明透传）。
+   */
+  roleMapping?: Record<string, 'system' | 'user' | 'assistant' | 'tool'>
 
+  supportsThinking?: boolean
   patchMissingReasoningContent?: boolean
 
   retryConfig?: {

@@ -1,12 +1,12 @@
-import type { TransformerContext, StandardRequest } from '@xartifact/x-herald-shared'
+import type { MessageRole, TransformerContext, StandardRequest } from '@xartifact/x-herald-shared'
 import type { InstanceConfig } from '../../../../features/model-groups/db'
 
 import { convertToOpenAIMessages } from './converters/message-converter'
 import type { OpenAIRequest } from './types'
 import { applyParameterTransforms, applyRequestInject } from '../../shared/parameter-transformer'
+import { applyRoleMapping } from '../../shared/role-normalizer'
 import { cleanSchemaForOpenAI } from '../../shared/schema-cleaner'
 import { sanitizeToolSchema } from '../../shared/tool-schema-sanitizer'
-
 /**
  * Adapt standard request to OpenAI format
  */
@@ -15,11 +15,15 @@ export async function adaptOpenAIRequest(
   ctx: TransformerContext,
 ): Promise<{ body: unknown; url?: string; headers?: Record<string, string> }> {
   let transformedRequest = request
+  const roleMapping = ctx.instanceConfig?.roleMapping as Record<string, MessageRole> | undefined
+  if (roleMapping) {
+    transformedRequest = applyRoleMapping(transformedRequest, roleMapping)
+  }
   const paramTransforms = ctx.instanceConfig?.parameterTransforms as
     | InstanceConfig['parameterTransforms']
     | undefined
   if (paramTransforms) {
-    transformedRequest = applyParameterTransforms(request, paramTransforms, ctx)
+    transformedRequest = applyParameterTransforms(transformedRequest, paramTransforms, ctx)
   }
 
   const openaiReq: OpenAIRequest = {

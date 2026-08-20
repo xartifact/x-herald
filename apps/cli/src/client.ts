@@ -32,6 +32,34 @@ export interface HealthStatus {
   database: string
 }
 
+export interface ModelInstance {
+  id: string
+  name: string
+  actualModelName?: string
+  providerId?: string
+  providerName?: string
+  groupIds?: string[]
+  description?: string
+  config?: Record<string, unknown> | null
+  weight?: number
+  priority?: number
+  costPer1kTokens?: unknown
+  enabled?: boolean
+}
+
+export interface ModelInstanceUpdate {
+  providerId?: string
+  name?: string
+  actualModelName?: string
+  description?: string
+  weight?: number
+  priority?: number
+  costPer1kTokens?: unknown
+  config?: Record<string, unknown> | null
+  groupIds?: string[]
+  groupId?: string | null
+}
+
 export class GatewayClient {
   private baseUrl: string
   private apiKey: string
@@ -60,6 +88,10 @@ export class GatewayClient {
     return json as T
   }
 
+  async login(password: string): Promise<{ token: string }> {
+    return this.request('/api/auth/login', { method: 'POST', body: JSON.stringify({ password }) })
+  }
+
   async listProviders(): Promise<Provider[]> {
     return this.request('/api/providers')
   }
@@ -86,5 +118,15 @@ export class GatewayClient {
   }
   async getHealth(): Promise<HealthStatus> {
     return this.request('/api/health')
+  }
+
+  async listInstances(): Promise<ModelInstance[]> {
+    return this.request('/api/model-groups/instances')
+  }
+  async updateInstance(id: string, data: Partial<ModelInstanceUpdate>): Promise<ModelInstance> {
+    return this.request(`/api/model-groups/instances/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
   }
 }

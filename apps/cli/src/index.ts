@@ -63,6 +63,90 @@ modelsCmd
     console.table(data.map((g) => ({ ID: g.id, Name: g.name, Enabled: g.enabled })))
   })
 
+// Model instances config (read-modify-write via admin API)
+const instances = program.command('instances').description('Manage model instances config')
+
+function getClient() {
+  return new GatewayClient({ baseUrl: program.opts().url, apiKey: program.opts().apiKey })
+}
+
+async function findInstance(idOrName: string) {
+  const client = getClient()
+  const instances = await client.listInstances()
+  const found = instances.find(
+    (i) => i.id === idOrName || i.name === idOrName || i.actualModelName === idOrName,
+  )
+  if (!found) throw new Error(`No model instance found for "${idOrName}"`)
+  return found
+}
+
+function parseJsonValue(value: string): unknown {
+  try {
+    return JSON.parse(value)
+  } catch {
+    throw new Error(`Value is not valid JSON: ${value}`)
+  }
+}
+
+instances
+  .command('list')
+  .description('List all model instances')
+  .action(async () => {
+    const data = await getClient().listInstances()
+    console.table(
+      data.map((i) => ({
+        ID: i.id,
+        Name: i.name,
+        'Actual Model': i.actualModelName ?? '',
+        Provider: i.providerName ?? '',
+        Enabled: i.enabled,
+      })),
+    )
+  })
+
+instances
+  .command('config <idOrName>')
+  .description('Show the full config of a model instance (JSON)')
+  .action(async (idOrName: string) => {
+    const inst = await findInstance(idOrName)
+    console.log(JSON.stringify(inst.config ?? {}, null, 2))
+  })
+
+instances
+  .command('config-get <idOrName> <key>')
+  .description('Show a single config key of a model instance')
+  .action(async (idOrName: string, key: string) => {
+    const inst = await findInstance(idOrName)
+    const val = inst.config?.[key]
+    if (val === undefined) {
+      console.log(`(key "${key}" is not set)`)
+      return
+    }
+    console.log(JSON.stringify(val, null, 2))
+  })
+
+instances
+  .command('config-set <idOrName> <key> <json>')
+  .description('Set a config key (read-modify-write merge); <json> is e.g. {"developer":"system"}')
+  .action(async (idOrName: string, key: string, json: string) => {
+    const inst = await findInstance(idOrName)
+    const value = parseJsonValue(json)
+    const config = { ...(inst.config ?? {}), [key]: value }
+    await getClient().updateInstance(inst.id, { config })
+    console.log(`config.${key} set on ${inst.name} (id ${inst.id})`)
+  })
+
+instances
+  .command('config-unset <idOrName> <key>')
+  .description('Remove a config key from a model instance (merge; undefined removes)')
+  .action(async (idOrName: string, key: string) => {
+    const inst = await findInstance(idOrName)
+    const config = { ...(inst.config ?? {}) }
+    delete config[key]
+    await getClient().updateInstance(inst.id, { config })
+    console.log(`config.${key} removed from ${inst.name} (id ${inst.id})`)
+  })
+
 // Keys
 const keys = program.command('keys').description('Manage API keys')
 

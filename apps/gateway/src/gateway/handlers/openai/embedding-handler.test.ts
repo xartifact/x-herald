@@ -70,6 +70,27 @@ mock.module('../shared/failover-executor', () => ({
   executeFailoverIteration: mockExecuteFailoverIteration,
 }))
 
+const mockHandleNonStreamingResponse = mock(async (params: { response?: Response }) => {
+  return params.response ?? new Response('{"object":"list"}', { status: 200 })
+})
+
+mock.module('../../services/response-handlers', () => ({
+  handleNonStreamingResponse: mockHandleNonStreamingResponse,
+}))
+
+mock.module('../../transformer', () => ({
+  createTransformerContext: mock(() => ({
+    requestId: 'test',
+    startTime: Date.now(),
+    state: new Map(),
+    request: { model: '', messages: [] },
+    provider: { name: '', baseUrl: '', apiKey: '', protocol: 'openai', models: [] },
+    model: '',
+    headers: {},
+    metadata: {},
+  })),
+}))
+
 import { handleEmbeddingRequest } from './embedding-handler'
 import { accessModelRouter } from '../../services/access-model-router'
 import { executeFailoverIteration } from '../shared/failover-executor'
@@ -135,6 +156,10 @@ function createMockContext(overrides: Record<string, unknown> = {}) {
       json: async () => overrides.body ?? {},
     },
     get: (key: string) => variables.get(key),
+    header: (name: string, value: string) => {
+      headers.set(name, value)
+      return undefined
+    },
     json: (body: unknown, status?: number) => new Response(JSON.stringify(body), { status }),
   } as unknown as Context
 
@@ -171,6 +196,8 @@ describe('handleEmbeddingRequest', () => {
     expect(res.status).toBe(200)
     expect(mockRouteCandidates).toHaveBeenCalled()
     expect(mockExecuteFailoverIteration).toHaveBeenCalled()
+    // 成功路径必须走响应处理器收尾日志（pending→success）
+    expect(mockHandleNonStreamingResponse).toHaveBeenCalled()
   })
 
   it('rejects a chat-category group with model not found', async () => {

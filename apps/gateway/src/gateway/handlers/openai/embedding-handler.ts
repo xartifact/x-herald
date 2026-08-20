@@ -7,12 +7,14 @@ import { identifyClient } from '../../services/client-identifier'
 import { handleGatewayError } from '../../services/error-handler'
 import { ModelNotFoundError } from '../../services/model-group-router'
 import { getProviderProtocol, getProviderUrl } from '../../services/protocol-detector'
+import type { ResponseHandlerParams } from '../../services/response-handlers/params'
+import { handleNonStreamingResponse } from '../../services/response-handlers'
+import { createTransformerContext } from '../../transformer'
 import { AbortManager } from '../shared/abort-manager'
 import { executeFailoverIteration } from '../shared/failover-executor'
 import { EmbeddingCandidateExecutor } from './embedding-executor'
 
 const EMBEDDING_CATEGORY = 'embedding'
-
 /**
  * 处理 OpenAI 兼容的 /v1/embeddings 请求。
  *
@@ -211,7 +213,49 @@ export async function handleEmbeddingRequest(
           continue
         }
         if (result.type === 'error') return result.response!
-        return result.response!
+
+        // 成功路径：复用非流式响应处理器，把 pending 日志收尾为 success + tokens
+        const handlerParams: ResponseHandlerParams = {
+          c,
+          response: result.response!,
+          ctx: createTransformerContext(requestId),
+          incomingProtocol,
+          targetProtocol,
+          virtualKey,
+          provider,
+          originalModelName: String(rawBody.model || 'unknown'),
+          resolvedModelName: mapping.modelName,
+          mappingType: mapping.mappingType,
+          isMapped: mapping.isMapped,
+          startTime,
+          preprocessEndTime: executor.preprocessEndTime,
+          providerTtfbTime: Date.now(),
+          requestHeaders: clientRequestHeaders,
+          providerRequestHeaders: executor.providerRequestHeaders,
+          rawBody,
+          transformedBody: executor.transformedBody,
+          clientIp,
+          userAgent,
+          requestPath,
+          requestMethod,
+          isPassthroughEnabled: true,
+          clientType: clientInfo.type,
+          logId: executor.logId,
+          attemptId: executor.attemptId,
+          retryCount,
+          routingTrace: {
+            matchedRuleId: routeResult.matchedRule?.id,
+            matchedRuleName: routeResult.matchedRule?.name,
+            matchedRulePriority: routeResult.matchedRule?.priority,
+            modelGroupId: group.id,
+            modelGroupName: group.name,
+            instanceId: instance.id,
+            actualModelName: instance.actualModelName,
+            strategy: decision.strategy,
+            instanceCost: instance.costPer1kTokens,
+          },
+        }
+        return handleNonStreamingResponse(handlerParams)
       }
     } finally {
       abortManager.dispose()

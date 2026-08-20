@@ -53,6 +53,10 @@ export const requestLogs = pgTable(
     toolCallsCount: integer('tool_calls_count').default(0),
     retryCount: integer('retry_count').default(0).notNull(),
     conversationId: uuid('conversation_id'),
+    requestCategory: varchar('request_category', { length: 30 })
+      .$type<'embedding' | 'chat_text' | 'chat_image' | 'chat_video' | 'chat_audio' | 'other'>()
+      .default('other')
+      .notNull(),
     streamStatus: varchar('stream_status', { length: 20 })
       .$type<'pending' | 'streaming' | 'completed' | 'failed' | 'aborted'>()
       .default('pending'),
@@ -76,12 +80,7 @@ export const requestLogs = pgTable(
     streamingIdx: index('idx_request_logs_streaming').on(table.streaming),
     toolCallsCountIdx: index('idx_request_logs_tool_calls_count').on(table.toolCallsCount),
     conversationIdIdx: index('idx_request_logs_conversation_id').on(table.conversationId),
-    statusCreatedAtIdx: index('idx_request_logs_status_created_at').on(
-      table.status,
-      table.createdAt,
-    ),
-    streamStatusIdx: index('idx_request_logs_stream_status').on(table.streamStatus),
-    isCompleteIdx: index('idx_request_logs_is_complete').on(table.isComplete),
+    requestCategoryIdx: index('idx_request_logs_request_category').on(table.requestCategory),
     streamStatusIsCompleteIdx: index('idx_stream_status_complete').on(
       table.streamStatus,
       table.isComplete,

@@ -11,6 +11,7 @@ import { costService } from '../../features/costs/service'
 import type { InstanceCost } from '@xartifact/x-herald-shared'
 
 import { extractMetadata } from './metadata-extractor'
+import { deriveRequestCategory } from './content-extractor'
 import { rateLimitEngine } from './rate-limit-engine'
 import { estimateUsageFromContent } from './token-estimator'
 import type { RouteChainSnapshot } from './routing-trace-recorder'
@@ -197,6 +198,11 @@ function buildLogInsertValues(
     userAgent: params.userAgent,
     clientType: params.clientType,
     requestPath: params.requestPath,
+    requestCategory: deriveRequestCategory({
+      requestPath: params.requestPath,
+      requestBody: params.requestBody,
+      standardRequestBody: params.transformedRequestBody,
+    }),
     requestMethod: params.requestMethod,
     streaming: params.streaming ? 'true' : 'false',
     incomingProtocol: params.incomingProtocol,

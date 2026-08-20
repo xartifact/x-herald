@@ -79,6 +79,7 @@ export function LogsPage() {
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [requestCategoryFilter, setRequestCategoryFilter] = useState('all')
   const [clientTypeFilter, setClientTypeFilter] = useState('all')
   const [timeRange, setTimeRange] = useState('all')
   const [cursorStack, setCursorStack] = useState<string[]>([])
@@ -91,20 +92,28 @@ export function LogsPage() {
   const currentCursor = cursorStack.length > 0 ? cursorStack[cursorStack.length - 1] : undefined
   const currentPage = cursorStack.length + 1
 
-  // 筛选条件或每页条数变化时回到第一页
   useEffect(() => {
     setCursorStack([])
-  }, [searchQuery, statusFilter, clientTypeFilter, timeRange, pageSize])
+  }, [searchQuery, statusFilter, requestCategoryFilter, clientTypeFilter, timeRange, pageSize])
 
   const filters = useMemo(() => {
     const f: Record<string, string> = { pageSize: String(pageSize) }
     if (searchQuery) f.modelName = searchQuery
     if (statusFilter !== 'all') f.status = statusFilter
+    if (requestCategoryFilter !== 'all') f.requestCategory = requestCategoryFilter
     if (clientTypeFilter !== 'all') f.clientType = clientTypeFilter
     Object.assign(f, getTimeRange(timeRange))
     if (currentCursor) f.cursor = currentCursor
     return f
-  }, [searchQuery, statusFilter, clientTypeFilter, timeRange, pageSize, currentCursor])
+  }, [
+    searchQuery,
+    statusFilter,
+    requestCategoryFilter,
+    clientTypeFilter,
+    timeRange,
+    pageSize,
+    currentCursor,
+  ])
 
   const { data: logsData, isLoading, refetch, isFetching } = useLogs(filters)
   const { data: storageData } = useLogStorage()
@@ -141,6 +150,7 @@ export function LogsPage() {
   const handlePageSizeChange = useCallback((size: number) => setPageSize(size), [])
 
   const handleSearchChange = useCallback((v: string) => setSearchQuery(v), [])
+  const handleRequestCategoryChange = useCallback((v: string) => setRequestCategoryFilter(v), [])
   const handleStatusChange = useCallback((v: string) => setStatusFilter(v), [])
   const handleClientTypeChange = useCallback((v: string) => setClientTypeFilter(v), [])
   const handleTimeRangeChange = useCallback((v: string) => setTimeRange(v), [])
@@ -170,6 +180,8 @@ export function LogsPage() {
         onSearchChange={handleSearchChange}
         statusFilter={statusFilter}
         onStatusChange={handleStatusChange}
+        requestCategoryFilter={requestCategoryFilter}
+        onRequestCategoryChange={handleRequestCategoryChange}
         clientTypeFilter={clientTypeFilter}
         onClientTypeChange={handleClientTypeChange}
         clientTypeOptions={CLIENT_REGISTRY}

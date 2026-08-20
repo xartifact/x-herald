@@ -29,6 +29,7 @@ interface LogsPageParams extends DateRange {
   virtualKeyId?: string
   modelName?: string
   status?: string
+  requestCategory?: 'embedding' | 'chat_text' | 'chat_image' | 'chat_video' | 'chat_audio' | 'other'
   clientType?: string
 }
 
@@ -51,6 +52,7 @@ const LIST_SELECT = {
   errorType: requestLogs.errorType,
   clientType: requestLogs.clientType,
   requestPath: requestLogs.requestPath,
+  requestCategory: requestLogs.requestCategory,
   createdAt: requestLogs.createdAt,
   isComplete: requestLogs.isComplete,
   thinkingMode: sql<
@@ -68,7 +70,7 @@ function buildDateConditions(range: DateRange) {
 
 export async function getLogsPage(params: LogsPageParams) {
   const db = getDatabase()
-  const { cursor, pageSize, virtualKeyId, modelName, status, clientType } = params
+  const { cursor, pageSize, virtualKeyId, modelName, status, clientType, requestCategory } = params
   const conditions = [...buildDateConditions(params)]
 
   if (virtualKeyId) conditions.push(eq(requestLogs.virtualKeyId, virtualKeyId))
@@ -78,6 +80,7 @@ export async function getLogsPage(params: LogsPageParams) {
   } else {
     conditions.push(ne(requestLogs.status, 'pending'))
   }
+  if (requestCategory) conditions.push(eq(requestLogs.requestCategory, requestCategory))
   if (clientType) conditions.push(eq(requestLogs.clientType, clientType))
 
   if (cursor) {

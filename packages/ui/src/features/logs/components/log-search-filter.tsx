@@ -18,6 +18,8 @@ interface LogSearchFilterProps {
   onSearchChange: (value: string) => void
   statusFilter: string
   onStatusChange: (value: string) => void
+  requestCategoryFilter: string
+  onRequestCategoryChange: (value: string) => void
   clientTypeFilter: string
   onClientTypeChange: (value: string) => void
   /** Map of client type slugs to display names, used to populate the client type dropdown */
@@ -37,6 +39,8 @@ export function LogSearchFilter({
   onSearchChange,
   statusFilter,
   onStatusChange,
+  requestCategoryFilter,
+  onRequestCategoryChange,
   clientTypeFilter,
   onClientTypeChange,
   clientTypeOptions,
@@ -90,6 +94,21 @@ export function LogSearchFilter({
                         {name}
                       </SelectItem>
                     ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={requestCategoryFilter} onValueChange={onRequestCategoryChange}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="类型筛选" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部类型</SelectItem>
+                <SelectItem value="embedding">Embedding</SelectItem>
+                <SelectItem value="chat_text">Text</SelectItem>
+                <SelectItem value="chat_image">Image</SelectItem>
+                <SelectItem value="chat_video">Video</SelectItem>
+                <SelectItem value="chat_audio">Audio</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
               </SelectContent>
             </Select>
 

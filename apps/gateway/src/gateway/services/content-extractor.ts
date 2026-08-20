@@ -53,6 +53,12 @@ export function extractContentTypes(
         for (const part of msg.content) {
           if (part.type === 'text' && !types.includes('text')) types.push('text')
           else if (part.type === 'image_url' && !types.includes('image')) types.push('image')
+          else if (part.type === 'video_url' && !types.includes('video')) types.push('video')
+          else if (
+            (part.type === 'input_audio' || part.type === 'audio_url') &&
+            !types.includes('audio')
+          )
+            types.push('audio')
         }
       }
     }
@@ -120,4 +126,42 @@ export function extractRequestFeatures(
     topP: primaryBody.top_p,
     ...(thinkingMode && { thinkingMode: true }),
   }
+}
+
+/**
+ * 模型请求类型（日志审计/筛选用）
+ */
+export type RequestCategory =
+  | 'embedding'
+  | 'chat_text'
+  | 'chat_image'
+  | 'chat_video'
+  | 'chat_audio'
+  | 'other'
+
+/**
+ * 从请求路径 + 请求体推导请求类型。
+ * - `/embeddings` 端点 → embedding
+ * - chat 请求按消息内容类型细分 image / video / audio / text
+ * - 无法识别（无消息、非标准体）→ other
+ */
+export function deriveRequestCategory(params: {
+  requestPath?: string
+  requestBody?: unknown
+  standardRequestBody?: unknown
+}): RequestCategory {
+  const path = params.requestPath ?? ''
+  if (path.includes('/embeddings')) return 'embedding'
+
+  const content = extractContentTypes(params.requestBody, params.standardRequestBody)
+  const types = content?.types ?? []
+  if (types.includes('image')) return 'chat_image'
+  if (types.includes('video')) return 'chat_video'
+  if (types.includes('audio')) return 'chat_audio'
+  if (
+    types.includes('text') ||
+    Array.isArray((params.requestBody as { messages?: unknown })?.messages)
+  )
+    return 'chat_text'
+  return 'other'
 }

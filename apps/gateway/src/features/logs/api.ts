@@ -84,6 +84,14 @@ logsRoutes.get('/', async (c) => {
       virtualKeyId: q.virtualKeyId,
       modelName: q.modelName,
       status: q.status,
+      requestCategory: q.requestCategory as
+        | 'embedding'
+        | 'chat_text'
+        | 'chat_image'
+        | 'chat_video'
+        | 'chat_audio'
+        | 'other'
+        | undefined,
       startDate: q.startDate,
       endDate: q.endDate,
       clientType: q.clientType,

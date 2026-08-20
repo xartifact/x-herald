@@ -21,6 +21,14 @@ export interface LogListItem {
   errorType: string | null
   clientType: string | null
   requestPath: string | null
+  requestCategory:
+    | 'embedding'
+    | 'chat_text'
+    | 'chat_image'
+    | 'chat_video'
+    | 'chat_audio'
+    | 'other'
+    | null
   createdAt: string
   isComplete: boolean
   thinkingMode?: boolean | null

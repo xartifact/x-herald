@@ -6,6 +6,14 @@ import { TableCell, TableRow } from '../../../shared/components/ui/table'
 import { cn } from '../../../shared/lib/utils'
 import type { LogListItem } from '@xartifact/x-herald-shared'
 
+const CATEGORY_LABELS: Record<string, { label: string; className: string }> = {
+  embedding: { label: 'Embedding', className: 'bg-indigo-500/15 text-indigo-400' },
+  chat_text: { label: 'Text', className: 'bg-sky-500/15 text-sky-400' },
+  chat_image: { label: 'Image', className: 'bg-emerald-500/15 text-emerald-400' },
+  chat_video: { label: 'Video', className: 'bg-amber-500/15 text-amber-400' },
+  chat_audio: { label: 'Audio', className: 'bg-rose-500/15 text-rose-400' },
+  other: { label: 'Other', className: 'bg-muted text-muted-foreground' },
+}
 interface ModelCellProps {
   log: LogListItem
   isPending: boolean
@@ -31,6 +39,19 @@ function ModelCell({ log, isPending, isSuccess }: ModelCellProps) {
         >
           {isPending ? '请求中' : log.statusCode || log.status}
         </Badge>
+        {log.requestCategory &&
+          log.requestCategory !== 'other' &&
+          CATEGORY_LABELS[log.requestCategory] && (
+            <Badge
+              variant="outline"
+              className={cn(
+                'text-xs h-5 px-1.5 shrink-0',
+                CATEGORY_LABELS[log.requestCategory].className,
+              )}
+            >
+              {CATEGORY_LABELS[log.requestCategory].label}
+            </Badge>
+          )}
         {log.retryCount > 0 && (
           <Badge
             variant="outline"

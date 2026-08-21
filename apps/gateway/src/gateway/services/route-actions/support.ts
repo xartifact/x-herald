@@ -130,6 +130,7 @@ export async function routeToInstance(
   const instanceResult = await db
     .select({ instance: modelInstances, provider: providers })
     .from(modelInstances)
+    .innerJoin(providers, eq(modelInstances.providerId, providers.id))
     .where(
       and(
         eq(modelInstances.id, instanceId),

@@ -384,6 +384,74 @@ describe('AccessModelRouter - capability action', () => {
     expect(candidates[0].group.id).toBe(visionGroupId)
   })
 })
+describe('AccessModelRouter - route_to_instance action', () => {
+  it('routes directly to the pinned instance and returns its provider', async () => {
+    const db = getDatabase()
+    const amId = crypto.randomUUID()
+    await db.insert(accessModels).values({
+      id: amId,
+      name: 'pinned-am',
+      displayName: 'Pinned AM',
+      description: null,
+      enabled: true,
+      capabilities: {},
+      metadata: null,
+    } satisfies typeof accessModels.$inferInsert)
+    createdIds.accessModels.push(amId)
+
+    // 组只用来承载 membership（route_to_instance 直接 pin 实例），组本身无路由路径
+    const holderGroupId = crypto.randomUUID()
+    await db.insert(modelGroups).values({
+      id: holderGroupId,
+      name: 'holder-group',
+      aliases: [],
+      displayName: 'Holder',
+      description: null,
+      category: 'chat',
+      capabilities: {
+        streaming: true,
+        functionCalling: true,
+        vision: false,
+        jsonMode: true,
+        maxTokens: 8192,
+        contextWindow: 128000,
+      },
+      supportedProtocols: ['openai'],
+      enabled: true,
+      routingConfig: null,
+      metadata: null,
+    } satisfies typeof modelGroups.$inferInsert)
+    createdIds.groups.push(holderGroupId)
+    const { instance, provider } = await createProviderWithModel('gpt-4-pinned', holderGroupId)
+
+    await seedCanvasRoute({
+      amId,
+      amName: 'pinned-am',
+      action: { type: 'route_to_instance', targetId: instance.id } as RouteAction,
+    })
+
+    const candidates = await accessModelRouter.routeCandidates({
+      requestedModel: 'pinned-am',
+      streaming: false,
+      hasTools: false,
+      hasVision: false,
+      virtualKeyId: 'test-key-id',
+      request: {
+        model: 'gpt-4-pinned',
+        messages: [{ role: 'user', content: 'hi' }],
+        stream: false,
+      } as StandardRequest,
+    })
+
+    expect(candidates.length).toBe(1)
+    expect(candidates[0].instance.id).toBe(instance.id)
+    // 回归：support.ts routeToInstance 曾漏 join providers，选中 provider 列即抛
+    // "providers is not part of the query" —— 这里必须真返回 provider 才能过
+    expect(candidates[0].provider).toBeDefined()
+    expect(candidates[0].provider.id).toBe(provider.id)
+    expect(candidates[0].decision.strategy).toBe('direct')
+  })
+})
 
 describe('AccessModelRouter - failure paths carry a routeChain (routing-traces coverage)', () => {
   // 回归用例：路由追踪之前只在成功产出候选时才留痕迹——reject / 无可用实例

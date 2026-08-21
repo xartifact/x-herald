@@ -147,7 +147,7 @@ x-herald/
 
 ### 前置要求
 
-- Bun >= 1.3.6
+- Bun >= 1.4.0
 - PostgreSQL 16（可选，PGlite 可用于开发）
 
 ### 本地开发

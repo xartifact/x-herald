@@ -52,6 +52,16 @@ function ModelCell({ log, isPending, isSuccess }: ModelCellProps) {
               {CATEGORY_LABELS[log.requestCategory].label}
             </Badge>
           )}
+        {log.streaming && (
+          <Badge variant="outline" className="text-xs h-5 px-1.5 shrink-0">
+            流式
+          </Badge>
+        )}
+        {log.thinkingMode && (
+          <Badge variant="outline" className="text-xs h-5 px-1.5 shrink-0 text-info border-info/40">
+            思考
+          </Badge>
+        )}
         {log.retryCount > 0 && (
           <Badge
             variant="outline"
@@ -147,21 +157,9 @@ export function LogTableRow({
         </div>
       </TableCell>
       <TableCell>
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-mono truncate" title={log.virtualKeyName || '-'}>
-            {log.virtualKeyName || '-'}
-          </span>
-          {log.streaming && (
-            <Badge variant="outline" className="text-xs h-5 px-1.5">
-              流式
-            </Badge>
-          )}
-          {log.thinkingMode && (
-            <Badge variant="outline" className="text-xs h-5 px-1.5 text-info border-info/40">
-              思考
-            </Badge>
-          )}
-        </div>
+        <span className="text-sm font-mono truncate" title={log.virtualKeyName || '-'}>
+          {log.virtualKeyName || '-'}
+        </span>
       </TableCell>
       <TableCell>
         {log.clientType && log.clientType !== 'unknown' ? (

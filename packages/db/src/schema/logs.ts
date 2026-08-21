@@ -102,7 +102,7 @@ export const requestAttempts = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     requestLogId: uuid('request_log_id')
-      .references(() => requestLogs.id)
+      .references(() => requestLogs.id, { onDelete: 'cascade' })
       .notNull(),
     requestGroupId: uuid('request_group_id').notNull(),
     candidateIndex: integer('candidate_index').default(0).notNull(),

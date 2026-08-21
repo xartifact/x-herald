@@ -200,9 +200,9 @@ jobs:
     if: always() && github.event_name != 'pull_request' && !startsWith(github.ref, 'refs/tags/')
 
     steps:
-      - name: Send Feishu notification
+      - name: Send Discord notification
         env:
-          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
           DEPLOY_RESULT: ${{ needs.deploy.result }}
           BUILD_RESULT: ${{ needs.build.result }}
           COMMIT_MSG: ${{ github.event.head_commit.message }}
@@ -214,13 +214,13 @@ jobs:
         run: |
           if [ "$DEPLOY_RESULT" = "success" ]; then
             STATUS="✅ 部署成功"
-            COLOR="green"
+            COLOR="65280"           # Discord green
           elif [ "$DEPLOY_RESULT" = "skipped" ]; then
             STATUS="⏭️ 部署跳过"
-            COLOR="grey"
+            COLOR="9807270"          # Discord grey
           else
             STATUS="❌ 部署失败"
-            COLOR="red"
+            COLOR="15548997"         # Discord red
           fi
 
           SHORT_SHA="${COMMIT_SHA:0:7}"
@@ -238,39 +238,23 @@ jobs:
             --arg tag "$IMAGE_TAG" \
             --arg url "$ACTION_URL" \
             '{
-              msg_type: "interactive",
-              card: {
-                header: {
-                  title: { tag: "plain_text", content: "\($status) - x-herald" },
-                  template: $color
-                },
-                elements: [
-                  {
-                    tag: "div",
-                    fields: [
-                      { is_short: true, text: { tag: "lark_md", content: "**分支：**\($branch)" } },
-                      { is_short: true, text: { tag: "lark_md", content: "**提交：**\($sha)" } },
-                      { is_short: false, text: { tag: "lark_md", content: "**信息：**\($msg)" } },
-                      { is_short: true, text: { tag: "lark_md", content: "**触发：**\($actor)" } },
-                      { is_short: true, text: { tag: "lark_md", content: "**构建：**\($build)" } },
-                      { is_short: true, text: { tag: "lark_md", content: "**镜像：**`\($tag)`" } }
-                    ]
-                  },
-                  {
-                    tag: "action",
-                    actions: [
-                      {
-                        tag: "button",
-                        text: { tag: "plain_text", content: "查看 Action" },
-                        url: $url,
-                        type: "primary"
-                      }
-                    ]
-                  }
-                ]
-              }
+              embeds: [
+                {
+                  title: "\($status) - x-herald",
+                  color: ($color | tonumber),
+                  fields: [
+                    { name: "分支", value: $branch, inline: true },
+                    { name: "提交", value: "`\($sha)`", inline: true },
+                    { name: "信息", value: $msg, inline: false },
+                    { name: "触发", value: $actor, inline: true },
+                    { name: "构建", value: $build, inline: true },
+                    { name: "镜像", value: "`\($tag)`", inline: true }
+                  ],
+                  url: $url
+                }
+              ]
             }')
 
-          curl -s -X POST "$FEISHU_WEBHOOK" \
+          curl -s -X POST "$DISCORD_WEBHOOK" \
             -H "Content-Type: application/json" \
             -d "$PAYLOAD"

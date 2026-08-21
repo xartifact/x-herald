@@ -4,6 +4,7 @@ import { IS_PRODUCTION } from '../../config/env'
 import type { DbClient } from '../../db/client'
 import { getDatabase } from '../../db/client'
 import logger from '../../lib/logger'
+import { deriveRequestCategory } from './content-extractor'
 
 // ─── x-tinker reporter (lazily initialized) ─────────────────
 let xTinkerReporter: import('@xartifact/x-tinker-sdk').ErrorReporter | null = null
@@ -90,7 +91,7 @@ function withDbTimeout<T>(p: Promise<T>): Promise<T> {
   ])
 }
 
-function buildLogInsertValues(params: StreamLogParams & { isStream: boolean }) {
+export function buildLogInsertValues(params: StreamLogParams & { isStream: boolean }) {
   const streamStatus: 'streaming' | 'pending' = params.isStream ? 'streaming' : 'pending'
   const streaming: 'true' | 'false' = params.isStream ? 'true' : 'false'
   const metadata: LogMetadata = {}
@@ -132,6 +133,11 @@ function buildLogInsertValues(params: StreamLogParams & { isStream: boolean }) {
     userAgent: params.userAgent,
     clientType: params.clientType,
     requestPath: params.requestPath,
+    requestCategory: deriveRequestCategory({
+      requestPath: params.requestPath,
+      requestBody: params.requestBody,
+      standardRequestBody: params.transformedRequestBody,
+    }),
     requestMethod: params.requestMethod,
     streaming,
     incomingProtocol: params.incomingProtocol,

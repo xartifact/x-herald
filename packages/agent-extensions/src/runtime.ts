@@ -12,7 +12,7 @@
  *     ~/.prime/agent — a renamed fork of pi; same extension ABI)
  */
 
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
@@ -95,4 +95,74 @@ export function detectRuntime(): Runtime {
     return { name: 'pi', configDir: PI_DIR }
   }
   return fromEnv() ?? fromDisk()
+}
+
+/** The CLI binary name for each runtime — 'prime' the runtime name is not the same as the 'prime-agent' binary. */
+export const RUNTIME_BINARY: Record<RuntimeName, string> = {
+  pi: 'pi',
+  omp: 'omp',
+  prime: 'prime-agent',
+}
+
+/** Extracts the first semver-ish token from a `--version` output, e.g. "omp/18.0.1" → "18.0.1". */
+export function parseVersionFromOutput(raw: string): string | undefined {
+  return raw.trim().match(/\d+\.\d+(?:\.\d+)*/)?.[0]
+}
+
+// Process-level cache (per the extension ABI having no host-version field of
+// its own): populated once, at extension startup, by exec-ing the host's own
+// `--version` — see entry.ts. `cached` distinguishes "not yet resolved" from
+// "resolved to undefined" so readHostVersion() knows whether to fall through.
+let cachedHostVersion: string | undefined
+let cached = false
+
+/**
+ * Populate the process-level host-version cache. Call once, at extension
+ * startup — see entry.ts, which resolves it via `pi.exec("<binary>",
+ * ["--version"])`. Always reflects whatever build is actually running this
+ * process, so an update between runs is picked up correctly on next launch
+ * (no lag, unlike the changelog-marker fallback below).
+ */
+export function cacheHostVersion(version: string | undefined): void {
+  cachedHostVersion = version
+  cached = true
+}
+
+/** Test-only: restores readHostVersion() to its pre-cache fallback behavior. */
+export function resetHostVersionCache(): void {
+  cachedHostVersion = undefined
+  cached = false
+}
+
+/**
+ * Host application version. Prefers the process-level cache (see
+ * `cacheHostVersion`); falls back to a local marker file each runtime
+ * already maintains for its in-app changelog notice when the cache hasn't
+ * been populated (e.g. exec failed, or entry.ts hasn't run yet):
+ *
+ *   - pi / prime: `settings.json`'s `lastChangelogVersion` field.
+ *   - omp: the plain-text `last-changelog-version` file.
+ *
+ * The fallback is a heuristic, not a guarantee — verified to match `pi
+ * --version` (0.83.0) and `omp --version` (18.0.1) on a real install, but it
+ * reflects the last version whose changelog the user has viewed, so it can
+ * lag one version behind right after an update the user hasn't opened the
+ * app to see yet. No local marker is known for prime (its settings.json
+ * doesn't carry this field) — returns undefined there absent the cache.
+ * Never throws; swallows any read/parse failure and returns undefined.
+ */
+export function readHostVersion(runtime: Runtime): string | undefined {
+  if (cached) return cachedHostVersion
+  try {
+    if (runtime.name === 'omp') {
+      const raw = readFileSync(join(runtime.configDir, 'last-changelog-version'), 'utf8').trim()
+      return raw || undefined
+    }
+    const settings = JSON.parse(readFileSync(join(runtime.configDir, 'settings.json'), 'utf8')) as {
+      lastChangelogVersion?: string
+    }
+    return settings.lastChangelogVersion
+  } catch {
+    return undefined
+  }
 }

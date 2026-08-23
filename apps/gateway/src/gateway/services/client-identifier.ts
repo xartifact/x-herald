@@ -16,6 +16,10 @@ interface BunServerEnv {
 }
 
 const CLIENT_RULES: Array<{ pattern: RegExp; type: string; name: string }> = [
+  { pattern: /\bpi-coding-agent\b|^pi\//i, type: 'pi', name: 'Pi' },
+  { pattern: /\boh-my-pi\b|^omp\//i, type: 'omp', name: 'Oh My Pi (omp)' },
+  { pattern: /\bprime-agent\b|^prime\//i, type: 'prime', name: 'Prime Agent' },
+  { pattern: /\bcodex\b/i, type: 'codex', name: 'Codex' },
   { pattern: /claude.?code/i, type: 'claude-code', name: 'Claude Code' },
   { pattern: /claude-cli/i, type: 'claude-code', name: 'Claude Code' },
   { pattern: /cherry.?studio/i, type: 'cherry-studio', name: 'CherryStudio' },

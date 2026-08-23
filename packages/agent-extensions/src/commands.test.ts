@@ -50,6 +50,7 @@ const fakePi: ExtensionAPI = {
   unregisterProvider: () => {},
   on: () => {},
   sendUserMessage: () => {},
+  exec: async () => ({ stdout: '', stderr: '', code: 0, killed: false }),
 }
 
 registerXGateCommand(fakePi, deps)

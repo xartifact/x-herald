@@ -3,6 +3,35 @@ import { Hono } from 'hono'
 import { identifyClient, resolveClientIp, CLIENT_REGISTRY } from './client-identifier'
 
 describe('identifyClient', () => {
+  // pi / omp / prime (agent-extensions User-Agent fingerprint)
+  it('identifies pi from the agent-extensions fingerprint UA', () => {
+    const info = identifyClient('pi/0.3.0')
+    expect(info.type).toBe('pi')
+    expect(info.name).toBe('Pi')
+    expect(info.version).toBe('0.3.0')
+  })
+
+  it('identifies omp from the agent-extensions fingerprint UA', () => {
+    const info = identifyClient('omp/0.3.0')
+    expect(info.type).toBe('omp')
+    expect(info.name).toBe('Oh My Pi (omp)')
+    expect(info.version).toBe('0.3.0')
+  })
+
+  it('identifies prime from the agent-extensions fingerprint UA', () => {
+    const info = identifyClient('prime/0.3.0')
+    expect(info.type).toBe('prime')
+    expect(info.name).toBe('Prime Agent')
+    expect(info.version).toBe('0.3.0')
+  })
+
+  it('identifies codex', () => {
+    const info = identifyClient('codex/1.0.0')
+    expect(info.type).toBe('codex')
+    expect(info.name).toBe('Codex')
+    expect(info.version).toBe('1.0.0')
+  })
+
   // Claude Code
   it('identifies claude-code from claude.code UA', () => {
     const info = identifyClient('claude.code/1.2.0 (Linux; U; EN)')

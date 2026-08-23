@@ -1,7 +1,18 @@
-import { describe, expect, it } from 'bun:test'
+import { afterEach, describe, expect, it } from 'bun:test'
 
 import { toPiModel } from './model-mapping'
+import { resetHostVersionCache, cacheHostVersion } from './runtime'
 import type { GatewayModelEntry } from './types'
+import { EXTENSION_VERSION } from './version'
+
+const CONFIG_DIR_KEY = 'X_HERALD_CONFIG_DIR'
+let prevConfigDir: string | undefined
+
+afterEach(() => {
+  if (prevConfigDir === undefined) delete process.env[CONFIG_DIR_KEY]
+  else process.env[CONFIG_DIR_KEY] = prevConfigDir
+  resetHostVersionCache()
+})
 
 const base: GatewayModelEntry = {
   id: 'test-model',
@@ -61,16 +72,59 @@ describe('toPiModel', () => {
     expect(m.input).toEqual(['text', 'image'])
   })
 
-  it('forwards headers, thinking_level_map, and compat', () => {
+  it('forwards headers (merged with the fingerprint User-Agent), thinking_level_map, and compat', () => {
     const m = toPiModel({
       ...base,
       headers: { 'X-Model-Tier': 'premium' },
       thinking_level_map: { high: 'high', max: null },
       compat: { supports_developer_role: true },
     })
-    expect(m.headers).toEqual({ 'X-Model-Tier': 'premium' })
+    expect(m.headers).toMatchObject({ 'X-Model-Tier': 'premium' })
+    expect(m.headers).toHaveProperty('User-Agent')
     expect(m.thinkingLevelMap).toEqual({ high: 'high', max: null })
     expect(m.compat).toEqual({ supports_developer_role: true })
+  })
+
+  describe('User-Agent fingerprint', () => {
+    it('reports the process-level cached host version when populated (e.g. via `pi.exec` in entry.ts)', () => {
+      prevConfigDir = process.env[CONFIG_DIR_KEY]
+      process.env[CONFIG_DIR_KEY] = '/tmp/.omp/agent-model-mapping-test'
+      cacheHostVersion('18.0.1')
+      const m = toPiModel(base)
+      expect(m.headers).toEqual({
+        'User-Agent': `omp/18.0.1 (x-herald-agent-extensions/${EXTENSION_VERSION})`,
+      })
+    })
+
+    // No settings.json/last-changelog-version exists under these fake dirs,
+    // and the cache is unpopulated, so readHostVersion() falls back to
+    // 'unknown' — the extension's own version still rides along in the
+    // parenthetical. Host-version resolution itself is covered by
+    // runtime.test.ts's readHostVersion/cacheHostVersion suites.
+    it('falls back to "<runtime>/unknown (x-herald-agent-extensions/<version>)" when no host marker is found', () => {
+      prevConfigDir = process.env[CONFIG_DIR_KEY]
+      process.env[CONFIG_DIR_KEY] = '/tmp/.omp/agent-model-mapping-test'
+      const m = toPiModel(base)
+      expect(m.headers).toEqual({
+        'User-Agent': `omp/unknown (x-herald-agent-extensions/${EXTENSION_VERSION})`,
+      })
+    })
+
+    it('reflects pi/prime runtime detection too', () => {
+      prevConfigDir = process.env[CONFIG_DIR_KEY]
+      process.env[CONFIG_DIR_KEY] = '/tmp/.prime/agent-model-mapping-test'
+      const m = toPiModel(base)
+      expect(m.headers).toEqual({
+        'User-Agent': `prime/unknown (x-herald-agent-extensions/${EXTENSION_VERSION})`,
+      })
+    })
+
+    it('lets an explicit entry.headers["User-Agent"] win over the fingerprint', () => {
+      prevConfigDir = process.env[CONFIG_DIR_KEY]
+      process.env[CONFIG_DIR_KEY] = '/tmp/.omp/agent-model-mapping-test'
+      const m = toPiModel({ ...base, headers: { 'User-Agent': 'admin-override/9.9.9' } })
+      expect(m.headers).toEqual({ 'User-Agent': 'admin-override/9.9.9' })
+    })
   })
 
   it('fills compat.max_tokens_field from the camelCase mirror when compat exists', () => {

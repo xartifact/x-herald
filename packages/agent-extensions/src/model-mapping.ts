@@ -8,12 +8,29 @@
 
 import type { ProviderModelConfig } from '@earendil-works/pi-coding-agent'
 
+import { detectRuntime, readHostVersion } from './runtime.ts'
 import {
   DEFAULT_CONTEXT_WINDOW,
   DEFAULT_MAX_TOKENS,
   type GatewayCapabilities,
   type GatewayModelEntry,
 } from './types.ts'
+import { EXTENSION_VERSION } from './version.ts'
+
+/**
+ * `User-Agent` override so the gateway can identify pi/omp/prime precisely
+ * instead of falling back to whatever generic UA the underlying HTTP client
+ * sends. Leads with the host application's own version (best-effort — see
+ * `readHostVersion`); the extension's own version always rides along in the
+ * parenthetical so the gateway can still extract *a* version even when the
+ * host's own isn't known.
+ */
+function buildFingerprintHeaders(): Record<string, string> {
+  const runtime = detectRuntime()
+  const hostVersion = readHostVersion(runtime)
+  const primary = `${runtime.name}/${hostVersion ?? 'unknown'}`
+  return { 'User-Agent': `${primary} (x-herald-agent-extensions/${EXTENSION_VERSION})` }
+}
 
 export function toPiModel(entry: GatewayModelEntry): ProviderModelConfig {
   const caps: GatewayCapabilities = entry.capabilities ?? {}
@@ -42,8 +59,9 @@ export function toPiModel(entry: GatewayModelEntry): ProviderModelConfig {
     maxTokens,
   }
 
-  if (entry.headers) {
-    ;(model as ProviderModelConfig & { headers?: Record<string, string> }).headers = entry.headers
+  ;(model as ProviderModelConfig & { headers?: Record<string, string> }).headers = {
+    ...buildFingerprintHeaders(),
+    ...(entry.headers ?? {}),
   }
   if (entry.thinking_level_map) {
     ;(

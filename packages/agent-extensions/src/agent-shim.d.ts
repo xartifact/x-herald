@@ -71,6 +71,12 @@ interface ExtensionAPI {
     message: string | unknown[],
     options?: { deliverAs?: 'steer' | 'followUp' | 'nextTurn' },
   ): void
+  /** Execute a shell command. Identical shape on pi and omp's real ExtensionAPI. */
+  exec(
+    command: string,
+    args: string[],
+    options?: { signal?: AbortSignal; timeout?: number; cwd?: string },
+  ): Promise<{ stdout: string; stderr: string; code: number; killed: boolean }>
 }
 
 declare module '@earendil-works/pi-coding-agent' {

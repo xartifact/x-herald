@@ -8,11 +8,15 @@
  *
  * Behaviour:
  *   1. Resolve config from runtime-appropriate dir + files.
- *   2. Register the provider with the runtime's dynamic-discovery
+ *   2. Resolve + cache the host's own `--version` (process-level; see
+ *      runtime.ts) so User-Agent fingerprinting in model-mapping.ts can
+ *      report the runtime's real version instead of the changelog-marker
+ *      fallback.
+ *   3. Register the provider with the runtime's dynamic-discovery
  *      mechanism — pi/prime: eager seed + `refreshModels` (model selector
  *      open); omp: `fetchDynamicModels` (SQLite model cache, 24 h TTL).
  *      New models added on the gateway appear without a restart.
- *   3. Register /x-herald admin commands.
+ *   4. Register /x-herald admin commands.
  *
  * The /x-herald handlers in src/commands.ts re-resolve config + re-fetch on
  * each invocation so they always reflect the latest env / file state.
@@ -23,10 +27,33 @@ import type { ExtensionAPI, ProviderModelConfig } from '@earendil-works/pi-codin
 import { registerXGateCommand } from './commands.ts'
 import { resolveProviderConfig } from './config.ts'
 import { buildProviderConfig, discoverModels } from './gateway.ts'
-import { detectRuntime } from './runtime.ts'
+import {
+  cacheHostVersion,
+  detectRuntime,
+  parseVersionFromOutput,
+  RUNTIME_BINARY,
+  type Runtime,
+} from './runtime.ts'
 import { PROVIDER_ID, PROVIDER_NAME } from './types.ts'
 
+/**
+ * Best-effort: exec the host's own `--version` once at startup and cache the
+ * result. Never throws — any failure just leaves the cache resolved to
+ * undefined, and readHostVersion() falls back to the changelog-marker file.
+ */
+async function resolveHostVersion(pi: ExtensionAPI, runtime: Runtime): Promise<void> {
+  try {
+    const result = await pi.exec(RUNTIME_BINARY[runtime.name], ['--version'], { timeout: 3000 })
+    cacheHostVersion(result.code === 0 ? parseVersionFromOutput(result.stdout) : undefined)
+  } catch {
+    cacheHostVersion(undefined)
+  }
+}
+
 export default async function (pi: ExtensionAPI): Promise<void> {
+  const runtime = detectRuntime()
+  await resolveHostVersion(pi, runtime)
+
   // Always register the command — even if /models fails, /x-herald help is useful.
   registerXGateCommand(pi)
 
@@ -44,7 +71,7 @@ export default async function (pi: ExtensionAPI): Promise<void> {
   // pi/prime: seed the provider immediately so models exist before the
   // first async refresh, and surface startup failures loudly.
   let models: ProviderModelConfig[] = []
-  if (detectRuntime().name !== 'omp') {
+  if (runtime.name !== 'omp') {
     try {
       models = await discoverModels(apiKey)
     } catch (err) {

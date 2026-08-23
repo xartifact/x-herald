@@ -8,7 +8,7 @@ import type { providers } from '@xartifact/x-herald-db'
 import type { StandardRequest, TransformerContext } from '@xartifact/x-herald-shared'
 
 import { accessModelRouter } from '../../services/access-model-router'
-import { identifyClient } from '../../services/client-identifier'
+import { identifyClient, resolveClientIp } from '../../services/client-identifier'
 import {
   handleGatewayError,
   handleProviderError,
@@ -212,7 +212,7 @@ export async function handleResponsesAPI(
   const startTime = Date.now()
   const requestId = c.get('requestId') ?? crypto.randomUUID()
   const virtualKey = c.get('virtualKey') as VirtualKey
-  const clientIp = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown'
+  const clientIp = resolveClientIp(c)
   const userAgent = c.req.header('user-agent') || 'unknown'
   const requestPath = c.req.path
   const requestMethod = c.req.method

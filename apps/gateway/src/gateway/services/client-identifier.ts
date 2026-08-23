@@ -1,7 +1,18 @@
+import type { Context } from 'hono'
+
 export interface ClientInfo {
   type: string // slug: 'claude-code', 'cherry-studio', 'curl', 'unknown'
   name: string // display: 'Claude Code', 'CherryStudio', 'cURL'
   version?: string
+}
+
+/**
+ * Bun.serve() 把 `server` 作为 fetch 的第二个参数传入，Hono 将其暴露为 `c.env`。
+ * 反代未透传 x-forwarded-for/x-real-ip 时（如本项目 Docker 直接暴露端口，无前置反代），
+ * 这是唯一能拿到真实对端 IP 的途径。
+ */
+interface BunServerEnv {
+  requestIP?: (request: Request) => { address: string } | null
 }
 
 const CLIENT_RULES: Array<{ pattern: RegExp; type: string; name: string }> = [
@@ -50,4 +61,22 @@ export function identifyClient(
     }
   }
   return { type: 'unknown', name: '未知客户端' }
+}
+
+/**
+ * 解析调用方真实 IP：优先 x-forwarded-for（取第一个）/ x-real-ip（反代场景），
+ * 都缺失时回退到 Bun server 的 socket 对端地址（无反代直连场景）。
+ */
+export function resolveClientIp(c: Context): string {
+  const forwardedFor = c.req.header('x-forwarded-for')
+  if (forwardedFor) {
+    const first = forwardedFor.split(',')[0]?.trim()
+    if (first) return first
+  }
+  const realIp = c.req.header('x-real-ip')
+  if (realIp) return realIp
+
+  const env = c.env as unknown as BunServerEnv
+  const socketAddress = env?.requestIP?.(c.req.raw)
+  return socketAddress?.address ?? 'unknown'
 }

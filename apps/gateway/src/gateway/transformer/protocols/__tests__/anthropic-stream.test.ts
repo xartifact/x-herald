@@ -145,8 +145,62 @@ function parseSSE(sseText: string): Array<{ event?: string; data: unknown }> {
   return events
 }
 
+// 辅助函数：创建一个永不自然结束、但能记录 cancel(reason) 调用的上游流。
+// dataLine 必须是转换函数能实际产出下游 chunk 的合法负载，否则测试里
+// 下游的第一次 read() 永远等不到数据，会挂死。
+function createCancellableStream(
+  dataLine: string,
+  onCancel: (reason: unknown) => void,
+): ReadableStream {
+  const encoder = new TextEncoder()
+  return new ReadableStream({
+    start(controller) {
+      controller.enqueue(encoder.encode(`${dataLine}\n\n`))
+    },
+    cancel(reason) {
+      onCancel(reason)
+    },
+  })
+}
+
 describe('AnthropicTransformer - Stream Transformation', () => {
   const transformer = new AnthropicTransformer()
+
+  describe('取消传播（客户端断连时必须转发给上游 reader）', () => {
+    it('normalize 方向：下游 cancel() 必须转发给上游 reader.cancel()', async () => {
+      let cancelReason: unknown
+      const stream = createCancellableStream('data: {"type":"message_start"}', (reason) => {
+        cancelReason = reason
+      })
+      const ctx = createMockContext('normalize')
+      const transformedStream = await transformer.transformStream(stream, ctx)
+
+      const reader = transformedStream.getReader()
+      await reader.read() // 确保 start() 已经拿到 upstream reader
+      await reader.cancel('client_disconnect')
+
+      expect(cancelReason).toBe('client_disconnect')
+    })
+
+    it('adapt 方向：下游 cancel() 必须转发给上游 reader.cancel()', async () => {
+      let cancelReason: unknown
+      const dataLine = `data: ${JSON.stringify({
+        choices: [{ index: 0, delta: { role: 'assistant' }, finish_reason: null }],
+        model: 'gpt-4',
+      })}`
+      const stream = createCancellableStream(dataLine, (reason) => {
+        cancelReason = reason
+      })
+      const ctx = createMockContext('adapt')
+      const transformedStream = await transformer.transformStream(stream, ctx)
+
+      const reader = transformedStream.getReader()
+      await reader.read()
+      await reader.cancel('client_disconnect')
+
+      expect(cancelReason).toBe('client_disconnect')
+    })
+  })
 
   describe('Normalize: Anthropic → Standard', () => {
     it('应该将 message_start 转换为标准格式', async () => {

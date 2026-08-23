@@ -7,7 +7,7 @@ import type { StandardRequest } from '@xartifact/x-herald-shared'
 
 import { accessModelRouter } from '../../services/access-model-router'
 import { buildRouteChainSnapshot } from '../../services/routing-trace-recorder'
-import { identifyClient } from '../../services/client-identifier'
+import { identifyClient, resolveClientIp } from '../../services/client-identifier'
 import { handleGatewayError } from '../../services/error-handler'
 import { ModelNotFoundError } from '../../services/model-group-router'
 import { getProviderProtocol, getProviderUrl } from '../../services/protocol-detector'
@@ -28,7 +28,7 @@ export async function handleAnthropicMessages(
   const startTime = Date.now()
   const requestId = c.get('requestId') ?? crypto.randomUUID()
   const virtualKey = c.get('virtualKey') as VirtualKey
-  const clientIp = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown'
+  const clientIp = resolveClientIp(c)
   const userAgent = c.req.header('user-agent') || 'unknown'
   const requestPath = c.req.path
   const requestMethod = c.req.method

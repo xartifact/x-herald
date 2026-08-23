@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'bun:test'
-import { identifyClient, CLIENT_REGISTRY } from './client-identifier'
+import { Hono } from 'hono'
+import { identifyClient, resolveClientIp, CLIENT_REGISTRY } from './client-identifier'
 
 describe('identifyClient', () => {
   // Claude Code
@@ -201,5 +202,35 @@ describe('identifyClient', () => {
     expect(CLIENT_REGISTRY['cursor']).toBe('Cursor')
     expect(CLIENT_REGISTRY['curl']).toBe('cURL')
     expect(CLIENT_REGISTRY['unknown']).toBe('未知客户端')
+  })
+})
+
+describe('resolveClientIp', () => {
+  function buildApp() {
+    const app = new Hono()
+    app.get('/', (c) => c.text(resolveClientIp(c)))
+    return app
+  }
+
+  it('prefers the first address in x-forwarded-for', async () => {
+    const res = await buildApp().request('/', {
+      headers: { 'x-forwarded-for': '203.0.113.5, 10.0.0.1' },
+    })
+    expect(await res.text()).toBe('203.0.113.5')
+  })
+
+  it('falls back to x-real-ip when x-forwarded-for is absent', async () => {
+    const res = await buildApp().request('/', { headers: { 'x-real-ip': '198.51.100.7' } })
+    expect(await res.text()).toBe('198.51.100.7')
+  })
+
+  it('falls back to the Bun server socket address when no proxy headers are present', async () => {
+    const res = await buildApp().request('/', {}, { requestIP: () => ({ address: '192.0.2.9' }) })
+    expect(await res.text()).toBe('192.0.2.9')
+  })
+
+  it('returns "unknown" when no header and no server socket info are available', async () => {
+    const res = await buildApp().request('/')
+    expect(await res.text()).toBe('unknown')
   })
 })

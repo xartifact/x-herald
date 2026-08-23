@@ -134,10 +134,12 @@ export function normalizeAnthropicStream(
 ): ReadableStream {
   const encoder = new TextEncoder()
   const decoder = new TextDecoder()
+  let cancelUpstream: ((reason: unknown) => Promise<void>) | undefined
 
   return new ReadableStream({
     start: async (controller) => {
       const reader = stream.getReader()
+      cancelUpstream = (reason) => reader.cancel(reason)
       let buffer = ''
       let currentEvent: string | null = null
 
@@ -183,6 +185,9 @@ export function normalizeAnthropicStream(
         controller.close()
       }
     },
+    // 下游（客户端连接）取消时必须转发给上游 reader，否则 provider 侧的 fetch
+    // 永远不会被中止——网关会继续消费一份没人读的响应流。
+    cancel: (reason) => cancelUpstream?.(reason),
   })
 }
 
@@ -192,10 +197,12 @@ export function adaptStreamToAnthropic(
 ): ReadableStream {
   const encoder = new TextEncoder()
   const decoder = new TextDecoder()
+  let cancelUpstream: ((reason: unknown) => Promise<void>) | undefined
 
   return new ReadableStream({
     start: async (controller) => {
       const reader = stream.getReader()
+      cancelUpstream = (reason) => reader.cancel(reason)
       let buffer = ''
       const messageId = `msg_${crypto.randomUUID()}`
       let sentMessageStart = false
@@ -340,6 +347,9 @@ export function adaptStreamToAnthropic(
         controller.close()
       }
     },
+    // 下游（客户端连接）取消时必须转发给上游 reader，否则 provider 侧的 fetch
+    // 永远不会被中止——网关会继续消费一份没人读的响应流。
+    cancel: (reason) => cancelUpstream?.(reason),
   })
 }
 

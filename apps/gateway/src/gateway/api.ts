@@ -8,6 +8,7 @@ import actuatorRoutes from './routes/actuator'
 import anthropicRoutes from './routes/anthropic'
 import embeddingRoutes from './routes/embedding'
 import openaiRoutes from './routes/openai'
+import { resolveClientIp } from './services/client-identifier'
 import { logRequest } from './services/log-service'
 import { fetchAccessibleModels, type AccessibleModel } from './services/model-list'
 import type { ModelSchema } from '@xartifact/x-herald-shared'
@@ -83,7 +84,7 @@ gatewayRoutes.route('/', anthropicRoutes)
 gatewayRoutes.get('/models', async (c) => {
   const startTime = Date.now()
   const virtualKey = c.get('virtualKey')
-  const clientIp = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown'
+  const clientIp = resolveClientIp(c)
   const userAgent = c.req.header('user-agent') || 'unknown'
 
   const protocolHeader = c.req.header('x-protocol-type')
@@ -150,7 +151,7 @@ gatewayRoutes.get('/models/:id{.+}', async (c) => {
   const startTime = Date.now()
   const virtualKey = c.get('virtualKey')
   const modelId = c.req.param('id')
-  const clientIp = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown'
+  const clientIp = resolveClientIp(c)
   const userAgent = c.req.header('user-agent') || 'unknown'
 
   try {

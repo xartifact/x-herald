@@ -6,7 +6,7 @@ import type { VirtualKey } from '@xartifact/x-herald-db'
 import { handleAnthropicMessages } from '../handlers/anthropic/messages-handler'
 import { resolveConnectTimeoutMs } from '../handlers/shared/constants'
 import { accessModelRouter } from '../services/access-model-router'
-import { identifyClient } from '../services/client-identifier'
+import { identifyClient, resolveClientIp } from '../services/client-identifier'
 import { shouldFilterHeader } from '../services/headers'
 import { logRequest } from '../services/log-service'
 import { ModelNotFoundError } from '../services/model-group-router'
@@ -32,7 +32,7 @@ anthropicRoutes.post('/messages', async (c) => {
 anthropicRoutes.post('/messages/count_tokens', async (c) => {
   const startTime = Date.now()
   const virtualKey = c.get('virtualKey')
-  const clientIp = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown'
+  const clientIp = resolveClientIp(c)
   const userAgent = c.req.header('user-agent') || 'unknown'
 
   // 提取客户端原始请求头

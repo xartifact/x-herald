@@ -9,7 +9,7 @@ export interface LogListItem {
   originalModelName: string | null
   providerId: string | null
   providerName: string | null
-  status: 'success' | 'failure' | 'pending'
+  status: 'success' | 'failure' | 'cancelled' | 'pending'
   statusCode: number | null
   responseTimeMs: number
   inputTokens: number
@@ -132,6 +132,8 @@ export interface LogStats {
     totalRequests: number
     successRequests: number
     failureRequests: number
+    /** 客户端在收到部分数据后主动断开——不计入 failureRequests，也不算失败率 */
+    cancelledRequests: number
     avgResponseTime: number
     totalInputTokens: number
     totalOutputTokens: number

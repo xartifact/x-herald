@@ -10,6 +10,7 @@ interface RequestMetaSectionProps {
 }
 
 export function RequestMetaSection({ log, isPending, isSuccess }: RequestMetaSectionProps) {
+  const isCancelled = log.status === 'cancelled'
   return (
     <Section title="基本信息">
       <InfoRow
@@ -18,10 +19,16 @@ export function RequestMetaSection({ log, isPending, isSuccess }: RequestMetaSec
           <div className="flex items-center gap-2">
             <span
               className={
-                isPending ? 'text-warning' : isSuccess ? 'text-success' : 'text-destructive'
+                isPending
+                  ? 'text-warning'
+                  : isSuccess
+                    ? 'text-success'
+                    : isCancelled
+                      ? 'text-muted-foreground'
+                      : 'text-destructive'
               }
             >
-              {isPending ? '请求中' : isSuccess ? '成功' : '失败'}
+              {isPending ? '请求中' : isSuccess ? '成功' : isCancelled ? '客户端取消' : '失败'}
             </span>
             {!isPending && log.statusCode != null && (
               <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{log.statusCode}</code>

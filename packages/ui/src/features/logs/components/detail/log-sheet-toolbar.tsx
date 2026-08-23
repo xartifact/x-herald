@@ -14,6 +14,7 @@ interface LogSheetToolbarProps {
 export function LogSheetToolbar({ log, onClose, onOpenTrace }: LogSheetToolbarProps) {
   const isPending = log.status === 'pending'
   const isSuccess = log.status === 'success'
+  const isCancelled = log.status === 'cancelled'
 
   return (
     <div className="flex items-center justify-between px-3 md:px-6 py-3 md:py-3.5 border-b bg-background">
@@ -23,6 +24,8 @@ export function LogSheetToolbar({ log, onClose, onOpenTrace }: LogSheetToolbarPr
             <div className="h-2 w-2 rounded-full bg-warning animate-pulse flex-shrink-0" />
           ) : isSuccess ? (
             <div className="h-2 w-2 rounded-full bg-success flex-shrink-0" />
+          ) : isCancelled ? (
+            <div className="h-2 w-2 rounded-full bg-muted-foreground flex-shrink-0" />
           ) : (
             <div className="h-2 w-2 rounded-full bg-destructive flex-shrink-0" />
           )}
@@ -33,13 +36,27 @@ export function LogSheetToolbar({ log, onClose, onOpenTrace }: LogSheetToolbarPr
           <span className="text-sm font-medium truncate">{log.modelName}</span>
         </div>
         <Badge
-          variant={isPending ? 'outline' : isSuccess ? 'default' : 'destructive'}
+          variant={
+            isPending
+              ? 'outline'
+              : isSuccess
+                ? 'default'
+                : isCancelled
+                  ? 'secondary'
+                  : 'destructive'
+          }
           className={cn(
             'font-mono text-xs flex-shrink-0',
             isPending && 'border-warning text-warning',
           )}
         >
-          {isPending ? '请求中' : log.statusCode != null ? String(log.statusCode) : log.status}
+          {isPending
+            ? '请求中'
+            : isCancelled
+              ? '客户端取消'
+              : log.statusCode != null
+                ? String(log.statusCode)
+                : log.status}
         </Badge>
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">

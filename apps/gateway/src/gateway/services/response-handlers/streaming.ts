@@ -363,10 +363,18 @@ export async function handleStreamingResponse(params: ResponseHandlerParams): Pr
     params.request.signal.addEventListener(
       'abort',
       async () => {
-        logger.info({ logId }, 'Client disconnected, finalizing stream log')
+        const elapsedMs = Date.now() - startTime
+        // 未收到任何 chunk 就断开：更像连接从未真正建立/网络中断；
+        // 已收到 chunk 后断开：更像客户端主动挂断（取消/切换轮次），流本身是健康的。
+        const hadPartialData = chunkEmitCount > 0
+        const likelyCause = hadPartialData ? 'client_cancelled_mid_stream' : 'no_data_received'
+        logger.info(
+          { logId, chunkEmitCount, elapsedMs, likelyCause },
+          'Client disconnected, finalizing stream log',
+        )
         if (streamIdleTimer) clearTimeout(streamIdleTimer)
         await finalizeLog('failure')
-        await markStreamAborted(logId, attemptId)
+        await markStreamAborted(logId, attemptId, hadPartialData)
         logEventBus.emitLog({ event: 'aborted', logId })
       },
       { once: true },

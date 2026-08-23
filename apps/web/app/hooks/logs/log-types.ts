@@ -94,7 +94,7 @@ export interface LogListItem {
   originalModelName: string | null
   providerId: string | null
   providerName: string | null
-  status: 'success' | 'failure' | 'pending'
+  status: 'success' | 'failure' | 'cancelled' | 'pending'
   statusCode: number | null
   responseTimeMs: number
   inputTokens: number
@@ -141,6 +141,7 @@ export interface LogStats {
     totalRequests: number
     successRequests: number
     failureRequests: number
+    cancelledRequests: number
     avgResponseTime: number
     totalInputTokens: number
     totalOutputTokens: number
@@ -257,7 +258,7 @@ export interface KeyStat {
 
 export interface ConversationAttempt {
   id: string
-  status: 'success' | 'failure' | 'pending'
+  status: 'success' | 'failure' | 'cancelled' | 'pending'
   providerName: string | null
   statusCode: number | null
   ttfbMs: number | null
@@ -269,7 +270,7 @@ export interface ConversationAttempt {
 
 export interface ConversationRound {
   id: string
-  status: 'success' | 'failure' | 'pending'
+  status: 'success' | 'failure' | 'cancelled' | 'pending'
   modelName: string
   inputTokens: number
   outputTokens: number

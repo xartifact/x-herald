@@ -11,6 +11,7 @@ interface LogSheetStatusBarProps {
 export function LogSheetStatusBar({ log, formatDuration, formatTokens }: LogSheetStatusBarProps) {
   const isPending = log.status === 'pending'
   const isSuccess = log.status === 'success'
+  const isCancelled = log.status === 'cancelled'
 
   return (
     <div className="flex items-center justify-between px-3 md:px-6 py-2 border-t bg-muted/20 text-xs text-muted-foreground font-mono">
@@ -22,10 +23,16 @@ export function LogSheetStatusBar({ log, formatDuration, formatTokens }: LogShee
         <span
           className={cn(
             'hidden md:inline',
-            isPending ? 'text-warning' : isSuccess ? 'text-success' : 'text-destructive',
+            isPending
+              ? 'text-warning'
+              : isSuccess
+                ? 'text-success'
+                : isCancelled
+                  ? 'text-muted-foreground'
+                  : 'text-destructive',
           )}
         >
-          {isPending ? '请求中' : isSuccess ? '成功' : '失败'}
+          {isPending ? '请求中' : isSuccess ? '成功' : isCancelled ? '客户端取消' : '失败'}
         </span>
       </div>
       <div className="flex items-center gap-2">

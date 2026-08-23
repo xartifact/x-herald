@@ -3,6 +3,7 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronRight,
+  CircleSlash,
   Clock,
   Loader2,
   XCircle,
@@ -38,12 +39,15 @@ function formatMs(ms: number | null | undefined) {
 function StatusIcon({ status }: { status: ConversationRound['status'] }) {
   if (status === 'success') return <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
   if (status === 'failure') return <XCircle className="h-4 w-4 text-destructive flex-shrink-0" />
+  if (status === 'cancelled')
+    return <CircleSlash className="h-4 w-4 text-muted-foreground flex-shrink-0" />
   return <Loader2 className="h-4 w-4 text-warning animate-spin flex-shrink-0" />
 }
 
 function AttemptRow({ attempt }: { attempt: ConversationAttempt }) {
   const isSuccess = attempt.status === 'success'
   const isFailure = attempt.status === 'failure'
+  const isCancelled = attempt.status === 'cancelled'
 
   return (
     <div
@@ -51,7 +55,7 @@ function AttemptRow({ attempt }: { attempt: ConversationAttempt }) {
         'flex items-center gap-3 px-3 py-2 rounded text-xs',
         isSuccess && 'bg-success/10',
         isFailure && 'bg-destructive/10',
-        !isSuccess && !isFailure && 'bg-muted/50',
+        (isCancelled || (!isSuccess && !isFailure)) && 'bg-muted/50',
       )}
     >
       <span className="text-muted-foreground w-4 text-center font-mono">

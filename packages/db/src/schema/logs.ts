@@ -28,7 +28,9 @@ export const requestLogs = pgTable(
     // 最终服务此请求的 Provider（便于快速查询）
     providerId: uuid('provider_id').references(() => providers.id),
     providerName: varchar('provider_name', { length: 255 }),
-    status: varchar('status', { length: 20 }).notNull().$type<'success' | 'failure' | 'pending'>(),
+    status: varchar('status', { length: 20 })
+      .notNull()
+      .$type<'success' | 'failure' | 'cancelled' | 'pending'>(),
     statusCode: integer('status_code'),
     responseTimeMs: integer('response_time_ms').notNull(),
     inputTokens: integer('input_tokens').default(0).notNull(),
@@ -111,7 +113,7 @@ export const requestAttempts = pgTable(
     providerName: varchar('provider_name', { length: 255 }),
     targetProtocol: varchar('target_protocol', { length: 50 }),
     status: varchar('status', { length: 20 })
-      .$type<'success' | 'failure' | 'pending'>()
+      .$type<'success' | 'failure' | 'cancelled' | 'pending'>()
       .default('pending')
       .notNull(),
     statusCode: integer('status_code'),

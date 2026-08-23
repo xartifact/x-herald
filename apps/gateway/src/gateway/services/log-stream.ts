@@ -495,11 +495,25 @@ export async function markStreamFailed(
   }
 }
 
-export async function markStreamAborted(logId: string, attemptId: string): Promise<void> {
+/**
+ * @param hadPartialData 断连前是否已经向客户端转发过至少一个 chunk。
+ *   true：客户端已经拿到部分/完整内容后主动挂断（如 OMP 类 agent 解析出完整
+ *   tool_call 就提前收工）——网关自身没有故障，标记为 `cancelled`，不计入失败率。
+ *   false：还没收到任何数据就断开，更像真实网络故障，保留 `failure`。
+ */
+export async function markStreamAborted(
+  logId: string,
+  attemptId: string,
+  hadPartialData: boolean,
+): Promise<void> {
   if (!logId || logId.startsWith('temp-')) {
     logger.warn({ logId }, 'Skipping abort mark for temporary log ID')
     return
   }
+  const status = hadPartialData ? 'cancelled' : 'failure'
+  const errorMessage = hadPartialData
+    ? 'Client disconnected after receiving data'
+    : 'Client disconnected'
   try {
     const db = getDatabase()
     await db.transaction(async (trx) => {
@@ -507,10 +521,10 @@ export async function markStreamAborted(logId: string, attemptId: string): Promi
         trx
           .update(requestLogs)
           .set({
-            status: 'failure',
+            status,
             streamStatus: 'aborted',
             isComplete: true,
-            errorMessage: 'Client disconnected',
+            errorMessage,
             errorType: 'client_disconnect',
             lastUpdatedAt: new Date(),
           })
@@ -518,25 +532,24 @@ export async function markStreamAborted(logId: string, attemptId: string): Promi
       )
       if (attemptId && !attemptId.startsWith('temp-')) {
         await withDbTimeout(
-          trx
-            .update(requestAttempts)
-            .set({ status: 'failure' })
-            .where(eq(requestAttempts.id, attemptId)),
+          trx.update(requestAttempts).set({ status }).where(eq(requestAttempts.id, attemptId)),
         )
       }
     })
-    logger.debug({ logId }, 'Stream marked as aborted')
+    logger.debug({ logId, status }, 'Stream marked as aborted')
 
-    // Report stream abort to x-tinker
-    const err = new Error('Client disconnected')
-    err.name = 'client_disconnect'
-    reportFailureToXTinker(err, {
-      event: 'stream_aborted',
-      requestId: logId,
-      attemptId,
-      errorType: 'client_disconnect',
-      errorMessage: 'Client disconnected',
-    })
+    // Report stream abort to x-tinker（仅未收到任何数据的断连才算需要关注的失败）
+    if (!hadPartialData) {
+      const err = new Error(errorMessage)
+      err.name = 'client_disconnect'
+      reportFailureToXTinker(err, {
+        event: 'stream_aborted',
+        requestId: logId,
+        attemptId,
+        errorType: 'client_disconnect',
+        errorMessage,
+      })
+    }
   } catch (error) {
     logger.warn({ error, logId }, 'Failed to mark stream as aborted')
   }

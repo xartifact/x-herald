@@ -55,6 +55,7 @@ export function LogStatsCards({ stats, storage, clientStats }: LogStatsCardsProp
             </Badge>
             <span className="text-xs text-muted-foreground">
               {stats.successRequests} 成功 / {stats.failureRequests} 失败
+              {stats.cancelledRequests > 0 && ` / ${stats.cancelledRequests} 客户端取消`}
             </span>
           </div>
         }

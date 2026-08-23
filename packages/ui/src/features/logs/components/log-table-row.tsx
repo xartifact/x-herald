@@ -1,4 +1,4 @@
-import { FileText, Trash2, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react'
+import { FileText, Trash2, AlertCircle, CheckCircle2, CircleSlash, Loader2 } from 'lucide-react'
 
 import { Badge } from '../../../shared/components/ui/badge'
 import { Button } from '../../../shared/components/ui/button'
@@ -18,9 +18,10 @@ interface ModelCellProps {
   log: LogListItem
   isPending: boolean
   isSuccess: boolean
+  isCancelled: boolean
 }
 
-function ModelCell({ log, isPending, isSuccess }: ModelCellProps) {
+function ModelCell({ log, isPending, isSuccess, isCancelled }: ModelCellProps) {
   return (
     <div className="space-y-0.5">
       <div className="flex items-center gap-1.5 flex-wrap">
@@ -31,13 +32,21 @@ function ModelCell({ log, isPending, isSuccess }: ModelCellProps) {
           {log.originalModelName ?? log.modelName}
         </span>
         <Badge
-          variant={isPending ? 'outline' : isSuccess ? 'default' : 'destructive'}
+          variant={
+            isPending
+              ? 'outline'
+              : isSuccess
+                ? 'default'
+                : isCancelled
+                  ? 'secondary'
+                  : 'destructive'
+          }
           className={cn(
             'text-xs font-mono h-5 px-1.5 shrink-0',
             isPending && 'border-warning text-warning',
           )}
         >
-          {isPending ? '请求中' : log.statusCode || log.status}
+          {isPending ? '请求中' : isCancelled ? '客户端取消' : log.statusCode || log.status}
         </Badge>
         {log.requestCategory &&
           log.requestCategory !== 'other' &&
@@ -84,7 +93,13 @@ function ModelCell({ log, isPending, isSuccess }: ModelCellProps) {
         </div>
       )}
       {log.errorMessage && (
-        <div className="text-xs text-destructive truncate max-w-[280px]" title={log.errorMessage}>
+        <div
+          className={cn(
+            'text-xs truncate max-w-[280px]',
+            isCancelled ? 'text-muted-foreground' : 'text-destructive',
+          )}
+          title={log.errorMessage}
+        >
           {log.errorMessage}
         </div>
       )}
@@ -111,12 +126,14 @@ export function LogTableRow({
 }: LogTableRowProps) {
   const isSuccess = log.status === 'success'
   const isPending = log.status === 'pending'
+  const isCancelled = log.status === 'cancelled'
+  const isFailure = log.status === 'failure'
 
   return (
     <TableRow
       className={cn(
         'cursor-pointer transition-colors hover:bg-muted/50',
-        !isSuccess && !isPending && 'bg-destructive/10',
+        isFailure && 'bg-destructive/10',
       )}
       onClick={() => onViewDetail(log.id)}
     >
@@ -126,13 +143,20 @@ export function LogTableRow({
             <Loader2 className="h-4 w-4 text-warning animate-spin" />
           ) : isSuccess ? (
             <CheckCircle2 className="h-4 w-4 text-success" />
+          ) : isCancelled ? (
+            <CircleSlash className="h-4 w-4 text-muted-foreground" />
           ) : (
             <AlertCircle className="h-4 w-4 text-destructive" />
           )}
         </div>
       </TableCell>
       <TableCell>
-        <ModelCell log={log} isPending={isPending} isSuccess={isSuccess} />
+        <ModelCell
+          log={log}
+          isPending={isPending}
+          isSuccess={isSuccess}
+          isCancelled={isCancelled}
+        />
       </TableCell>
       <TableCell>
         <span

@@ -76,7 +76,9 @@ export async function getLogsPage(params: LogsPageParams) {
   if (virtualKeyId) conditions.push(eq(requestLogs.virtualKeyId, virtualKeyId))
   if (modelName) conditions.push(eq(requestLogs.modelName, modelName))
   if (status) {
-    conditions.push(eq(requestLogs.status, status as 'success' | 'failure' | 'pending'))
+    conditions.push(
+      eq(requestLogs.status, status as 'success' | 'failure' | 'cancelled' | 'pending'),
+    )
   } else {
     conditions.push(ne(requestLogs.status, 'pending'))
   }
@@ -172,6 +174,7 @@ export async function getOverviewStats(range: DateRange) {
     totalRequests: sql<number>`count(*)`,
     successRequests: sql<number>`count(*) filter (where ${requestLogs.status} = 'success')`,
     failureRequests: sql<number>`count(*) filter (where ${requestLogs.status} = 'failure')`,
+    cancelledRequests: sql<number>`count(*) filter (where ${requestLogs.status} = 'cancelled')`,
     avgResponseTime: sql<number>`avg(${requestLogs.responseTimeMs})`,
     totalInputTokens: sql<number>`sum(${requestLogs.inputTokens})`,
     totalOutputTokens: sql<number>`sum(${requestLogs.outputTokens})`,
@@ -221,6 +224,7 @@ export async function getOverviewStats(range: DateRange) {
       totalRequests: Number(overview[0]?.totalRequests ?? 0),
       successRequests: Number(overview[0]?.successRequests ?? 0),
       failureRequests: Number(overview[0]?.failureRequests ?? 0),
+      cancelledRequests: Number(overview[0]?.cancelledRequests ?? 0),
       avgResponseTime: Number(overview[0]?.avgResponseTime ?? 0),
       totalInputTokens: Number(overview[0]?.totalInputTokens ?? 0),
       totalOutputTokens: Number(overview[0]?.totalOutputTokens ?? 0),

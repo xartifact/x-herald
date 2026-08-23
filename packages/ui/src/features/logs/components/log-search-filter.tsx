@@ -76,6 +76,7 @@ export function LogSearchFilter({
                 <SelectItem value="all">全部状态</SelectItem>
                 <SelectItem value="success">成功</SelectItem>
                 <SelectItem value="failure">失败</SelectItem>
+                <SelectItem value="cancelled">客户端取消</SelectItem>
                 <SelectItem value="pending">请求中</SelectItem>
               </SelectContent>
             </Select>

@@ -373,6 +373,13 @@ export async function handleStreamingResponse(params: ResponseHandlerParams): Pr
           'Client disconnected, finalizing stream log',
         )
         if (streamIdleTimer) clearTimeout(streamIdleTimer)
+        if (isLogFinalized) {
+          // 流已在 flush 中完成收尾（成功或已失败）：客户端断开只是读取完成后的正常收尾，
+          // 不再覆盖已写入的状态，避免与 finalizeStreamLog 竞态产生矛盾记录。
+          logger.info({ logId }, 'Stream already finalized, skipping abort mark')
+          logEventBus.emitLog({ event: 'aborted', logId })
+          return
+        }
         await finalizeLog('failure')
         await markStreamAborted(logId, attemptId, hadPartialData)
         logEventBus.emitLog({ event: 'aborted', logId })

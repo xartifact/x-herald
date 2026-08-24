@@ -344,6 +344,37 @@ describe('handleStreamingResponse', () => {
     expect(abortedArgs[1]).toBe('attempt-abc')
   })
 
+  /* 6b. Client disconnect AFTER stream fully consumed → success kept, no abort mark */
+  it('does not mark stream aborted when client disconnects after stream finalized', async () => {
+    const abortController = new AbortController()
+    const events = [{ id: '1', choices: [{ delta: { content: 'a' } }] }]
+
+    const params = createParams({
+      response: new Response(createSSEStream(events), {
+        headers: { 'content-type': 'text/event-stream' },
+      }),
+      logId: 'log-finalized',
+      attemptId: 'attempt-finalized',
+      request: new Request('http://localhost/v1/chat/completions', {
+        signal: abortController.signal,
+      }),
+    })
+
+    const result = await handleStreamingResponse(params)
+
+    // Fully consume the stream → flush runs → finalizeLog('success') completes
+    await consumeStream(result)
+    await new Promise((r) => setTimeout(r, 50))
+    expect(mockFinalizeStreamLog).toHaveBeenCalledTimes(1)
+
+    // Disconnect after finalization must NOT overwrite the success record
+    abortController.abort()
+    await new Promise((r) => setTimeout(r, 50))
+
+    expect(mockMarkStreamAborted).not.toHaveBeenCalled()
+    const callArgs = mockFinalizeStreamLog.mock.calls[0] as unknown[]
+    expect(callArgs[1]).toMatchObject({ status: 'success' })
+  })
   /* 7. logEventBus emits started event on stream start */
   it('emits started event via logEventBus', async () => {
     const events = [{ id: '1', choices: [{ delta: { content: 'hello' } }] }]

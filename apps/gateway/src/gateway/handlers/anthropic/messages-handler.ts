@@ -9,6 +9,8 @@ import { accessModelRouter } from '../../services/access-model-router'
 import { buildRouteChainSnapshot } from '../../services/routing-trace-recorder'
 import { identifyClient, resolveClientIp } from '../../services/client-identifier'
 import { handleGatewayError } from '../../services/error-handler'
+import { markStreamAborted } from '../../services/log-service'
+import { logEventBus } from '../../services/log-event-bus'
 import { ModelNotFoundError } from '../../services/model-group-router'
 import { getProviderProtocol, getProviderUrl } from '../../services/protocol-detector'
 import {
@@ -232,6 +234,20 @@ export async function handleAnthropicMessages(
         retryCount = result.retryCount ?? 0
 
         if (result.type === 'abort') {
+          if (result.aborted === 'client_disconnect') {
+            // 客户端断开（TTFB 阶段）：记录为 cancelled，不计入失败率
+            logger.info(
+              { requestId, logId: executor.logId },
+              'Client disconnected, marking as cancelled',
+            )
+            if (executor.logId) {
+              await markStreamAborted(executor.logId, executor.attemptId ?? '', false, {
+                forceCancelled: true,
+              })
+              logEventBus.emitLog({ event: 'aborted', logId: executor.logId })
+            }
+            return new Response(null, { status: 499 })
+          }
           return handleGatewayError({
             error: new Error('Request aborted'),
             c,

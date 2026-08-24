@@ -82,6 +82,27 @@ describe('markStreamAborted — 客户端主动取消 vs 真正断连的状态�
     expect(lastRequestAttemptsSet?.status).toBe('failure')
   })
 
+  it('forceCancelled=true（TTFB 阶段客户端取消）：status 记为 cancelled', async () => {
+    lastRequestLogsSet = undefined
+    lastRequestAttemptsSet = undefined
+
+    await markStreamAborted('log-4', 'attempt-4', false, { forceCancelled: true })
+
+    expect(lastRequestLogsSet?.status).toBe('cancelled')
+    expect(lastRequestLogsSet?.errorType).toBe('client_disconnect')
+    expect(lastRequestLogsSet?.errorMessage).toBe('Client cancelled request')
+    expect(lastRequestAttemptsSet?.status).toBe('cancelled')
+  })
+
+  it('forceCancelled=true 但 hadPartialData=true 时仍按取消处理', async () => {
+    lastRequestLogsSet = undefined
+
+    await markStreamAborted('log-5', 'attempt-5', true, { forceCancelled: true })
+
+    expect(lastRequestLogsSet?.status).toBe('cancelled')
+    expect(lastRequestLogsSet?.errorMessage).toBe('Client cancelled request')
+  })
+
   it('temp- 前缀的 logId 直接跳过，不写库', async () => {
     lastRequestLogsSet = undefined
 

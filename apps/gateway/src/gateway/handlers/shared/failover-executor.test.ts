@@ -124,7 +124,21 @@ describe('executeFailoverIteration', () => {
       const result = await executeFailoverIteration(params)
       expect(result.type).toBe('abort')
       expect(result.retryCount).toBe(0)
+      expect(result.aborted).toBe('client_disconnect')
       expect(params.onLogEventBusEmitAborted).toHaveBeenCalledWith('log-1')
+    })
+
+    it('returns abort without aborted reason for ambiguous null', async () => {
+      mockRetryResult({
+        response: null,
+        retryCount: 0,
+        aborted: null,
+        networkError: false,
+      })
+      const params = createParams()
+      const result = await executeFailoverIteration(params)
+      expect(result.type).toBe('abort')
+      expect(result.aborted).toBeUndefined()
     })
 
     it('returns abort when retryResult has no response, no networkError, no aborted (ambiguous null)', async () => {

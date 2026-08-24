@@ -12,6 +12,7 @@ import { handleNonStreamingResponse } from '../../services/response-handlers'
 import { createTransformerContext } from '../../transformer'
 import { AbortManager } from '../shared/abort-manager'
 import { executeFailoverIteration } from '../shared/failover-executor'
+import { markStreamAborted } from '../../services/log-service'
 import { EmbeddingCandidateExecutor } from './embedding-executor'
 
 const EMBEDDING_CATEGORY = 'embedding'
@@ -185,6 +186,16 @@ export async function handleEmbeddingRequest(
 
         retryCount = result.retryCount ?? 0
         if (result.type === 'abort') {
+          if (result.aborted === 'client_disconnect') {
+            // 客户端断开（TTFB 阶段）：记录为 cancelled，不计入失败率
+            logger.info({ requestId }, 'Client disconnected, marking as cancelled')
+            if (executor.logId) {
+              await markStreamAborted(executor.logId, executor.attemptId ?? '', false, {
+                forceCancelled: true,
+              })
+            }
+            return new Response(null, { status: 499 })
+          }
           return handleGatewayError({
             error: new Error('Request aborted'),
             c,

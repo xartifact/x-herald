@@ -496,24 +496,32 @@ export async function markStreamFailed(
 }
 
 /**
- * @param hadPartialData 断连前是否已经向客户端转发过至少一个 chunk。
+ * 流被中止时的日志落库。
+ *
+ * @param hadPartialData 是否已收到过数据：
  *   true：客户端已经拿到部分/完整内容后主动挂断（如 OMP 类 agent 解析出完整
  *   tool_call 就提前收工）——网关自身没有故障，标记为 `cancelled`，不计入失败率。
  *   false：还没收到任何数据就断开，更像真实网络故障，保留 `failure`。
+ * @param opts.forceCancelled TTFB 阶段客户端断开（client signal abort）视为主动取消，
+ *   强制记为 `cancelled`，且不向 x-tinker 上报失败。
  */
 export async function markStreamAborted(
   logId: string,
   attemptId: string,
   hadPartialData: boolean,
+  opts?: { forceCancelled?: boolean },
 ): Promise<void> {
   if (!logId || logId.startsWith('temp-')) {
     logger.warn({ logId }, 'Skipping abort mark for temporary log ID')
     return
   }
-  const status = hadPartialData ? 'cancelled' : 'failure'
-  const errorMessage = hadPartialData
-    ? 'Client disconnected after receiving data'
-    : 'Client disconnected'
+  const cancelled = opts?.forceCancelled || hadPartialData
+  const status = cancelled ? 'cancelled' : 'failure'
+  const errorMessage = opts?.forceCancelled
+    ? 'Client cancelled request'
+    : hadPartialData
+      ? 'Client disconnected after receiving data'
+      : 'Client disconnected'
   try {
     const db = getDatabase()
     await db.transaction(async (trx) => {
@@ -539,7 +547,7 @@ export async function markStreamAborted(
     logger.debug({ logId, status }, 'Stream marked as aborted')
 
     // Report stream abort to x-tinker（仅未收到任何数据的断连才算需要关注的失败）
-    if (!hadPartialData) {
+    if (!hadPartialData && !opts?.forceCancelled) {
       const err = new Error(errorMessage)
       err.name = 'client_disconnect'
       reportFailureToXTinker(err, {

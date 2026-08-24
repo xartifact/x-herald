@@ -123,6 +123,12 @@ const mockExecuteFailoverIteration = mock(async () => ({
   retryCount: 0,
 }))
 
+const mockMarkStreamAborted = mock(async () => {})
+
+mock.module('../../services/log-service', () => ({
+  markStreamAborted: mockMarkStreamAborted,
+}))
+
 mock.module('../shared/failover-executor', () => ({
   executeFailoverIteration: mockExecuteFailoverIteration,
 }))
@@ -135,8 +141,10 @@ mock.module('./chat-completion-executor', () => ({
     providerRequestHeaders: Record<string, string> | undefined
     preprocessEndTime = Date.now()
 
-    constructor(_config: unknown) {}
-
+    constructor(_config: unknown) {
+      this.logId = 'log-1'
+      this.attemptId = 'attempt-1'
+    }
     async prepareRequest() {
       return {
         url: 'https://api.openai.com/v1/chat/completions',
@@ -289,6 +297,7 @@ describe('handleOpenAIChatCompletion', () => {
       mockHandleNonStreamingResponse,
       mockRouteCandidates,
       mockExecuteFailover,
+      mockMarkStreamAborted,
     ]
     for (const m of allMocks) {
       const fn = m as unknown as { mockClear: () => void }
@@ -318,7 +327,8 @@ describe('handleOpenAIChatCompletion', () => {
     mock.module('../../services/response-handlers', () => realResponseHandlers)
     mock.module('../../transformer', () => realTransformer)
     mock.module('../shared/failover-executor', () => realFailoverExecutor)
-    mock.module('./chat-completion-executor', () => realChatCompletionExecutor)
+    const realLogService = await import('../../services/log-service')
+    mock.module('../../services/log-service', () => realLogService)
   })
 
   it('returns 403 when virtualKey.allowedModels does not include requested model', async () => {
@@ -377,7 +387,6 @@ describe('handleOpenAIChatCompletion', () => {
       response: new Response('stream', { status: 200 }),
       retryCount: 0,
     }))
-
     const c = createMockContext({
       body: { model: 'gpt-4', messages: [{ role: 'user', content: 'hello' }], stream: true },
     })
@@ -385,6 +394,42 @@ describe('handleOpenAIChatCompletion', () => {
 
     expect(mockHandleStreamingResponse).toHaveBeenCalled()
     expect(response.status).toBe(200)
+  })
+
+  it('marks stream aborted as cancelled when client disconnects in TTFB phase', async () => {
+    const mockExecuteFailover = executeFailoverIteration as unknown as {
+      mockImplementation: (fn: (...args: unknown[]) => Promise<unknown>) => void
+    }
+    mockExecuteFailover.mockImplementation(async () => ({
+      type: 'abort' as const,
+      aborted: 'client_disconnect' as const,
+      retryCount: 0,
+    }))
+
+    const c = createMockContext()
+    const response = await handleOpenAIChatCompletion(c, true)
+
+    expect(response.status).toBe(499)
+    expect(mockHandleGatewayError).not.toHaveBeenCalled()
+    expect(mockMarkStreamAborted).toHaveBeenCalledWith('log-1', 'attempt-1', false, {
+      forceCancelled: true,
+    })
+  })
+
+  it('calls handleGatewayError for abort without client_disconnect reason', async () => {
+    const mockExecuteFailover = executeFailoverIteration as unknown as {
+      mockImplementation: (fn: (...args: unknown[]) => Promise<unknown>) => void
+    }
+    mockExecuteFailover.mockImplementation(async () => ({
+      type: 'abort' as const,
+      retryCount: 0,
+    }))
+
+    const c = createMockContext()
+    const response = await handleOpenAIChatCompletion(c, true)
+
+    expect(mockHandleGatewayError).toHaveBeenCalled()
+    expect(response.status).toBe(500)
   })
 
   it('dispatches to handleNonStreamingResponse on successful non-streaming candidate', async () => {

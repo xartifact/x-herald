@@ -87,6 +87,8 @@ export interface FailoverResult {
   type: 'abort' | 'error' | 'success' | 'failover'
   response?: Response
   retryCount?: number
+  /** abort 原因：客户端断开（TTFB 阶段）或等待超时竞态 */
+  aborted?: 'client_disconnect' | 'timeout'
 }
 
 function deriveFailoverReason(statusCode: number): FailoverReason {
@@ -176,7 +178,11 @@ export async function executeFailoverIteration(
     (!retryResult.response && !retryResult.networkError && !retryResult.aborted)
   ) {
     if (logId) params.onLogEventBusEmitAborted(logId)
-    return { type: 'abort', retryCount: retryResult.retryCount }
+    return {
+      type: 'abort',
+      retryCount: retryResult.retryCount,
+      aborted: retryResult.aborted ?? undefined,
+    }
   }
 
   if ((retryResult.networkError || retryResult.aborted === 'timeout') && !retryResult.response) {

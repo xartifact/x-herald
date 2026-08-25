@@ -15,14 +15,20 @@ function mockResponse(status: number, body: unknown) {
   })
 }
 
+// bun's Mock<T> doesn't carry fetch's `preconnect` method, so a bare mock()
+// isn't structurally assignable to `typeof fetch`. Add a no-op preconnect
+// instead of casting through `as`.
+function mockFetch(impl: (url: string | URL | Request, init?: RequestInit) => Promise<Response>) {
+  return Object.assign(mock(impl), { preconnect: () => {} })
+}
+
 describe('GatewayClient', () => {
   it('login posts password and returns token', async () => {
-    const fetchMock = mock((_url: string | URL | Request, init?: RequestInit) => {
+    globalThis.fetch = mockFetch((_url, init) => {
       expect(init?.method).toBe('POST')
       expect(JSON.parse(String(init?.body))).toEqual({ password: 'secret' })
       return Promise.resolve(mockResponse(200, { token: 'jwt-abc' }))
     })
-    globalThis.fetch = fetchMock as typeof fetch
 
     const client = new GatewayClient({ baseUrl: 'http://gw', apiKey: '' })
     const res = await client.login('secret')
@@ -30,7 +36,7 @@ describe('GatewayClient', () => {
   })
 
   it('listInstances unwraps { success, data } and sends bearer token', async () => {
-    const fetchMock = mock((url: string | URL | Request, init?: RequestInit) => {
+    globalThis.fetch = mockFetch((url, init) => {
       expect(String(url)).toBe('http://gw/api/model-groups/instances')
       expect(init?.headers).toMatchObject({ Authorization: 'Bearer tok' })
       return Promise.resolve(
@@ -40,7 +46,6 @@ describe('GatewayClient', () => {
         }),
       )
     })
-    globalThis.fetch = fetchMock as typeof fetch
 
     const client = new GatewayClient({ baseUrl: 'http://gw', apiKey: 'tok' })
     const instances = await client.listInstances()
@@ -50,7 +55,7 @@ describe('GatewayClient', () => {
   })
 
   it('updateInstance PUTs config for read-modify-write', async () => {
-    const fetchMock = mock((url: string | URL | Request, init?: RequestInit) => {
+    globalThis.fetch = mockFetch((url, init) => {
       expect(String(url)).toBe('http://gw/api/model-groups/instances/id9')
       expect(init?.method).toBe('PUT')
       expect(JSON.parse(String(init?.body))).toEqual({
@@ -63,7 +68,6 @@ describe('GatewayClient', () => {
         }),
       )
     })
-    globalThis.fetch = fetchMock as typeof fetch
 
     const client = new GatewayClient({ baseUrl: 'http://gw', apiKey: 'tok' })
     const updated = await client.updateInstance('id9', {
@@ -73,9 +77,9 @@ describe('GatewayClient', () => {
   })
 
   it('throws a descriptive error on non-2xx', async () => {
-    globalThis.fetch = mock(() =>
+    globalThis.fetch = mockFetch(() =>
       Promise.resolve(mockResponse(401, { error: 'Invalid password' })),
-    ) as typeof fetch
+    )
 
     const client = new GatewayClient({ baseUrl: 'http://gw', apiKey: '' })
     try {

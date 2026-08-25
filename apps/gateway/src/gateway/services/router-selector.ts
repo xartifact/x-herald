@@ -52,6 +52,7 @@ export interface RouteResult {
   /** step 级决策依据（capability/intent 命中逻辑）；route_to_group/route_to_instance 不设 */
   decisionReason?: string
   /** 同组候选过滤时被排除的实例及其原因（供 routing-trace 展示"为什么没选它"） */
+  rejections?: InstanceRejection[]
 }
 export interface RoutingContext {
   requestedModel: string

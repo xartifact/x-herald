@@ -155,6 +155,34 @@ function FlowCanvas(props: FlowEditorProps) {
           outline-offset: 2px;
           border-radius: 0.5rem;
         }
+        .react-flow__attribution {
+          background: transparent;
+        }
+
+        .react-flow__attribution a {
+          color: hsl(var(--muted-foreground) / 0.6);
+        }
+        .react-flow__controls {
+          box-shadow: none;
+          border: 1px solid hsl(var(--border));
+          background: hsl(var(--card));
+        }
+        .react-flow__controls-button {
+          background: hsl(var(--card));
+          border-bottom: 1px solid hsl(var(--border));
+          color: hsl(var(--foreground));
+        }
+        .react-flow__controls-button:hover {
+          background: hsl(var(--accent));
+        }
+        .react-flow__controls-button svg {
+          fill: currentColor;
+        }
+
+        .react-flow__minimap {
+          background: hsl(var(--card));
+          border: 1px solid hsl(var(--border));
+        }
       `}</style>
       <div className="shrink-0 flex items-center gap-2 px-3 py-1.5 border-b bg-background text-xs text-muted-foreground">
         <span>双击画布空白处添加节点</span>
@@ -186,7 +214,8 @@ function FlowCanvas(props: FlowEditorProps) {
           <MiniMap
             pannable
             zoomable
-            className="rounded-lg border shadow-sm"
+            maskColor="rgba(0, 0, 0, 0.65)"
+            nodeStrokeColor="hsl(var(--border))"
             nodeColor={(node) => {
               if (node.className?.includes('flow-node-invalid')) return '#ef4444'
               return getNodeColorHex(node.type ?? '')

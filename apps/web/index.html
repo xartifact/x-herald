@@ -73,6 +73,20 @@
         return ((this[o] << 8) | this[o + 1]) >>> 0
       }
     </script>
+    <script>
+      // Theme init — apply persisted/system theme before first paint to avoid flash
+      ;(function () {
+        try {
+          var stored = localStorage.getItem('theme')
+          var dark = stored
+            ? stored === 'dark'
+            : window.matchMedia('(prefers-color-scheme: dark)').matches
+          if (dark) document.documentElement.classList.add('dark')
+        } catch (e) {
+          /* localStorage unavailable — fall back to system-only */
+        }
+      })()
+    </script>
     <script type="module" src="./app/main.tsx"></script>
   </body>
 </html>

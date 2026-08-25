@@ -97,7 +97,7 @@ export function PerfLineChart({ data, isLoading, metric }: PerfLineChartProps) {
               type="monotone"
               name="P95"
               dataKey="p95"
-              stroke="#f59e0b"
+              stroke="hsl(var(--warning))"
               strokeWidth={1.5}
               strokeDasharray="4 2"
               dot={false}
@@ -108,7 +108,7 @@ export function PerfLineChart({ data, isLoading, metric }: PerfLineChartProps) {
             type="monotone"
             name="均值"
             dataKey="avg"
-            stroke="#3b82f6"
+            stroke="hsl(var(--info))"
             strokeWidth={2}
             dot={false}
             connectNulls
@@ -116,9 +116,14 @@ export function PerfLineChart({ data, isLoading, metric }: PerfLineChartProps) {
           {baselineNumeric != null && (
             <ReferenceLine
               y={baselineNumeric}
-              stroke="#10b981"
+              stroke="hsl(var(--success))"
               strokeDasharray="6 3"
-              label={{ value: '基线', fontSize: 10, fill: '#10b981', position: 'right' }}
+              label={{
+                value: '基线',
+                fontSize: 10,
+                fill: 'hsl(var(--success))',
+                position: 'right',
+              }}
             />
           )}
         </LineChart>

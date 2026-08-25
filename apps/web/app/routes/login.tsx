@@ -1,5 +1,6 @@
 import { useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
+import { useTheme } from 'next-themes'
 import {
   Alert,
   AlertDescription,
@@ -14,10 +15,18 @@ import {
   Label,
 } from '@xartifact/x-herald-ui'
 import { useLogin } from '@xartifact/x-herald-ui'
-import { LogIn } from 'lucide-react'
+import { LogIn, Monitor, Moon, Sun } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@xartifact/x-herald-ui'
 
 export function LoginPage() {
+  const { resolvedTheme, setTheme } = useTheme()
   const [password, setPassword] = useState('')
+
   const navigate = useNavigate()
   const login = useLogin()
 
@@ -36,7 +45,34 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
+    <div className="relative flex min-h-screen items-center justify-center bg-background">
+      <div className="absolute top-4 right-4">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" aria-label="切换主题">
+              {resolvedTheme === 'dark' ? (
+                <Moon className="h-4 w-4" />
+              ) : (
+                <Sun className="h-4 w-4" />
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setTheme('light')}>
+              <Sun className="mr-2 h-4 w-4" />
+              亮色
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setTheme('dark')}>
+              <Moon className="mr-2 h-4 w-4" />
+              暗色
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setTheme('system')}>
+              <Monitor className="mr-2 h-4 w-4" />
+              跟随系统
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
       <Card className="w-96">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">管理员登录</CardTitle>

@@ -1,4 +1,5 @@
 import { Outlet } from '@tanstack/react-router'
+import { ThemeProvider } from 'next-themes'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'sonner'
 
@@ -8,9 +9,11 @@ const queryClient = new QueryClient({
 
 export function RootLayout() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <Outlet />
-      <Toaster richColors />
-    </QueryClientProvider>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+      <QueryClientProvider client={queryClient}>
+        <Outlet />
+        <Toaster richColors />
+      </QueryClientProvider>
+    </ThemeProvider>
   )
 }

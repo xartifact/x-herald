@@ -22,21 +22,23 @@ function FallbackNodeComponent({ data }: NodeProps<Node<FallbackNodeData>>) {
   const label = data.label || '降级链'
 
   return (
-    <div className="rounded-lg border-2 border-purple-500 bg-purple-50 px-4 py-3 shadow-sm min-w-[180px] max-w-[260px]">
+    <div className="rounded-lg border-2 border-purple-500 bg-purple-500/15 px-4 py-3 shadow-sm min-w-[180px] max-w-[260px]">
       <Handle type="target" position={Position.Top} className="!bg-purple-500 !w-3 !h-3" />
       <div className="flex items-center gap-2">
         <ShieldHalf className="h-4 w-4 text-purple-600" />
         <span className="text-xs font-semibold text-purple-600 uppercase">{label}</span>
       </div>
-      {data.description && <div className="mt-1 text-xs text-purple-700">{data.description}</div>}
+      {data.description && (
+        <div className="mt-1 text-xs text-purple-700 dark:text-purple-300">{data.description}</div>
+      )}
       <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
-        <div className="flex items-center gap-1 rounded bg-white/70 px-2 py-1">
+        <div className="flex items-center gap-1 rounded bg-card/70 px-2 py-1">
           <ShieldHalf className="h-3 w-3 text-purple-600" />
-          <span className="font-medium text-purple-700">主</span>
+          <span className="font-medium text-purple-700 dark:text-purple-300">主</span>
         </div>
-        <div className="flex items-center gap-1 rounded bg-white/70 px-2 py-1">
+        <div className="flex items-center gap-1 rounded bg-card/70 px-2 py-1">
           <ShieldCheck className="h-3 w-3 text-purple-600" />
-          <span className="font-medium text-purple-700">备</span>
+          <span className="font-medium text-purple-700 dark:text-purple-300">备</span>
         </div>
       </div>
       {/* 主出口：左下 */}

@@ -174,7 +174,7 @@ function OverviewHeaderNode({
 }) {
   return (
     <div
-      className="rounded-md border-2 bg-white px-3 py-1.5 text-sm font-semibold text-slate-800 shadow-sm"
+      className="rounded-md border-2 bg-background px-3 py-1.5 text-sm font-semibold text-foreground shadow-sm"
       style={{ borderColor: style?.borderColor ?? '#2563eb' }}
     >
       {data.label}

@@ -14,15 +14,16 @@ interface StrategyNodeData {
 const themeConfig = {
   reject: {
     border: 'border-red-500',
-    bg: 'bg-red-50',
+    bg: 'bg-red-500/15',
     text: 'text-red-600',
     handle: '!bg-red-500',
     icon: Ban,
     label: '拒绝',
   },
+
   fallback: {
     border: 'border-orange-500',
-    bg: 'bg-orange-50',
+    bg: 'bg-orange-500/15',
     text: 'text-orange-600',
     handle: '!bg-orange-500',
     icon: ArrowDownToLine,

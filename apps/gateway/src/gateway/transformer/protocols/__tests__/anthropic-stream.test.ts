@@ -318,6 +318,43 @@ describe('AnthropicTransformer - Stream Transformation', () => {
         total_tokens: 20,
       })
     })
+
+    it('上游未下发 message_delta 就关闭连接时，应补一个 finish_reason 兜底 chunk 再发 [DONE]', async () => {
+      const anthropicEvents = [
+        {
+          type: 'message_start',
+          data: {
+            type: 'message_start',
+            message: { id: 'msg_123', model: 'claude-3-5-sonnet-20241022' },
+          },
+        },
+        {
+          type: 'content_block_delta',
+          data: {
+            type: 'content_block_delta',
+            index: 0,
+            delta: { type: 'text_delta', text: '未完成' },
+          },
+        },
+        // 故意不发 message_delta，模拟上游截断连接
+      ]
+
+      const stream = createSSEStream(anthropicEvents)
+      const ctx = createMockContext('normalize')
+      const transformedStream = await transformer.transformStream(stream, ctx)
+      const result = await readStream(transformedStream)
+      const events = parseSSE(result)
+
+      expect(result).toContain('data: [DONE]')
+
+      const finishEvent = events.find(
+        (e) =>
+          e.data !== '[DONE]' &&
+          (e.data as ChatCompletionChunk).choices?.[0]?.finish_reason != null,
+      )
+      expect(finishEvent).toBeDefined()
+      expect((finishEvent!.data as ChatCompletionChunk).choices[0].finish_reason).toBe('stop')
+    })
   })
 
   describe('Adapt: Standard → Anthropic', () => {
@@ -506,6 +543,42 @@ describe('AnthropicTransformer - Stream Transformation', () => {
         const messageDelta = events.find((e) => e.event === 'message_delta')
         expect((messageDelta!.data as AnthropicEventData).delta?.stop_reason).toBe(expected)
       }
+    })
+
+    it('上游未下发 finish_reason 就关闭连接时，应补发 message_delta/message_stop', async () => {
+      const encoder = new TextEncoder()
+      const standardChunks = [
+        {
+          id: 'chatcmpl-123',
+          object: 'chat.completion.chunk',
+          created: Math.floor(Date.now() / 1000),
+          model: 'gpt-4',
+          choices: [
+            { index: 0, delta: { role: 'assistant', content: '未完成' }, finish_reason: null },
+          ],
+        },
+      ]
+      // 故意不追加 [DONE]，模拟上游/网关在没有终止事件的情况下直接关闭连接
+      const stream = new ReadableStream({
+        start(controller) {
+          for (const chunk of standardChunks) {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`))
+          }
+          controller.close()
+        },
+      })
+
+      const ctx = createMockContext('adapt')
+      const transformedStream = await transformer.transformStream(stream, ctx)
+      const result = await readStream(transformedStream)
+      const events = parseSSE(result)
+
+      const messageDelta = events.find((e) => e.event === 'message_delta')
+      expect(messageDelta).toBeDefined()
+      expect((messageDelta!.data as AnthropicEventData).delta?.stop_reason).toBe('end_turn')
+
+      const messageStop = events.find((e) => e.event === 'message_stop')
+      expect(messageStop).toBeDefined()
     })
   })
 })

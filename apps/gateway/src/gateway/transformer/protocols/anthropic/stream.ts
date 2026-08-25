@@ -142,6 +142,7 @@ export function normalizeAnthropicStream(
       cancelUpstream = (reason) => reader.cancel(reason)
       let buffer = ''
       let currentEvent: string | null = null
+      let sawMessageDelta = false
 
       try {
         while (true) {
@@ -167,6 +168,7 @@ export function normalizeAnthropicStream(
               try {
                 const eventData: AnthropicStreamEvent = JSON.parse(data)
                 if (currentEvent) eventData.type = currentEvent as AnthropicStreamEvent['type']
+                if (eventData.type === 'message_delta') sawMessageDelta = true
                 const converted = convertStreamEventToChunk(eventData)
                 if (converted)
                   controller.enqueue(encoder.encode(`data: ${JSON.stringify(converted)}\n\n`))
@@ -175,6 +177,23 @@ export function normalizeAnthropicStream(
               }
             }
           }
+        }
+        if (!sawMessageDelta) {
+          // 上游在没有下发 message_delta（终止事件）的情况下就关闭了连接。
+          // 补一个 finish_reason 兜底 chunk，否则 OpenAI 协议客户端 SDK 会因为
+          // 流正常收到 [DONE] 却始终没见到 finish_reason 而报错
+          // （如 "stream closed before a finish_reason was received"）。
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({
+                id: '',
+                object: 'chat.completion.chunk',
+                created: Math.floor(Date.now() / 1000),
+                model: '',
+                choices: [{ index: 0, delta: {}, finish_reason: 'stop' }],
+              })}\n\n`,
+            ),
+          )
         }
         controller.enqueue(encoder.encode('data: [DONE]\n\n'))
       } catch (error) {
@@ -208,9 +227,26 @@ export function adaptStreamToAnthropic(
       let sentMessageStart = false
       let sentThinkingStart = false
       let sentContentStart = false
+      let sentMessageDelta = false
+      let sentMessageStop = false
       const thinkingBlockIndex = 0
       const textBlockIndex = 1
       const toolCallsMap = new Map<number, { id?: string; name?: string; arguments: string }>()
+
+      const closeOpenBlocks = () => {
+        const blocksToClose: number[] = []
+        if (sentThinkingStart) blocksToClose.push(thinkingBlockIndex)
+        if (sentContentStart) blocksToClose.push(textBlockIndex)
+        toolCallsMap.forEach((_, originalIndex) => {
+          blocksToClose.push(originalIndex + 2)
+        })
+        for (const index of blocksToClose)
+          controller.enqueue(
+            encoder.encode(
+              `event: content_block_stop\ndata: ${JSON.stringify({ type: 'content_block_stop', index })}\n\n`,
+            ),
+          )
+      }
 
       try {
         while (true) {
@@ -230,6 +266,7 @@ export function adaptStreamToAnthropic(
                   `event: message_stop\ndata: ${JSON.stringify({ type: 'message_stop' })}\n\n`,
                 ),
               )
+              sentMessageStop = true
               continue
             }
 
@@ -316,28 +353,36 @@ export function adaptStreamToAnthropic(
               }
 
               if (chunk.choices[0]?.finish_reason) {
-                const blocksToClose: number[] = []
-                if (sentThinkingStart) blocksToClose.push(thinkingBlockIndex)
-                if (sentContentStart) blocksToClose.push(textBlockIndex)
-                toolCallsMap.forEach((_, originalIndex) => {
-                  blocksToClose.push(originalIndex + 2)
-                })
-                for (const index of blocksToClose)
-                  controller.enqueue(
-                    encoder.encode(
-                      `event: content_block_stop\ndata: ${JSON.stringify({ type: 'content_block_stop', index })}\n\n`,
-                    ),
-                  )
+                closeOpenBlocks()
                 controller.enqueue(
                   encoder.encode(
                     `event: message_delta\ndata: ${JSON.stringify({ type: 'message_delta', delta: { stop_reason: mapToAnthropicStopReason(chunk.choices[0].finish_reason) }, usage: { output_tokens: chunk.usage?.completion_tokens || 0 } })}\n\n`,
                   ),
                 )
+                sentMessageDelta = true
               }
             } catch {
               /* skip */
             }
           }
+        }
+        if (!sentMessageDelta) {
+          // 上游流在没有出现 finish_reason 的情况下就结束了。
+          // 补发 message_delta/message_stop，避免下游 Anthropic 协议客户端
+          // 因缺少终止事件而挂起或报错。
+          closeOpenBlocks()
+          controller.enqueue(
+            encoder.encode(
+              `event: message_delta\ndata: ${JSON.stringify({ type: 'message_delta', delta: { stop_reason: mapToAnthropicStopReason('stop') }, usage: { output_tokens: 0 } })}\n\n`,
+            ),
+          )
+        }
+        if (!sentMessageStop) {
+          controller.enqueue(
+            encoder.encode(
+              `event: message_stop\ndata: ${JSON.stringify({ type: 'message_stop' })}\n\n`,
+            ),
+          )
         }
       } catch (error) {
         controller.error(error)

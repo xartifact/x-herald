@@ -134,8 +134,19 @@ function TimelineConnector() {
 
 type ChainStepLike = RoutingTraceDetailResponse['chain'][number]
 
+/**
+ * 该 step 是否有值得展示的决策信息：
+ *   - intent/capability/reject 节点（历史行为）
+ *   - fallback 主备链双双失败且带上了每条腿的过滤原因（0 候选也要渲染决策卡，
+ *     否则 "为什么这个组一个候选都没有" 在 UI 不可见）
+ */
 function hasDecisionDetail(step: ChainStepLike): boolean {
-  return !!step.intentName || (step.capabilities?.length ?? 0) > 0 || step.actionType === 'reject'
+  return (
+    !!step.intentName ||
+    (step.capabilities?.length ?? 0) > 0 ||
+    step.actionType === 'reject' ||
+    (step.actionType === 'fallback' && (step.filteredOut?.length ?? 0) > 0)
+  )
 }
 
 /** 意图路由决策依据展示——用户消息 + 分类器原始响应/置信度，回答"为什么命中该意图" */
@@ -371,23 +382,36 @@ function StepGroup({
 function DecisionCard({ step }: { step: ChainStepLike }) {
   const isReject = step.actionType === 'reject'
   const isIntent = !!step.intentName
+  const isFallbackFailed = step.actionType === 'fallback'
   const border = isReject
     ? 'border-l-destructive bg-destructive/5'
     : isIntent
       ? 'border-l-primary bg-primary/5'
-      : 'border-l-accent-foreground/40 bg-accent/30'
-  const Icon = isReject ? Ban : isIntent ? Sparkles : Layers
+      : isFallbackFailed
+        ? 'border-l-destructive bg-destructive/5'
+        : 'border-l-accent-foreground/40 bg-accent/30'
+  const Icon = isReject ? Ban : isIntent ? Sparkles : isFallbackFailed ? XCircle : Layers
   const iconColor = isReject
     ? 'text-destructive'
     : isIntent
       ? 'text-primary'
-      : 'text-muted-foreground'
-  const title = isReject ? '规则拒绝' : isIntent ? '意图路由决策' : '能力路由决策'
+      : isFallbackFailed
+        ? 'text-destructive'
+        : 'text-muted-foreground'
+  const title = isReject
+    ? '规则拒绝'
+    : isIntent
+      ? '意图路由决策'
+      : isFallbackFailed
+        ? '降级链失败'
+        : '能力路由决策'
   const subtitle = isReject
     ? '命中 reject 节点'
     : isIntent
       ? (INTENT_SOURCE_LABELS[step.intentSource ?? ''] ?? step.intentSource ?? '未知来源')
-      : `命中能力: ${step.capabilities?.join('、')}`
+      : isFallbackFailed
+        ? (step.decisionReason ?? '主备链均未产出候选')
+        : `命中能力: ${step.capabilities?.join('、')}`
 
   return (
     <Card className={`border-l-4 ${border}`}>
@@ -409,13 +433,25 @@ function DecisionCard({ step }: { step: ChainStepLike }) {
             {step.resolvedGroupName && (
               <div className="text-xs text-muted-foreground mt-0.5">→ {step.resolvedGroupName}</div>
             )}
-            {step.candidates.length === 0 && !isReject && (
+            {step.candidates.length === 0 && !isReject && !isFallbackFailed && (
               <div className="text-xs text-destructive mt-0.5">目标模型组无可用实例</div>
             )}
           </div>
         </div>
         {/* 意图命中的完整依据：用户消息 + 分类器响应 */}
         {isIntent && <IntentEvidence step={step} />}
+        {/* 降级链主备均失败：展示每条腿组内被过滤的实例及原因（vision not supported / 熔断...） */}
+        {isFallbackFailed && (step.filteredOut?.length ?? 0) > 0 && (
+          <div className="mt-2 rounded-md bg-muted/40 px-3 py-2 space-y-1 border border-border/60">
+            <div className="text-[11px] text-muted-foreground">主备链组内被过滤（未入选原因）:</div>
+            {step.filteredOut!.map((r) => (
+              <div key={`${r.instanceName}-${r.reason}`} className="flex gap-2 text-xs">
+                <span className="font-mono flex-shrink-0 text-foreground/90">{r.instanceName}</span>
+                <span className="text-muted-foreground">{r.reason}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   )
@@ -506,15 +542,10 @@ export function RoutingTraceDetailView({ trace }: RoutingTraceDetailViewProps) {
           </div>
         ))}
 
-        {/* 路由在产出任何候选之前就结束的决策（reject / 目标组为空等）—— 这类 step 的
-            candidates 恒为空，上面按候选遍历的循环天然不会渲染到它们 */}
-        {trace.chain
-          .filter((step) => step.candidates.length === 0 && hasDecisionDetail(step))
-          .map((step) => (
-            <div key={step.index}>
-              <DecisionCard step={step} />
-            </div>
-          ))}
+        {/* 路由在产出任何候选之前就结束的决策（reject / 目标组为空 / 降级链主备均失败等）——
+            这类 step 的 candidates 恒为空，StepGroup 内部已通过 hasDecisionDetail 渲染决策卡，
+            无需在此重复渲染。 */}
+        {null}
 
         {/* 最终出口 */}
         {trace.outcome === 'success' && trace.finalCandidate && (

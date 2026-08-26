@@ -195,8 +195,21 @@ export interface InstanceConfig {
   requestTransform?: string
 
   responseExtract?: Record<string, string>
-
   responseTransform?: string
+
+  /**
+   * 失败尝试的日志落库策略（模型实例级，配置可选）。
+   *
+   * 默认行为（缺省 / true）：每次候选尝试都独立落库 —— 请求经 failover 成功后，
+   * 失败的首选尝试会留下一条 status=failure 的 request_logs 行（如 "Failover: HTTP 500"），
+   * 与最终成功的行共存（同 requestGroupId，不同 candidateIndex）。
+   *
+   * 设为 false：跳过失败尝试的 failure 落库 —— 该候选的 request_logs 行保持 pending
+   * 不写入失败态，请求最终以成功尝试的单一行为准（request_attempts 仍保留每次尝试的
+   * HTTP 细节，routing-traces 完整可见）。适合"失败尝试不应以失败面目出现在请求日志"的
+   * 场景；对最终全部候选都失败的请求，仍以最后一次失败的 error 收尾。
+   */
+  logFailoverAttempts?: boolean
 }
 
 export interface ModelGroup {

@@ -78,6 +78,8 @@ export class ModelGroupRouter {
       throw new NoSuitableInstanceError(
         group.name,
         `All instances filtered out for model group '${group.name}': ${reasons}`,
+        undefined,
+        rejections,
       )
     }
 

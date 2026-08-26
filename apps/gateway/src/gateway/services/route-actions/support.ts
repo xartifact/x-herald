@@ -34,6 +34,26 @@ import type { LegacyRuleMatch } from './types'
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 /**
+ * fallback 单条腿解析失败的可诊断信息。
+ *
+ * 设计背景：FallbackActionHandler 的 resolveSoft() 把主备腿的异常折叠成 []
+ * （"都失败才整体抛 NoAvailableInstanceError"），导致路由追踪只能看到
+ * `fallback, candidates: []`——"为什么两条腿都空"被吞掉了。这里保留每条腿
+ * 的失败原因（组名 + 具体错误 + 组内被过滤实例），失败快照即可展示完整链路。
+ */
+export interface LegFailure {
+  /** 该腿的类型（route_to_group / route_to_instance / intent / capability ...） */
+  actionType: string
+  /** 该腿解析时命中的目标组 */
+  resolvedGroupId?: string
+  resolvedGroupName?: string
+  /** 底层错误消息（如 "All instances filtered out ...: vision not supported"） */
+  errorMessage: string
+  /** 组内被能力/熔断/状态过滤掉的实例及原因（零候选时才有） */
+  filteredOut?: Array<{ instanceName: string; reason: string }>
+}
+
+/**
  * intent_logs.model_route_id 是 uuid 列，语义上指向（已废弃的）model_routes 表的行。
  * canvas 原生创建的规则叶子 id 形如 `fallback-new-<uuid>`，剥离类型前缀后剩下
  * `new-<uuid>`，不是合法 uuid —— 直接传进去会让 INSERT 报

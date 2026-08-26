@@ -172,6 +172,7 @@ export async function handleEmbeddingRequest(
           requestMethod,
           rawBody,
           retryConfig,
+          logFailoverAttempts: instance.config?.logFailoverAttempts ?? true,
           onPrepareRequest: () => executor.prepareRequest(),
           onBeforeFetch: () => executor.beforeFetch(),
           onRetry: (a, d, r) => executor.retry(a, d, r),

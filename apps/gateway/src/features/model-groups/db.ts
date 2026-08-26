@@ -134,6 +134,11 @@ export interface InstanceConfig {
 
   // 响应增强：响应体变换表达式
   responseTransform?: string
+
+  // 失败尝试的日志落库策略（模型实例级，配置可选，默认 true）：
+  // true = 每次候选尝试独立落库（failover 成功后仍保留失败尝试行）；
+  // false = 跳过失败尝试的 failure 落库，请求以最终成功尝试的单一行为准。
+  logFailoverAttempts?: boolean
 }
 
 export type { ModelInstance, NewModelInstance } from '@xartifact/x-herald-db'

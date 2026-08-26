@@ -195,3 +195,66 @@ describe('RoutingTraceDetailView step-level decisionReason', () => {
     expect(screen.queryByText(/capability matched/)).not.toBeInTheDocument()
   })
 })
+
+describe('RoutingTraceDetailView fallback failure filteredOut', () => {
+  it('renders the fallback failure decision card with per-leg filtered reasons', () => {
+    const trace = makeTrace({
+      outcome: 'all_failed',
+      errorMessage:
+        "Fallback chain for route '降级链' produced no candidates (both primary and backup resolved to empty)",
+      totalAttempts: 0,
+      chain: [
+        {
+          index: 0,
+          kind: 'single',
+          actionType: 'fallback',
+          decisionReason:
+            '主链失败: All instances filtered out ...: deepseek-v4-flash (vision not supported)；备链失败: All instances filtered out ...: MiniMax-M3 (circuit breaker open)',
+          filteredOut: [
+            { instanceName: 'deepseek-v4-flash', reason: 'vision not supported' },
+            { instanceName: 'DeepSeek-V4-Flash-0731', reason: 'vision not supported' },
+            { instanceName: 'MiniMax-M3', reason: 'circuit breaker open' },
+          ],
+          candidates: [],
+        },
+      ],
+      finalCandidate: undefined,
+    })
+    render(<RoutingTraceDetailView trace={trace} />)
+
+    // 降级链失败决策卡 + 每条腿的过滤原因（decisionReason 在卡片头部也出现一次）
+    expect(screen.getAllByText('降级链失败')).toHaveLength(1)
+    expect(screen.getAllByText(/vision not supported/).length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText(/circuit breaker open/).length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByText('deepseek-v4-flash')).toBeInTheDocument()
+    expect(screen.getByText('MiniMax-M3')).toBeInTheDocument()
+    // 0 候选时"目标模型组无可用实例"不应误报（那是单组场景）
+    expect(screen.queryByText('目标模型组无可用实例')).not.toBeInTheDocument()
+  })
+
+  it('renders the plain all_failed footer when fallback has no filtered reasons', () => {
+    const trace = makeTrace({
+      outcome: 'all_failed',
+      errorMessage:
+        "Fallback chain for route '降级链' produced no candidates (both primary and backup resolved to empty)",
+      chain: [
+        {
+          index: 0,
+          kind: 'single',
+          actionType: 'fallback',
+          candidates: [],
+        },
+      ],
+      finalCandidate: undefined,
+    })
+    render(<RoutingTraceDetailView trace={trace} />)
+
+    // 无 filteredOut 时退化为普通失败页脚
+    expect(screen.queryByText('降级链失败')).not.toBeInTheDocument()
+    expect(
+      screen.getByText(
+        "Fallback chain for route '降级链' produced no candidates (both primary and backup resolved to empty)",
+      ),
+    ).toBeInTheDocument()
+  })
+})

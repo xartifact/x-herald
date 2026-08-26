@@ -311,10 +311,21 @@ export class NoAvailableInstanceError extends Error {
 
 export class NoSuitableInstanceError extends Error {
   routeChain?: RouteChainSnapshot
-  constructor(modelName: string, detail?: string, routeChain?: RouteChainSnapshot) {
+  /**
+   * 组内被能力/熔断/状态过滤掉的实例及原因。全组被过滤时（filtered.length === 0）
+   * 由 model-group-router 填入，供失败路由快照把"为什么一个候选都没有"透传到 routing-traces。
+   */
+  rejections?: InstanceRejection[]
+  constructor(
+    modelName: string,
+    detail?: string,
+    routeChain?: RouteChainSnapshot,
+    rejections?: InstanceRejection[],
+  ) {
     super(detail ?? `No suitable instance found for model '${modelName}' with given constraints`)
     this.name = 'NoSuitableInstanceError'
     this.routeChain = routeChain
+    this.rejections = rejections
   }
 }
 

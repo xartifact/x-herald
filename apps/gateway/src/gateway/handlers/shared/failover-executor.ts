@@ -44,6 +44,13 @@ export interface MarkLogFailedParams {
   providerTtfbMs?: number
 }
 
+/**
+ * 失败尝试的日志落库策略（模型实例级，来自 instance.config.logFailoverAttempts）。
+ * 缺省 true = 兼容现状：每次候选失败都独立落库（failover 成功后仍保留失败行）。
+ * false = 合并模式：还有后续候选可 failover 时跳过失败落库，请求以最终成功行为准。
+ */
+export type LogFailoverAttemptsPolicy = boolean
+
 export interface FailoverExecutorParams {
   c: Context
   abortManager: AbortManager
@@ -81,6 +88,12 @@ export interface FailoverExecutorParams {
   handleGatewayError: (errorOrCode: string | Error, fallbackMessage?: string) => Promise<Response>
   handleProviderError: (response: Response, rawBody: unknown) => Promise<Response>
   handleProviderErrorPassthrough: (response: Response, rawBody: unknown) => Promise<Response>
+  /**
+   * 失败尝试的日志落库策略（实例级，配置可选）：
+   * 缺省 true = 兼容现状（每次失败尝试独立落库）；
+   * false = 还有后续候选时跳过失败落库（请求以最终成功尝试的单一行为准）。
+   */
+  logFailoverAttempts?: LogFailoverAttemptsPolicy
 }
 
 export interface FailoverResult {
@@ -109,7 +122,19 @@ export async function executeFailoverIteration(
   const preprocessEndTime = params.getPreprocessEndTime()
   params.onBeforeFetch?.()
 
-  // 多进程：TTL 内从 DB 刷新（与熔断器策略一致）
+  /**
+   * 失败尝试的日志落库策略：
+   * - 缺省 true：每次候选失败都独立落库（兼容现状）。
+   * - false（实例级配置 logFailoverAttempts: false）+ 还有后续候选可 failover：
+   *   跳过失败落库（保留 pending），由最终成功尝试的行作为请求记录。
+   *   注意：仅对会 continue 到下一候选的路径生效；最后一次候选失败仍照常落库，
+   *   保证请求一定有终结状态。
+   */
+  const mergeFailoverAttempts = params.logFailoverAttempts === false && !params.isLastCandidate
+  const markFailed = (p: MarkLogFailedParams) => {
+    if (mergeFailoverAttempts) return Promise.resolve()
+    return params.onMarkLogAsFailed(p)
+  }
   await refreshTtfbConfigIfStale()
 
   const ttfbCfg = getTtfbTimeoutConfig()
@@ -135,7 +160,7 @@ export async function executeFailoverIteration(
     const ttfbDuration = Date.now() - preprocessEndTime
     if (logId) params.onLogEventBusEmitAborted(logId)
     await params.onRecordFailure()
-    await params.onMarkLogAsFailed({
+    await markFailed({
       logId: logId || '',
       attemptId: attemptId || '',
       statusCode: 0,
@@ -208,7 +233,7 @@ export async function executeFailoverIteration(
     if (overTotal) {
       if (logId) params.onLogEventBusEmitAborted(logId)
       await params.onRecordFailure()
-      await params.onMarkLogAsFailed({
+      await markFailed({
         logId: logId || '',
         attemptId: attemptId || '',
         statusCode: 0,
@@ -230,7 +255,7 @@ export async function executeFailoverIteration(
 
     if (!params.isLastCandidate) {
       await params.onRecordFailure()
-      await params.onMarkLogAsFailed({
+      await markFailed({
         logId: logId || '',
         attemptId: attemptId || '',
         statusCode: 0,
@@ -251,7 +276,7 @@ export async function executeFailoverIteration(
 
     if (logId) params.onLogEventBusEmitAborted(logId)
     await params.onRecordFailure()
-    await params.onMarkLogAsFailed({
+    await markFailed({
       logId: logId || '',
       attemptId: attemptId || '',
       statusCode: 0,
@@ -289,7 +314,7 @@ export async function executeFailoverIteration(
         'Provider returned 2xx with non-JSON content-type, treating as upstream failure',
       )
       await response.body?.cancel()
-      await params.onMarkLogAsFailed({
+      await markFailed({
         logId: logId || '',
         attemptId: attemptId || '',
         statusCode: response.status,
@@ -332,7 +357,7 @@ export async function executeFailoverIteration(
       new Promise<null>((resolve) => setTimeout(() => resolve(null), 3_000)),
     ]).catch(() => null)
     const ttfbDuration = Date.now() - preprocessEndTime
-    await params.onMarkLogAsFailed({
+    await markFailed({
       logId: logId || '',
       attemptId: attemptId || '',
       statusCode: response.status,

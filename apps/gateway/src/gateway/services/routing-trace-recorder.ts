@@ -84,6 +84,13 @@ export interface FailedStepInfo {
   capabilities?: string[]
   /** step 级决策依据（reject 节点原因 / capability/intent 命中后但目标组空） */
   decisionReason?: string
+  /**
+   * 该 step 目标组内被能力/熔断/状态过滤掉的实例及原因（"为什么没选它"）。
+   * 成功路径上由 RouteResult.rejections 携带（buildRouteChainSnapshot 填到 step.filteredOut），
+   * 失败路径（route_to_group / fallback 腿等零候选）由 handler 显式透传，
+   * 让 routing-traces 能展示"为什么这个组一个候选都没有"。
+   */
+  filteredOut?: Array<{ instanceName: string; reason: string }>
 }
 
 /**

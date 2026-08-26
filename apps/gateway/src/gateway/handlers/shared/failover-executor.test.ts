@@ -542,6 +542,80 @@ describe('executeFailoverIteration', () => {
     })
   })
 
+  describe('logFailoverAttempts merge policy', () => {
+    it('skips onMarkLogAsFailed when logFailoverAttempts=false and not last candidate', async () => {
+      const response = mockResponse(500, { error: 'internal' })
+      mockRetryResult({
+        response,
+        retryCount: 0,
+        aborted: null,
+        networkError: false,
+      })
+      const params = createParams({ isLastCandidate: false, logFailoverAttempts: false })
+      const result = await executeFailoverIteration(params)
+
+      expect(result.type).toBe('failover')
+      // 熔断计数仍要记录失败
+      expect(params.onRecordFailure).toHaveBeenCalled()
+      // 失败尝试不落库（保留 pending，由最终成功尝试的行作为请求记录）
+      expect(params.onMarkLogAsFailed).not.toHaveBeenCalled()
+      expect(params.onLogEventBusEmitAborted).toHaveBeenCalledWith('log-1')
+    })
+
+    it('still marks log failed for last candidate network failure even when logFailoverAttempts=false', async () => {
+      // 最后候选（网络错误）→ 请求终结，仍照常落库保证有失败记录
+      mockRetryResult({
+        response: null,
+        retryCount: 1,
+        aborted: 'timeout',
+        networkError: false,
+      })
+      const params = createParams({
+        isLastCandidate: true,
+        logFailoverAttempts: false,
+        startTime: Date.now() - 1000,
+      })
+      const result = await executeFailoverIteration(params)
+
+      expect(result.type).toBe('error')
+      expect(params.onMarkLogAsFailed).toHaveBeenCalled()
+    })
+
+    it('default (undefined) keeps current behavior: marks log failed on failover', async () => {
+      const response = mockResponse(500, { error: 'internal' })
+      mockRetryResult({
+        response,
+        retryCount: 0,
+        aborted: null,
+        networkError: false,
+      })
+      const params = createParams({ isLastCandidate: false })
+      const result = await executeFailoverIteration(params)
+
+      expect(result.type).toBe('failover')
+      expect(params.onMarkLogAsFailed).toHaveBeenCalled()
+    })
+
+    it('skips markLogAsFailed for network failover when merge enabled', async () => {
+      mockRetryResult({
+        response: null,
+        retryCount: 1,
+        aborted: 'timeout',
+        networkError: false,
+      })
+      const params = createParams({
+        isLastCandidate: false,
+        logFailoverAttempts: false,
+        startTime: Date.now() - 1000,
+      })
+      const result = await executeFailoverIteration(params)
+
+      expect(result.type).toBe('failover')
+      expect(params.onRecordFailure).toHaveBeenCalled()
+      expect(params.onMarkLogAsFailed).not.toHaveBeenCalled()
+    })
+  })
+
   describe('provider error path', () => {
     it('returns error via handleProviderError when passthrough disabled', async () => {
       const response = mockResponse(400, { error: 'bad request' })

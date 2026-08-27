@@ -191,6 +191,8 @@ export async function createEngine(options: CreateEngineOptions = {}): Promise<E
     const { default: logsRoutes } = await import('./features/logs/api')
     app.route('/api/logs', logsRoutes)
 
+    const { consoleLogRoutes } = await import('./features/console-logs')
+    app.route('/api/console-logs', consoleLogRoutes)
     const { default: settingsRoutes } = await import('./features/settings/api')
     app.route('/api/settings', settingsRoutes)
 

@@ -1,6 +1,8 @@
 import pino from 'pino'
 import pretty from 'pino-pretty'
 
+import { consoleLogBus } from './console-log-bus'
+
 // 从环境变量读取日志配置（确保在早期就能获取）
 const logLevel = process.env.LOG_LEVEL || 'info'
 const enableDebug = process.env.LOG_ENABLE_DEBUG === 'true'
@@ -50,7 +52,27 @@ const loggerOptions: pino.LoggerOptions = {
   },
 }
 
-export const logger = isDev ? pino(loggerOptions, createPrettyStream()) : pino(loggerOptions)
+/**
+ * 控制台日志总线流：把进程内所有 logger 输出（JSON 行）转发到 ConsoleLogBus，
+ * Web 端 /api/console-logs/live 实时订阅。开发模式额外接到 pino-pretty 终端输出。
+ */
+const consoleBusStream: pino.DestinationStream = {
+  write(line: string) {
+    consoleLogBus.write(line)
+  },
+}
+
+// 生产模式默认输出 JSON 到 stdout（原有行为），同时多路广播到 console bus；
+// 开发模式保留 pino-pretty 终端输出，也接一路 bus。
+export const logger = isDev
+  ? pino(
+      loggerOptions,
+      pino.multistream([{ stream: createPrettyStream() }, { stream: consoleBusStream }]),
+    )
+  : pino(
+      loggerOptions,
+      pino.multistream([{ stream: process.stdout }, { stream: consoleBusStream }]),
+    )
 
 /**
  * 检查是否启用了请求日志

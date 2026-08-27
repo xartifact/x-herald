@@ -17,6 +17,7 @@ import { LogsPage } from './routes/admin/logs/index'
 import { LogDetailPage } from './routes/admin/logs/log-detail'
 import { RoutingTracesPage } from './routes/admin/routing-traces/index'
 import { RoutingTraceDetailPage } from './routes/admin/routing-traces/log-detail'
+import { ConsoleLogsPage } from './routes/admin/console-logs/index'
 import { MetricsPage } from './routes/admin/metrics/index'
 import { ClientModelsPage } from './routes/admin/client-models/index'
 import { CostsPage } from './routes/admin/costs/index'
@@ -121,6 +122,11 @@ const routingTraceDetailRoute = createRoute({
   path: '/routing-traces/$logId',
   component: RoutingTraceDetailPage,
 })
+const consoleLogsRoute = createRoute({
+  getParentRoute: () => adminRoute,
+  path: '/console-logs',
+  component: ConsoleLogsPage,
+})
 const metricsRoute = createRoute({
   getParentRoute: () => adminRoute,
   path: '/metrics',
@@ -175,8 +181,8 @@ const routeTree = rootRoute.addChildren([
     logDetailRoute,
     routingTracesRoute,
     routingTraceDetailRoute,
+    consoleLogsRoute,
     metricsRoute,
-    clientModelsRoute,
     costsRoute,
     providerStatsRoute,
     aiAssistRoute,

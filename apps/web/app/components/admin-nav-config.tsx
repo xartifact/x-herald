@@ -15,6 +15,7 @@ import {
   CircuitBoard,
   Map,
   Route,
+  ScrollText,
 } from 'lucide-react'
 
 export interface NavItem {
@@ -87,6 +88,11 @@ export const navGroups: NavGroup[] = [
         icon: <ShieldAlert className="h-4 w-4" />,
       },
       { href: '/admin/metrics', label: '性能指标', icon: <Gauge className="h-4 w-4" /> },
+      {
+        href: '/admin/console-logs',
+        label: '控制台日志',
+        icon: <ScrollText className="h-4 w-4" />,
+      },
     ],
   },
   {

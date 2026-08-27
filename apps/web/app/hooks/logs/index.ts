@@ -32,4 +32,11 @@ export {
 } from './use-log-stats'
 export { useLiveLogs } from './use-live-logs'
 export type { LiveStreamItem } from './use-live-logs'
-export { useConversationTrace } from './use-conversation-trace'
+
+export {
+  useConsoleLogs,
+  CONSOLE_LOG_LEVELS,
+  CONSOLE_LOG_LEVEL_LABELS,
+  CONSOLE_LOG_LEVEL_COLORS,
+} from './use-console-logs'
+export type { ConsoleLogEntry, ConsoleLogLevel } from './use-console-logs'

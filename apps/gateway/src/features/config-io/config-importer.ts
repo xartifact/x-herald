@@ -301,12 +301,8 @@ export async function importConfig(data: EngineExportFormat['data']): Promise<En
           .set({
             name: i.name,
             description: i.description,
-            config: i.config as never,
             weight: i.weight,
-            priority: i.priority,
             costPer1kTokens: i.costPer1kTokens as never,
-            healthCheckUrl: i.healthCheckUrl,
-            enabled: i.enabled,
             metadata: i.metadata as never,
             updatedAt: new Date(),
           })
@@ -323,11 +319,7 @@ export async function importConfig(data: EngineExportFormat['data']): Promise<En
             description: i.description,
             config: i.config as never,
             weight: i.weight,
-            priority: i.priority,
             costPer1kTokens: i.costPer1kTokens as never,
-            healthCheckUrl: i.healthCheckUrl,
-            enabled: i.enabled,
-            metadata: i.metadata as never,
           })
           .returning({ id: modelInstances.id })
         instanceId = created.id

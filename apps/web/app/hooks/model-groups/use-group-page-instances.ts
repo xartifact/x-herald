@@ -36,7 +36,7 @@ export function useGroupPageInstances() {
       actualModelName: '',
       description: '',
       weight: 100,
-      priority: 0,
+      groupIds: [],
       config: undefined,
     },
   })
@@ -50,17 +50,20 @@ export function useGroupPageInstances() {
         map.set(gid, list)
       }
     }
-    for (const [key, list] of map) {
+    for (const [gid, list] of map) {
       map.set(
-        key,
-        list.toSorted((a, b) => a.priority - b.priority),
+        gid,
+        list.toSorted((a, b) => (a.groupPriorities?.[gid] ?? 0) - (b.groupPriorities?.[gid] ?? 0)),
       )
     }
     return map
   }, [instances])
 
   const ungroupedInstances = useMemo(
-    () => instances.filter((i) => !i.groupIds?.length).sort((a, b) => a.priority - b.priority),
+    () =>
+      instances
+        .filter((i) => !i.groupIds?.length)
+        .toSorted((a, b) => (a.createdAt ?? '').localeCompare(b.createdAt ?? '')),
     [instances],
   )
 
@@ -72,7 +75,7 @@ export function useGroupPageInstances() {
       actualModelName: '',
       description: '',
       weight: 100,
-      priority: 0,
+      groupIds: [],
     })
     setInstanceDialogOpen(true)
   }
@@ -85,7 +88,7 @@ export function useGroupPageInstances() {
       actualModelName: instance.actualModelName,
       description: instance.description || '',
       weight: instance.weight,
-      priority: instance.priority,
+      groupIds: instance.groupIds ?? [],
       config: instance.config || undefined,
     })
     setInstanceDialogOpen(true)
@@ -111,7 +114,7 @@ export function useGroupPageInstances() {
       const swapIndex = direction === 'up' ? index - 1 : index + 1
       const newOrder = [...groupInstances]
       ;[newOrder[index], newOrder[swapIndex]] = [newOrder[swapIndex], newOrder[index]]
-      reorderInstances.mutate(newOrder.map((i) => i.id))
+      reorderInstances.mutate({ groupId, instanceIds: newOrder.map((i) => i.id) })
     },
     [instancesByGroup, reorderInstances],
   )
@@ -123,7 +126,7 @@ export function useGroupPageInstances() {
       actualModelName: data.actualModelName,
       description: data.description,
       weight: data.weight,
-      priority: data.priority,
+      groupIds: data.groupIds ?? [],
       config: data.config,
     }
     if (editingInstanceId) {

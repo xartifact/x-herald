@@ -153,7 +153,7 @@ export function buildRouteChainSnapshot(
       instanceName: r.instance.name,
       providerId: r.provider.id,
       providerName: r.provider.name,
-      priority: r.instance.priority,
+      priority: r.membershipPriority ?? 0,
       strategy: r.decision.strategy,
       groupName: r.group?.displayName || r.group?.name || '',
       // 决策依据（如 "smart selection (score: 63.5)"），供 routing-trace 展示"为什么选它"

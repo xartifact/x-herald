@@ -74,8 +74,8 @@ export function ModelGroupsPage() {
         map.set(gid, list)
       }
     }
-    for (const [, list] of map) {
-      list.sort((a, b) => a.priority - b.priority)
+    for (const [gid, list] of map) {
+      list.sort((a, b) => (a.groupPriorities?.[gid] ?? 0) - (b.groupPriorities?.[gid] ?? 0))
     }
     return map
   }, [instances])
@@ -88,7 +88,10 @@ export function ModelGroupsPage() {
   }, [instancesByGroup])
 
   const ungroupedInstances = useMemo(
-    () => (instances as any[]).filter((inst) => !allGroupedIds.has(inst.id)),
+    () =>
+      (instances as any[])
+        .filter((inst) => !allGroupedIds.has(inst.id))
+        .sort((a, b) => (a.createdAt ?? '').localeCompare(b.createdAt ?? '')),
     [instances, allGroupedIds],
   )
 
@@ -119,7 +122,6 @@ export function ModelGroupsPage() {
       actualModelName: '',
       description: '',
       weight: 100,
-      priority: 0,
       groupIds: [] as string[],
       costPer1kTokens: { _enabled: false },
       config: { capabilityOverrides: {} },
@@ -199,9 +201,7 @@ export function ModelGroupsPage() {
       actualModelName: '',
       description: '',
       weight: 100,
-      priority: 0,
       groupIds: [],
-      costPer1kTokens: { _enabled: false },
       config: { capabilityOverrides: {} },
     })
     setInstanceDialogOpen(true)
@@ -214,7 +214,6 @@ export function ModelGroupsPage() {
       actualModelName: instance.actualModelName,
       description: instance.description || '',
       weight: instance.weight,
-      priority: instance.priority,
       groupIds: instance.groupIds ?? [],
       costPer1kTokens: {
         ...((instance.costPer1kTokens ?? {}) as Record<string, unknown>),
@@ -245,7 +244,7 @@ export function ModelGroupsPage() {
       const swapIndex = direction === 'up' ? index - 1 : index + 1
       const newOrder = [...groupInstances]
       ;[newOrder[index], newOrder[swapIndex]] = [newOrder[swapIndex], newOrder[index]]
-      reorderInstances.mutate(newOrder.map((i) => i.id))
+      reorderInstances.mutate({ groupId, instanceIds: newOrder.map((i) => i.id) })
     },
     [instancesByGroup, reorderInstances],
   )
@@ -271,7 +270,6 @@ export function ModelGroupsPage() {
       actualModelName: data.actualModelName,
       description: data.description,
       weight: data.weight,
-      priority: data.priority,
       groupIds: data.groupIds ?? [],
       costPer1kTokens: costEnabled ? (costData as any) : undefined,
       config: data.config,

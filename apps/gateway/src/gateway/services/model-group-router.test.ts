@@ -261,9 +261,9 @@ describe('ModelGroupRouter integration', () => {
     )
     expect(candidates.length).toBeGreaterThanOrEqual(2)
 
-    // Lower priority value should come first
-    const priority1 = candidates[0].instance.priority
-    const priority2 = candidates[1].instance.priority
+    // Lower membership priority value should come first
+    const priority1 = candidates[0].membershipPriority ?? 0
+    const priority2 = candidates[1].membershipPriority ?? 0
     expect(priority1).toBeLessThanOrEqual(priority2)
   })
 

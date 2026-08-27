@@ -110,7 +110,7 @@ export function useSyncProviderModels() {
     mutationFn: ({
       providerId,
       models,
-      groupId,
+      groupIds,
     }: {
       providerId: string
       models: Array<{
@@ -128,11 +128,11 @@ export function useSyncProviderModels() {
           reasoning?: boolean
         }
       }>
-      groupId?: string
+      groupIds?: string[]
     }) =>
       post<{ created: number; skipped: number }>(`/api/providers/${providerId}/sync-models`, {
         models,
-        groupId,
+        groupIds,
       }),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: providerKeys.lists() })

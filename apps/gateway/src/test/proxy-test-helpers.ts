@@ -158,7 +158,6 @@ export async function createProxyTestEnv(options: ProxyTestEnvOptions = {}): Pro
       name: 'test-instance',
       actualModelName,
       weight: 100,
-      priority: 0,
       enabled: true,
     })
     .returning()

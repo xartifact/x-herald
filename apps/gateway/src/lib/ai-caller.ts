@@ -1,4 +1,4 @@
-import { eq, and } from '@xartifact/x-herald-db'
+import { eq, and, asc } from '@xartifact/x-herald-db'
 import type { Message, ToolCall, ToolDefinition } from '@xartifact/x-herald-sdk'
 
 import { getDatabase } from '../db/client'
@@ -51,7 +51,7 @@ export async function getAiModel(): Promise<AiModel> {
           eq(providers.enabled, true),
         ),
       )
-      .orderBy(modelInstances.priority)
+      .orderBy(asc(modelGroupMemberships.priority))
       .limit(1)
   }
 
@@ -64,7 +64,7 @@ export async function getAiModel(): Promise<AiModel> {
       .from(modelInstances)
       .innerJoin(providers, eq(providers.id, modelInstances.providerId))
       .where(and(eq(modelInstances.enabled, true), eq(providers.enabled, true)))
-      .orderBy(modelInstances.priority)
+      .orderBy(asc(modelInstances.createdAt))
       .limit(1)
   }
 

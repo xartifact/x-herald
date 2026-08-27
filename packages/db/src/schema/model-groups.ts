@@ -49,7 +49,6 @@ export const modelInstances = pgTable('model_instances', {
   description: text('description'),
   config: jsonb('config').$type<InstanceConfig>(),
   weight: integer('weight').default(100).notNull(),
-  priority: integer('priority').default(0).notNull(),
   costPer1kTokens: jsonb('cost_per_1k_tokens').$type<InstanceCost>(),
   healthCheckUrl: varchar('health_check_url', { length: 512 }),
   enabled: boolean('enabled').default(true).notNull(),
@@ -73,6 +72,8 @@ export const modelGroupMemberships = pgTable(
     instanceId: uuid('instance_id')
       .notNull()
       .references(() => modelInstances.id, { onDelete: 'cascade' }),
+    // 组内顺序（0 起）。同一实例在不同组的顺序相互独立。
+    priority: integer('priority').default(0).notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => ({

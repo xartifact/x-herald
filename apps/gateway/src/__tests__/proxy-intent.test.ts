@@ -104,7 +104,6 @@ async function setupIntentTestEnv(opts: {
       name: 'coding-instance',
       actualModelName: codingActualModel,
       weight: 100,
-      priority: 0,
       enabled: true,
     })
     .returning()
@@ -133,7 +132,6 @@ async function setupIntentTestEnv(opts: {
       name: 'general-instance',
       actualModelName: generalActualModel,
       weight: 100,
-      priority: 0,
       enabled: true,
     })
     .returning()

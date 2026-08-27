@@ -160,8 +160,6 @@ describe('model-groups API', () => {
     expect(body.data.actualModelName).toBe(actualModelName)
     expect(typeof body.data.weight).toBe('number')
     expect(body.data.weight).toBe(100)
-    expect(typeof body.data.priority).toBe('number')
-    expect(body.data.priority).toBe(0)
     expect(typeof body.data.enabled).toBe('boolean')
     expect(body.data.enabled).toBe(true)
     expect(Array.isArray(body.data.groupIds)).toBe(true)

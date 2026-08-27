@@ -11,7 +11,7 @@ import {
   deleteInstance,
   listGroups,
   listInstances,
-  reorderInstances,
+  reorderGroupInstances,
   setInstanceGroupsById,
   testInstanceConnectivity,
   toggleGroup,
@@ -102,10 +102,10 @@ modelGroupRoutes.patch('/:id/toggle', async (c) => {
   }
 })
 
-modelGroupRoutes.put('/instances/reorder', async (c) => {
+modelGroupRoutes.put('/groups/:groupId/instances/reorder', async (c) => {
   try {
     const { instanceIds } = await c.req.json<{ instanceIds: string[] }>()
-    await reorderInstances(instanceIds)
+    await reorderGroupInstances(c.req.param('groupId'), instanceIds)
     return c.json({ success: true })
   } catch (error) {
     logger.warn({ err: error }, 'Failed to reorder model instances')

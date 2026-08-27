@@ -232,7 +232,6 @@ describe('exportConfig', () => {
       groupName: 'gpt-4',
       config: null,
       weight: 100,
-      priority: 0,
       costPer1kTokens: null,
       healthCheckUrl: null,
       enabled: true,

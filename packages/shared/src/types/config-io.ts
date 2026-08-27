@@ -25,7 +25,6 @@ export interface ExportedModelInstance {
   groupNames: string[]
   config: unknown
   weight: number
-  priority: number
   costPer1kTokens: unknown
   healthCheckUrl: string | null
   enabled: boolean

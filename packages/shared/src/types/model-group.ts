@@ -45,7 +45,6 @@ export interface InstanceFormData {
   actualModelName: string
   description: string
   weight: number
-  priority: number
   groupIds?: string[]
   config?: InstanceConfig
 }
@@ -238,7 +237,6 @@ export interface ModelInstance {
   description: string | null
   config: InstanceConfig | null
   weight: number
-  priority: number
   costPer1kTokens: InstanceCost | null
   healthCheckUrl: string | null
   enabled: boolean
@@ -250,6 +248,8 @@ export interface ModelInstance {
   provider?: { id: string; name: string }
   groupIds?: string[]
   groupId?: string | null
+  /** 组内顺序（membership.priority）。同一实例在各组顺序独立。 */
+  groupPriorities?: Record<string, number>
 }
 
 export interface ModelGroupDetail {
@@ -289,7 +289,6 @@ export interface CreateModelInstancePayload {
   actualModelName: string
   description?: string
   weight?: number
-  priority?: number
   costPer1kTokens?: InstanceCost
   config?: InstanceConfig
 }
@@ -299,7 +298,6 @@ export interface UpdateModelInstancePayload {
   actualModelName?: string
   description?: string
   weight?: number
-  priority?: number
   groupIds?: string[]
   costPer1kTokens?: InstanceCost | null
   config?: InstanceConfig | null

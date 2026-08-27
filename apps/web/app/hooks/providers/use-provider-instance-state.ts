@@ -31,7 +31,6 @@ export function useProviderInstanceState() {
       actualModelName: '',
       description: '',
       weight: 100,
-      priority: 0,
       groupIds: [],
       config: undefined,
     },
@@ -64,7 +63,6 @@ export function useProviderInstanceState() {
       actualModelName: '',
       description: '',
       weight: 100,
-      priority: 0,
       groupIds: [],
       config: undefined,
     })
@@ -79,7 +77,6 @@ export function useProviderInstanceState() {
       actualModelName: instance.actualModelName,
       description: instance.description || '',
       weight: instance.weight,
-      priority: instance.priority,
       groupIds: instance.groupIds ?? [],
       config: instance.config || undefined,
     })
@@ -102,7 +99,6 @@ export function useProviderInstanceState() {
       actualModelName: data.actualModelName,
       description: data.description,
       weight: data.weight,
-      priority: data.priority,
       groupIds: data.groupIds ?? [],
       config: data.config,
     }

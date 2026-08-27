@@ -1,16 +1,14 @@
-import { desc, eq, isNull } from '@xartifact/x-herald-db'
+import { desc, eq, inArray, isNull } from '@xartifact/x-herald-db'
 import { z } from 'zod'
 
 import type { Database } from '../../db/client'
 import { getDatabase } from '../../db/client'
 import rootLogger from '../../lib/logger'
-import { modelInstances } from '@xartifact/x-herald-db'
-
+import { modelInstances, modelGroups, modelGroupMemberships } from '@xartifact/x-herald-db'
 import { providers } from '@xartifact/x-herald-db'
 import type { ProtocolsConfig } from './db'
 import type { ProviderModelInfo } from '@xartifact/x-herald-shared'
 import { normalizeProviderModel, buildInstanceMetadata } from './service-helpers'
-
 const logger = rootLogger.child({ module: 'providers-service' })
 
 export const ProtocolConfigSchema = z
@@ -76,7 +74,7 @@ export const SyncModelsSchema = z.object({
         .optional(),
     }),
   ),
-  groupId: z.string().optional(),
+  groupIds: z.array(z.string()).optional(),
 })
 
 export type CreateProviderCommand = z.infer<typeof CreateProviderSchema>
@@ -293,14 +291,13 @@ export async function syncModels(
 
   const database = db ?? getDatabase()
 
-  if (data.groupId) {
-    const { modelGroups } = await import('@xartifact/x-herald-db')
-    const group = await database
-      .select()
+  const groupIds = data.groupIds ?? []
+  if (groupIds.length > 0) {
+    const groupRows = await database
+      .select({ id: modelGroups.id })
       .from(modelGroups)
-      .where(eq(modelGroups.id, data.groupId))
-      .limit(1)
-    if (group.length === 0) return { ok: false, code: 'GROUP_NOT_FOUND' }
+      .where(inArray(modelGroups.id, groupIds))
+    if (groupRows.length !== groupIds.length) return { ok: false, code: 'GROUP_NOT_FOUND' }
   }
 
   const existing = await database
@@ -321,19 +318,20 @@ export async function syncModels(
           actualModelName: m.id,
           description: m.description ?? null,
           weight: 100,
-          priority: 0,
-          enabled: true,
           costPer1kTokens: m.cost ?? null,
           metadata: buildInstanceMetadata(m),
         })),
       )
       .returning({ id: modelInstances.id })
 
-    if (data.groupId && inserted.length > 0) {
-      const { modelGroupMemberships } = await import('@xartifact/x-herald-db')
+    if (groupIds.length > 0 && inserted.length > 0) {
       await database
         .insert(modelGroupMemberships)
-        .values(inserted.map((i) => ({ groupId: data.groupId as string, instanceId: i.id })))
+        .values(
+          inserted.flatMap((i) =>
+            groupIds.map((gid) => ({ groupId: gid, instanceId: i.id, priority: 0 })),
+          ),
+        )
     }
   }
 

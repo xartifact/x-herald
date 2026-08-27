@@ -75,9 +75,7 @@ function createTestInstance(overrides: Partial<ModelInstance> = {}): ModelInstan
     name: 'Test Instance',
     actualModelName: 'gpt-4',
     description: null,
-    config: null,
     weight: 100,
-    priority: 0,
     costPer1kTokens: null,
     healthCheckUrl: null,
     enabled: true,
@@ -283,34 +281,41 @@ describe('selectByStrategy', () => {
   })
 
   function createCandidate(
-    overrides: { instance?: Partial<ModelInstance>; provider?: Partial<ProviderSelect> } = {},
+    overrides: {
+      instance?: Partial<ModelInstance>
+      provider?: Partial<ProviderSelect>
+      membershipPriority?: number
+    } = {},
   ) {
     return {
       instance: createTestInstance(overrides.instance),
       provider: createTestProvider(overrides.provider),
       group: createTestGroup(),
+      membershipPriority: overrides.membershipPriority,
     }
   }
 
   describe('priority strategy (default)', () => {
     it('should sort candidates by priority ascending', async () => {
-      const high = createCandidate({ instance: { priority: 10 } })
-      const low = createCandidate({ instance: { priority: 0 } })
-      const mid = createCandidate({ instance: { priority: 5 } })
+      const high = createCandidate({ membershipPriority: 10 })
+      const low = createCandidate({ membershipPriority: 0 })
+      const mid = createCandidate({ membershipPriority: 5 })
 
       const result = await selectByStrategy([high, low, mid], 'priority', 'g1')
 
-      expect(result[0].instance.priority).toBe(0)
-      expect(result[1].instance.priority).toBe(5)
-      expect(result[2].instance.priority).toBe(10)
+      expect(result[0].membershipPriority).toBe(0)
+      expect(result[1].membershipPriority).toBe(5)
+      expect(result[2].membershipPriority).toBe(10)
     })
 
     it('should sort by createdAt when priority is equal', async () => {
       const older = createCandidate({
-        instance: { priority: 0, createdAt: new Date('2025-01-01') },
+        membershipPriority: 0,
+        instance: { createdAt: new Date('2025-01-01') },
       })
       const newer = createCandidate({
-        instance: { priority: 0, createdAt: new Date('2025-06-01') },
+        membershipPriority: 0,
+        instance: { createdAt: new Date('2025-06-01') },
       })
 
       const result = await selectByStrategy([newer, older], 'priority', 'g2')
@@ -328,8 +333,8 @@ describe('selectByStrategy', () => {
 
   describe('round_robin strategy', () => {
     it('should rotate starting position on each call', async () => {
-      const a = createCandidate({ instance: { priority: 0, name: 'A' } })
-      const b = createCandidate({ instance: { priority: 1, name: 'B' } })
+      const a = createCandidate({ membershipPriority: 0, instance: { name: 'A' } })
+      const b = createCandidate({ membershipPriority: 1, instance: { name: 'B' } })
 
       const first = await selectByStrategy([a, b], 'round_robin', 'rr-1')
       const second = await selectByStrategy([a, b], 'round_robin', 'rr-1')
@@ -339,8 +344,8 @@ describe('selectByStrategy', () => {
     })
 
     it('should use separate counters per groupId', async () => {
-      const a = createCandidate({ instance: { priority: 0, name: 'A' } })
-      const b = createCandidate({ instance: { priority: 1, name: 'B' } })
+      const a = createCandidate({ membershipPriority: 0, instance: { name: 'A' } })
+      const b = createCandidate({ membershipPriority: 1, instance: { name: 'B' } })
 
       const r1 = await selectByStrategy([a, b], 'round_robin', 'rr-group-a')
       const r2 = await selectByStrategy([a, b], 'round_robin', 'rr-group-b')
@@ -350,8 +355,8 @@ describe('selectByStrategy', () => {
     })
 
     it('should wrap around after all candidates', async () => {
-      const a = createCandidate({ instance: { priority: 0, name: 'A' } })
-      const b = createCandidate({ instance: { priority: 1, name: 'B' } })
+      const a = createCandidate({ membershipPriority: 0, instance: { name: 'A' } })
+      const b = createCandidate({ membershipPriority: 1, instance: { name: 'B' } })
 
       await selectByStrategy([a, b], 'round_robin', 'rr-wrap')
       await selectByStrategy([a, b], 'round_robin', 'rr-wrap')
@@ -363,8 +368,8 @@ describe('selectByStrategy', () => {
 
   describe('weighted strategy', () => {
     it('should return all candidates with selected one first', async () => {
-      const a = createCandidate({ instance: { weight: 100, name: 'A', priority: 0 } })
-      const b = createCandidate({ instance: { weight: 100, name: 'B', priority: 1 } })
+      const a = createCandidate({ membershipPriority: 0, instance: { weight: 100, name: 'A' } })
+      const b = createCandidate({ membershipPriority: 1, instance: { weight: 100, name: 'B' } })
 
       const result = await selectByStrategy([a, b], 'weighted', 'w-1')
 
@@ -376,14 +381,15 @@ describe('selectByStrategy', () => {
   describe('cost_optimized strategy', () => {
     it('should sort candidates by total cost ascending', async () => {
       const expensive = createCandidate({
+        membershipPriority: 0,
         instance: {
           costPer1kTokens: { input: 0.03, output: 0.06 },
           name: 'Expensive',
-          priority: 0,
         },
       })
       const cheap = createCandidate({
-        instance: { costPer1kTokens: { input: 0.01, output: 0.02 }, name: 'Cheap', priority: 0 },
+        membershipPriority: 0,
+        instance: { costPer1kTokens: { input: 0.01, output: 0.02 }, name: 'Cheap' },
       })
 
       const result = await selectByStrategy([expensive, cheap], 'cost_optimized', 'co-1')
@@ -394,10 +400,12 @@ describe('selectByStrategy', () => {
 
     it('should place candidates without cost data after those with cost', async () => {
       const withCost = createCandidate({
-        instance: { costPer1kTokens: { input: 0.01, output: 0.01 }, name: 'WithCost', priority: 0 },
+        membershipPriority: 0,
+        instance: { costPer1kTokens: { input: 0.01, output: 0.01 }, name: 'WithCost' },
       })
       const noCost = createCandidate({
-        instance: { costPer1kTokens: null, name: 'NoCost', priority: 0 },
+        membershipPriority: 0,
+        instance: { costPer1kTokens: null, name: 'NoCost' },
       })
 
       const result = await selectByStrategy([noCost, withCost], 'cost_optimized', 'co-2')
@@ -409,8 +417,14 @@ describe('selectByStrategy', () => {
 
   describe('least_response_time strategy', () => {
     it('should sort candidates by ttfb ascending when perf data exists', async () => {
-      const slow = createCandidate({ instance: { id: 'slow', name: 'Slow', priority: 0 } })
-      const fast = createCandidate({ instance: { id: 'fast', name: 'Fast', priority: 0 } })
+      const slow = createCandidate({
+        membershipPriority: 0,
+        instance: { id: 'slow', name: 'Slow' },
+      })
+      const fast = createCandidate({
+        membershipPriority: 0,
+        instance: { id: 'fast', name: 'Fast' },
+      })
 
       ;(fetchGroupInstancesPerf as ReturnType<typeof mock>).mockImplementation(async () => {
         const map = new Map<string, InstancePerfData>()
@@ -438,8 +452,14 @@ describe('selectByStrategy', () => {
     })
 
     it('should place candidates without perf data after those with perf', async () => {
-      const withPerf = createCandidate({ instance: { id: 'with-perf', name: 'Perf', priority: 0 } })
-      const noPerf = createCandidate({ instance: { id: 'no-perf', name: 'NoPerf', priority: 0 } })
+      const withPerf = createCandidate({
+        membershipPriority: 0,
+        instance: { id: 'with-perf', name: 'Perf' },
+      })
+      const noPerf = createCandidate({
+        membershipPriority: 0,
+        instance: { id: 'no-perf', name: 'NoPerf' },
+      })
 
       ;(fetchGroupInstancesPerf as ReturnType<typeof mock>).mockImplementation(async () => {
         const map = new Map<string, InstancePerfData>()
@@ -462,8 +482,11 @@ describe('selectByStrategy', () => {
 
   describe('smart strategy', () => {
     it('should sort candidates by smart score descending', async () => {
-      const good = createCandidate({ instance: { id: 'good', name: 'Good', priority: 0 } })
-      const bad = createCandidate({ instance: { id: 'bad', name: 'Bad', priority: 0 } })
+      const good = createCandidate({
+        membershipPriority: 0,
+        instance: { id: 'good', name: 'Good' },
+      })
+      const bad = createCandidate({ membershipPriority: 0, instance: { id: 'bad', name: 'Bad' } })
 
       ;(fetchGroupInstancesPerf as ReturnType<typeof mock>).mockImplementation(async () => {
         const map = new Map<string, InstancePerfData>()
@@ -493,8 +516,8 @@ describe('selectByStrategy', () => {
 
   describe('unknown strategy', () => {
     it('should fall back to priority sort', async () => {
-      const high = createCandidate({ instance: { priority: 10, name: 'High' } })
-      const low = createCandidate({ instance: { priority: 0, name: 'Low' } })
+      const high = createCandidate({ membershipPriority: 10, instance: { name: 'High' } })
+      const low = createCandidate({ membershipPriority: 0, instance: { name: 'Low' } })
 
       const result = await selectByStrategy([high, low], 'nonexistent_strategy', 'unk-1')
 
@@ -561,17 +584,24 @@ describe('FAILOVER_STATUS_CODES', () => {
 })
 
 describe('buildSelectionReason', () => {
-  function mkCandidate(overrides: Partial<ModelInstance> = {}): Candidate {
+  function mkCandidate(
+    overrides: Partial<ModelInstance> & { membershipPriority?: number } = {},
+  ): Candidate {
+    const { membershipPriority = 3, ...instanceOverrides } = overrides
     const instance = {
       id: 'i-test',
       name: 'inst-test',
-      priority: 3,
       weight: 200,
       costPer1kTokens: { input: 0.01, output: 0.02 },
       createdAt: new Date('2026-01-15T00:00:00.000Z'),
-      ...overrides,
+      ...instanceOverrides,
     } as ModelInstance
-    return { instance, provider: createTestProvider(), group: createTestGroup() }
+    return {
+      instance,
+      provider: createTestProvider(),
+      group: createTestGroup(),
+      membershipPriority,
+    }
   }
   const candidate = mkCandidate()
   const perf: InstancePerfData = {
@@ -615,9 +645,9 @@ describe('buildSelectionReason', () => {
     expect(buildSelectionReason('cost_optimized', candidate, 0, undefined)).toBe(
       'primary selection: cost $0.0300/1k',
     )
-    const noCost = mkCandidate({ id: 'i-nc', name: 'inst-nc', priority: 0, costPer1kTokens: null })
+    const noCost = mkCandidate({ id: 'i-nc', name: 'inst-nc', costPer1kTokens: null })
     expect(buildSelectionReason('cost_optimized', noCost, 0, undefined)).toBe(
-      'primary selection: no cost data, priority 0, created 2026-01-15',
+      'primary selection: no cost data, priority 3, created 2026-01-15',
     )
   })
 
@@ -633,7 +663,12 @@ describe('buildSelectionReason', () => {
   })
 
   it('omits created date when instance has no createdAt', () => {
-    const noDate = mkCandidate({ id: 'i-nd', name: 'inst-nd', priority: 1, createdAt: null })
+    const noDate = mkCandidate({
+      id: 'i-nd',
+      name: 'inst-nd',
+      membershipPriority: 1,
+      createdAt: null,
+    })
     expect(buildSelectionReason('priority', noDate, 0, undefined)).toBe(
       'primary selection: priority 1',
     )

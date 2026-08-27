@@ -112,24 +112,6 @@ export function InstanceBasicFields({ form, providers, groups = [] }: InstanceBa
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="priority"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>优先级</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  min={0}
-                  {...field}
-                  onChange={(e) => field.onChange(parseInt(e.target.value))}
-                />
-              </FormControl>
-              <FormDescription>数字越小优先级越高</FormDescription>
-            </FormItem>
-          )}
-        />
       </div>
 
       {groups.length > 0 && (

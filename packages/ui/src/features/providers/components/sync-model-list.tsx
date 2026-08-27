@@ -112,10 +112,12 @@ export function SyncModelList({ models, isLoading, onRefetch, selection }: SyncM
               />
             </TableCell>
             <TableCell>
-              <code className="text-sm">{model.id}</code>
-              {model.name !== model.id && (
-                <span className="ml-2 text-xs text-muted-foreground">{model.name}</span>
-              )}
+              <div className="flex items-center whitespace-nowrap min-w-0">
+                <code className="text-sm truncate">{model.id}</code>
+                {model.name !== model.id && (
+                  <span className="ml-2 text-xs text-muted-foreground truncate">{model.name}</span>
+                )}
+              </div>
               {model.description && (
                 <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
                   {model.description}

@@ -57,7 +57,6 @@ export function createTestModelInstance(overrides: Partial<ModelInstance> = {}):
     description: null,
     config: null,
     weight: 100,
-    priority: 0,
     costPer1kTokens: null,
     healthCheckUrl: null,
     enabled: true,

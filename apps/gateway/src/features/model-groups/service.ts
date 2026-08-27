@@ -1,4 +1,4 @@
-import { asc, desc, eq, inArray, isNull } from '@xartifact/x-herald-db'
+import { and, asc, desc, eq, inArray, isNull } from '@xartifact/x-herald-db'
 
 import type { Database } from '../../db/client'
 import { getDatabase } from '../../db/client'
@@ -25,32 +25,55 @@ const logger = rootLogger.child({ module: 'model-groups-service' })
 export async function fetchGroupIdsByInstanceIds(
   instanceIds: string[],
   db?: Database,
-): Promise<Map<string, string[]>> {
+): Promise<
+  Map<
+    string,
+    {
+      groupIds: string[]
+      groupPriorities: Record<string, number>
+    }
+  >
+> {
   if (instanceIds.length === 0) return new Map()
   const database = db ?? getDatabase()
   const rows = await database
     .select({
       instanceId: modelGroupMemberships.instanceId,
       groupId: modelGroupMemberships.groupId,
+      priority: modelGroupMemberships.priority,
     })
     .from(modelGroupMemberships)
     .where(inArray(modelGroupMemberships.instanceId, instanceIds))
-  const map = new Map<string, string[]>()
+  const map = new Map<string, { groupIds: string[]; groupPriorities: Record<string, number> }>()
   for (const row of rows) {
-    const list = map.get(row.instanceId) ?? []
-    list.push(row.groupId)
-    map.set(row.instanceId, list)
+    const entry = map.get(row.instanceId) ?? { groupIds: [], groupPriorities: {} }
+    entry.groupIds.push(row.groupId)
+    entry.groupPriorities[row.groupId] = row.priority
+    map.set(row.instanceId, entry)
   }
   return map
 }
 
 export function attachGroupIds<T extends { id: string }>(
   instances: T[],
-  groupIdsMap: Map<string, string[]>,
-): Array<T & { groupIds: string[]; groupId: string | null }> {
+  relationsMap: Map<
+    string,
+    {
+      groupIds: string[]
+      groupPriorities: Record<string, number>
+    }
+  >,
+): Array<
+  T & { groupIds: string[]; groupId: string | null; groupPriorities: Record<string, number> }
+> {
   return instances.map((inst) => {
-    const groupIds = groupIdsMap.get(inst.id) ?? []
-    return { ...inst, groupIds, groupId: groupIds[0] ?? null }
+    const relations = relationsMap.get(inst.id) ?? { groupIds: [], groupPriorities: {} }
+    return {
+      ...inst,
+      groupIds: relations.groupIds,
+      groupId: relations.groupIds[0] ?? null,
+      groupPriorities: relations.groupPriorities,
+    }
   })
 }
 
@@ -60,13 +83,25 @@ export async function setInstanceGroups(
   db?: Database,
 ): Promise<void> {
   const database = db ?? getDatabase()
+  // 保留已存在组的排序，避免重建时打乱组内顺序
+  const existing = await database
+    .select({ groupId: modelGroupMemberships.groupId, priority: modelGroupMemberships.priority })
+    .from(modelGroupMemberships)
+    .where(eq(modelGroupMemberships.instanceId, instanceId))
+  const existingPriority = new Map(existing.map((e) => [e.groupId, e.priority]))
+
   await database
     .delete(modelGroupMemberships)
     .where(eq(modelGroupMemberships.instanceId, instanceId))
+
   if (groupIds.length > 0) {
-    await database
-      .insert(modelGroupMemberships)
-      .values(groupIds.map((gid) => ({ groupId: gid, instanceId })))
+    let nextPriority = existing.length ? Math.max(...existing.map((e) => e.priority)) + 1 : 0
+    await database.insert(modelGroupMemberships).values(
+      groupIds.map((gid) => {
+        const priority = existingPriority.has(gid) ? existingPriority.get(gid)! : nextPriority++
+        return { groupId: gid, instanceId, priority }
+      }),
+    )
   }
 }
 
@@ -81,7 +116,7 @@ export async function listInstances(db?: Database) {
     .from(modelInstances)
     .leftJoin(providers, eq(modelInstances.providerId, providers.id))
     .where(isNull(modelInstances.deletedAt))
-    .orderBy(asc(modelInstances.priority), asc(modelInstances.createdAt))
+    .orderBy(asc(modelInstances.createdAt))
   const instances = rows.map((r) => ({
     ...r.instance,
     provider: r.providerId && r.providerName ? { id: r.providerId, name: r.providerName } : null,
@@ -108,7 +143,6 @@ interface CreateInstanceData {
   actualModelName: string
   description?: string
   weight?: number
-  priority?: number
   costPer1kTokens?: InstanceCost | null
   config?: InstanceConfig | null
   groupIds?: string[]
@@ -145,23 +179,29 @@ export async function createInstance(data: CreateInstanceData, db?: Database) {
     actualModelName: data.actualModelName,
     description: data.description,
     weight: data.weight ?? 100,
-    priority: data.priority ?? 0,
     costPer1kTokens: data.costPer1kTokens,
     config: data.config,
   }
   const [instance] = await database.insert(modelInstances).values(insertValues).returning()
 
   if (groupIds.length > 0) {
-    await database
-      .insert(modelGroupMemberships)
-      .values(groupIds.map((gid) => ({ groupId: gid, instanceId: instance.id })))
+    const groupPriorities: Record<string, number> = {}
+    await database.insert(modelGroupMemberships).values(
+      groupIds.map((gid, idx) => {
+        groupPriorities[gid] = idx
+        return { groupId: gid, instanceId: instance.id, priority: idx }
+      }),
+    )
+    logger.info(
+      { instanceId: instance.id, groupIds, providerId: data.providerId },
+      'Model instance created',
+    )
+    return {
+      data: { ...instance, groupIds, groupId: groupIds[0] ?? null, groupPriorities },
+    }
   }
 
-  logger.info(
-    { instanceId: instance.id, groupIds, providerId: data.providerId },
-    'Model instance created',
-  )
-  return { data: { ...instance, groupIds, groupId: groupIds[0] ?? null } }
+  return { data: { ...instance, groupIds: [], groupId: null, groupPriorities: {} } }
 }
 
 interface UpdateInstanceData {
@@ -170,7 +210,6 @@ interface UpdateInstanceData {
   actualModelName?: string
   description?: string
   weight?: number
-  priority?: number
   costPer1kTokens?: InstanceCost | null
   config?: InstanceConfig | null
   groupIds?: string[]
@@ -187,10 +226,7 @@ export async function updateInstance(id: string, data: UpdateInstanceData, db?: 
       ...(data.actualModelName !== undefined && { actualModelName: data.actualModelName }),
       ...(data.description !== undefined && { description: data.description }),
       ...(data.weight !== undefined && { weight: data.weight }),
-      ...(data.priority !== undefined && { priority: data.priority }),
       ...(data.costPer1kTokens !== undefined && { costPer1kTokens: data.costPer1kTokens }),
-      ...(data.config !== undefined && { config: data.config }),
-      updatedAt: new Date(),
     })
     .where(eq(modelInstances.id, id))
     .returning()
@@ -249,9 +285,8 @@ export async function setInstanceGroupsById(id: string, groupIds: string[], db?:
 
   await setInstanceGroups(id, resolvedGroupIds, db)
   logger.info({ instanceId: id, groupIds: resolvedGroupIds }, 'Instance groups updated')
-  return {
-    data: { ...instance[0], groupIds: resolvedGroupIds, groupId: resolvedGroupIds[0] ?? null },
-  }
+  const relations = await fetchGroupIdsByInstanceIds([id], db)
+  return { data: attachGroupIds([instance[0]], relations)[0] }
 }
 
 export async function assignInstance(id: string, groupId: string | null, db?: Database) {
@@ -274,7 +309,8 @@ export async function assignInstance(id: string, groupId: string | null, db?: Da
 
   const groupIds = groupId ? [groupId] : []
   await setInstanceGroups(id, groupIds, db)
-  return { data: { ...instance[0], groupIds, groupId: groupId ?? null } }
+  const relations = await fetchGroupIdsByInstanceIds([id], db)
+  return { data: attachGroupIds([instance[0]], relations)[0] }
 }
 
 export async function toggleInstance(id: string, db?: Database) {
@@ -294,13 +330,22 @@ export async function toggleInstance(id: string, db?: Database) {
   return attachGroupIds([updated], groupIdsMap)[0]
 }
 
-export async function reorderInstances(instanceIds: string[], db?: Database): Promise<void> {
+export async function reorderGroupInstances(
+  groupId: string,
+  instanceIds: string[],
+  db?: Database,
+): Promise<void> {
   const database = db ?? getDatabase()
   for (let i = 0; i < instanceIds.length; i++) {
     await database
-      .update(modelInstances)
-      .set({ priority: i, updatedAt: new Date() })
-      .where(eq(modelInstances.id, instanceIds[i]))
+      .update(modelGroupMemberships)
+      .set({ priority: i })
+      .where(
+        and(
+          eq(modelGroupMemberships.groupId, groupId),
+          eq(modelGroupMemberships.instanceId, instanceIds[i]),
+        ),
+      )
   }
 }
 

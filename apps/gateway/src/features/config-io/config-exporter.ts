@@ -72,7 +72,6 @@ export async function exportConfig(): Promise<EngineExportFormat> {
           groupName: groupNames[0] ?? null,
           config: i.config,
           weight: i.weight,
-          priority: i.priority,
           costPer1kTokens: i.costPer1kTokens,
           healthCheckUrl: i.healthCheckUrl,
           enabled: i.enabled,

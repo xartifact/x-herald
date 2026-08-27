@@ -50,7 +50,11 @@ export class ModelGroupRouter {
 
     const group = groupResult[0]
     const instances = await db
-      .select({ instance: modelInstances, provider: providers })
+      .select({
+        instance: modelInstances,
+        provider: providers,
+        membershipPriority: modelGroupMemberships.priority,
+      })
       .from(modelGroupMemberships)
       .innerJoin(modelInstances, eq(modelGroupMemberships.instanceId, modelInstances.id))
       .innerJoin(providers, eq(modelInstances.providerId, providers.id))
@@ -63,7 +67,7 @@ export class ModelGroupRouter {
           isNull(providers.deletedAt),
         ),
       )
-      .orderBy(asc(modelInstances.priority), asc(modelInstances.createdAt))
+      .orderBy(asc(modelGroupMemberships.priority), asc(modelInstances.createdAt))
 
     if (instances.length === 0) {
       throw new NoAvailableInstanceError(
@@ -96,6 +100,7 @@ export class ModelGroupRouter {
       instance: c.instance,
       provider: c.provider,
       group,
+      membershipPriority: c.membershipPriority,
       decision: {
         strategy,
         reason: buildSelectionReason(strategy, c, idx, perfMap.get(c.instance.id)),
@@ -142,7 +147,7 @@ export class ModelGroupRouter {
       .innerJoin(modelInstances, eq(modelGroupMemberships.instanceId, modelInstances.id))
       .innerJoin(providers, eq(modelInstances.providerId, providers.id))
       .where(eq(modelGroupMemberships.groupId, groupId))
-      .orderBy(asc(modelInstances.priority), asc(modelInstances.createdAt))
+      .orderBy(asc(modelGroupMemberships.priority), asc(modelInstances.createdAt))
 
     return { group: group[0], instances }
   }

@@ -121,7 +121,6 @@ async function buildScenarioEnv(): Promise<ScenarioEnv> {
       name: 'openai-primary',
       actualModelName: primaryModelActualName,
       weight: 100,
-      priority: 1,
       enabled: true,
     })
     .returning()
@@ -133,14 +132,13 @@ async function buildScenarioEnv(): Promise<ScenarioEnv> {
       name: 'openai-backup',
       actualModelName: backupModelActualName,
       weight: 100,
-      priority: 2,
       enabled: true,
     })
     .returning()
 
   await db.insert(modelGroupMemberships).values([
-    { groupId: group.id, instanceId: instanceA.id },
-    { groupId: group.id, instanceId: instanceB.id },
+    { groupId: group.id, instanceId: instanceA.id, priority: 0 },
+    { groupId: group.id, instanceId: instanceB.id, priority: 1 },
   ])
 
   const [accessModel] = await db

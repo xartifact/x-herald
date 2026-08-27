@@ -174,13 +174,13 @@ export function useReorderInstances() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (instanceIds: string[]) => {
+    mutationFn: async ({ groupId, instanceIds }: { groupId: string; instanceIds: string[] }) => {
       const response = await put<ApiResponse<null>>(
-        '/api/model-groups/instances/reorder',
+        `/api/model-groups/groups/${groupId}/instances/reorder`,
         { instanceIds },
         { extractData: false },
       )
-      if (!response.success) throw new Error(response.error || '更新优先级失败')
+      if (!response.success) throw new Error(response.error || '更新组内顺序失败')
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: modelGroupKeys.instances() })
@@ -199,11 +199,9 @@ export interface CreateInstanceData {
   actualModelName: string
   description?: string
   weight?: number
-  priority?: number
   costPer1kTokens?: InstanceCost
   config?: ModelInstance['config']
 }
-
 export function useCreateModelInstance() {
   const queryClient = useQueryClient()
 

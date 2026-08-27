@@ -20,6 +20,8 @@ export interface RouteResult {
   instance: ModelInstance
   provider: typeof providers.$inferSelect
   group: ModelGroup
+  /** 组内顺序（membership.priority）。同一实例在各组顺序独立。 */
+  membershipPriority?: number
   decision: {
     strategy: string
     reason: string
@@ -72,6 +74,8 @@ export type Candidate = {
   instance: ModelInstance
   provider: typeof providers.$inferSelect
   group: ModelGroup
+  /** 组内顺序（membership.priority）。同一实例在各组顺序独立。 */
+  membershipPriority?: number
 }
 
 export const FAILOVER_STATUS_CODES = new Set([429, 500, 502, 503, 504, 521, 522, 524])
@@ -79,7 +83,9 @@ export const FAILOVER_STATUS_CODES = new Set([429, 500, 502, 503, 504, 521, 522,
 const roundRobinCounters = new Map<string, number>()
 
 function byPriorityThenAge(a: Candidate, b: Candidate): number {
-  const pd = a.instance.priority - b.instance.priority
+  const pa = a.membershipPriority ?? 0
+  const pb = b.membershipPriority ?? 0
+  const pd = pa - pb
   if (pd !== 0) return pd
   return a.instance.createdAt.getTime() - b.instance.createdAt.getTime()
 }
@@ -189,7 +195,7 @@ export function buildSelectionReason(
   perf: InstancePerfData | undefined,
 ): string {
   const head = idx === 0 ? 'primary selection' : `failover candidate #${idx + 1}`
-  const prio = c.instance.priority ?? 0
+  const prio = c.membershipPriority ?? 0
   const created = c.instance.createdAt
     ? `, created ${c.instance.createdAt.toISOString().slice(0, 10)}`
     : ''
@@ -234,7 +240,11 @@ export interface FilterResult {
 }
 
 export async function filterCandidates(
-  instances: Array<{ instance: ModelInstance; provider: typeof providers.$inferSelect }>,
+  instances: Array<{
+    instance: ModelInstance
+    provider: typeof providers.$inferSelect
+    membershipPriority?: number
+  }>,
   context: RoutingContext,
   group: ModelGroup,
 ): Promise<FilterResult> {
@@ -273,7 +283,12 @@ export async function filterCandidates(
   )
   const candidates = instances
     .filter((_, i) => checks[i])
-    .map(({ instance, provider }) => ({ instance, provider, group }))
+    .map(({ instance, provider, membershipPriority }) => ({
+      instance,
+      provider,
+      group,
+      membershipPriority,
+    }))
   return { candidates, rejections }
 }
 

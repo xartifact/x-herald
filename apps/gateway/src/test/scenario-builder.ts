@@ -64,7 +64,6 @@ export async function buildBasicScenario(db = getDatabase()): Promise<ScenarioCo
       name: uniqueName('Instance-1'),
       actualModelName: 'gpt-4-turbo',
       weight: 100,
-      priority: 0,
       enabled: true,
     })
     .returning()
@@ -76,14 +75,13 @@ export async function buildBasicScenario(db = getDatabase()): Promise<ScenarioCo
       name: uniqueName('Instance-2'),
       actualModelName: 'gpt-4o',
       weight: 100,
-      priority: 1,
       enabled: true,
     })
     .returning()
 
   await db.insert(modelGroupMemberships).values([
-    { groupId: group.id, instanceId: instance1.id },
-    { groupId: group.id, instanceId: instance2.id },
+    { groupId: group.id, instanceId: instance1.id, priority: 0 },
+    { groupId: group.id, instanceId: instance2.id, priority: 1 },
   ])
 
   return {
@@ -140,7 +138,6 @@ export async function buildMultiProviderScenario(
         name: uniqueName(`Instance-${i}`),
         actualModelName: 'gpt-4-turbo',
         weight: 100,
-        priority: 0,
         enabled: true,
       })
       .returning()

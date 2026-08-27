@@ -140,3 +140,66 @@ describe('/x-herald models', () => {
     }
   })
 })
+describe('/x-herald setup', () => {
+  it('renders modelRoles with all :xhigh onto the x-herald-setup widget', async () => {
+    fetchResult = async () => [
+      { id: 'Explorer', context_window: 1048576, max_output_tokens: 131072 },
+      { id: 'Architect', context_window: 1048576, max_output_tokens: 131072 },
+      { id: 'Designer', context_window: 1048576, max_output_tokens: 131072 },
+      { id: 'Plan', context_window: 1048576, max_output_tokens: 131072 },
+      { id: 'DomainExpert', context_window: 1048576, max_output_tokens: 131072 },
+    ]
+    const { ctx, notifications, widgets } = makeCtx()
+    await handler!('setup', ctx)
+
+    const widget = widgets.get('x-herald-setup') ?? []
+    const body = widget.join('\n')
+    expect(body).toContain('modelRoles:')
+    expect(body).toContain('  smol: x-herald/Explorer:xhigh')
+    expect(body).toContain('  slow: x-herald/Architect:xhigh')
+    expect(body).toContain('  plan: x-herald/Plan:xhigh')
+    expect(body).toContain('  advisor: x-herald/DomainExpert:xhigh')
+    // every rendered role carries the :xhigh suffix
+    for (const line of widget.filter(
+      (l) => l.trim().startsWith('default:') || l.trim().includes(': x-'),
+    )) {
+      if (line.startsWith('  ')) expect(line).toMatch(/:xhigh$/)
+    }
+    expect(notifications).toEqual([['Setup: 10 roles mapped (all :xhigh) — see widget', 'info']])
+  })
+
+  it('reports missing roles when candidates are absent from the catalogue', async () => {
+    fetchResult = async () => [
+      { id: 'Explorer', context_window: 1048576, max_output_tokens: 131072 },
+      { id: 'Plan', context_window: 1048576, max_output_tokens: 131072 },
+    ]
+    const { ctx, notifications, widgets } = makeCtx()
+    await handler!('setup', ctx)
+
+    const widget = widgets.get('x-herald-setup') ?? []
+    const body = widget.join('\n')
+    expect(body).toContain('⚠ missing from catalogue: slow, vision, designer, advisor')
+    expect(notifications).toEqual([['Setup: 6 roles mapped, 4 missing — see widget', 'info']])
+  })
+
+  it('warns on an empty catalogue without setting a widget', async () => {
+    fetchResult = async () => []
+    const { ctx, notifications, widgets } = makeCtx()
+    await handler!('setup', ctx)
+
+    expect(notifications).toEqual([['Gateway returned an empty list.', 'warning']])
+    expect(widgets.has('x-herald-setup')).toBe(false)
+  })
+
+  it('notifies an error when the fetch fails', async () => {
+    fetchResult = async () => {
+      throw new Error('HTTP 500 from http://localhost:5005/api/v1/models')
+    }
+    const { ctx, notifications } = makeCtx()
+    await handler!('setup', ctx)
+
+    expect(notifications).toEqual([
+      ['Setup failed: HTTP 500 from http://localhost:5005/api/v1/models', 'error'],
+    ])
+  })
+})

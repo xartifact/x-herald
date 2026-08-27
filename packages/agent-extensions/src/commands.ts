@@ -13,6 +13,11 @@ import type { ExtensionAPI, ExtensionCommandContext } from '@earendil-works/pi-c
 
 import { resolveProviderConfig } from './config.ts'
 import { diagnoseEntries } from './diagnose.ts'
+import {
+  buildRoleConfigSnippet,
+  DEFAULT_THINKING_SUFFIX,
+  roleSnippetSummary,
+} from './model-roles.ts'
 import { buildProviderConfig, discoverModels, fetchGatewayModels } from './gateway.ts'
 import { EXTENSION_VERSION } from './version.ts'
 import { PROVIDER_ID, PROVIDER_NAME } from './types.ts'
@@ -137,12 +142,42 @@ async function handleModels(ctx: ExtensionCommandContext, deps: CommandDeps): Pr
   ctx.ui.notify(`Models: ${entries.length} from ${baseUrl} — see widget above editor`, 'info')
 }
 
+async function handleSetup(ctx: ExtensionCommandContext, deps: CommandDeps): Promise<void> {
+  const { baseUrl, apiKey } = await deps.resolveProviderConfig()
+  if (!apiKey) {
+    ctx.ui.notify('No API key configured.', 'error')
+    return
+  }
+  let entries
+  try {
+    entries = await deps.fetchGatewayModels(baseUrl, apiKey)
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    ctx.ui.notify(`Setup failed: ${msg}`, 'error')
+    return
+  }
+  if (entries.length === 0) {
+    ctx.ui.notify('Gateway returned an empty list.', 'warning')
+    return
+  }
+  const snippet = buildRoleConfigSnippet(entries)
+  const { head, tail } = roleSnippetSummary(snippet)
+  const lines = [head, 'modelRoles:', ...snippet.lines, ...tail]
+  ctx.ui.setWidget('x-herald-setup', lines)
+  ctx.ui.notify(
+    snippet.unresolved.length > 0
+      ? `Setup: ${snippet.resolved.length} roles mapped, ${snippet.unresolved.length} missing — see widget`
+      : `Setup: ${snippet.resolved.length} roles mapped (all :${DEFAULT_THINKING_SUFFIX}) — see widget`,
+    'info',
+  )
+}
 function handleHelp(ctx: ExtensionCommandContext): void {
   ctx.ui.notify(
     [
       'x-herald sub-commands:',
       '  /x-herald refresh   re-fetch /models and re-register the provider',
       '  /x-herald models    list models from the gateway catalogue (widget)',
+      '  /x-herald setup     render omp modelRoles for virtual models (all :xhigh)',
       '  /x-herald diagnose  validate /models against the v1 schema (widget)',
       '  /x-herald version   show extension version',
       '  /x-herald help      show this help',
@@ -160,13 +195,18 @@ function handleVersion(ctx: ExtensionCommandContext): void {
 
 export function registerXGateCommand(pi: ExtensionAPI, deps: CommandDeps = defaultDeps): void {
   pi.registerCommand('x-herald', {
-    description: 'x-herald admin: refresh | models | diagnose | help',
+    description: 'x-herald admin: refresh | setup | models | diagnose | help',
     getArgumentCompletions(prefix) {
       const items = [
         {
           value: 'refresh',
           label: 'refresh',
           description: 'Re-fetch /models and re-register the provider',
+        },
+        {
+          value: 'setup',
+          label: 'setup',
+          description: 'Render omp modelRoles for virtual models (all :xhigh)',
         },
         {
           value: 'models',
@@ -189,6 +229,9 @@ export function registerXGateCommand(pi: ExtensionAPI, deps: CommandDeps = defau
       switch (sub) {
         case 'refresh':
           await handleRefresh(pi, ctx, deps)
+          return
+        case 'setup':
+          await handleSetup(ctx, deps)
           return
         case 'models':
           await handleModels(ctx, deps)

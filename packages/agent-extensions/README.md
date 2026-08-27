@@ -46,9 +46,9 @@ packages/agent-extensions/          # single home for all agent-runtime extensio
     ├── runtime.ts                  # runtime detection — the ONLY module naming runtimes
     ├── gateway.ts                  # /models HTTP client + provider config builder
     ├── model-mapping.ts            # GatewayModelEntry → ProviderModelConfig
+    ├── model-roles.ts              # omp modelRoles fragment renderer (role → virtual model, :xhigh)
     ├── diagnose.ts                 # schema-level validation report
     ├── commands.ts                 # /x-herald admin commands
-    ├── types.ts                    # constants + response types (mirror of shared ModelSchema)
     └── agent-shim.d.ts             # narrow ambient types for the runtime APIs
 ```
 
@@ -185,11 +185,11 @@ bun run ci
 | Sub-command       | What it does                                                              |
 | ----------------- | ------------------------------------------------------------------------- |
 | `/x-herald refresh` | Re-fetch `/models` and re-register the provider (no `/reload` needed).    |
+| `/x-herald setup`   | Render an omp `modelRoles` fragment for the gateway virtual models, each role pinned to `:xhigh` for pasting into `~/.omp/agent/config.yml`. |
 | `/x-herald diagnose`| Fetch `/models` and validate against `schemas/v1-models.schema.json`. Result is rendered in a widget above the editor; notification shows pass/fail count. |
 | `/x-herald version` | Show extension version.                                                   |
 | `/x-herald help`    | Show sub-command reference.                                               |
-
-Autocomplete (when typing `/x-herald `) suggests `refresh`, `diagnose`, `version`, `help`.
+Autocomplete (when typing `/x-herald `) suggests `refresh`, `setup`, `models`, `diagnose`, `version`, `help`.
 
 ## Refreshing the model list
 

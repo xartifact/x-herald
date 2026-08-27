@@ -337,6 +337,7 @@ export async function handleOpenAIChatCompletion(
       requestHeaders: {},
       clientIp,
       userAgent,
+      clientType: clientInfo.type,
       requestPath,
       requestMethod,
       isStreaming,

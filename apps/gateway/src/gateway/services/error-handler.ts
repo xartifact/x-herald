@@ -32,6 +32,8 @@ export interface GatewayErrorParams {
   requestHeaders: Record<string, string>
   clientIp: string
   userAgent: string
+  /** 客户端类型（identifyClient 结果），供失败日志与正常请求对齐展示 */
+  clientType?: string
   requestPath: string
   requestMethod: string
   isStreaming: boolean
@@ -44,7 +46,6 @@ export interface GatewayErrorParams {
   logId?: string
   retryCount?: number
 }
-
 export type { GatewayErrorParams as ErrorHandlerParams }
 
 export interface ProviderErrorParams {
@@ -103,6 +104,7 @@ async function logFailure(
     requestHeaders,
     clientIp,
     userAgent,
+    clientType,
     requestPath,
     requestMethod,
     isStreaming,
@@ -114,8 +116,8 @@ async function logFailure(
   await logRequest({
     virtualKey,
     modelName: opts.requestedModel,
+    originalModelName: opts.requestedModel,
     status: 'failure',
-    statusCode: opts.statusCode,
     responseTimeMs: opts.responseTimeMs,
     requestHeaders,
     requestBody: params.rawBody,
@@ -123,12 +125,12 @@ async function logFailure(
     errorType: opts.errorType,
     clientIp,
     userAgent,
+    clientType,
     requestPath,
     requestMethod,
     streaming: isStreaming,
     incomingProtocol,
     targetProtocol,
-    logId,
     retryCount,
     routingTrace: opts.routeChain ? { routeChain: opts.routeChain } : undefined,
   })

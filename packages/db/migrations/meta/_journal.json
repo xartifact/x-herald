@@ -365,6 +365,13 @@
       "when": 1787400000000,
       "tag": "0054_model_group_membership_priority",
       "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1787823000000,
+      "tag": "0055_drop_legacy_migrations_tracking_table",
+      "breakpoints": true
     }
   ]
 }

@@ -100,6 +100,11 @@ function acquirePgliteLock(dataDir: string, logger: DbLogger): boolean {
 
 /**
  * Run pending SQL migrations against a PGlite instance.
+ *
+ * Shares its mechanism (multi-statement-tolerant `.exec()`, md5 file hash,
+ * `drizzle.__drizzle_migrations` tracking table) with
+ * {@link import('./postgres').runPostgresMigrations} so dev/test PGlite and
+ * the real PostgreSQL paths never diverge on what "applied" means.
  */
 export async function runPgliteMigrations(
   pgliteClient: {
@@ -112,14 +117,17 @@ export async function runPgliteMigrations(
   const { createHash } = await import('crypto')
 
   await pgliteClient.exec(`
-    CREATE TABLE IF NOT EXISTS "__drizzle_migrations" (
+    CREATE SCHEMA IF NOT EXISTS "drizzle";
+    CREATE TABLE IF NOT EXISTS "drizzle"."__drizzle_migrations" (
       "id" SERIAL PRIMARY KEY,
       "hash" text NOT NULL,
       "created_at" bigint
     )
   `)
 
-  const existingResult = await pgliteClient.query('SELECT hash FROM "__drizzle_migrations"')
+  const existingResult = await pgliteClient.query(
+    'SELECT hash FROM "drizzle"."__drizzle_migrations"',
+  )
   const appliedHashes = new Set<string>(
     (existingResult.rows as Array<{ hash: string }>).map((r) => r.hash),
   )
@@ -146,7 +154,7 @@ export async function runPgliteMigrations(
     try {
       await pgliteClient.exec(content)
       await pgliteClient.query(
-        'INSERT INTO "__drizzle_migrations" (hash, created_at) VALUES ($1, $2)',
+        'INSERT INTO "drizzle"."__drizzle_migrations" (hash, created_at) VALUES ($1, $2)',
         [hash, Date.now()],
       )
       logger.trace({ file }, '[DB] Migration applied')
@@ -160,7 +168,7 @@ export async function runPgliteMigrations(
         msg.includes('does not exist')
       ) {
         await pgliteClient.query(
-          'INSERT INTO "__drizzle_migrations" (hash, created_at) VALUES ($1, $2)',
+          'INSERT INTO "drizzle"."__drizzle_migrations" (hash, created_at) VALUES ($1, $2)',
           [hash, Date.now()],
         )
         logger.trace(

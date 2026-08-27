@@ -46,7 +46,21 @@ async function createDatabaseIfNotExists(
   }
 }
 
-async function runPostgresMigrations(
+/**
+ * Run pending SQL migrations against a PostgreSQL database.
+ *
+ * This is the single migration mechanism shared by boot-time auto-migration
+ * (`createPostgresDatabase` below) and the manual `bun run migrate` script
+ * (`packages/db/src/migrate.ts`) — both must go through this exact function
+ * so they track state in the same table with the same hash scheme. It
+ * deliberately does NOT use drizzle-orm's official `migrate()`: that helper
+ * requires `--> statement-breakpoint` markers between multi-statement files,
+ * which this repo's hand-authored migrations don't use (they rely on
+ * IF EXISTS/IF NOT EXISTS guards for idempotency instead, per project
+ * convention), so it fails on files with more than one bare `;`-separated
+ * statement.
+ */
+export async function runPostgresMigrations(
   client: postgres.Sql,
   migrationsFolder: string,
   logger: DbLogger,
@@ -54,16 +68,17 @@ async function runPostgresMigrations(
   logger.info('[DB] Running PostgreSQL migrations')
 
   await client.unsafe(`
-    CREATE TABLE IF NOT EXISTS "__drizzle_migrations" (
+    CREATE SCHEMA IF NOT EXISTS "drizzle";
+    CREATE TABLE IF NOT EXISTS "drizzle"."__drizzle_migrations" (
       "id" SERIAL PRIMARY KEY,
       "hash" text NOT NULL,
       "created_at" bigint
     )
   `)
 
-  const existingResult = (await client`SELECT hash FROM "__drizzle_migrations"`) as Array<{
-    hash: string
-  }>
+  const existingResult = (await client`
+    SELECT hash FROM "drizzle"."__drizzle_migrations"
+  `) as Array<{ hash: string }>
   const appliedHashes = new Set<string>(existingResult.map((r) => r.hash))
 
   const migrationFiles = fs
@@ -90,7 +105,7 @@ async function runPostgresMigrations(
 
     try {
       await client.unsafe(content)
-      await client`INSERT INTO "__drizzle_migrations" (hash, created_at) VALUES (${hash}, ${Date.now()})`
+      await client`INSERT INTO "drizzle"."__drizzle_migrations" (hash, created_at) VALUES (${hash}, ${Date.now()})`
       logger.info({ file }, '[DB] Migration applied')
       applied++
       appliedHashes.add(hash)
@@ -101,7 +116,7 @@ async function runPostgresMigrations(
         msg.includes('duplicate') ||
         msg.includes('does not exist')
       ) {
-        await client`INSERT INTO "__drizzle_migrations" (hash, created_at) VALUES (${hash}, ${Date.now()})`
+        await client`INSERT INTO "drizzle"."__drizzle_migrations" (hash, created_at) VALUES (${hash}, ${Date.now()})`
         logger.info(
           { file, error: msg.split('\n')[0] },
           '[DB] Migration already applied or irrelevant',

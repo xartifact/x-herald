@@ -18,6 +18,8 @@ import { virtualKeys } from '@xartifact/x-herald-db'
 
 import { requestLogs, requestAttempts } from '@xartifact/x-herald-db'
 
+import type { LogMetadata } from '../db'
+
 interface DateRange {
   startDate?: string
   endDate?: string
@@ -58,6 +60,9 @@ const LIST_SELECT = {
   thinkingMode: sql<
     boolean | null
   >`((${requestLogs.metadata}->'request'->>'thinkingMode')::boolean)`,
+  thinking: sql<NonNullable<LogMetadata['request']>['thinking'] | null>`(
+    ${requestLogs.metadata}->'request'->'thinking'
+  )`,
   responseModelName: sql<string | null>`(${requestLogs.metadata}->'routing'->>'responseModelName')`,
 }
 

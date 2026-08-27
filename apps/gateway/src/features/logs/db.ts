@@ -89,6 +89,12 @@ export interface LogMetadata {
     maxTokens?: number
     topP?: number
     thinkingMode?: boolean // 是否开启思考模式
+    // 思考程度（档位/模式），来自请求的 reasoning_effort / thinking / reasoning 配置
+    thinking?: {
+      effort?: string // OpenAI reasoning_effort: low | medium | high
+      type?: string // Anthropic thinking type: enabled | adaptive | disabled
+      maxTokens?: number // 思考预算（max_tokens / budget_tokens）
+    }
   }
 
   // 路由追踪

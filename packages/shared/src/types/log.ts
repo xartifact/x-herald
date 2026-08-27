@@ -32,6 +32,11 @@ export interface LogListItem {
   createdAt: string
   isComplete: boolean
   thinkingMode?: boolean | null
+  thinking?: {
+    effort?: string
+    type?: string
+    maxTokens?: number
+  } | null
   responseModelName?: string | null
 }
 
@@ -78,6 +83,11 @@ export interface LogMetadata {
     maxTokens?: number
     topP?: number
     thinkingMode?: boolean
+    thinking?: {
+      effort?: string
+      type?: string
+      maxTokens?: number
+    }
   }
   performance?: {
     responseTimeTier?: 'fast' | 'normal' | 'slow'

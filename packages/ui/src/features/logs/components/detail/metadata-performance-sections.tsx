@@ -5,6 +5,19 @@ import { LatencyBreakdown } from './latency-breakdown'
 import { InfoRow, Section } from './log-info-row'
 import type { ContentFeatures } from './extract-content-features'
 
+function thinkingModeLabel(request: NonNullable<NonNullable<Log['metadata']>['request']>): string {
+  const t = request.thinking
+  const parts: string[] = ['开启']
+  if (t?.effort) {
+    const e = t.effort.charAt(0).toUpperCase() + t.effort.slice(1)
+    parts.push(e)
+  } else if (t?.type) {
+    parts.push(t.type)
+  }
+  if (typeof t?.maxTokens === 'number') parts.push(`${t.maxTokens} tokens`)
+  return parts.join(' · ')
+}
+
 interface MetadataPerformanceSectionsProps {
   log: Log
   contentFeatures: ContentFeatures | null
@@ -78,7 +91,9 @@ export function MetadataPerformanceSections({
           label="思考模式"
           value={
             log.metadata?.request?.thinkingMode ? (
-              <span className="text-info font-semibold">开启</span>
+              <span className="text-info font-semibold">
+                {thinkingModeLabel(log.metadata.request)}
+              </span>
             ) : (
               <span className="text-muted-foreground">关闭</span>
             )

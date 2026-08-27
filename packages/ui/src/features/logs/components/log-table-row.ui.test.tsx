@@ -59,6 +59,22 @@ describe('LogTableRow badge placement', () => {
     expect(modelCell.textContent).toContain('思考')
   })
 
+  it('renders thinking effort level in the badge', () => {
+    const { container } = renderRow(makeLog({ thinkingMode: true, thinking: { effort: 'high' } }))
+    expect(container.textContent).toContain('思考 · High')
+  })
+
+  it('renders thinking type when no effort present', () => {
+    const { container } = renderRow(makeLog({ thinkingMode: true, thinking: { type: 'adaptive' } }))
+    expect(container.textContent).toContain('思考 · adaptive')
+  })
+
+  it('falls back to plain 思考 badge for legacy logs without level info', () => {
+    const { container } = renderRow(makeLog({ thinkingMode: true }))
+    expect(container.textContent).toContain('思考')
+    expect(container.textContent).not.toContain('思考 ·')
+  })
+
   it('does not render streaming/thinking badges in the key column', () => {
     const { container } = renderRow(makeLog({ streaming: true, thinkingMode: true }))
     const cells = container.querySelectorAll('td')

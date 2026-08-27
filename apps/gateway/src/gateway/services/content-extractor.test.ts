@@ -335,6 +335,47 @@ describe('extractRequestFeatures', () => {
     })
   })
 
+  describe('thinking level extraction', () => {
+    it('captures effort from standard reasoning config', () => {
+      const result = extractRequestFeatures(
+        { temperature: 0.2, reasoning: { effort: 'high', enabled: true } },
+        undefined,
+      )
+      expect(result!.thinkingMode).toBe(true)
+      expect(result!.thinking).toEqual({ effort: 'high' })
+    })
+
+    it('captures effort + maxTokens from standard reasoning config', () => {
+      const result = extractRequestFeatures(
+        { reasoning: { effort: 'low', max_tokens: 2048 } },
+        undefined,
+      )
+      expect(result!.thinkingMode).toBe(true)
+      expect(result!.thinking).toEqual({ effort: 'low', maxTokens: 2048 })
+    })
+
+    it('captures effort from raw reasoning_effort when no standard body', () => {
+      const result = extractRequestFeatures(undefined, {
+        reasoning_effort: 'medium',
+      })
+      expect(result!.thinkingMode).toBe(true)
+      expect(result!.thinking).toEqual({ effort: 'medium' })
+    })
+
+    it('captures type from raw thinking block', () => {
+      const result = extractRequestFeatures(undefined, { thinking: { type: 'adaptive' } })
+      expect(result!.thinkingMode).toBe(true)
+      expect(result!.thinking).toEqual({ type: 'adaptive' })
+    })
+    it('keeps legacy boolean-only behavior when no level info present', () => {
+      const result = extractRequestFeatures({ temperature: 0.5 }, undefined, {
+        thinkingBlocks: ['step 1'],
+      })
+      expect(result!.thinkingMode).toBe(true)
+      expect(result!.thinking).toBeUndefined()
+    })
+  })
+
   describe('thinking mode detection from response', () => {
     it('detects thinkingBlocks in responseBody', () => {
       const result = extractRequestFeatures({ temperature: 0.5 }, undefined, {

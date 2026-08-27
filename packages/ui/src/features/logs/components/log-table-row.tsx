@@ -6,6 +6,16 @@ import { TableCell, TableRow } from '../../../shared/components/ui/table'
 import { cn } from '../../../shared/lib/utils'
 import type { LogListItem } from '@xartifact/x-herald-shared'
 
+function thinkingLabel(log: LogListItem): string {
+  const t = log.thinking
+  if (t?.effort) {
+    const e = t.effort.charAt(0).toUpperCase() + t.effort.slice(1)
+    return `思考 · ${e}`
+  }
+  if (t?.type) return `思考 · ${t.type}`
+  return '思考'
+}
+
 const CATEGORY_LABELS: Record<string, { label: string; className: string }> = {
   embedding: { label: 'Embedding', className: 'bg-indigo-500/15 text-indigo-400' },
   chat_text: { label: 'Text', className: 'bg-sky-500/15 text-sky-400' },
@@ -68,7 +78,7 @@ function ModelCell({ log, isPending, isSuccess, isCancelled }: ModelCellProps) {
         )}
         {log.thinkingMode && (
           <Badge variant="outline" className="text-xs h-5 px-1.5 shrink-0 text-info border-info/40">
-            思考
+            {thinkingLabel(log)}
           </Badge>
         )}
         {log.retryCount > 0 && (

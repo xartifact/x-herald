@@ -96,12 +96,37 @@ export function extractRequestFeatures(
       typeof r.effort === 'string' ||
       (typeof r.max_tokens === 'number' && r.max_tokens > 0))
 
+  // 思考档位：优先 StandardRequest.reasoning（ingress 归一化），其次原始请求体
+  let thinking: NonNullable<LogMetadata['request']>['thinking'] | undefined
+  if (r != null) {
+    const effort = typeof r.effort === 'string' && r.effort.length > 0 ? r.effort : undefined
+    const type = typeof r.type === 'string' && r.type.length > 0 ? r.type : undefined
+    const maxTokens =
+      typeof r.max_tokens === 'number' && r.max_tokens > 0 ? r.max_tokens : undefined
+    if (effort || type || maxTokens)
+      thinking = {
+        ...(effort && { effort }),
+        ...(type && { type }),
+        ...(maxTokens && { maxTokens }),
+      }
+  }
+
   if (!thinkingMode) {
     const rawBody = raw && typeof raw === 'object' ? raw : primaryBody
     thinkingMode =
       typeof rawBody.reasoning_effort === 'string' ||
       (rawBody.thinking != null &&
         (rawBody.thinking.type === 'enabled' || rawBody.thinking.type === 'adaptive'))
+
+    if (typeof rawBody.reasoning_effort === 'string' && rawBody.reasoning_effort.length > 0) {
+      thinking = { ...(thinking ?? {}), effort: rawBody.reasoning_effort }
+    }
+    if (
+      rawBody.thinking != null &&
+      (rawBody.thinking.type === 'enabled' || rawBody.thinking.type === 'adaptive')
+    ) {
+      thinking = { ...(thinking ?? {}), type: rawBody.thinking.type }
+    }
   }
 
   if (!thinkingMode) {
@@ -125,6 +150,7 @@ export function extractRequestFeatures(
     maxTokens: primaryBody.max_tokens,
     topP: primaryBody.top_p,
     ...(thinkingMode && { thinkingMode: true }),
+    ...(thinking && { thinking }),
   }
 }
 

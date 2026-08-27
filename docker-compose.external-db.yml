@@ -8,6 +8,9 @@ services:
       - .env
     environment:
       NODE_ENV: production
+      # 启动时自动跑 pending migrations；新部署 / 重建镜像后无需手动 psql。
+      # 默认 prod 下是 false，但加上这个字段强制开启（gateway 进程就是迁移执行器）。
+      MIGRATE_ON_BOOT: 'true'
       PORT: ${PORT:-3000}
       HOST: 0.0.0.0
       PROVIDER_SKIP_TLS_VERIFY: ${PROVIDER_SKIP_TLS_VERIFY:-true}

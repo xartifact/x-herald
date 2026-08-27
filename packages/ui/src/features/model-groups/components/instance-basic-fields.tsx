@@ -1,6 +1,7 @@
 import { UseFormReturn } from 'react-hook-form'
 
-import type { Provider } from '@xartifact/x-herald-shared'
+import type { ModelGroup, Provider } from '@xartifact/x-herald-shared'
+import { Checkbox } from '../../../shared/components/ui/checkbox'
 import {
   FormControl,
   FormDescription,
@@ -23,9 +24,18 @@ import {
 interface InstanceBasicFieldsProps {
   form: UseFormReturn<Record<string, any>>
   providers: Provider[]
+  groups?: ModelGroup[]
 }
 
-export function InstanceBasicFields({ form, providers }: InstanceBasicFieldsProps) {
+export function InstanceBasicFields({ form, providers, groups = [] }: InstanceBasicFieldsProps) {
+  const selected = (form.watch('groupIds') ?? []) as string[]
+  const toggleGroup = (groupId: string) => {
+    const next = selected.includes(groupId)
+      ? selected.filter((g) => g !== groupId)
+      : [...selected, groupId]
+    form.setValue('groupIds', next, { shouldDirty: true })
+  }
+
   return (
     <div className="space-y-4">
       <FormField
@@ -121,6 +131,30 @@ export function InstanceBasicFields({ form, providers }: InstanceBasicFieldsProp
           )}
         />
       </div>
+
+      {groups.length > 0 && (
+        <FormField
+          control={form.control}
+          name="groupIds"
+          render={() => (
+            <FormItem>
+              <FormLabel>加入的模型组</FormLabel>
+              <div className="space-y-2 border rounded-lg p-3">
+                {groups.map((group) => (
+                  <label key={group.id} className="flex items-center gap-2 cursor-pointer text-sm">
+                    <Checkbox
+                      checked={selected.includes(group.id)}
+                      onCheckedChange={() => toggleGroup(group.id)}
+                    />
+                    <span>{group.displayName || group.name}</span>
+                  </label>
+                ))}
+              </div>
+              <FormDescription>一个实例可加入多个模型组</FormDescription>
+            </FormItem>
+          )}
+        />
+      )}
     </div>
   )
 }

@@ -43,8 +43,7 @@ export function ModelGroupsPage() {
   const { data: groups = [], isLoading: groupsLoading } = useModelGroups()
   const { data: rawInstances = [], isLoading: instancesLoading } = useModelInstances()
   const { data: providers = [] } = useProviders()
-
-  const instances = rawInstances as (ModelInstance & { groupIds?: string[] })[]
+  const instances = rawInstances as ModelInstance[]
 
   const createGroup = useCreateModelGroup()
   const updateGroup = useUpdateModelGroup()
@@ -121,6 +120,7 @@ export function ModelGroupsPage() {
       description: '',
       weight: 100,
       priority: 0,
+      groupIds: [] as string[],
       costPer1kTokens: { _enabled: false },
       config: { capabilityOverrides: {} },
     },
@@ -200,6 +200,7 @@ export function ModelGroupsPage() {
       description: '',
       weight: 100,
       priority: 0,
+      groupIds: [],
       costPer1kTokens: { _enabled: false },
       config: { capabilityOverrides: {} },
     })
@@ -214,6 +215,7 @@ export function ModelGroupsPage() {
       description: instance.description || '',
       weight: instance.weight,
       priority: instance.priority,
+      groupIds: instance.groupIds ?? [],
       costPer1kTokens: {
         ...((instance.costPer1kTokens ?? {}) as Record<string, unknown>),
         _enabled: !!instance.costPer1kTokens,
@@ -270,6 +272,7 @@ export function ModelGroupsPage() {
       description: data.description,
       weight: data.weight,
       priority: data.priority,
+      groupIds: data.groupIds ?? [],
       costPer1kTokens: costEnabled ? (costData as any) : undefined,
       config: data.config,
     }
@@ -361,7 +364,6 @@ export function ModelGroupsPage() {
         isPending={createGroup.isPending || updateGroup.isPending}
         onSubmit={onGroupSubmit}
       />
-
       <ModelInstanceForm
         open={instanceDialogOpen}
         onOpenChange={setInstanceDialogOpen}
@@ -369,6 +371,7 @@ export function ModelGroupsPage() {
         editingId={editingInstanceId}
         isPending={createInstance.isPending || updateInstance.isPending}
         providers={providers}
+        groups={groups}
         onSubmit={onInstanceSubmit}
       />
     </div>

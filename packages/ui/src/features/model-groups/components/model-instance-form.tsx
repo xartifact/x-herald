@@ -1,6 +1,6 @@
 import { UseFormReturn } from 'react-hook-form'
 
-import type { Provider } from '@xartifact/x-herald-shared'
+import type { ModelGroup, Provider } from '@xartifact/x-herald-shared'
 import { Button } from '../../../shared/components/ui/button'
 import {
   Dialog,
@@ -32,6 +32,7 @@ interface ModelInstanceFormProps {
   editingId: string | null
   isPending: boolean
   providers: Provider[]
+  groups?: ModelGroup[]
   onSubmit: (data: Record<string, any>) => void
 }
 
@@ -42,6 +43,7 @@ export function ModelInstanceForm({
   editingId,
   isPending,
   providers,
+  groups,
   onSubmit,
 }: ModelInstanceFormProps) {
   return (
@@ -64,7 +66,7 @@ export function ModelInstanceForm({
               </TabsList>
 
               <TabsContent value="basic" className="space-y-4">
-                <InstanceBasicFields form={form} providers={providers} />
+                <InstanceBasicFields form={form} providers={providers} groups={groups} />
               </TabsContent>
 
               <TabsContent value="cost-cap" className="space-y-4">

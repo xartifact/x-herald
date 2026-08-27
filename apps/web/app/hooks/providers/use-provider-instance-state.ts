@@ -32,6 +32,7 @@ export function useProviderInstanceState() {
       description: '',
       weight: 100,
       priority: 0,
+      groupIds: [],
       config: undefined,
     },
   })
@@ -64,6 +65,7 @@ export function useProviderInstanceState() {
       description: '',
       weight: 100,
       priority: 0,
+      groupIds: [],
       config: undefined,
     })
     setInstanceDialogOpen(true)
@@ -78,6 +80,7 @@ export function useProviderInstanceState() {
       description: instance.description || '',
       weight: instance.weight,
       priority: instance.priority,
+      groupIds: instance.groupIds ?? [],
       config: instance.config || undefined,
     })
     setInstanceDialogOpen(true)
@@ -100,6 +103,7 @@ export function useProviderInstanceState() {
       description: data.description,
       weight: data.weight,
       priority: data.priority,
+      groupIds: data.groupIds ?? [],
       config: data.config,
     }
     if (editingInstanceId) {

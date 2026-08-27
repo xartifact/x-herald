@@ -98,6 +98,7 @@ export function ProvidersPage() {
     handleDeleteInstance,
     handleToggleInstance,
     onInstanceSubmit,
+    groups,
   } = useProviderInstanceState()
 
   const {
@@ -268,6 +269,7 @@ export function ProvidersPage() {
         editingId={editingInstanceId}
         isPending={instanceSubmitPending}
         providers={providers as any}
+        groups={groups}
         onSubmit={onInstanceSubmit as any}
       />
 

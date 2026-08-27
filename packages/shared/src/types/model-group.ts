@@ -46,6 +46,7 @@ export interface InstanceFormData {
   description: string
   weight: number
   priority: number
+  groupIds?: string[]
   config?: InstanceConfig
 }
 
@@ -299,6 +300,7 @@ export interface UpdateModelInstancePayload {
   description?: string
   weight?: number
   priority?: number
+  groupIds?: string[]
   costPer1kTokens?: InstanceCost | null
   config?: InstanceConfig | null
 }

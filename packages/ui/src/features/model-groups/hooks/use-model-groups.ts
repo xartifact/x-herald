@@ -5,6 +5,7 @@ import { get, post, put, del as deleteRequest, patch } from '@xartifact/x-herald
 
 import type {
   ApiResponse,
+  AttachInstancesResult,
   InstanceCost,
   InstanceTestResult,
   ModelGroup,
@@ -291,6 +292,56 @@ export function useSetInstanceGroups() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: modelGroupKeys.instances() })
       toast.success('模型组设置成功')
+    },
+    onError: (error: Error) => {
+      toast.error(error.message)
+    },
+  })
+}
+
+/** 将已有实例批量挂载到模型组（不创建实例） */
+export function useAttachInstancesToGroup() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ groupId, instanceIds }: { groupId: string; instanceIds: string[] }) => {
+      const response = await post<ApiResponse<AttachInstancesResult>>(
+        `/api/model-groups/groups/${groupId}/instances`,
+        { instanceIds },
+        { extractData: false },
+      )
+      if (!response.success) throw new Error(response.error || '添加实例到模型组失败')
+      return response.data
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: modelGroupKeys.instances() })
+      toast.success(
+        data.skipped > 0
+          ? `已添加 ${data.added.length} 个（跳过 ${data.skipped} 个已存在）`
+          : '实例已加入模型组',
+      )
+    },
+    onError: (error: Error) => {
+      toast.error(error.message)
+    },
+  })
+}
+
+/** 将实例从模型组解绑（不删除实例） */
+export function useDetachInstanceFromGroup() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ groupId, instanceId }: { groupId: string; instanceId: string }) => {
+      const response = await deleteRequest<ApiResponse<{ removed: boolean }>>(
+        `/api/model-groups/groups/${groupId}/instances/${instanceId}`,
+        { extractData: false },
+      )
+      if (!response.success) throw new Error(response.error || '移出模型组失败')
+      return response.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: modelGroupKeys.instances() })
     },
     onError: (error: Error) => {
       toast.error(error.message)

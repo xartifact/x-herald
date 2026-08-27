@@ -1,4 +1,4 @@
-import { Pencil, Trash2, ArrowUp, ArrowDown } from 'lucide-react'
+import { Pencil, Trash2, ArrowUp, ArrowDown, Unlink } from 'lucide-react'
 
 import { StatusToggle } from '../../../shared/components/status-toggle'
 import { InstanceAiChat } from '../../ai-assist'
@@ -18,19 +18,25 @@ import type { ModelInstance } from '@xartifact/x-herald-shared'
 interface ModelInstanceTableProps {
   instances: ModelInstance[]
   getProviderName: (providerId: string) => string
+  /** 所属模型组 id；提供时在操作列显示"移出本组" */
+  groupId?: string
   onEdit: (instance: ModelInstance) => void
   onDelete: (instance: ModelInstance) => void
   onMove: (instanceId: string, direction: 'up' | 'down') => void
   onToggle: (instance: ModelInstance) => void
+  /** 仅解绑成员关系，不删除实例本身 */
+  onDetach?: (groupId: string, instance: ModelInstance) => void
 }
 
 export function ModelInstanceTable({
   instances,
   getProviderName,
+  groupId,
   onEdit,
   onDelete,
   onMove,
   onToggle,
+  onDetach,
 }: ModelInstanceTableProps) {
   if (instances.length === 0) {
     return <div className="text-center py-6 text-sm text-muted-foreground">暂无实例</div>
@@ -99,6 +105,17 @@ export function ModelInstanceTable({
                 >
                   <Pencil className="h-3.5 w-3.5" />
                 </Button>
+                {groupId && onDetach && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                    title="移出本组（不删除实例）"
+                    onClick={() => onDetach(groupId, instance)}
+                  >
+                    <Unlink className="h-3.5 w-3.5" />
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="icon"

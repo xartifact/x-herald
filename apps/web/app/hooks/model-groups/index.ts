@@ -12,6 +12,8 @@ export {
   useUpdateModelInstance,
   useDeleteModelInstance,
   useSetInstanceGroups,
+  useAttachInstancesToGroup,
+  useDetachInstanceFromGroup,
   useToggleModelInstance,
 } from './use-model-groups'
 

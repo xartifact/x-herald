@@ -4,6 +4,7 @@ import { rootLogger } from '../../lib'
 import { modelGroupRouter } from '../../gateway/services/model-group-router'
 
 import {
+  addInstancesToGroup,
   assignInstance,
   createGroup,
   createInstance,
@@ -11,6 +12,7 @@ import {
   deleteInstance,
   listGroups,
   listInstances,
+  removeInstanceFromGroup,
   reorderGroupInstances,
   setInstanceGroupsById,
   testInstanceConnectivity,
@@ -109,6 +111,50 @@ modelGroupRoutes.put('/groups/:groupId/instances/reorder', async (c) => {
     return c.json({ success: true })
   } catch (error) {
     logger.warn({ err: error }, 'Failed to reorder model instances')
+    return c.json(
+      { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
+      500,
+    )
+  }
+})
+
+// 将已有实例批量挂载到模型组（不创建新实例）
+modelGroupRoutes.post('/groups/:groupId/instances', async (c) => {
+  try {
+    const { instanceIds } = await c.req.json<{ instanceIds: string[] }>()
+    if (!Array.isArray(instanceIds) || instanceIds.length === 0) {
+      return c.json({ success: false, error: 'instanceIds is required' }, 400)
+    }
+    const result = await addInstancesToGroup(c.req.param('groupId'), instanceIds)
+    if ('error' in result) {
+      return c.json(
+        {
+          success: false,
+          error:
+            result.error === 'GROUP_NOT_FOUND'
+              ? 'Model group not found'
+              : `Instances not found: ${(result.missingInstanceNames ?? []).join(', ')}`,
+        },
+        404,
+      )
+    }
+    return c.json({ success: true, data: result.data })
+  } catch (error) {
+    logger.warn({ err: error }, 'Failed to attach instances to group')
+    return c.json(
+      { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
+      500,
+    )
+  }
+})
+
+// 将实例从模型组解绑（不删除实例本身）
+modelGroupRoutes.delete('/groups/:groupId/instances/:instanceId', async (c) => {
+  try {
+    const result = await removeInstanceFromGroup(c.req.param('groupId'), c.req.param('instanceId'))
+    return c.json({ success: true, data: result })
+  } catch (error) {
+    logger.warn({ err: error }, 'Failed to detach instance from group')
     return c.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       500,

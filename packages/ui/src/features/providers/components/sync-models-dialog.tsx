@@ -4,7 +4,7 @@ import { Loader2, Search } from 'lucide-react'
 
 import { useModelGroups } from '../../model-groups'
 import { Button, Input } from '../../../shared/components/ui/index'
-import { Checkbox } from '../../../shared/components/ui/index'
+import { MultiSelect, type MultiSelectOption } from '../../../shared/components/multi-select'
 import {
   Dialog,
   DialogContent,
@@ -37,6 +37,16 @@ export function SyncModelsDialog({
   const { data: models = [], isLoading, refetch } = useProviderModels(providerId, open)
   const { data: groups = [] } = useModelGroups()
   const syncModels = useSyncProviderModels()
+
+  const groupOptions: MultiSelectOption[] = useMemo(
+    () =>
+      groups.map((g) => ({
+        value: g.id,
+        label: g.displayName || g.name,
+        disabled: !g.enabled,
+      })),
+    [groups],
+  )
 
   const filteredModels = useMemo(() => {
     const q = searchQuery.trim().toLowerCase()
@@ -72,13 +82,8 @@ export function SyncModelsDialog({
     )
   }
 
-  const toggleGroup = (groupId: string) => {
-    setSelectedGroups((prev) => {
-      const next = new Set(prev)
-      if (next.has(groupId)) next.delete(groupId)
-      else next.add(groupId)
-      return next
-    })
+  const handleGroupChange = (values: string[]) => {
+    setSelectedGroups(new Set(values))
   }
 
   const handleSync = async () => {
@@ -131,27 +136,17 @@ export function SyncModelsDialog({
 
         <div className="space-y-3 pt-3 border-t">
           {groups.length > 0 && (
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground whitespace-nowrap">
-                  绑定模型组：
-                </span>
-                <span className="text-xs text-muted-foreground">（可多选）</span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {groups.map((group) => (
-                  <label
-                    key={group.id}
-                    className="flex items-center gap-1.5 cursor-pointer text-sm"
-                  >
-                    <Checkbox
-                      checked={selectedGroups.has(group.id)}
-                      onCheckedChange={() => toggleGroup(group.id)}
-                    />
-                    <span className="whitespace-nowrap">{group.displayName || group.name}</span>
-                  </label>
-                ))}
-              </div>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground whitespace-nowrap">绑定模型组：</span>
+              <MultiSelect
+                className="flex-1"
+                options={groupOptions}
+                selected={[...selectedGroups]}
+                onChange={handleGroupChange}
+                placeholder="不绑定（可多选）"
+                searchPlaceholder="搜索模型组..."
+                emptyText="无匹配的模型组"
+              />
             </div>
           )}
           <DialogFooter>

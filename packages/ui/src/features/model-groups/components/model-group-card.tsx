@@ -1,4 +1,4 @@
-import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, Layers } from 'lucide-react'
+import { ListPlus, Pencil, Trash2, ChevronDown, ChevronUp, Layers } from 'lucide-react'
 
 import { Badge } from '../../../shared/components/ui/badge'
 import { Button } from '../../../shared/components/ui/button'
@@ -15,11 +15,13 @@ interface ModelGroupCardProps {
   onToggleExpand: () => void
   onEdit: () => void
   onDelete: () => void
+  /** 打开"从现有实例中选择"对话框 */
   onAddInstance: () => void
   onEditInstance: (instance: ModelInstance) => void
   onDeleteInstance: (instance: ModelInstance) => void
   onToggleInstance: (instance: ModelInstance) => void
   onMoveInstance: (instanceId: string, direction: 'up' | 'down') => void
+  onDetachInstance?: (instance: ModelInstance) => void
   getProviderName: (providerId: string) => string
 }
 
@@ -35,6 +37,7 @@ export function ModelGroupCard({
   onDeleteInstance,
   onToggleInstance,
   onMoveInstance,
+  onDetachInstance,
   getProviderName,
 }: ModelGroupCardProps) {
   return (
@@ -95,17 +98,21 @@ export function ModelGroupCard({
               <div className="flex items-center justify-between mb-2">
                 <h4 className="text-sm font-medium">模型实例</h4>
                 <Button size="sm" variant="outline" onClick={onAddInstance}>
-                  <Plus className="mr-2 h-3.5 w-3.5" />
-                  添加实例
+                  <ListPlus className="mr-2 h-3.5 w-3.5" />
+                  从现有实例添加
                 </Button>
               </div>
               <ModelInstanceTable
                 instances={instances}
+                groupId={group.id}
                 getProviderName={getProviderName}
                 onEdit={onEditInstance}
                 onDelete={onDeleteInstance}
                 onToggle={onToggleInstance}
                 onMove={onMoveInstance}
+                onDetach={
+                  onDetachInstance ? (_groupId, instance) => onDetachInstance(instance) : undefined
+                }
               />
             </div>
           </div>

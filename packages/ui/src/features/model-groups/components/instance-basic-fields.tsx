@@ -1,7 +1,7 @@
 import { UseFormReturn } from 'react-hook-form'
 
 import type { ModelGroup, Provider } from '@xartifact/x-herald-shared'
-import { Checkbox } from '../../../shared/components/ui/checkbox'
+import { MultiSelect, type MultiSelectOption } from '../../../shared/components/multi-select'
 import {
   FormControl,
   FormDescription,
@@ -28,13 +28,11 @@ interface InstanceBasicFieldsProps {
 }
 
 export function InstanceBasicFields({ form, providers, groups = [] }: InstanceBasicFieldsProps) {
-  const selected = (form.watch('groupIds') ?? []) as string[]
-  const toggleGroup = (groupId: string) => {
-    const next = selected.includes(groupId)
-      ? selected.filter((g) => g !== groupId)
-      : [...selected, groupId]
-    form.setValue('groupIds', next, { shouldDirty: true })
-  }
+  const groupOptions: MultiSelectOption[] = groups.map((g) => ({
+    value: g.id,
+    label: g.displayName || g.name,
+    disabled: !g.enabled,
+  }))
 
   return (
     <div className="space-y-4">
@@ -114,25 +112,25 @@ export function InstanceBasicFields({ form, providers, groups = [] }: InstanceBa
         />
       </div>
 
-      {groups.length > 0 && (
+      {groupOptions.length > 0 && (
         <FormField
           control={form.control}
           name="groupIds"
-          render={() => (
+          render={({ field }) => (
             <FormItem>
               <FormLabel>加入的模型组</FormLabel>
-              <div className="space-y-2 border rounded-lg p-3">
-                {groups.map((group) => (
-                  <label key={group.id} className="flex items-center gap-2 cursor-pointer text-sm">
-                    <Checkbox
-                      checked={selected.includes(group.id)}
-                      onCheckedChange={() => toggleGroup(group.id)}
-                    />
-                    <span>{group.displayName || group.name}</span>
-                  </label>
-                ))}
-              </div>
+              <FormControl>
+                <MultiSelect
+                  options={groupOptions}
+                  selected={(field.value as string[]) ?? []}
+                  onChange={(v) => field.onChange(v)}
+                  placeholder="选择模型组..."
+                  searchPlaceholder="搜索模型组..."
+                  emptyText="无匹配的模型组"
+                />
+              </FormControl>
               <FormDescription>一个实例可加入多个模型组</FormDescription>
+              <FormMessage />
             </FormItem>
           )}
         />

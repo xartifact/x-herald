@@ -303,6 +303,14 @@ export interface UpdateModelInstancePayload {
   config?: InstanceConfig | null
 }
 
+/** 批量挂载已有实例到模型组的结果（POST /model-groups/groups/:id/instances） */
+export interface AttachInstancesResult {
+  /** 本次新挂载的实例 id */
+  added: string[]
+  /** 已在组内被跳过的数量 */
+  skipped: number
+}
+
 /**
  * 模型实例连通性测试结果 —— 由实例清单上的"测试"按钮触发（POST /instances/:id/test）。
  * ok=true 表示上游可达且返回了正常响应；其余情况 ok=false，message 说明原因。

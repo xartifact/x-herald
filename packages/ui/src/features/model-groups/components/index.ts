@@ -1,4 +1,5 @@
 export { ModelGroupCard } from './model-group-card'
+export { InstancePickerDialog } from './instance-picker-dialog'
 export { InstanceTestButton } from './instance-test-button'
 export { ModelInstanceTable } from './model-instance-table'
 export { ModelGroupForm } from './model-group-form'

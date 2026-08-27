@@ -9,6 +9,8 @@ import {
   useUpdateModelGroup,
   useDeleteModelGroup,
   useCreateModelInstance,
+  useAttachInstancesToGroup,
+  useDetachInstanceFromGroup,
   useUpdateModelInstance,
   useDeleteModelInstance,
   useToggleModelInstance,
@@ -21,6 +23,7 @@ import {
   CardContent,
   EmptyState,
   Input,
+  InstancePickerDialog,
   ModelGroupCard,
   ModelGroupForm,
   ModelInstanceForm,
@@ -40,6 +43,9 @@ export function ModelGroupsPage() {
   const [editingInstanceId, setEditingInstanceId] = useState<string | null>(null)
   const [instanceDialogOpen, setInstanceDialogOpen] = useState(false)
 
+  // "从现有实例添加"的目标组
+  const [pickingGroupId, setPickingGroupId] = useState<string | null>(null)
+
   const { data: groups = [], isLoading: groupsLoading } = useModelGroups()
   const { data: rawInstances = [], isLoading: instancesLoading } = useModelInstances()
   const { data: providers = [] } = useProviders()
@@ -50,6 +56,8 @@ export function ModelGroupsPage() {
   const deleteGroup = useDeleteModelGroup()
 
   const createInstance = useCreateModelInstance()
+  const attachInstances = useAttachInstancesToGroup()
+  const detachInstance = useDetachInstanceFromGroup()
   const updateInstance = useUpdateModelInstance()
   const deleteInstance = useDeleteModelInstance()
   const toggleInstance = useToggleModelInstance()
@@ -89,7 +97,7 @@ export function ModelGroupsPage() {
 
   const ungroupedInstances = useMemo(
     () =>
-      (instances as any[])
+      (instances as ModelInstance[])
         .filter((inst) => !allGroupedIds.has(inst.id))
         .sort((a, b) => (a.createdAt ?? '').localeCompare(b.createdAt ?? '')),
     [instances, allGroupedIds],
@@ -194,6 +202,9 @@ export function ModelGroupsPage() {
     groupForm.reset()
   }
 
+  // 卡片内"从现有实例添加"→ 打开 picker；全局"新建实例"按钮 → 打开创建表单
+  const pickingGroup = groups.find((g) => g.id === pickingGroupId) ?? null
+
   const handleAddInstance = () => {
     instanceForm.reset({
       providerId: '',
@@ -206,6 +217,7 @@ export function ModelGroupsPage() {
     })
     setInstanceDialogOpen(true)
   }
+
   const handleEditInstance = (instance: ModelInstance) => {
     setEditingInstanceId(instance.id)
     instanceForm.reset({
@@ -225,7 +237,8 @@ export function ModelGroupsPage() {
   }
 
   const handleDeleteInstance = async (instance: ModelInstance) => {
-    if (!confirm(`确定要删除模型实例 "${instance.name}" 吗？`)) return
+    if (!confirm(`确定要删除模型实例 "${instance.name}" 吗？\n\n该实例将从其所有模型组中移除。`))
+      return
     await deleteInstance.mutateAsync({ id: instance.id })
   }
 
@@ -298,6 +311,10 @@ export function ModelGroupsPage() {
             className="pl-8"
           />
         </div>
+        <Button variant="outline" onClick={handleAddInstance}>
+          <Plus className="mr-2 h-4 w-4" />
+          新建实例
+        </Button>
         <Button onClick={handleAddGroup}>
           <Plus className="mr-2 h-4 w-4" />
           添加模型组
@@ -336,12 +353,15 @@ export function ModelGroupsPage() {
               onToggleExpand={() => setExpandedGroup(expandedGroup === group.id ? null : group.id)}
               onEdit={() => handleEditGroup(group)}
               onDelete={() => handleDeleteGroup(group.id, group.name)}
-              onAddInstance={handleAddInstance}
+              onAddInstance={() => setPickingGroupId(group.id)}
               onEditInstance={handleEditInstance}
               onDeleteInstance={handleDeleteInstance}
               onToggleInstance={handleToggleInstance}
               onMoveInstance={(instanceId, direction) =>
                 handleMoveInstance(group.id, instanceId, direction)
+              }
+              onDetachInstance={(instance) =>
+                detachInstance.mutate({ groupId: group.id, instanceId: instance.id })
               }
               getProviderName={getProviderName}
             />
@@ -353,6 +373,28 @@ export function ModelGroupsPage() {
           />
         </div>
       )}
+
+      <InstancePickerDialog
+        open={pickingGroupId !== null}
+        onOpenChange={(open) => {
+          if (!open) setPickingGroupId(null)
+        }}
+        group={pickingGroup}
+        instances={instances}
+        providers={providers}
+        isPending={attachInstances.isPending}
+        onConfirm={(instanceIds) => {
+          if (pickingGroupId) {
+            attachInstances.mutate(
+              { groupId: pickingGroupId, instanceIds },
+              {
+                onSuccess: () => setPickingGroupId(null),
+                onError: () => setPickingGroupId(null),
+              },
+            )
+          }
+        }}
+      />
 
       <ModelGroupForm
         open={groupDialogOpen}

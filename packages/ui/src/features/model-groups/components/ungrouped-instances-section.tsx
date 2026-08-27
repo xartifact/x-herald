@@ -3,16 +3,10 @@ import { useState } from 'react'
 import { FolderOpen, MoveRight } from 'lucide-react'
 
 import { StatusToggle } from '../../../shared/components/status-toggle'
+import { MultiSelect, type MultiSelectOption } from '../../../shared/components/multi-select'
 import { Badge } from '../../../shared/components/ui/index'
 import { Button } from '../../../shared/components/ui/index'
 import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/components/ui/index'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../../../shared/components/ui/index'
 import {
   Table,
   TableBody,
@@ -36,17 +30,24 @@ export function UngroupedInstancesSection({
   groups,
   getProviderName,
 }: UngroupedInstancesSectionProps) {
-  const [assignGroupId, setAssignGroupId] = useState<Record<string, string>>({})
+  // 每行暂存待分配的组（可多选），点按钮确认
+  const [assignSelections, setAssignSelections] = useState<Record<string, string[]>>({})
   const assignInstance = useSetInstanceGroups()
   const toggleInstance = useToggleModelInstance()
+
+  const groupOptions: MultiSelectOption[] = groups.map((g) => ({
+    value: g.id,
+    label: g.displayName || g.name,
+    disabled: !g.enabled,
+  }))
 
   if (instances.length === 0) return null
 
   const handleAssign = async (instanceId: string) => {
-    const groupId = assignGroupId[instanceId]
-    if (!groupId) return
-    await assignInstance.mutateAsync({ id: instanceId, groupIds: [groupId] })
-    setAssignGroupId((prev) => {
+    const groupIds = assignSelections[instanceId]
+    if (!groupIds || groupIds.length === 0) return
+    await assignInstance.mutateAsync({ id: instanceId, groupIds })
+    setAssignSelections((prev) => {
       const next = { ...prev }
       delete next[instanceId]
       return next
@@ -70,7 +71,7 @@ export function UngroupedInstancesSection({
               <TableHead>实际模型</TableHead>
               <TableHead>供应商</TableHead>
               <TableHead>状态</TableHead>
-              <TableHead className="text-right">分配到组</TableHead>
+              <TableHead className="text-right">分配到组（可多选）</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -89,27 +90,24 @@ export function UngroupedInstancesSection({
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center justify-end gap-2">
-                    <Select
-                      value={assignGroupId[instance.id] || ''}
-                      onValueChange={(v) =>
-                        setAssignGroupId((prev) => ({ ...prev, [instance.id]: v }))
+                    <MultiSelect
+                      className="w-[240px]"
+                      options={groupOptions}
+                      selected={assignSelections[instance.id] ?? []}
+                      onChange={(values) =>
+                        setAssignSelections((prev) => ({ ...prev, [instance.id]: values }))
                       }
-                    >
-                      <SelectTrigger className="w-[160px] h-8">
-                        <SelectValue placeholder="选择模型组" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {groups.map((group) => (
-                          <SelectItem key={group.id} value={group.id}>
-                            {group.displayName || group.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      placeholder="选择模型组..."
+                      searchPlaceholder="搜索模型组..."
+                      emptyText="无匹配的模型组"
+                    />
                     <Button
                       size="sm"
                       variant="outline"
-                      disabled={!assignGroupId[instance.id] || assignInstance.isPending}
+                      disabled={
+                        (assignSelections[instance.id]?.length ?? 0) === 0 ||
+                        assignInstance.isPending
+                      }
                       onClick={() => handleAssign(instance.id)}
                     >
                       <MoveRight className="h-4 w-4" />

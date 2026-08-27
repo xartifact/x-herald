@@ -349,6 +349,91 @@ export async function reorderGroupInstances(
   }
 }
 
+/**
+ * 将已有实例批量挂载到模型组（不创建新实例）。
+ * 幂等：已在组内的实例跳过；新挂载的实例 priority 追加到组尾。
+ * 任意实例或组不存在（含软删）时报错并列出缺失项。
+ */
+export async function addInstancesToGroup(
+  groupId: string,
+  instanceIds: string[],
+  db?: Database,
+): Promise<
+  | { error: 'GROUP_NOT_FOUND' | 'INSTANCE_NOT_FOUND'; missingInstanceNames?: string[] }
+  | { data: { added: string[]; skipped: number } }
+> {
+  const database = db ?? getDatabase()
+
+  const [group] = await database
+    .select({ id: modelGroups.id })
+    .from(modelGroups)
+    .where(and(eq(modelGroups.id, groupId), isNull(modelGroups.deletedAt)))
+    .limit(1)
+  if (!group) return { error: 'GROUP_NOT_FOUND' }
+
+  if (instanceIds.length === 0) return { data: { added: [], skipped: 0 } }
+
+  const instanceRows = await database
+    .select({ id: modelInstances.id, name: modelInstances.name })
+    .from(modelInstances)
+    .where(and(inArray(modelInstances.id, instanceIds), isNull(modelInstances.deletedAt)))
+  if (instanceRows.length !== instanceIds.length) {
+    const found = new Set(instanceRows.map((r) => r.id))
+    return {
+      error: 'INSTANCE_NOT_FOUND',
+      missingInstanceNames: instanceIds.filter((id) => !found.has(id)),
+    }
+  }
+
+  // 组内当前最大 priority，用于追加排序
+  const existingMembers = await database
+    .select({
+      instanceId: modelGroupMemberships.instanceId,
+      priority: modelGroupMemberships.priority,
+    })
+    .from(modelGroupMemberships)
+    .where(eq(modelGroupMemberships.groupId, groupId))
+  const memberSet = new Set(existingMembers.map((m) => m.instanceId))
+  let nextPriority = existingMembers.length
+    ? Math.max(...existingMembers.map((m) => m.priority)) + 1
+    : 0
+
+  const toAdd = instanceIds.filter((id) => !memberSet.has(id))
+  if (toAdd.length > 0) {
+    await database
+      .insert(modelGroupMemberships)
+      .values(toAdd.map((instanceId) => ({ groupId, instanceId, priority: nextPriority++ })))
+  }
+
+  logger.info(
+    { groupId, added: toAdd.length, skipped: instanceIds.length - toAdd.length },
+    'Instances attached to group',
+  )
+  return { data: { added: toAdd, skipped: instanceIds.length - toAdd.length } }
+}
+
+/** 将实例从模型组移除（仅解绑成员关系，不删除实例本身）。 */
+export async function removeInstanceFromGroup(
+  groupId: string,
+  instanceId: string,
+  db?: Database,
+): Promise<{ removed: boolean }> {
+  const database = db ?? getDatabase()
+  const deleted = await database
+    .delete(modelGroupMemberships)
+    .where(
+      and(
+        eq(modelGroupMemberships.groupId, groupId),
+        eq(modelGroupMemberships.instanceId, instanceId),
+      ),
+    )
+    .returning({ instanceId: modelGroupMemberships.instanceId })
+  if (deleted.length > 0) {
+    logger.info({ groupId, instanceId }, 'Instance detached from group')
+  }
+  return { removed: deleted.length > 0 }
+}
+
 interface GroupData {
   name: string
   aliases?: string[]

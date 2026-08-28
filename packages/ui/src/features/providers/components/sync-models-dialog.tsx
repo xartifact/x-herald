@@ -1,9 +1,16 @@
 import { useState, useEffect, useMemo } from 'react'
 
+import type { ProviderModelInfo } from '@xartifact/x-herald-shared'
 import { Loader2, Search } from 'lucide-react'
 
 import { useModelGroups } from '../../model-groups'
-import { Button, Input } from '../../../shared/components/ui/index'
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  Button,
+  Input,
+} from '../../../shared/components/ui/index'
 import { MultiSelect, type MultiSelectOption } from '../../../shared/components/multi-select'
 import {
   Dialog,
@@ -16,6 +23,8 @@ import {
 
 import { useProviderModels, useSyncProviderModels } from '../hooks/use-providers'
 import { SyncModelList } from './sync-model-list'
+
+const EMPTY_MODELS: ProviderModelInfo[] = []
 
 interface SyncModelsDialogProps {
   providerId: string
@@ -34,7 +43,10 @@ export function SyncModelsDialog({
   const [selectedGroups, setSelectedGroups] = useState<Set<string>>(new Set())
   const [searchQuery, setSearchQuery] = useState('')
 
-  const { data: models = [], isLoading, refetch } = useProviderModels(providerId, open)
+  const { data: modelsData, isLoading, refetch } = useProviderModels(providerId, open)
+  const models = modelsData?.data ?? EMPTY_MODELS
+  const fetchError: string | null = modelsData?.fetchError ?? null
+  const hasError = !!fetchError && models.length === 0
   const { data: groups = [] } = useModelGroups()
   const syncModels = useSyncProviderModels()
 
@@ -121,6 +133,17 @@ export function SyncModelsDialog({
             className="pl-8"
           />
         </div>
+        {hasError && (
+          <Alert variant="destructive" className="mb-2">
+            <AlertTitle>无法获取模型列表</AlertTitle>
+            <AlertDescription>
+              {fetchError}。请检查供应商网络/API 后重试。
+              <Button variant="outline" size="sm" className="ml-2" onClick={() => refetch()}>
+                重试
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
         <div className="flex-1 overflow-y-auto min-h-0">
           <SyncModelList
             models={filteredModels}

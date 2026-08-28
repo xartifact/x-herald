@@ -250,6 +250,18 @@ export async function fetchRemoteModels(id: string, db?: Database): Promise<Fetc
       } else {
         fetchError = `Anthropic API returned ${resp.status}`
       }
+    } else if (protocols.gemini?.enabled && protocols.gemini.baseUrl) {
+      const url = `${protocols.gemini.baseUrl.replace(/\/+$/, '')}/models`
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (provider.apiKey) headers['x-goog-api-key'] = provider.apiKey
+      const resp = await fetch(url, { headers, signal: AbortSignal.timeout(15000) })
+      if (resp.ok) {
+        const body = (await resp.json()) as { data?: Array<Record<string, unknown>> }
+        if (Array.isArray(body.data))
+          remoteModels = body.data.map((m) => normalizeProviderModel(m, false))
+      } else {
+        fetchError = `Gemini API returned ${resp.status}`
+      }
     } else {
       fetchError = 'No supported protocol enabled'
     }

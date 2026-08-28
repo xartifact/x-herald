@@ -88,14 +88,21 @@ export function useUpdateProvider() {
     },
   })
 }
+export interface ProviderModelsResponse {
+  data: ProviderModelInfo[]
+  total: number
+  fetchError: string | null
+}
 
 /**
  * 获取供应商远程模型列表
+ * 返回完整信封（含上游失败原因 fetchError），供 UI 区分「同步失败」与「上游异常」。
  */
 export function useProviderModels(providerId: string, enabled = false) {
   return useQuery({
     queryKey: [...providerKeys.detail(providerId), 'models'] as const,
-    queryFn: () => get<ProviderModelInfo[]>(`/api/providers/${providerId}/models`),
+    queryFn: () =>
+      get<ProviderModelsResponse>(`/api/providers/${providerId}/models`, { extractData: false }),
     enabled: !!providerId && enabled,
   })
 }

@@ -1,3 +1,7 @@
+import rootLogger from '../../lib/logger'
+
+const logger = rootLogger.child({ module: 'error-classifier' })
+
 function bytesToMB(bytes: number): string {
   return (Math.round((bytes / 1024 / 1024) * 10) / 10).toFixed(1)
 }
@@ -67,7 +71,18 @@ export async function parseProviderError(
   response: Response,
 ): Promise<{ error?: { message?: string }; [key: string]: unknown }> {
   const contentType = response.headers.get('content-type') || ''
-  const text = await response.text().catch(() => '')
+  let text = ''
+  try {
+    text = await response.text()
+  } catch (err) {
+    // 读取 body 本身失败（连接被截断/重置），和上游真的返回空 body 表现完全一样
+    // （都会走到下面的 'Provider request failed' 兜底），必须单独打日志才能区分，
+    // 否则没法判断是本地网络/代理层丢了数据，还是上游真的没给内容。
+    logger.warn(
+      { err, status: response.status, contentType },
+      'Failed to read provider error response body (likely a truncated/reset connection, not necessarily an empty upstream response)',
+    )
+  }
 
   if (contentType.includes('text/event-stream') || text.startsWith('data:')) {
     const lines = text.split('\n')

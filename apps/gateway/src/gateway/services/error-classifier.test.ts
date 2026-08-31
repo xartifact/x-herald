@@ -4,6 +4,7 @@ import {
   parseProviderError,
   extractProviderResponseHeaders,
 } from './error-classifier'
+import { consoleLogBus, type ConsoleLogEntry } from '../../lib/console-log-bus'
 
 // ---------------------------------------------------------------------------
 // normalizeProviderErrorMessage()
@@ -162,6 +163,38 @@ describe('parseProviderError', () => {
     })
     const result = await parseProviderError(response)
     expect(result).toEqual({ error: { message: 'Provider request failed' } })
+  })
+
+  it('logs a warning (not silence) when the body read itself throws', async () => {
+    const brokenBody = new ReadableStream({
+      start(controller) {
+        controller.error(new Error('terminated'))
+      },
+    })
+    const response = new Response(brokenBody, {
+      status: 404,
+      headers: { 'content-type': 'application/json; charset=utf-8' },
+    })
+
+    const entries: ConsoleLogEntry[] = []
+    const unsubscribe = consoleLogBus.subscribe((entry) => entries.push(entry))
+    let result: unknown
+    try {
+      result = await parseProviderError(response)
+    } finally {
+      unsubscribe()
+    }
+
+    // 行为不变：读取失败仍然安全兜底，不抛异常、不污染上层调用方
+    expect(result).toEqual({ error: { message: 'Provider request failed' } })
+
+    // 但必须留下可区分的日志，而不是和"上游真的返回空 body"表现一样
+    const warnEntry = entries.find(
+      (e) => e.level === 'warn' && e.fields.module === 'error-classifier',
+    )
+    expect(warnEntry).toBeDefined()
+    expect(warnEntry?.msg).toContain('Failed to read provider error response body')
+    expect(warnEntry?.fields.status).toBe(404)
   })
 
   it('handles multiple data: lines where only one is valid JSON', async () => {

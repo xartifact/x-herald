@@ -10,7 +10,7 @@ const routes = new Hono()
  * Query:
  *   - modelName: 客户端原始模型名
  *   - matchedRuleId: 命中规则 ID
- *   - outcome: success | rejected | all_failed
+ *   - outcome: success | rejected | all_failed | pending
  *   - hasFailover: 是否触发跨 provider 降级 (routeChain 包含 backup step)
  *   - startDate / endDate: ISO 时间范围
  *   - virtualKeyId
@@ -28,14 +28,16 @@ routes.get('/', async (c) => {
   const pageSize = Number(c.req.query('pageSize') ?? '20')
   const cursor = c.req.query('cursor') || undefined
 
-  if (!['success', 'rejected', 'all_failed', undefined].includes(outcome as any)) {
+  const VALID_OUTCOMES = ['success', 'rejected', 'all_failed', 'pending'] as const
+  type ValidOutcome = (typeof VALID_OUTCOMES)[number]
+  if (outcome !== undefined && !VALID_OUTCOMES.includes(outcome as ValidOutcome)) {
     return c.json({ error: 'Invalid outcome', code: 'INVALID_OUTCOME' }, 400)
   }
 
   const result = await listRoutingTraces({
     modelName,
     matchedRuleId,
-    outcome: outcome as 'success' | 'rejected' | 'all_failed' | undefined,
+    outcome: outcome as ValidOutcome | undefined,
     virtualKeyId,
     startDate,
     endDate,

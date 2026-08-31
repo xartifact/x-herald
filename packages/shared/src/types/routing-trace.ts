@@ -85,7 +85,7 @@ export interface RoutingTrace {
   /** 链路步骤（按执行顺序） */
   chain: ChainStep[]
   /** 最终 outcome */
-  outcome: 'success' | 'rejected' | 'all_failed'
+  outcome: 'success' | 'rejected' | 'all_failed' | 'pending'
   /** 胜出的候选（success 时一定有） */
   finalCandidate?: {
     chainStepIndex: number
@@ -114,7 +114,7 @@ export interface RoutingTraceSummary {
   matchedRuleId?: string
   matchedRuleName?: string
   matchedRulePriority?: number
-  outcome: 'success' | 'rejected' | 'all_failed'
+  outcome: 'success' | 'rejected' | 'all_failed' | 'pending'
   finalProviderName?: string
   finalInstanceName?: string
   finalChainKind?: 'primary' | 'backup' | 'single'

@@ -5,7 +5,7 @@ import type { RouteCondition, RoutingTraceSummary } from '@xartifact/x-herald-sh
 
 export interface RoutingTraceFilters {
   modelName?: string
-  outcome?: 'success' | 'rejected' | 'all_failed'
+  outcome?: 'success' | 'rejected' | 'all_failed' | 'pending'
   hasFailover?: boolean
   startDate?: string
   endDate?: string

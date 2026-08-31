@@ -258,3 +258,27 @@ describe('RoutingTraceDetailView fallback failure filteredOut', () => {
     ).toBeInTheDocument()
   })
 })
+
+describe('RoutingTraceDetailView pending outcome', () => {
+  it('renders a "request in progress" footer instead of a failure card', () => {
+    const trace = makeTrace({
+      outcome: 'pending',
+      totalAttempts: 0,
+      chain: [
+        {
+          index: 0,
+          kind: 'single',
+          actionType: 'priority',
+          candidates: [],
+        },
+      ],
+      finalCandidate: undefined,
+    })
+    render(<RoutingTraceDetailView trace={trace} />)
+
+    expect(screen.getByText('请求进行中')).toBeInTheDocument()
+    // pending 不是失败，不应渲染失败/拒绝页脚
+    expect(screen.queryByText('请求失败')).not.toBeInTheDocument()
+    expect(screen.queryByText('请求被拒绝')).not.toBeInTheDocument()
+  })
+})

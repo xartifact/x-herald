@@ -267,6 +267,76 @@ describe('listRoutingTraces / getRoutingTraceDetail - failure-path coverage', ()
     expect(ids).not.toContain(failed.id)
   })
 
+  /**
+   * Regression: streaming requests insert a `pending` request_logs row first
+   * and update it to its terminal status when the stream finishes
+   * (log-stream.ts). A client disconnect or process restart can leave that
+   * row stuck at 'pending' forever. deriveOutcome() used to fold any
+   * non-success status into 'all_failed', so a request that never actually
+   * failed — it just never got a final answer — was shown as a failure.
+   */
+  it('classifies a still-pending row as outcome=pending, not all_failed', async () => {
+    if (!db) throw new Error('db not initialized')
+    const id = crypto.randomUUID()
+    await db.insert(requestLogs).values({
+      id,
+      requestGroupId: crypto.randomUUID(),
+      candidateIndex: 0,
+      modelName: 'gpt-4',
+      originalModelName: 'gpt-4',
+      status: 'pending',
+      responseTimeMs: 0,
+      metadata: {
+        routing: {
+          routeChain: {
+            requestedModel: 'gpt-4',
+            chain: [{ index: 0, kind: 'single', actionType: 'direct', candidates: [] }],
+          },
+        },
+      },
+      createdAt: new Date(),
+    })
+
+    const page = await listRoutingTraces({ pageSize: 50 })
+    const found = page.items.find((i) => i.logId === id)
+    expect(found?.outcome).toBe('pending')
+
+    const detail = await getRoutingTraceDetail(id)
+    expect(detail?.outcome).toBe('pending')
+  })
+
+  it('filters by outcome=pending without matching finished failures', async () => {
+    if (!db) throw new Error('db not initialized')
+    const pendingId = crypto.randomUUID()
+    await db.insert(requestLogs).values({
+      id: pendingId,
+      requestGroupId: crypto.randomUUID(),
+      candidateIndex: 0,
+      modelName: 'gpt-4',
+      originalModelName: 'gpt-4',
+      status: 'pending',
+      responseTimeMs: 0,
+      metadata: {
+        routing: {
+          routeChain: {
+            requestedModel: 'gpt-4',
+            chain: [{ index: 0, kind: 'single', actionType: 'direct', candidates: [] }],
+          },
+        },
+      },
+      createdAt: new Date(),
+    })
+    const { id: failedId } = await seedFailureLog({
+      outcome: 'all_failed',
+      errorMessage: 'no candidates',
+    })
+
+    const page = await listRoutingTraces({ pageSize: 50, outcome: 'pending' })
+    const ids = page.items.map((i) => i.logId)
+    expect(ids).toContain(pendingId)
+    expect(ids).not.toContain(failedId)
+  })
+
   it('getRoutingTraceDetail exposes errorMessage and the intent decision behind a no-candidates failure', async () => {
     const { id } = await seedFailureLog({
       outcome: 'all_failed',

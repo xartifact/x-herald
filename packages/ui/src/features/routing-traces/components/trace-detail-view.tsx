@@ -603,6 +603,28 @@ export function RoutingTraceDetailView({ trace }: RoutingTraceDetailViewProps) {
           </>
         )}
 
+        {/* 请求仍在进行中：流式请求落库的中间态，尚无终态（不是失败，也不是成功） */}
+        {trace.outcome === 'pending' && (
+          <>
+            <TimelineConnector />
+            <Card className="border-l-4 border-l-muted-foreground bg-muted/40">
+              <CardContent className="py-3 px-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <div className="text-sm font-medium">请求进行中</div>
+                      <div className="text-xs text-muted-foreground">
+                        尚未收到最终结果，可能仍在处理，也可能因客户端断开/进程重启而卡在此状态
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
+
         {/* 无可用实例 / 全部候选失败 */}
         {trace.outcome === 'all_failed' && (
           <>

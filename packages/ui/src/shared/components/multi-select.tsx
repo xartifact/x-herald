@@ -119,8 +119,20 @@ export function MultiSelect({
           <ChevronsUpDown className="ml-1 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-        <Command shouldFilter={false} loop>
+      <PopoverContent
+        className="max-h-[320px] overflow-hidden w-[--radix-popover-trigger-width] p-0"
+        align="start"
+      >
+        <Command
+          shouldFilter={false}
+          loop
+          // cmdk 默认在 root 上设 overflow:hidden。modal Dialog 内打开 popover 时，
+          // 滚轮 targeting 列表内部元素的默认 scroll action 可能因 root 的 hidden
+          // 找不到正确滚动容器，导致 CommandList 无法滚轮滚动。
+          // root 与 list 同时可滚（overflow-y-auto）：键盘 scrollIntoView 落在
+          // 最近的 list，滚轮落在 root 或 list 都能滚——互不破坏。
+          className="overflow-y-auto"
+        >
           <CommandInput placeholder={searchPlaceholder} value={search} onValueChange={setSearch} />
           <CommandList>
             <CommandEmpty>{emptyText}</CommandEmpty>

@@ -233,6 +233,58 @@ describe('model-groups API', () => {
     expect(body.data.name).toBe('Updated Instance')
   })
 
+  it('PUT /api/model-groups/instances/:id persists config-only update', async () => {
+    const groupRes = await authPost(ctx, '/api/model-groups', { name: uniqueName('Grp-Cfg') })
+    const groupBody = await parseJson<{ id: string }>(groupRes)
+    const groupId = groupBody.body.data.id
+
+    const createRes = await authPost(ctx, '/api/model-groups/instances', {
+      providerId,
+      name: uniqueName('Inst-Cfg'),
+      actualModelName: 'gpt-4o',
+      groupId,
+    })
+    const createBody = await parseJson<{ id: string }>(createRes)
+    const id = createBody.body.data.id
+
+    const res = await authPut(ctx, `/api/model-groups/instances/${id}`, {
+      config: { roleMapping: { developer: 'system' } },
+    })
+    const { status, body } = await parseJson<ModelInstance>(res)
+    expect(status).toBe(200)
+    expect(body.success).toBe(true)
+    expect(body.data.config).toEqual({ roleMapping: { developer: 'system' } })
+  })
+
+  it('PUT /api/model-groups/instances/:id with only groupId does not throw', async () => {
+    const groupRes = await authPost(ctx, '/api/model-groups', { name: uniqueName('Grp-Only') })
+    const groupBody = await parseJson<{ id: string }>(groupRes)
+    const groupId = groupBody.body.data.id
+
+    const otherGroupRes = await authPost(ctx, '/api/model-groups', {
+      name: uniqueName('Grp-Other'),
+    })
+    const otherGroupBody = await parseJson<{ id: string }>(otherGroupRes)
+    const otherGroupId = otherGroupBody.body.data.id
+
+    const createRes = await authPost(ctx, '/api/model-groups/instances', {
+      providerId,
+      name: uniqueName('Inst-Only'),
+      actualModelName: 'gpt-4o',
+      groupId,
+    })
+    const createBody = await parseJson<{ id: string }>(createRes)
+    const id = createBody.body.data.id
+
+    const res = await authPut(ctx, `/api/model-groups/instances/${id}`, {
+      groupId: otherGroupId,
+    })
+    const { status, body } = await parseJson<ModelInstance>(res)
+    expect(status).toBe(200)
+    expect(body.success).toBe(true)
+    expect(body.data.groupIds).toContain(otherGroupId)
+  })
+
   it('DELETE /api/model-groups/instances/:id returns 200', async () => {
     const groupRes = await authPost(ctx, '/api/model-groups', { name: uniqueName('Grp-Del') })
     const groupBody = await parseJson<{ id: string }>(groupRes)

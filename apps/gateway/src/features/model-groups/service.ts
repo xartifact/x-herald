@@ -218,18 +218,26 @@ interface UpdateInstanceData {
 
 export async function updateInstance(id: string, data: UpdateInstanceData, db?: Database) {
   const database = db ?? getDatabase()
-  const [updated] = await database
-    .update(modelInstances)
-    .set({
-      ...(data.providerId !== undefined && { providerId: data.providerId }),
-      ...(data.name !== undefined && { name: data.name }),
-      ...(data.actualModelName !== undefined && { actualModelName: data.actualModelName }),
-      ...(data.description !== undefined && { description: data.description }),
-      ...(data.weight !== undefined && { weight: data.weight }),
-      ...(data.costPer1kTokens !== undefined && { costPer1kTokens: data.costPer1kTokens }),
-    })
-    .where(eq(modelInstances.id, id))
-    .returning()
+  const updateFields = {
+    ...(data.providerId !== undefined && { providerId: data.providerId }),
+    ...(data.name !== undefined && { name: data.name }),
+    ...(data.actualModelName !== undefined && { actualModelName: data.actualModelName }),
+    ...(data.description !== undefined && { description: data.description }),
+    ...(data.weight !== undefined && { weight: data.weight }),
+    ...(data.costPer1kTokens !== undefined && { costPer1kTokens: data.costPer1kTokens }),
+    ...(data.config !== undefined && { config: data.config }),
+  }
+
+  const updated =
+    Object.keys(updateFields).length > 0
+      ? (
+          await database
+            .update(modelInstances)
+            .set(updateFields)
+            .where(eq(modelInstances.id, id))
+            .returning()
+        )[0]
+      : (await database.select().from(modelInstances).where(eq(modelInstances.id, id)).limit(1))[0]
 
   if (!updated) return null
 

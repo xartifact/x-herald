@@ -74,4 +74,26 @@ describe('joinUrl', () => {
   it('deduplicates when endpoint path is a suffix of base path', () => {
     expect(joinUrl('https://api.com/v1/chat', '/chat')).toBe('https://api.com/v1/chat')
   })
+
+  // version-segment semantic overlap: base already has its own API version in the
+  // path, different from the endpoint's hardcoded version string. Must dedupe by
+  // "this is a version segment", not by exact string match, or it produces a
+  // path that doesn't exist upstream (e.g. .../v4/v1/chat/completions).
+  it('deduplicates when base version differs from endpoint version (v4 vs v1)', () => {
+    expect(joinUrl('https://open.bigmodel.cn/api/paas/v4/', '/v1/chat/completions')).toBe(
+      'https://open.bigmodel.cn/api/paas/v4/chat/completions',
+    )
+  })
+
+  it('deduplicates version segments regardless of number (v2 vs v1)', () => {
+    expect(joinUrl('https://api.com/v2', '/v1/chat')).toBe('https://api.com/v2/chat')
+  })
+
+  it('deduplicates dotted version segments (v2.1 vs v1)', () => {
+    expect(joinUrl('https://api.com/v2.1', '/v1/chat')).toBe('https://api.com/v2.1/chat')
+  })
+
+  it('does not treat a non-version last segment as a version match', () => {
+    expect(joinUrl('https://api.com/vault', '/v1/chat')).toBe('https://api.com/vault/v1/chat')
+  })
 })

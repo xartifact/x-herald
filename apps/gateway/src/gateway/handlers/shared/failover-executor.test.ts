@@ -453,6 +453,43 @@ describe('executeFailoverIteration', () => {
       expect(result.retryCount).toBe(0)
     })
 
+    it('appends upstream error message to errorMessage when body carries one', async () => {
+      const response = mockResponse(500, {
+        code: 500,
+        message: '系统异常，请联系客服获取支持。',
+        data: {},
+      })
+      mockRetryResult({
+        response,
+        retryCount: 0,
+        aborted: null,
+        networkError: false,
+      })
+      const params = createParams({ isLastCandidate: false })
+      await executeFailoverIteration(params)
+      const markCall = getMarkLogCalls(params)[0]
+      expect(markCall.errorMessage).toBe('Failover: HTTP 500 — 系统异常，请联系客服获取支持。')
+      expect(markCall.providerResponseBody).toEqual({
+        code: 500,
+        message: '系统异常，请联系客服获取支持。',
+        data: {},
+      })
+    })
+
+    it('keeps plain Failover message when upstream body has no extractable message', async () => {
+      const response = mockResponse(500, { data: {} })
+      mockRetryResult({
+        response,
+        retryCount: 0,
+        aborted: null,
+        networkError: false,
+      })
+      const params = createParams({ isLastCandidate: false })
+      await executeFailoverIteration(params)
+      const markCall = getMarkLogCalls(params)[0]
+      expect(markCall.errorMessage).toBe('Failover: HTTP 500')
+    })
+
     it('returns failover for 524 status when not last candidate', async () => {
       const response = mockResponse(524, { error: 'timeout' })
       mockRetryResult({

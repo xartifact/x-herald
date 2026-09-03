@@ -21,6 +21,36 @@ export function looksLikeToolSchemaError(rawMessage: string, statusCode: number)
   return TOOL_SCHEMA_KEYWORDS.some((keyword) => lower.includes(keyword))
 }
 
+/**
+ * 从上游错误响应体中提取人类可读的错误信息，用于拼进失败日志的 errorMessage。
+ * 兼容三种常见形态：
+ * - OpenAI 风格：{ error: { message: "..." } }
+ * - 自定义包装：{ message: "..." }（如 X-AIO 的 { code, message, data }）
+ * - 纯文本 body
+ */
+export function extractProviderErrorMessageFromBody(body: unknown): string | null {
+  if (typeof body === 'string') {
+    const text = body.trim()
+    if (!text) return null
+    try {
+      return extractProviderErrorMessageFromBody(JSON.parse(text))
+    } catch {
+      return text.slice(0, 300)
+    }
+  }
+  if (body == null || typeof body !== 'object') return null
+  const obj = body as Record<string, unknown>
+  if (typeof obj.error === 'object' && obj.error !== null) {
+    const inner = extractProviderErrorMessageFromBody(obj.error)
+    if (inner) return inner
+  }
+  if (typeof obj.error === 'string' && obj.error.trim()) return obj.error.trim().slice(0, 300)
+  if (typeof obj.message === 'string' && obj.message.trim()) {
+    return obj.message.trim().slice(0, 300)
+  }
+  return null
+}
+
 export function normalizeProviderErrorMessage(rawMessage: string): {
   message: string
   code: string

@@ -432,4 +432,21 @@ describe('markLogAsFailed', () => {
       }),
     ).resolves.toBeUndefined()
   })
+
+  it('should persist providerResponseBody onto the attempt row', async () => {
+    const providerResponseBody = { code: 500, message: '系统异常，请联系客服获取支持。', data: {} }
+    await markLogAsFailed({
+      logId: 'log-1',
+      attemptId: 'attempt-1',
+      statusCode: 500,
+      errorMessage: 'Failover: HTTP 500',
+      providerResponseBody,
+    })
+
+    // second update (attempt row) set() must carry providerResponseBody
+    const updateSetCalls = mockDb.updateSet.mock.calls as unknown[][]
+    expect(updateSetCalls.length).toBeGreaterThanOrEqual(2)
+    const attemptSet = updateSetCalls[1][0] as { providerResponseBody?: unknown }
+    expect(attemptSet.providerResponseBody).toEqual(providerResponseBody)
+  })
 })

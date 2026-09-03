@@ -1,7 +1,7 @@
 import { GitBranch } from 'lucide-react'
-
 import { Badge } from '../../../../shared/components/ui/badge'
 import { Button } from '../../../../shared/components/ui/button'
+import { JsonViewer } from '../../../../shared'
 import type { Log } from '@xartifact/x-herald-shared'
 
 import { InfoRow, Section } from './log-info-row'
@@ -72,6 +72,14 @@ export function MetadataBasicSections({
             <div className="text-sm font-medium text-destructive">{log.errorMessage}</div>
             {log.errorType && (
               <div className="text-xs text-muted-foreground font-mono">类型: {log.errorType}</div>
+            )}
+            {log.providerResponseBody && (
+              <div>
+                <div className="text-xs text-muted-foreground mb-1">上游响应</div>
+                <div className="border rounded-md overflow-hidden max-h-64 overflow-y-auto">
+                  <JsonViewer data={log.providerResponseBody} height="auto" />
+                </div>
+              </div>
             )}
           </div>
         </Section>

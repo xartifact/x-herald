@@ -17,6 +17,7 @@ import {
   FAILOVER_STATUS_CODES,
   ProviderInvalidResponseError,
 } from '../../services/model-group-router'
+import { extractProviderErrorMessageFromBody } from '../../services/error-classifier'
 import {
   getTtfbTimeoutConfig,
   refreshTtfbConfigIfStale,
@@ -357,11 +358,14 @@ export async function executeFailoverIteration(
       new Promise<null>((resolve) => setTimeout(() => resolve(null), 3_000)),
     ]).catch(() => null)
     const ttfbDuration = Date.now() - preprocessEndTime
+    const upstreamMessage = extractProviderErrorMessageFromBody(failoverRespBody)
     await markFailed({
       logId: logId || '',
       attemptId: attemptId || '',
       statusCode: response.status,
-      errorMessage: `Failover: HTTP ${response.status}`,
+      errorMessage: upstreamMessage
+        ? `Failover: HTTP ${response.status} — ${upstreamMessage}`
+        : `Failover: HTTP ${response.status}`,
       failoverReason: deriveFailoverReason(response.status),
       retryCount: retryResult.retryCount,
       responseTimeMs: ttfbDuration,

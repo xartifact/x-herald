@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'bun:test'
 import {
+  extractProviderErrorMessageFromBody,
   normalizeProviderErrorMessage,
   parseProviderError,
   extractProviderResponseHeaders,
@@ -229,5 +230,43 @@ describe('extractProviderResponseHeaders', () => {
     const response = new Response(null)
     const result = extractProviderResponseHeaders(response)
     expect(result).toEqual({})
+  })
+})
+
+// ---------------------------------------------------------------------------
+// extractProviderErrorMessageFromBody()
+// ---------------------------------------------------------------------------
+describe('extractProviderErrorMessageFromBody', () => {
+  it('extracts OpenAI-style nested error message', () => {
+    expect(extractProviderErrorMessageFromBody({ error: { message: 'quota exceeded' } })).toBe(
+      'quota exceeded',
+    )
+  })
+
+  it('extracts flat wrapper message (X-AIO style)', () => {
+    expect(extractProviderErrorMessageFromBody({ code: 500, message: '系统异常', data: {} })).toBe(
+      '系统异常',
+    )
+  })
+
+  it('extracts from JSON string body', () => {
+    expect(extractProviderErrorMessageFromBody('{"message":"boom"}')).toBe('boom')
+  })
+
+  it('falls back to trimmed text for non-JSON string', () => {
+    expect(extractProviderErrorMessageFromBody('  plain error text  ')).toBe('plain error text')
+  })
+
+  it('truncates long messages to 300 chars', () => {
+    const long = 'x'.repeat(500)
+    const result = extractProviderErrorMessageFromBody({ message: long })
+    expect(result).toHaveLength(300)
+  })
+
+  it('returns null for null, empty object, or empty message', () => {
+    expect(extractProviderErrorMessageFromBody(null)).toBeNull()
+    expect(extractProviderErrorMessageFromBody({})).toBeNull()
+    expect(extractProviderErrorMessageFromBody({ message: '   ' })).toBeNull()
+    expect(extractProviderErrorMessageFromBody('   ')).toBeNull()
   })
 })

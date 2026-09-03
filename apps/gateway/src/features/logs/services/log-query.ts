@@ -134,20 +134,23 @@ export async function getLogsPage(params: LogsPageParams) {
 
 export async function getLogDetail(id: string) {
   const db = getDatabase()
-  const [log, attempts] = await Promise.all([
-    db.select().from(requestLogs).where(eq(requestLogs.id, id)).limit(1),
-    db
-      .select({
-        transformedRequestBody: requestAttempts.transformedRequestBody,
-        providerRequestHeaders: requestAttempts.providerRequestHeaders,
-        providerResponseBody: requestAttempts.providerResponseBody,
-        providerResponseHeaders: requestAttempts.providerResponseHeaders,
-      })
-      .from(requestAttempts)
-      .where(and(eq(requestAttempts.requestLogId, id), eq(requestAttempts.candidateIndex, 0)))
-      .limit(1),
-  ])
+  const log = await db.select().from(requestLogs).where(eq(requestLogs.id, id)).limit(1)
   if (!log[0]) return null
+  const attempts = await db
+    .select({
+      transformedRequestBody: requestAttempts.transformedRequestBody,
+      providerRequestHeaders: requestAttempts.providerRequestHeaders,
+      providerResponseBody: requestAttempts.providerResponseBody,
+      providerResponseHeaders: requestAttempts.providerResponseHeaders,
+    })
+    .from(requestAttempts)
+    .where(
+      and(
+        eq(requestAttempts.requestLogId, id),
+        eq(requestAttempts.candidateIndex, log[0].candidateIndex),
+      ),
+    )
+    .limit(1)
   const attempt = attempts[0]
   return {
     ...log[0],

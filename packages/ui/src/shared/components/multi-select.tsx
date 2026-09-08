@@ -132,6 +132,13 @@ export function MultiSelect({
           // root 与 list 同时可滚（overflow-y-auto）：键盘 scrollIntoView 落在
           // 最近的 list，滚轮落在 root 或 list 都能滚——互不破坏。
           className="overflow-y-auto"
+          // Popover 内容经 Portal 挂到 document.body，脱离了外层 Dialog 的
+          // react-remove-scroll lockRef 子树。Dialog 的滚动锁定在 document 上
+          // 挂了一个冒泡阶段（非 capture）的 wheel 监听器，对任何不在其锁定子树内
+          // 且未登记为 shard 的滚轮事件一律 preventDefault——包括这里。
+          // 在事件到达 document 前 stopPropagation，让它逃过那次拦截，
+          // 浏览器原生滚动行为才会正常发生（CSS 已经具备可滚动能力，只是滚轮被吃掉了）。
+          onWheel={(e) => e.stopPropagation()}
         >
           <CommandInput placeholder={searchPlaceholder} value={search} onValueChange={setSearch} />
           <CommandList>

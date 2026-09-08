@@ -9,7 +9,7 @@ import {
   CONSOLE_LOG_LEVEL_COLORS,
   type ConsoleLogEntry,
   type ConsoleLogLevel,
-} from '../../../hooks/logs'
+} from '../../../hooks/logs/use-console-logs'
 import { Badge } from '@xartifact/x-herald-ui'
 import { Button } from '@xartifact/x-herald-ui'
 import { Card, CardContent } from '@xartifact/x-herald-ui'

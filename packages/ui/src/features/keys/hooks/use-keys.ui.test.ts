@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { useKeys } from './use-keys'
 
-vi.mock('@xartifact/x-herald-ui', () => ({
+vi.mock('../../../shared/lib/api-client', () => ({
   get: vi.fn(),
   post: vi.fn(),
   put: vi.fn(),
@@ -13,7 +13,7 @@ vi.mock('@xartifact/x-herald-ui', () => ({
   patch: vi.fn(),
 }))
 
-import { get } from '@xartifact/x-herald-ui'
+import { get } from '../../../shared/lib/api-client'
 
 function createWrapper() {
   const queryClient = new QueryClient({

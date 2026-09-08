@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Sparkles, Wrench, AlertCircle, Loader2 } from 'lucide-react'
 
-import { useLogs } from '../../../hooks/logs'
+import { useLogs } from '@xartifact/x-herald-ui'
 import type { LogListItem } from '@xartifact/x-herald-shared'
 import {
   Button,

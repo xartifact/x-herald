@@ -16,7 +16,7 @@ import {
   useCostByKey,
   useCostByProvider,
   useCostByModel,
-} from '../../../hooks/costs'
+} from '@xartifact/x-herald-ui'
 import { CostDateFilter, CostSummaryCards, CostBreakdownTable } from '@xartifact/x-herald-ui'
 import type { DateRangeFilter } from '@xartifact/x-herald-ui'
 

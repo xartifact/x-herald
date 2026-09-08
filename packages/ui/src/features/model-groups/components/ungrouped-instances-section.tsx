@@ -3,7 +3,8 @@ import { useState } from 'react'
 import { FolderOpen, MoveRight } from 'lucide-react'
 
 import { StatusToggle } from '../../../shared/components/status-toggle'
-import { MultiSelect, type MultiSelectOption } from '../../../shared/components/multi-select'
+import { MultiSelect } from '../../../shared/components/multi-select'
+import { toGroupMultiSelectOptions } from '../lib/group-options'
 import { Badge } from '../../../shared/components/ui/index'
 import { Button } from '../../../shared/components/ui/index'
 import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/components/ui/index'
@@ -35,11 +36,7 @@ export function UngroupedInstancesSection({
   const assignInstance = useSetInstanceGroups()
   const toggleInstance = useToggleModelInstance()
 
-  const groupOptions: MultiSelectOption[] = groups.map((g) => ({
-    value: g.id,
-    label: g.displayName || g.name,
-    disabled: !g.enabled,
-  }))
+  const groupOptions = toGroupMultiSelectOptions(groups)
 
   if (instances.length === 0) return null
 

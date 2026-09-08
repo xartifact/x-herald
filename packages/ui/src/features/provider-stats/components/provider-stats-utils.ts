@@ -1,6 +1,5 @@
-export function cn(...args: (string | undefined | false | null)[]) {
-  return args.filter(Boolean).join(' ')
-}
+import { successRateTone, responseTimeTone } from '../../../shared/lib/health-tone'
+import { STAT_TONE_CLASS } from '../../../shared/components/stat-card'
 
 export function formatMs(ms: number | null): string {
   if (ms == null) return '—'
@@ -8,22 +7,16 @@ export function formatMs(ms: number | null): string {
 }
 
 export function responseTimeColor(ms: number | null): string {
-  if (ms == null) return ''
-  if (ms < 3000) return 'text-success'
-  if (ms < 10000) return 'text-warning'
-  return 'text-destructive'
+  return STAT_TONE_CLASS[responseTimeTone(ms)]
 }
 
 export function responseTimeQuality(ms: number | null): { className: string; label: string } {
   if (ms == null) return { className: 'text-muted-foreground', label: '—' }
-  if (ms < 3000) return { className: 'text-success', label: '良好' }
-  if (ms < 10000) return { className: 'text-warning', label: '一般' }
-  return { className: 'text-destructive', label: '较差' }
+  const labels = { success: '良好', warning: '一般', danger: '较差' } as const
+  const tone = responseTimeTone(ms) as keyof typeof labels
+  return { className: STAT_TONE_CLASS[tone], label: labels[tone] }
 }
 
 export function successRateColor(rate: number | null): string {
-  if (rate == null) return ''
-  if (rate >= 0.99) return 'text-success'
-  if (rate >= 0.95) return 'text-warning'
-  return 'text-destructive'
+  return STAT_TONE_CLASS[successRateTone(rate)]
 }

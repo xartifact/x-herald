@@ -54,3 +54,4 @@ export function StatCard({
 }
 
 export type { StatCardProps, StatTone }
+export { TONE_TEXT as STAT_TONE_CLASS }

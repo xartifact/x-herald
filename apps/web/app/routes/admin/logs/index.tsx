@@ -2,14 +2,14 @@ import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { ChevronLeft, ChevronRight, Trash2 } from 'lucide-react'
 
-import { useLogs, useDeleteLog, useCleanupLogs, useLogStorage } from '../../../hooks/logs'
+import { useLogs, useDeleteLog, useCleanupLogs, useLogStorage } from '@xartifact/x-herald-ui'
 import {
   LogTable,
   LogSearchFilter,
   LogCleanupDialog,
   LogTableSkeleton,
   LiveLogsPanel,
-  LogsEmptyState,
+  EmptyState,
   PageHeader,
   Button,
   Select,
@@ -162,6 +162,9 @@ export function LogsPage() {
     setCursorStack((prev) => prev.slice(0, -1))
   }, [])
 
+  const hasFilters =
+    !!searchQuery || statusFilter !== 'all' || clientTypeFilter !== 'all' || timeRange !== 'all'
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -210,13 +213,9 @@ export function LogsPage() {
         {isLoading ? (
           <LogTableSkeleton />
         ) : logs.length === 0 ? (
-          <LogsEmptyState
-            hasFilters={
-              !!searchQuery ||
-              statusFilter !== 'all' ||
-              clientTypeFilter !== 'all' ||
-              timeRange !== 'all'
-            }
+          <EmptyState
+            title={hasFilters ? '没有找到匹配的日志记录' : '还没有请求日志'}
+            description={hasFilters ? '尝试调整筛选条件' : '发起 API 请求后，日志会出现在这里'}
           />
         ) : (
           <LogTable

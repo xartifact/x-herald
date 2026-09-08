@@ -4,6 +4,7 @@ import { CATCHALL_VM_NAME } from '@xartifact/x-herald-shared'
 
 import { useAccessModels } from '../../../access-models/hooks/use-access-models'
 import { useModelGroups, useModelInstances } from '../../../model-groups/hooks/use-model-groups'
+import { resolveGroupLabel } from '../../../model-groups/lib/group-options'
 import { useProviders } from '../../../providers/hooks/use-providers'
 
 // ── Types ───────────────────────────────────────────────────────────
@@ -40,7 +41,7 @@ export interface RemoteFetchOptions {
 // ── Label resolvers ─────────────────────────────────────────────────
 
 function groupLabel(g: { id: string; name: string; displayName?: string | null }): RemoteOption {
-  return { value: g.id, label: g.displayName || g.name }
+  return { value: g.id, label: resolveGroupLabel(g) }
 }
 
 function instanceLabel(i: {

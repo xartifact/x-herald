@@ -5,7 +5,7 @@ import {
   InstancePerfChart,
   PageHeader,
 } from '@xartifact/x-herald-ui'
-import { useMetricsSummary, useInstancesSummary } from '../../../hooks/metrics'
+import { useMetricsSummary, useInstancesSummary } from '@xartifact/x-herald-ui'
 
 export function MetricsPage() {
   const { data: summary, isLoading } = useMetricsSummary()

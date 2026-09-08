@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 
-import { useAccessModel } from '../../../hooks/access-models'
+import { useAccessModel } from '@xartifact/x-herald-ui'
 import {
   Badge,
   Button,

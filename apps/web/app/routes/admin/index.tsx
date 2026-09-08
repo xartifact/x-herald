@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { RefreshCw } from 'lucide-react'
 
-import { useLogStats, useLogStorage, logKeys } from '../../hooks/logs'
+import { useLogStats, useLogStorage, logKeys } from '@xartifact/x-herald-ui'
 import {
   Card,
   CardContent,

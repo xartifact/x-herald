@@ -15,8 +15,8 @@ import {
   useDeleteModelInstance,
   useToggleModelInstance,
   useReorderInstances,
-} from '../../../hooks/model-groups'
-import { useProviders } from '../../../hooks/providers'
+} from '@xartifact/x-herald-ui'
+import { useProviders } from '@xartifact/x-herald-ui'
 import {
   Button,
   Card,

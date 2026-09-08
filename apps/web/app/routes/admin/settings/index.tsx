@@ -1,4 +1,4 @@
-import { useSettings } from '../../../hooks/settings'
+import { useSettings } from '@xartifact/x-herald-ui'
 import {
   AiModelSection,
   CircuitBreakerSection,

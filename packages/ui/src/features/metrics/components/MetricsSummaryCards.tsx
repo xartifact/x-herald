@@ -1,7 +1,7 @@
 import { Activity, AlertTriangle, Clock, Zap } from 'lucide-react'
 
 import { StatCard } from '../../../shared/components/stat-card'
-import type { StatTone } from '../../../shared/components/stat-card'
+import { successRateTone, responseTimeTone } from '../../../shared/lib/health-tone'
 
 import type { MetricsSummary } from '../hooks/use-metrics'
 
@@ -19,20 +19,6 @@ function fmtMs(ms: number | null | undefined): string {
   if (ms == null) return '—'
   if (ms >= 1000) return `${(ms / 1000).toFixed(1)}s`
   return `${Math.round(ms)}ms`
-}
-
-function successRateTone(rate: number | null | undefined): StatTone {
-  if (rate == null) return 'default'
-  if (rate >= 0.95) return 'success'
-  if (rate >= 0.8) return 'warning'
-  return 'danger'
-}
-
-function ttfbTone(ms: number | null | undefined): StatTone {
-  if (ms == null) return 'default'
-  if (ms < 3000) return 'success'
-  if (ms < 10000) return 'warning'
-  return 'danger'
 }
 
 export function MetricsSummaryCards({ summary, isLoading }: Props) {
@@ -60,7 +46,7 @@ export function MetricsSummaryCards({ summary, isLoading }: Props) {
         title="TTFB P95"
         icon={<Clock className="h-4 w-4" />}
         value={fmtMs(s?.avgTtfbP95)}
-        tone={ttfbTone(s?.avgTtfbP95)}
+        tone={responseTimeTone(s?.avgTtfbP95)}
         sub="各实例均值"
         loading={isLoading}
       />

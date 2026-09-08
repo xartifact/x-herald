@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from 'react'
 import type { ProviderModelInfo } from '@xartifact/x-herald-shared'
 import { Loader2, Search } from 'lucide-react'
 
-import { useModelGroups } from '../../model-groups'
+import { useModelGroups, toGroupMultiSelectOptions } from '../../model-groups'
 import {
   Alert,
   AlertDescription,
@@ -11,7 +11,7 @@ import {
   Button,
   Input,
 } from '../../../shared/components/ui/index'
-import { MultiSelect, type MultiSelectOption } from '../../../shared/components/multi-select'
+import { MultiSelect } from '../../../shared/components/multi-select'
 import {
   Dialog,
   DialogContent,
@@ -50,15 +50,7 @@ export function SyncModelsDialog({
   const { data: groups = [] } = useModelGroups()
   const syncModels = useSyncProviderModels()
 
-  const groupOptions: MultiSelectOption[] = useMemo(
-    () =>
-      groups.map((g) => ({
-        value: g.id,
-        label: g.displayName || g.name,
-        disabled: !g.enabled,
-      })),
-    [groups],
-  )
+  const groupOptions = useMemo(() => toGroupMultiSelectOptions(groups), [groups])
 
   const filteredModels = useMemo(() => {
     const q = searchQuery.trim().toLowerCase()

@@ -1,7 +1,8 @@
 import { UseFormReturn } from 'react-hook-form'
 
 import type { ModelGroup, Provider } from '@xartifact/x-herald-shared'
-import { MultiSelect, type MultiSelectOption } from '../../../shared/components/multi-select'
+import { MultiSelect } from '../../../shared/components/multi-select'
+import { toGroupMultiSelectOptions } from '../lib/group-options'
 import {
   FormControl,
   FormDescription,
@@ -28,11 +29,7 @@ interface InstanceBasicFieldsProps {
 }
 
 export function InstanceBasicFields({ form, providers, groups = [] }: InstanceBasicFieldsProps) {
-  const groupOptions: MultiSelectOption[] = groups.map((g) => ({
-    value: g.id,
-    label: g.displayName || g.name,
-    disabled: !g.enabled,
-  }))
+  const groupOptions = toGroupMultiSelectOptions(groups)
 
   return (
     <div className="space-y-4">

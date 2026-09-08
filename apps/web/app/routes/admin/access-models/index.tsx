@@ -9,7 +9,7 @@ import {
   useUpdateAccessModel,
   useDeleteAccessModel,
   useToggleAccessModel,
-} from '../../../hooks/access-models'
+} from '@xartifact/x-herald-ui'
 import {
   Button,
   Card,

@@ -1,7 +1,7 @@
-import { cn } from '../../../shared/lib/utils'
-import { Card, CardContent } from '../../../shared/components/ui'
+import { StatCard } from '../../../shared/components/stat-card'
+import { successRateTone, responseTimeTone } from '../../../shared/lib/health-tone'
 
-import { formatMs, responseTimeColor, successRateColor } from './provider-stats-utils'
+import { formatMs } from './provider-stats-utils'
 
 interface SummaryData {
   totalProviders: number
@@ -21,34 +21,18 @@ export function ProviderStatsSummary({ summary }: ProviderStatsSummaryProps) {
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <Card>
-        <CardContent className="p-4">
-          <div className="text-xs text-muted-foreground">供应商数</div>
-          <div className="text-2xl font-bold">{summary.totalProviders}</div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent className="p-4">
-          <div className="text-xs text-muted-foreground">总请求数</div>
-          <div className="text-2xl font-bold">{summary.totalReq.toLocaleString()}</div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent className="p-4">
-          <div className="text-xs text-muted-foreground">整体成功率</div>
-          <div className={cn('text-2xl font-bold', successRateColor(overallSuccessRate))}>
-            {(overallSuccessRate * 100).toFixed(1)}%
-          </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent className="p-4">
-          <div className="text-xs text-muted-foreground">整体平均响应时间</div>
-          <div className={cn('text-2xl font-bold', responseTimeColor(summary.avgResponseTime))}>
-            {formatMs(summary.avgResponseTime)}
-          </div>
-        </CardContent>
-      </Card>
+      <StatCard title="供应商数" value={summary.totalProviders} />
+      <StatCard title="总请求数" value={summary.totalReq.toLocaleString()} />
+      <StatCard
+        title="整体成功率"
+        value={`${(overallSuccessRate * 100).toFixed(1)}%`}
+        tone={successRateTone(overallSuccessRate)}
+      />
+      <StatCard
+        title="整体平均响应时间"
+        value={formatMs(summary.avgResponseTime)}
+        tone={responseTimeTone(summary.avgResponseTime)}
+      />
     </div>
   )
 }

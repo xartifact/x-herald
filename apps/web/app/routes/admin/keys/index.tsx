@@ -3,8 +3,14 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Plus, Search, Loader2 } from 'lucide-react'
 
-import { useKeys, useCreateKey, useUpdateKey, useDeleteKey, useResetKey } from '../../../hooks/keys'
-import { useKeysStats } from '../../../hooks/logs'
+import {
+  useKeys,
+  useCreateKey,
+  useUpdateKey,
+  useDeleteKey,
+  useResetKey,
+} from '@xartifact/x-herald-ui'
+import { useKeysStats } from '@xartifact/x-herald-ui'
 import type { KeyFormData } from '@xartifact/x-herald-ui'
 import {
   Button,

@@ -159,7 +159,7 @@ export function useConvertPotentialModel() {
 
 // Access-model hooks (re-used from access-models keyspace) for the route-to dropdown.
 // Imported here to keep a single import surface for potential-models consumers.
-import { accessModelKeys } from '../access-models/use-access-models'
+import { accessModelKeys } from '@xartifact/x-herald-ui'
 
 export function useAccessModelsForTarget() {
   const query = useQuery({

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 
 import { Wifi } from 'lucide-react'
 
-import { useProviderStats } from '../../../hooks/logs'
+import { useProviderStats } from '@xartifact/x-herald-ui'
 import {
   ProviderStatsCard,
   ProviderStatsSummary,

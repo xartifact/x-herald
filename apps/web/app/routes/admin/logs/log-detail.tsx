@@ -1,6 +1,6 @@
 import { useNavigate, useParams } from '@tanstack/react-router'
 import { ArrowLeft, GitBranch, Loader2 } from 'lucide-react'
-import { useLog } from '../../../hooks/logs'
+import { useLog } from '@xartifact/x-herald-ui'
 import { LogDetailContent, Button, EmptyState } from '@xartifact/x-herald-ui'
 
 const CLIENT_REGISTRY: Record<string, string> = {

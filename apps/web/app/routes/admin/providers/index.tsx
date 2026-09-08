@@ -10,7 +10,7 @@ import {
   useToggleProvider,
   useProviderInstanceState,
   useProviderDialogState,
-} from '../../../hooks/providers'
+} from '@xartifact/x-herald-ui'
 import type { ProviderFormData } from '@xartifact/x-herald-ui'
 import {
   Card,

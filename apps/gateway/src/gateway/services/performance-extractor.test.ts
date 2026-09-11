@@ -65,6 +65,81 @@ describe('extractPerformanceMetrics', () => {
       streamDurationMs: undefined,
     } as unknown)
   })
+
+  it('computes tokensPerSecond from streamDurationMs when available', () => {
+    const result = extractPerformanceMetrics({
+      responseTimeMs: 5000,
+      streamDurationMs: 2000,
+      outputTokens: 100,
+    })
+    expect(result?.tokensPerSecond).toBe(50)
+  })
+
+  it('falls back to responseTimeMs - gatewayOverheadMs - providerTtfbMs when streamDurationMs is absent', () => {
+    const result = extractPerformanceMetrics({
+      responseTimeMs: 3000,
+      gatewayOverheadMs: 100,
+      providerTtfbMs: 900,
+      outputTokens: 40,
+    })
+    // genMs = 3000 - 100 - 900 = 2000ms -> 40 / 2s = 20 tokens/s
+    expect(result?.tokensPerSecond).toBe(20)
+  })
+
+  it('returns undefined tokensPerSecond when outputTokens is missing', () => {
+    const result = extractPerformanceMetrics({
+      responseTimeMs: 2000,
+      streamDurationMs: 1000,
+    })
+    expect(result?.tokensPerSecond).toBeUndefined()
+  })
+
+  it('returns undefined tokensPerSecond when derived generation duration is not positive', () => {
+    const result = extractPerformanceMetrics({
+      responseTimeMs: 500,
+      gatewayOverheadMs: 300,
+      providerTtfbMs: 400,
+      outputTokens: 10,
+    })
+    // genMs = 500 - 300 - 400 = -200ms -> not representative, must not be reported
+    expect(result?.tokensPerSecond).toBeUndefined()
+  })
+
+  it('still computes tokensPerSecond when content was genuinely streamed, even with a short streamDurationMs', () => {
+    const result = extractPerformanceMetrics({
+      responseTimeMs: 5030,
+      providerTtfbMs: 5000,
+      streamDurationMs: 30,
+      outputTokens: 15,
+      hasStreamedContent: true,
+    })
+    // 15 tokens / 0.03s = 500 tokens/s：短但真实的流式尾段，不应被拦截
+    expect(result?.tokensPerSecond).toBe(500)
+  })
+
+  it('does not fabricate tokensPerSecond for tool_calls-only turns with no streamed content (production repro)', () => {
+    // 生产实测：finish_reason=tool_calls, contentChunks/thinkingBlocks 均为空，
+    // outputTokens 反映的是 TTFB 阶段生成 tool_calls 参数的 token 数，
+    // streamDurationMs 只是已生成好的 payload 传输耗时——两者不是同一阶段
+    const result = extractPerformanceMetrics({
+      responseTimeMs: 26959,
+      providerTtfbMs: 26902,
+      streamDurationMs: 30,
+      outputTokens: 446,
+      hasStreamedContent: false,
+    })
+    expect(result?.tokensPerSecond).toBeUndefined()
+  })
+
+  it('treats hasStreamedContent as unset (e.g. non-streaming responses) the same as before — no behavior change', () => {
+    const result = extractPerformanceMetrics({
+      responseTimeMs: 26959,
+      providerTtfbMs: 26902,
+      streamDurationMs: 30,
+      outputTokens: 446,
+    })
+    expect(result?.tokensPerSecond).toBe(14866.7)
+  })
 })
 
 describe('extractErrorInfo', () => {

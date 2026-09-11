@@ -134,6 +134,7 @@ function buildLogData(params: LogRequestParams): LogData {
     gatewayOverheadMs: params.gatewayOverheadMs,
     providerTtfbMs: params.providerTtfbMs,
     streamDurationMs: params.streamDurationMs,
+    outputTokens: params.outputTokens,
     conversationId: params.conversationId,
     userId: params.userId,
     organizationId: params.organizationId,

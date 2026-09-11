@@ -107,14 +107,7 @@ export function extractContentFeatures(log: Log): ContentFeatures | null {
       const inputRatio = totalTokens > 0 ? (log.inputTokens / totalTokens) * 100 : 0
       const outputRatio = totalTokens > 0 ? (log.outputTokens / totalTokens) * 100 : 0
 
-      // 排除 TTFB，优先用 streamDurationMs，回退用总响应时间减去网关和 TTFB
-      const perf = log.metadata?.performance
-      const streamMs = perf?.streamDurationMs
-      const genMs =
-        streamMs && streamMs > 0
-          ? streamMs
-          : log.responseTimeMs - (perf?.gatewayOverheadMs ?? 0) - (perf?.providerTtfbMs ?? 0)
-      const tokensPerSecond = genMs > 0 ? log.outputTokens / (genMs / 1000) : 0
+      // 生成速率由网关在落库时统一计算（performance-extractor.ts），此处只读不算
       const tokensPerMessage = features.request?.messageCount
         ? log.inputTokens / features.request.messageCount
         : 0
@@ -124,7 +117,7 @@ export function extractContentFeatures(log: Log): ContentFeatures | null {
           input: Math.round(inputRatio * 10) / 10,
           output: Math.round(outputRatio * 10) / 10,
         },
-        tokensPerSecond: Math.round(tokensPerSecond * 10) / 10,
+        tokensPerSecond: log.metadata?.performance?.tokensPerSecond ?? 0,
         tokensPerMessage: Math.round(tokensPerMessage),
       }
     }

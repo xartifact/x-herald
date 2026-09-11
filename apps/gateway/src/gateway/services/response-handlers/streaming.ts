@@ -108,6 +108,9 @@ async function finalizeStreamWithLog(
     gatewayOverheadMs: preprocessEndTime - startTime,
     providerTtfbMs: providerTtfbTime - preprocessEndTime,
     streamDurationMs: now - providerTtfbTime,
+    outputTokens: usage.outputTokens,
+    hasStreamedContent:
+      fullContent.contentChunks.length > 0 || fullContent.thinkingBlocks.length > 0,
     conversationId: params.conversationId,
   })
 

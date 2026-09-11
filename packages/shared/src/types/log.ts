@@ -94,6 +94,7 @@ export interface LogMetadata {
     gatewayOverheadMs?: number
     providerTtfbMs?: number
     streamDurationMs?: number
+    tokensPerSecond?: number
     usageEstimated?: boolean
     ttfbToFirstThinkingMs?: number
     ttfbToFirstTextMs?: number

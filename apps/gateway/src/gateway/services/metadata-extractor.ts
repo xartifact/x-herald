@@ -27,6 +27,11 @@ export interface MetadataExtractionParams {
   gatewayOverheadMs?: number
   providerTtfbMs?: number
   streamDurationMs?: number
+  outputTokens?: number
+  /** 本次响应是否真的产出过可流式内容（text/thinking delta）。仅流式请求会传入；
+   *  为 false 时说明 outputTokens 多半来自未增量下发的 tool_calls 参数等一次性 payload，
+   *  与 streamDurationMs 不是同一阶段，生成速率不采信 */
+  hasStreamedContent?: boolean
   conversationId?: string
   userId?: string
   organizationId?: string

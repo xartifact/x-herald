@@ -76,6 +76,7 @@ export interface LogMetadata {
     gatewayOverheadMs?: number // 网关预处理耗时（协议检测、路由、转换）
     providerTtfbMs?: number // Provider 首字节响应时间（网络 + Provider 思考）
     streamDurationMs?: number // 流式传输持续时间
+    tokensPerSecond?: number // 生成速率 = outputTokens / (生成耗时/1000)，唯一计算口径
     ttfbToFirstThinkingMs?: number // HTTP TTFB → 第一个 thinking token
     ttfbToFirstTextMs?: number // HTTP TTFB → 第一个 text token（TTFT）
     thinkingDurationMs?: number // 实际思考时长（首 thinking → 首 text token）

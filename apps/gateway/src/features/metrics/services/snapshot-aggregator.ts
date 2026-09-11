@@ -105,21 +105,16 @@ export async function aggregateBucket(bucketStart: Date, bucketMinutes = 5): Pro
           END
       )::real AS ttft_p95,
 
-      -- TPS = output_tokens / (streamDurationMs / 1000)，仅流式且有 streamDurationMs
+      -- TPS 读取网关落库时统一计算好的 metadata.performance.tokensPerSecond（performance-extractor.ts），
+      -- 不在此处重复推导，避免出现两套口径
       avg(
-        CASE
-          WHEN streaming = 'true'
-            AND NULLIF((metadata -> 'performance' ->> 'streamDurationMs')::real, 0) IS NOT NULL
-            AND output_tokens > 0
-          THEN output_tokens::real / ((metadata -> 'performance' ->> 'streamDurationMs')::real / 1000.0)
+        CASE WHEN streaming = 'true'
+        THEN NULLIF((metadata -> 'performance' ->> 'tokensPerSecond')::real, 0)
         END
       )::real AS tps_avg,
       percentile_cont(0.5) WITHIN GROUP (
-        ORDER BY CASE
-          WHEN streaming = 'true'
-            AND NULLIF((metadata -> 'performance' ->> 'streamDurationMs')::real, 0) IS NOT NULL
-            AND output_tokens > 0
-          THEN output_tokens::real / ((metadata -> 'performance' ->> 'streamDurationMs')::real / 1000.0)
+        ORDER BY CASE WHEN streaming = 'true'
+          THEN NULLIF((metadata -> 'performance' ->> 'tokensPerSecond')::real, 0)
           END
       )::real AS tps_p50,
 

@@ -14,7 +14,7 @@ export function convertMessages(messages: OpenAIMessage[]): StandardMessage[] {
     tool_calls: msg.tool_calls ? normalizeToolCalls(msg.tool_calls) : undefined,
     tool_call_id: msg.tool_call_id,
     name: msg.name,
-    metadata: msg.reasoning_content ? { reasoning_content: msg.reasoning_content } : undefined,
+    reasoning_content: msg.reasoning_content,
   }))
 }
 
@@ -59,8 +59,8 @@ export function convertToOpenAIMessages(messages: StandardMessage[]): OpenAIMess
       openaiMsg.name = msg.name
     }
 
-    if (msg.metadata?.reasoning_content) {
-      openaiMsg.reasoning_content = msg.metadata.reasoning_content as string
+    if (msg.reasoning_content) {
+      openaiMsg.reasoning_content = msg.reasoning_content
     }
 
     return openaiMsg

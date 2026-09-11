@@ -89,7 +89,12 @@ export async function adaptOpenAIRequest(
   }
 
   // Kimi 等 thinking 模型要求 history 中每条 assistant 消息必须有 reasoning_content。
-  // 客户端（OpenAI SDK）不识别该字段会在多轮对话中丢弃，这里补回空字符串以通过校验。
+  // 这里只兜底"客户端自己就没保留该字段"这一种丢失路径（比如客户端用的 SDK/本地会话状态
+  // 不认识 reasoning_content，多轮对话里自己弄丢了）——x-herald 收到的请求从一开始就没有它，
+  // 只能补空字符串通过上游校验，没法凭空恢复真实内容。
+  // 另一种丢失路径（跨协议转换时 x-herald 自己把已收到的 reasoning_content 弄丢）不归这里管，
+  // 属于协议转换器的正确性问题，见 openai/converters/message-converter.ts 的
+  // convertMessages/convertToOpenAIMessages。
   if (ctx.instanceConfig?.patchMissingReasoningContent) {
     openaiReq.messages = openaiReq.messages.map((msg) => {
       if (msg.role === 'assistant' && !msg.reasoning_content) {

@@ -25,6 +25,7 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
@@ -66,6 +67,7 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
       packages: write
@@ -128,6 +130,10 @@ jobs:
   deploy:
     needs: build
     runs-on: self-hosted
+    # 兜底超时：self-hosted job 排队无上限，runner 离线会永久挂起
+    # （2026-09-09 起 runner 离线，x-herald 的 deploy 排队 24h 后被系统取消）。
+    # 注意：本超时只在 job 开始执行后计时，排队阶段不受控。
+    timeout-minutes: 20
     if: github.event_name != 'pull_request' && !startsWith(github.ref, 'refs/tags/')
 
     steps:
@@ -196,7 +202,11 @@ jobs:
 
   notify:
     needs: [build, deploy]
-    runs-on: self-hosted
+    # 通知不碰部署机（只发一个 HTTP 请求），必须跑托管 runner：
+    # 它正是「部署失败」的告警通道，若与 deploy 共用 self-hosted，
+    # runner 一离线告警也跟着静默。
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
     if: always() && github.event_name != 'pull_request' && !startsWith(github.ref, 'refs/tags/')
 
     steps:

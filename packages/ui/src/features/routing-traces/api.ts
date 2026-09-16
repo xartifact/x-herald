@@ -64,7 +64,7 @@ export interface RoutingTraceDetailResponse extends RoutingTraceSummary {
       groupName: string
       selectionReason?: string
       matched: boolean
-      status?: 'success' | 'failed' | 'pending'
+      status?: 'success' | 'failed' | 'cancelled' | 'pending'
       statusCode?: number
       failoverReason?: string
       durationMs?: number

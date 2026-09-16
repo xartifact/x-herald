@@ -36,7 +36,7 @@ export interface ChainCandidate {
   /** 是否被实际尝试（true 即使最终失败也尝试过） */
   matched: boolean
   /** 实际尝试结果 */
-  status?: 'success' | 'failed' | 'skipped'
+  status?: 'success' | 'failed' | 'cancelled' | 'pending' | 'skipped'
   statusCode?: number
   /** failover 原因（如 http_5xx / ttfb_timeout / network_error / invalid_response） */
   failoverReason?: string
@@ -115,6 +115,9 @@ export interface RoutingTraceSummary {
   matchedRuleName?: string
   matchedRulePriority?: number
   outcome: 'success' | 'rejected' | 'all_failed' | 'pending'
+  /** 详情是否包含持久化的 routeChain；legacy 请求可能没有链路快照。 */
+  traceAvailability?: 'available' | 'unavailable'
+  traceUnavailableReason?: 'missing_route_chain'
   finalProviderName?: string
   finalInstanceName?: string
   finalChainKind?: 'primary' | 'backup' | 'single'

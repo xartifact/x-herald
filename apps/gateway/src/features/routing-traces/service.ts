@@ -194,6 +194,13 @@ function deriveOutcome(
   return storedOutcome ?? 'all_failed'
 }
 
+function normalizeAttemptStatus(status: string): 'success' | 'failed' | 'cancelled' | 'pending' {
+  if (status === 'success') return 'success'
+  if (status === 'cancelled') return 'cancelled'
+  if (status === 'pending') return 'pending'
+  return 'failed'
+}
+
 function toTraceSummary(row: RoutingTraceListRow) {
   const chain = (row.routeChain as RouteChainShape | null) ?? {}
   const chainSteps = chain.chain ?? []
@@ -282,7 +289,23 @@ export async function getRoutingTraceDetail(logId: string) {
       }
     | undefined
 
-  if (!routeChain) return null
+  if (!routeChain) {
+    return {
+      logId: mainRow.id,
+      requestGroupId: mainRow.requestGroupId,
+      requestedModel: mainRow.originalModelName ?? mainRow.modelName,
+      accessModelName: mainRow.modelName,
+      chain: [],
+      outcome: deriveOutcome(mainRow.status),
+      errorMessage: mainRow.errorMessage ?? undefined,
+      traceAvailability: 'unavailable' as const,
+      traceUnavailableReason: 'missing_route_chain' as const,
+      totalAttempts: 0,
+      totalDurationMs: mainRow.responseTimeMs,
+      createdAt: mainRow.createdAt.toISOString(),
+      requestLogId: mainRow.id,
+    }
+  }
 
   // 拉取所有 attempts（按 candidateIndex 关联）
   const [attempts, logRows] = await Promise.all([
@@ -325,7 +348,7 @@ export async function getRoutingTraceDetail(logId: string) {
       return {
         ...c,
         matched: !!att,
-        status: att?.status as 'success' | 'failed' | 'pending' | undefined,
+        status: att ? normalizeAttemptStatus(att.status) : undefined,
         statusCode: att?.statusCode ?? undefined,
         failoverReason: att?.failoverReason ?? undefined,
         durationMs: att?.durationMs ?? undefined,
@@ -346,6 +369,7 @@ export async function getRoutingTraceDetail(logId: string) {
     accessModelName: routeChain.accessModelName ?? mainRow.modelName,
     matchedRule: routeChain.matchedRule,
     chain: enrichedChain,
+    traceAvailability: 'available' as const,
     outcome: deriveOutcome(mainRow.status, routeChain.outcome),
     errorMessage: mainRow.errorMessage ?? undefined,
     finalCandidate: finalCandidate

@@ -232,6 +232,30 @@ describe('RoutingTraceDetailView fallback failure filteredOut', () => {
     expect(screen.queryByText('目标模型组无可用实例')).not.toBeInTheDocument()
   })
 
+  it('renders filtering reasons when a non-fallback step has no candidates', () => {
+    const trace = makeTrace({
+      outcome: 'all_failed',
+      totalAttempts: 0,
+      chain: [
+        {
+          index: 0,
+          kind: 'single',
+          actionType: 'priority',
+          resolvedGroupName: 'DeepSeek 组',
+          decisionReason: '目标组没有可用实例',
+          filteredOut: [{ instanceName: 'deepseek-v4-flash', reason: 'vision not supported' }],
+          candidates: [],
+        },
+      ],
+      finalCandidate: undefined,
+    })
+    render(<RoutingTraceDetailView trace={trace} />)
+
+    expect(screen.getByText('候选实例过滤')).toBeInTheDocument()
+    expect(screen.getByText('deepseek-v4-flash')).toBeInTheDocument()
+    expect(screen.getByText(/vision not supported/)).toBeInTheDocument()
+  })
+
   it('renders the plain all_failed footer when fallback has no filtered reasons', () => {
     const trace = makeTrace({
       outcome: 'all_failed',
@@ -256,6 +280,56 @@ describe('RoutingTraceDetailView fallback failure filteredOut', () => {
         "Fallback chain for route '降级链' produced no candidates (both primary and backup resolved to empty)",
       ),
     ).toBeInTheDocument()
+  })
+})
+
+describe('RoutingTraceDetailView trace availability', () => {
+  it('explains why an existing request has no reconstructable route chain', () => {
+    render(
+      <RoutingTraceDetailView
+        trace={makeTrace({
+          traceAvailability: 'unavailable',
+          traceUnavailableReason: 'missing_route_chain',
+          outcome: 'all_failed',
+          chain: [],
+          totalAttempts: 0,
+          finalCandidate: undefined,
+          errorMessage: 'Client disconnected after receiving data',
+        })}
+      />,
+    )
+
+    expect(screen.getByText('链路追踪未记录')).toBeInTheDocument()
+    expect(screen.getByText(/没有保存 routeChain/)).toBeInTheDocument()
+    expect(screen.getAllByText(/Client disconnected after receiving data/).length).toBeGreaterThan(
+      0,
+    )
+  })
+})
+
+describe('RoutingTraceDetailView cancelled attempts', () => {
+  it('shows client cancellation separately from an upstream failure', () => {
+    const trace = makeTrace({
+      outcome: 'all_failed',
+      chain: [
+        {
+          ...makeTrace().chain[0]!,
+          candidates: [
+            {
+              ...makeTrace().chain[0]!.candidates[0]!,
+              status: 'cancelled',
+              statusCode: 500,
+            },
+          ],
+        },
+      ],
+      errorMessage: 'Client disconnected after receiving data',
+      finalCandidate: undefined,
+    })
+    render(<RoutingTraceDetailView trace={trace} />)
+
+    expect(screen.getByText('客户端取消')).toBeInTheDocument()
+    expect(screen.getByText('客户端已取消或连接中断，未完成后续请求处理')).toBeInTheDocument()
   })
 })
 

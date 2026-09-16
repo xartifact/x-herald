@@ -62,7 +62,7 @@ routes.get('/:logId', async (c) => {
   const logId = c.req.param('logId')
   const detail = await getRoutingTraceDetail(logId)
   if (!detail) {
-    return c.json({ error: 'Routing trace not found or has no chain', code: 'NOT_FOUND' }, 404)
+    return c.json({ error: 'Routing trace not found', code: 'NOT_FOUND' }, 404)
   }
   return c.json(detail)
 })

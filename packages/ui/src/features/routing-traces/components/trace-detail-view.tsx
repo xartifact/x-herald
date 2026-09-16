@@ -115,7 +115,27 @@ const STATUS_META = {
     bg: 'bg-muted',
     border: 'border-l-border',
   },
+  cancelled: {
+    label: '客户端取消',
+    icon: AlertTriangle,
+    color: 'text-warning',
+    bg: 'bg-warning/10',
+    border: 'border-l-warning',
+  },
 } as const
+
+const FILTER_REASON_LABELS: Record<string, string> = {
+  'vision not supported': '请求包含视觉内容，但实例未声明视觉能力',
+  'streaming not supported': '请求要求流式输出，但实例不支持流式',
+  'function calling not supported': '请求包含工具调用，但实例不支持工具调用',
+  'circuit breaker open': '实例当前处于熔断状态',
+  'instance status is down': '实例状态为 down',
+  'provider protocol not enabled': '服务商未启用当前目标协议',
+}
+
+function formatFilterReason(reason: string): string {
+  return FILTER_REASON_LABELS[reason] ?? reason
+}
 
 function formatDuration(ms?: number): string {
   if (ms == null) return '—'
@@ -145,7 +165,8 @@ function hasDecisionDetail(step: ChainStepLike): boolean {
     !!step.intentName ||
     (step.capabilities?.length ?? 0) > 0 ||
     step.actionType === 'reject' ||
-    (step.actionType === 'fallback' && (step.filteredOut?.length ?? 0) > 0)
+    (step.filteredOut?.length ?? 0) > 0 ||
+    (step.candidates.length === 0 && !!step.decisionReason)
   )
 }
 
@@ -223,6 +244,7 @@ function CandidateCard({
                 <span className="text-xs font-mono text-muted-foreground">#{c.candidateIndex}</span>
                 <StepIcon className={`h-3 w-3 ${stepKindMeta.text}`} />
                 <span className="text-xs text-muted-foreground">{stepKindMeta.label}</span>
+                <span className={`text-xs ${statusMeta.color}`}>{statusMeta.label}</span>
                 {isFinal && (
                   <Badge variant="default" className="text-[10px] h-4">
                     最终出口
@@ -307,6 +329,7 @@ function StepGroup({
   const filteredCount = step.filteredOut?.length ?? 0
   const attempted = step.candidates.filter((c) => c.matched).length
   const total = step.candidates.length
+  const showEmptyState = total === 0 && !showDecision
 
   return (
     <div className={isFirstStep ? '' : 'pl-4 sm:pl-6 border-l-2 border-border/50 ml-2'}>
@@ -351,6 +374,11 @@ function StepGroup({
               <TimelineConnector />
             </>
           )}
+          {showEmptyState && (
+            <div className="rounded-md border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">
+              该步骤未产生候选实例，记录中没有更详细的过滤原因。
+            </div>
+          )}
           {step.candidates.map((c, i) => (
             <div key={c.candidateIndex}>
               <CandidateCard c={c} isFinal={finalCandidateIndex === c.candidateIndex} />
@@ -365,7 +393,12 @@ function StepGroup({
                       className="text-[11px] text-foreground/80 flex gap-1.5"
                     >
                       <span className="font-mono flex-shrink-0">{r.instanceName}</span>
-                      <span className="text-muted-foreground truncate">{r.reason}</span>
+                      <span className="text-muted-foreground truncate">
+                        {formatFilterReason(r.reason)}
+                        {formatFilterReason(r.reason) !== r.reason && (
+                          <span className="font-mono ml-1">{r.reason}</span>
+                        )}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -383,6 +416,9 @@ function DecisionCard({ step }: { step: ChainStepLike }) {
   const isReject = step.actionType === 'reject'
   const isIntent = !!step.intentName
   const isFallbackFailed = step.actionType === 'fallback'
+  const hasFilteredOut = (step.filteredOut?.length ?? 0) > 0
+  const isEmptyStep = step.candidates.length === 0
+  const isGenericEmpty = isEmptyStep && !isReject && !isIntent && !isFallbackFailed
   const border = isReject
     ? 'border-l-destructive bg-destructive/5'
     : isIntent
@@ -404,14 +440,18 @@ function DecisionCard({ step }: { step: ChainStepLike }) {
       ? '意图路由决策'
       : isFallbackFailed
         ? '降级链失败'
-        : '能力路由决策'
+        : isGenericEmpty
+          ? '候选实例过滤'
+          : '能力路由决策'
   const subtitle = isReject
     ? '命中 reject 节点'
     : isIntent
       ? (INTENT_SOURCE_LABELS[step.intentSource ?? ''] ?? step.intentSource ?? '未知来源')
       : isFallbackFailed
         ? (step.decisionReason ?? '主备链均未产出候选')
-        : `命中能力: ${step.capabilities?.join('、')}`
+        : isGenericEmpty
+          ? (step.decisionReason ?? '目标模型组未产出可用实例')
+          : `命中能力: ${step.capabilities?.join('、')}`
 
   return (
     <Card className={`border-l-4 ${border}`}>
@@ -441,13 +481,18 @@ function DecisionCard({ step }: { step: ChainStepLike }) {
         {/* 意图命中的完整依据：用户消息 + 分类器响应 */}
         {isIntent && <IntentEvidence step={step} />}
         {/* 降级链主备均失败：展示每条腿组内被过滤的实例及原因（vision not supported / 熔断...） */}
-        {isFallbackFailed && (step.filteredOut?.length ?? 0) > 0 && (
+        {hasFilteredOut && isEmptyStep && (
           <div className="mt-2 rounded-md bg-muted/40 px-3 py-2 space-y-1 border border-border/60">
-            <div className="text-[11px] text-muted-foreground">主备链组内被过滤（未入选原因）:</div>
+            <div className="text-[11px] text-muted-foreground">候选实例未入选原因:</div>
             {step.filteredOut!.map((r) => (
               <div key={`${r.instanceName}-${r.reason}`} className="flex gap-2 text-xs">
                 <span className="font-mono flex-shrink-0 text-foreground/90">{r.instanceName}</span>
-                <span className="text-muted-foreground">{r.reason}</span>
+                <span className="text-muted-foreground">
+                  {formatFilterReason(r.reason)}
+                  {formatFilterReason(r.reason) !== r.reason && (
+                    <span className="font-mono ml-1">{r.reason}</span>
+                  )}
+                </span>
               </div>
             ))}
           </div>
@@ -460,9 +505,33 @@ function DecisionCard({ step }: { step: ChainStepLike }) {
 export function RoutingTraceDetailView({ trace }: RoutingTraceDetailViewProps) {
   const totalCandidates = trace.chain.flatMap((s) => s.candidates).length
   const attempted = trace.chain.flatMap((s) => s.candidates).filter((c) => c.matched).length
+  const hasCancelledCandidate = trace.chain.some((step) =>
+    step.candidates.some((candidate) => candidate.status === 'cancelled'),
+  )
 
   return (
     <div className="space-y-1">
+      {trace.traceAvailability === 'unavailable' && (
+        <Card className="border-l-4 border-l-warning bg-warning/10 mb-3">
+          <CardContent className="py-3 px-4">
+            <div className="flex items-start gap-2.5">
+              <AlertTriangle className="h-4 w-4 text-warning mt-0.5 flex-shrink-0" />
+              <div className="space-y-1">
+                <div className="text-sm font-medium">链路追踪未记录</div>
+                <div className="text-xs text-muted-foreground">
+                  请求日志存在，但没有保存 routeChain，因此无法还原命中的规则、模型组和候选实例。
+                  这通常发生在旧请求或请求在路由快照写入前就结束的场景。
+                </div>
+                {trace.errorMessage && (
+                  <div className="text-xs text-foreground/80 break-words">
+                    请求结果：{trace.errorMessage}
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       {/* 时间轴：请求入口 → 路由决策 → 链路执行 → 最终出口 */}
       <div className="space-y-0">
         {/* Step 1: 请求入口 */}
@@ -637,10 +706,17 @@ export function RoutingTraceDetailView({ trace }: RoutingTraceDetailViewProps) {
                     <div>
                       <div className="text-sm font-medium">请求失败</div>
                       <div className="text-xs text-muted-foreground">
-                        {totalCandidates > 0
-                          ? `尝试 ${attempted}/${totalCandidates} 个候选后全部失败`
-                          : (trace.errorMessage ?? '路由未产出任何候选实例')}
+                        {hasCancelledCandidate
+                          ? '客户端已取消或连接中断，未完成后续请求处理'
+                          : totalCandidates > 0
+                            ? `尝试 ${attempted}/${totalCandidates} 个候选后全部失败`
+                            : (trace.errorMessage ?? '路由未产出任何候选实例')}
                       </div>
+                      {hasCancelledCandidate && trace.errorMessage && (
+                        <div className="text-xs text-muted-foreground mt-1 break-words">
+                          {trace.errorMessage}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="text-right">

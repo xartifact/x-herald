@@ -1,5 +1,5 @@
 import { useParams, Link } from '@tanstack/react-router'
-import { ArrowLeft, Loader2 } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, Loader2, RefreshCw } from 'lucide-react'
 
 import {
   RoutingTraceDetailView,
@@ -13,7 +13,7 @@ export function RoutingTraceDetailPage() {
   const params = useParams({ strict: false }) as { logId?: string }
   const logId = params.logId ?? null
 
-  const { data, isLoading, error } = useRoutingTraceDetail(logId)
+  const { data, isLoading, error, isFetching, refetch } = useRoutingTraceDetail(logId)
 
   return (
     <div className="space-y-6">
@@ -40,8 +40,31 @@ export function RoutingTraceDetailPage() {
           <Loader2 className="h-4 w-4 animate-spin" />
           加载中…
         </div>
-      ) : error || !data ? (
-        <EmptyState title="未找到路由链路记录，或该请求未启用新链路追踪" />
+      ) : error ? (
+        <EmptyState
+          icon={<AlertTriangle className="h-5 w-5 text-destructive" />}
+          title="链路追踪加载失败"
+          description={
+            error instanceof Error ? error.message : '服务暂时无法返回这条请求的链路信息'
+          }
+          action={
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void refetch()}
+              disabled={isFetching}
+            >
+              <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isFetching ? 'animate-spin' : ''}`} />
+              重试
+            </Button>
+          }
+        />
+      ) : !data ? (
+        <EmptyState
+          icon={<AlertTriangle className="h-5 w-5 text-warning" />}
+          title="未找到请求记录"
+          description="这条 request_log 可能已经被清理，或链接中的 ID 不正确。"
+        />
       ) : (
         <RoutingTraceDetailView trace={data} />
       )}

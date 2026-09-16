@@ -15,6 +15,7 @@ import { and, eq } from 'drizzle-orm'
 
 import {
   MIGRATIONS_FOLDER,
+  requestAttempts,
   requestLogs,
   runPgliteMigrations,
   lt,
@@ -40,7 +41,9 @@ beforeAll(async () => {
   pgliteClient = new PGlite()
   await pgliteClient.exec("SET timezone = 'UTC'")
 
-  db = drizzlePglite(pgliteClient, { schema: { requestLogs } }) as unknown as Database
+  db = drizzlePglite(pgliteClient, {
+    schema: { requestAttempts, requestLogs },
+  }) as unknown as Database
 
   await runPgliteMigrations(pgliteClient, MIGRATIONS_FOLDER, {
     trace() {},
@@ -349,5 +352,91 @@ describe('listRoutingTraces / getRoutingTraceDetail - failure-path coverage', ()
     expect(detail?.errorMessage).toBe("Intent routing: group 'g-1' returned no candidates")
     expect(detail?.chain[0]?.intentName).toBe('coding')
     expect(detail?.chain[0]?.candidates).toHaveLength(0)
+  })
+
+  it('returns an explicit unavailable detail for a request without a routeChain snapshot', async () => {
+    if (!db) throw new Error('db not initialized')
+    const id = crypto.randomUUID()
+    await db.insert(requestLogs).values({
+      id,
+      requestGroupId: crypto.randomUUID(),
+      candidateIndex: 0,
+      modelName: 'Plan',
+      originalModelName: 'Plan',
+      status: 'cancelled',
+      statusCode: 500,
+      responseTimeMs: 42,
+      errorMessage: 'Client disconnected after receiving data',
+      errorType: 'client_disconnect',
+      metadata: null,
+      createdAt: new Date(),
+    })
+
+    const detail = await getRoutingTraceDetail(id)
+    expect(detail?.traceAvailability).toBe('unavailable')
+    expect(detail?.traceUnavailableReason).toBe('missing_route_chain')
+    expect(detail?.requestedModel).toBe('Plan')
+    expect(detail?.outcome).toBe('all_failed')
+    expect(detail?.chain).toEqual([])
+    expect(detail?.errorMessage).toBe('Client disconnected after receiving data')
+  })
+
+  it('normalizes persisted attempt failure status for the detail view', async () => {
+    if (!db) throw new Error('db not initialized')
+    const id = crypto.randomUUID()
+    const requestGroupId = crypto.randomUUID()
+    await db.insert(requestLogs).values({
+      id,
+      requestGroupId,
+      candidateIndex: 0,
+      modelName: 'Plan',
+      originalModelName: 'Plan',
+      status: 'failure',
+      statusCode: 503,
+      responseTimeMs: 42,
+      metadata: {
+        routing: {
+          routeChain: {
+            requestedModel: 'Plan',
+            chain: [
+              {
+                index: 0,
+                kind: 'single',
+                actionType: 'priority',
+                candidates: [
+                  {
+                    candidateIndex: 0,
+                    chainStepIndex: 0,
+                    chainStepKind: 'single',
+                    instanceId: 'instance-1',
+                    instanceName: 'deepseek-v4-flash',
+                    providerId: 'provider-1',
+                    providerName: 'X-AIO',
+                    priority: 0,
+                    strategy: 'priority',
+                    groupName: 'DeepSeek',
+                  },
+                ],
+              },
+            ],
+            outcome: 'all_failed',
+          },
+        },
+      },
+      createdAt: new Date(),
+    })
+    await db.insert(requestAttempts).values({
+      requestLogId: id,
+      requestGroupId,
+      candidateIndex: 0,
+      status: 'failure',
+      statusCode: 503,
+      durationMs: 42,
+      createdAt: new Date(),
+    })
+
+    const detail = await getRoutingTraceDetail(id)
+    expect(detail?.chain[0]?.candidates[0]?.matched).toBe(true)
+    expect(detail?.chain[0]?.candidates[0]?.status).toBe('failed')
   })
 })

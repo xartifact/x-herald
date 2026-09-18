@@ -143,7 +143,7 @@ jobs:
         env:
           # main/master 部署 latest；其他分支（feat/**, fix/**, ci/**, refactor/**）部署 alpha
           IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && 'latest' || 'alpha' }}
-        # 提示：服务器 ~/Docker/x-herald/docker-compose.yml 的 gateway.image 字段
+        # 提示：服务器 DEPLOY_DIR（/opt/xartifact/x-herald）下 docker-compose.yml 的 x-herald.image 字段
         # 必须支持 interpolation：`image: ghcr.io/xartifact/x-herald:${IMAGE_TAG:-latest}`
         # 否则 docker-compose 仍会按 hardcoded 标签启动，alpha 镜像不会被实际使用。
         run: |
@@ -165,7 +165,7 @@ jobs:
             if [ "$CONTAINER_STATUS" = "exited" ] || [ "$CONTAINER_STATUS" = "dead" ]; then
               echo "✗ Container has stopped (status: $CONTAINER_STATUS)"
               echo "Container logs:"
-              docker-compose logs gateway
+              docker-compose logs x-herald
               exit 1
             fi
 
@@ -183,7 +183,7 @@ jobs:
               echo "Last HTTP code: $HTTP_CODE"
               echo "Container status: $CONTAINER_STATUS"
               echo "Container logs:"
-              docker-compose logs --tail=50 gateway
+              docker-compose logs --tail=50 x-herald
               exit 1
             fi
 

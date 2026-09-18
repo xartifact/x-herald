@@ -229,7 +229,7 @@ bun run ci               # 本地全量 CI（format + lint + typecheck + tests�
 ```bash
 docker compose build
 docker compose up -d
-docker compose logs -f gateway
+docker compose logs -f x-herald
 ```
 
 ---

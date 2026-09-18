@@ -20,7 +20,9 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  DEPLOY_DIR: ~/Docker/x-herald
+  # 部署目录在 /opt（非 ~/Docker）：runner 已迁移到 AUR 包 github-actions-bin，
+  # 其 systemd 沙箱含 InaccessiblePaths=/home，无法访问 ~/Docker。
+  DEPLOY_DIR: /opt/xartifact/x-herald
 
 jobs:
   test:

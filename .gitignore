@@ -87,3 +87,7 @@ test-results/
 playwright-report/
 .gitnexus
 .playwright-mcp/
+
+# Python
+__pycache__/
+*.pyc

@@ -9,6 +9,7 @@
     ".next/**",
     "coverage/**",
     ".claude/skills/**",
+    ".agents/skills/**",
     "AGENTS.md",
     "CLAUDE.md",
     "README.md",

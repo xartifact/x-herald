@@ -26,6 +26,7 @@ export * from './config-io'
 export * from './potential-model'
 export * from './pagination'
 export * from './i18n'
+export * from './plugin'
 
 // Live stream event type (for real-time log streaming)
 export type LiveStreamEvent =

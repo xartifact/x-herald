@@ -1,0 +1,8 @@
+{
+  "name": "logger-plugin",
+  "entry": "./index.ts",
+  "enabled": true,
+  "config": {
+    "sample": true
+  }
+}

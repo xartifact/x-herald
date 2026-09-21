@@ -179,7 +179,6 @@ export function capTraceUserMessage(value: string | undefined): string | undefin
     : `${value.slice(0, TRACE_USER_MESSAGE_MAX_CHARS)}…[truncated]`
 }
 
-
 export interface ExtractedUserQuery {
   raw: string
   cleaned: string

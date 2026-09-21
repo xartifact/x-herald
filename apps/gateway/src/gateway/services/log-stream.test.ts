@@ -82,7 +82,11 @@ describe('transformedBodyForStorage', () => {
   it('stores null for same-protocol passthrough (the duplicate case)', () => {
     expect(
       transformedBodyForStorage(
-        makeParams({ incomingProtocol: 'openai', targetProtocol: 'openai', transformedRequestBody: body }),
+        makeParams({
+          incomingProtocol: 'openai',
+          targetProtocol: 'openai',
+          transformedRequestBody: body,
+        }),
       ),
     ).toBeNull()
     expect(
@@ -109,9 +113,7 @@ describe('transformedBodyForStorage', () => {
   })
 
   it('stores null when a protocol is unknown, rather than risk a duplicate', () => {
-    expect(
-      transformedBodyForStorage(makeParams({ transformedRequestBody: body })),
-    ).toBeNull()
+    expect(transformedBodyForStorage(makeParams({ transformedRequestBody: body }))).toBeNull()
   })
 
   it('normalizes a missing cross-protocol body to null (column stays nullable)', () => {

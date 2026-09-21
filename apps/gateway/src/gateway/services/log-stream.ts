@@ -235,7 +235,6 @@ export function transformedBodyForStorage(params: StreamLogParams): unknown {
   return incomingProtocol === targetProtocol ? null : (transformedRequestBody ?? null)
 }
 
-
 export async function logRequestStart(params: StreamLogParams): Promise<LogStartResult> {
   return createStreamLog({ ...params, isStream: false })
 }

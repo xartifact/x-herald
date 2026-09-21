@@ -1,9 +1,11 @@
+import { createHash } from 'crypto'
 import fs from 'fs'
 import path from 'path'
-import { createHash } from 'crypto'
 
 import { drizzle as drizzlePostgres } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
+
+import { applyTimestampParsers } from './timestamp-parser'
 
 import type { DbLogger, Database, DatabaseOptions } from '../types'
 
@@ -164,13 +166,21 @@ export async function createPostgresDatabase(
     await validateClient.end()
   }
 
-  // Create persistent connection pool
+  // 持久连接池。connection.TimeZone 固定为 UTC：
+  // 全库时间列存的是 UTC 墙钟，会话时区若随部署环境漂移，`timestamptz` 列的
+  // 文本渲染会带非 UTC offset（如 '+08'），与 drizzle 的 '+0000' 追加逻辑叠加后
+  // 解析出错。PGlite 侧同样显式 SET timezone='UTC'，两侧保持一致。
   const pgClient = postgres(connString, {
     max: 10,
     idle_timeout: 20,
     connect_timeout: 10,
+    connection: { TimeZone: 'UTC' },
   })
   const db = drizzlePostgres(pgClient, { schema })
+
+  // 必须在 drizzle() 之后：construct() 会把时间 OID 的 parser 换成 transparent parser，
+  // 导致裸 SQL 聚合（sql`max(created_at)`）返回无时区标记的字符串。详见该模块注释。
+  applyTimestampParsers(pgClient)
 
   logger.trace('[DB] PostgreSQL ready')
   return { db, client: pgClient }

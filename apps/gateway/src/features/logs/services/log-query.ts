@@ -6,6 +6,7 @@ import {
   gte,
   inArray,
   isNotNull,
+  isNull,
   lt,
   lte,
   ne,
@@ -272,7 +273,7 @@ export async function getClientModelStats(range: DateRange) {
       totalOutputTokens: sql<number>`sum(${requestLogs.outputTokens})`,
       totalTokens: sql<number>`sum(${requestLogs.totalTokens})`,
       avgResponseTime: sql<number>`avg(${requestLogs.responseTimeMs})`,
-      lastRequestAt: sql<string>`max(${requestLogs.createdAt})`,
+      lastRequestAt: sql<Date | null>`max(${requestLogs.createdAt})`,
     })
     .from(requestLogs)
     .where(where)
@@ -287,7 +288,7 @@ export async function getClientModelStats(range: DateRange) {
     totalOutputTokens: Number(s.totalOutputTokens ?? 0),
     totalTokens: Number(s.totalTokens ?? 0),
     avgResponseTime: Number(s.avgResponseTime ?? 0),
-    lastRequestAt: s.lastRequestAt,
+    lastRequestAt: s.lastRequestAt?.toISOString() ?? '',
   }))
 }
 
@@ -301,8 +302,8 @@ export async function getStorageStats() {
     db.select({ count: sql<number>`count(*)` }).from(requestLogs),
     db
       .select({
-        oldest: sql<string>`min(${requestLogs.createdAt})`,
-        newest: sql<string>`max(${requestLogs.createdAt})`,
+        oldest: sql<Date | null>`min(${requestLogs.createdAt})`,
+        newest: sql<Date | null>`max(${requestLogs.createdAt})`,
       })
       .from(requestLogs),
     db
@@ -313,8 +314,8 @@ export async function getStorageStats() {
 
   return {
     totalCount: Number(countResult[0]?.count ?? 0),
-    oldestLogDate: dateRange[0]?.oldest ?? null,
-    newestLogDate: dateRange[0]?.newest ?? null,
+    oldestLogDate: dateRange[0]?.oldest?.toISOString() ?? null,
+    newestLogDate: dateRange[0]?.newest?.toISOString() ?? null,
     retentionDays: RETENTION_DAYS,
     cutoffDate: cutoffDate.toISOString(),
     estimatedExpiredLogs: String(expiredCount[0]?.count ?? 0),
@@ -332,76 +333,89 @@ export async function cleanupLogs(retentionDays: number) {
   return { deletedCount: deleted.length, retentionDays }
 }
 
+/**
+ * 密钥用量统计。
+ *
+ * 设计要点（修复前的三处缺陷）：
+ *
+ * 1. **单一数据源**：所有 period 都从 `request_logs` 聚合。修复前 `period='all'`
+ *    读 `virtual_keys` 的累计列，其余 period 读日志聚合 —— 切标签页等于换一套数据，
+ *    且无近期日志的 key 在区间视图里**整行消失**（前端 `stats.get(id)` 得 undefined，
+ *    显示成「从未使用」）。
+ *
+ * 2. **全量 key 保底**：以 `virtual_keys`（软删过滤后）为左表 LEFT JOIN 聚合结果。
+ *    本期无请求的 key 仍返回一行、数值为 0，而不是缺席。
+ *
+ * 3. **`lastUsedAt` 取独立列**：来自 `virtual_keys.last_used_at`（由认证路径无条件
+ *    维护），而非 `max(created_at)`。原因：`request_logs` 有留存期清理（默认 30 天），
+ *    从日志推导会让「最近使用」在日志被清理后倒退或丢失。
+ *
+ * 修复前 `all` 分支还把 success/failure/token/avgResponseTime 硬编码为 0，
+ * 导致用量面板切到「全部」时成功率恒 0%、平均响应时间恒 `-`。
+ */
 export async function getKeyStats(period: string) {
   const db = getDatabase()
 
-  if (period === 'all') {
-    const keys = await db
-      .select({
-        id: virtualKeys.id,
-        name: virtualKeys.name,
-        lastUsedAt: virtualKeys.lastUsedAt,
-        totalRequests: virtualKeys.totalRequests,
-        totalTokens: virtualKeys.totalTokens,
-      })
-      .from(virtualKeys)
-
-    return keys.map((k) => ({
-      virtualKeyId: k.id,
-      virtualKeyName: k.name,
-      requestCount: Number(k.totalRequests ?? 0),
-      successCount: 0,
-      failureCount: 0,
-      totalInputTokens: 0,
-      totalOutputTokens: 0,
-      totalTokens: Number(k.totalTokens ?? 0),
-      avgResponseTimeMs: 0,
-      lastUsedAt: k.lastUsedAt ? k.lastUsedAt.toISOString() : null,
-    }))
-  }
-
+  // 时间窗：'all' 不加下限，其余按周期。注意 'all' 仍受日志留存期限制
+  // （request_logs 只保留 METRICS_RETENTION_DAYS），所以区间统计对 'all'
+  // 表达的是「留存期内全部」；而 lastUsedAt 走独立列，不受此限制。
   const conditions = [isNotNull(requestLogs.virtualKeyId)]
-
   const now = new Date()
-  let start: Date
   if (period === 'today') {
-    start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    conditions.push(
+      gte(requestLogs.createdAt, new Date(now.getFullYear(), now.getMonth(), now.getDate())),
+    )
   } else if (period === '7d') {
-    start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-  } else {
-    start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+    conditions.push(gte(requestLogs.createdAt, new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)))
+  } else if (period !== 'all') {
+    conditions.push(gte(requestLogs.createdAt, new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)))
   }
-  conditions.push(gte(requestLogs.createdAt, start))
 
-  const rows = await db
+  // 以聚合结果为准按 virtualKeyId 分组（不再带 virtualKeyName 快照 —— 改名会把
+  // 同一 key 拆成两行，前端 Map 后者覆盖前者导致统计错乱）。
+  const aggRows = await db
     .select({
       virtualKeyId: requestLogs.virtualKeyId,
-      virtualKeyName: requestLogs.virtualKeyName,
       requestCount: sql<number>`count(*)`,
       successCount: sql<number>`count(*) filter (where ${requestLogs.status} = 'success')`,
       failureCount: sql<number>`count(*) filter (where ${requestLogs.status} = 'failure')`,
       totalInputTokens: sql<number>`coalesce(sum(${requestLogs.inputTokens}), 0)`,
       totalOutputTokens: sql<number>`coalesce(sum(${requestLogs.outputTokens}), 0)`,
       totalTokens: sql<number>`coalesce(sum(${requestLogs.totalTokens}), 0)`,
-      avgResponseTimeMs: sql<number>`round(avg(${requestLogs.responseTimeMs}))`,
-      lastUsedAt: sql<string>`max(${requestLogs.createdAt})`,
+      avgResponseTimeMs: sql<number>`coalesce(round(avg(${requestLogs.responseTimeMs})), 0)`,
     })
     .from(requestLogs)
     .where(and(...conditions))
-    .groupBy(requestLogs.virtualKeyId, requestLogs.virtualKeyName)
+    .groupBy(requestLogs.virtualKeyId)
 
-  return rows.map((r) => ({
-    virtualKeyId: r.virtualKeyId,
-    virtualKeyName: r.virtualKeyName,
-    requestCount: Number(r.requestCount),
-    successCount: Number(r.successCount),
-    failureCount: Number(r.failureCount),
-    totalInputTokens: Number(r.totalInputTokens),
-    totalOutputTokens: Number(r.totalOutputTokens),
-    totalTokens: Number(r.totalTokens),
-    avgResponseTimeMs: Number(r.avgResponseTimeMs),
-    lastUsedAt: r.lastUsedAt ?? null,
-  }))
+  const aggByKeyId = new Map(aggRows.map((r) => [r.virtualKeyId, r]))
+
+  // 全量 key 作为骨架：保证所有周期视图都列出全部密钥
+  const keys = await db
+    .select({
+      id: virtualKeys.id,
+      name: virtualKeys.name,
+      lastUsedAt: virtualKeys.lastUsedAt,
+    })
+    .from(virtualKeys)
+    .where(isNull(virtualKeys.deletedAt))
+    .orderBy(desc(virtualKeys.lastUsedAt))
+
+  return keys.map((k) => {
+    const agg = aggByKeyId.get(k.id)
+    return {
+      virtualKeyId: k.id,
+      virtualKeyName: k.name,
+      requestCount: Number(agg?.requestCount ?? 0),
+      successCount: Number(agg?.successCount ?? 0),
+      failureCount: Number(agg?.failureCount ?? 0),
+      totalInputTokens: Number(agg?.totalInputTokens ?? 0),
+      totalOutputTokens: Number(agg?.totalOutputTokens ?? 0),
+      totalTokens: Number(agg?.totalTokens ?? 0),
+      avgResponseTimeMs: Number(agg?.avgResponseTimeMs ?? 0),
+      lastUsedAt: k.lastUsedAt ? k.lastUsedAt.toISOString() : null,
+    }
+  })
 }
 
 export async function getConversationTrace(conversationId: string) {
@@ -506,7 +520,7 @@ export async function getProviderStats(range: DateRange) {
         sql<number>`count(*) filter (where ${requestLogs.status} = 'success' and ${ttfbExpr} is not null)`.mapWith(
           Number,
         ),
-      lastRequestAt: sql<string>`max(${requestLogs.createdAt})`,
+      lastRequestAt: sql<Date | null>`max(${requestLogs.createdAt})`,
     })
     .from(requestLogs)
     .where(and(...conditions))

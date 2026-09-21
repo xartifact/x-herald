@@ -372,6 +372,13 @@
       "when": 1787823000000,
       "tag": "0055_drop_legacy_migrations_tracking_table",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1787990400000,
+      "tag": "0056_virtual_keys_last_used_at_tz",
+      "breakpoints": true
     }
   ]
 }

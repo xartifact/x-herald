@@ -2,6 +2,7 @@ import { eq } from '@xartifact/x-herald-db'
 import type { Context, Next } from 'hono'
 
 import { getDatabase } from '../db/client'
+import { touchKeyLastUsed } from '../features/keys/usage-tracker'
 import { rateLimitEngine } from '../gateway/services/rate-limit-engine'
 import rootLogger from '../lib/logger'
 import { virtualKeys, type VirtualKey } from '@xartifact/x-herald-db'
@@ -133,6 +134,7 @@ export async function virtualKeyMiddleware(c: Context, next: Next) {
       const rateLimitResponse = checkRateLimit(c, cachedKey)
       if (rateLimitResponse) return rateLimitResponse
       c.set('virtualKey', cachedKey)
+      touchKeyLastUsed(cachedKey.id).catch(() => {})
       await next()
       return
     }
@@ -184,6 +186,9 @@ export async function virtualKeyMiddleware(c: Context, next: Next) {
 
     // 将密钥信息存储到 context
     c.set('virtualKey', key)
+
+    // 「最近使用」记录：认证与限流均通过后触发，不阻塞请求
+    touchKeyLastUsed(key.id).catch(() => {})
 
     await next()
   } catch (error) {

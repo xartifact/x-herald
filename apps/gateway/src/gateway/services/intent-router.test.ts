@@ -3,6 +3,37 @@ import { describe, it, expect, mock, beforeEach, afterAll } from 'bun:test'
 import type { IntentActionConfig } from '@xartifact/x-herald-shared'
 import type { StandardRequest } from '@xartifact/x-herald-shared'
 
+import { capTraceUserMessage, TRACE_USER_MESSAGE_MAX_CHARS } from './intent-router'
+
+/**
+ * Phase 1 of docs/log-storage-optimization-plan.md: the routing trace copied the
+ * last user message verbatim into every chain step, duplicating what
+ * `request_logs.request_body.messages` already stores. A 1.69 MB message became
+ * ~3.4 MB of metadata. The trace exists to explain a routing decision and the
+ * admin drawer renders at most 600 characters, so the copy is capped — while the
+ * classifier keeps the full text and `request_body` keeps the original.
+ */
+describe('capTraceUserMessage', () => {
+  it('leaves a message at or below the cap untouched', () => {
+    const short = 'a'.repeat(TRACE_USER_MESSAGE_MAX_CHARS)
+    expect(capTraceUserMessage(short)).toBe(short)
+    expect(capTraceUserMessage('hello')).toBe('hello')
+  })
+
+  it('caps a long message and marks it truncated', () => {
+    const long = 'b'.repeat(TRACE_USER_MESSAGE_MAX_CHARS + 5000)
+    const capped = capTraceUserMessage(long)
+    expect(capped).toBeDefined()
+    expect(capped!.length).toBeLessThan(long.length)
+    expect(capped!.startsWith('b'.repeat(TRACE_USER_MESSAGE_MAX_CHARS))).toBe(true)
+    expect(capped!.endsWith('[truncated]')).toBe(true)
+  })
+
+  it('passes undefined through, so absent messages stay absent', () => {
+    expect(capTraceUserMessage(undefined)).toBeUndefined()
+  })
+})
+
 // =============================================================================
 // Mock: getDatabase —— 注入最小的 fake DB，仅支持本测试需要的 query chains。
 //

@@ -151,6 +151,35 @@ function detectCapabilitiesFromRequest(request: StandardRequest): string[] {
   return caps
 }
 
+/**
+ * Cap for the user message copied into routing-trace records.
+ *
+ * `intentTrace.userMessage` / `userMessageRaw` duplicate the last user message
+ * that `request_logs.request_body.messages` already stores in full, and the
+ * trace copies every chain step's worth. A 1.69 MB user message therefore
+ * became ~3.4 MB of metadata per request. The trace only exists to explain a
+ * routing decision, and the admin drawer renders at most 600 characters, so the
+ * full text here bought nothing.
+ *
+ * Only the trace copy is capped: the classifier still receives the complete
+ * message, and `request_body` keeps the untruncated original.
+ * @see docs/log-storage-optimization-plan.md (Phase 1)
+ */
+export const TRACE_USER_MESSAGE_MAX_CHARS = 2048
+
+/**
+ * Truncate one trace-bound user message.
+ * @param value - raw or cleaned user message.
+ * @returns the message capped to {@link TRACE_USER_MESSAGE_MAX_CHARS}.
+ */
+export function capTraceUserMessage(value: string | undefined): string | undefined {
+  if (value === undefined) return undefined
+  return value.length <= TRACE_USER_MESSAGE_MAX_CHARS
+    ? value
+    : `${value.slice(0, TRACE_USER_MESSAGE_MAX_CHARS)}…[truncated]`
+}
+
+
 export interface ExtractedUserQuery {
   raw: string
   cleaned: string
@@ -571,8 +600,8 @@ export async function resolveIntentRoute(
       intentName: 'default',
       groupId: fallbackGroupId,
       source: 'agent_directive',
-      userMessageRaw: userQuery.raw,
-      userMessage: userQuery.cleaned,
+      userMessageRaw: capTraceUserMessage(userQuery.raw),
+      userMessage: capTraceUserMessage(userQuery.cleaned),
       userMessageCapabilities: userQuery.capabilities,
     }
   }
@@ -583,8 +612,8 @@ export async function resolveIntentRoute(
         intentName: intent,
         groupId,
         source: 'model_name',
-        userMessageRaw: userQuery.raw,
-        userMessage: userQuery.cleaned,
+        userMessageRaw: capTraceUserMessage(userQuery.raw),
+        userMessage: capTraceUserMessage(userQuery.cleaned),
         userMessageCapabilities: userQuery.capabilities,
       }
     }
@@ -596,8 +625,8 @@ export async function resolveIntentRoute(
       intentName: 'default',
       groupId: fallbackGroupId,
       source: 'default',
-      userMessageRaw: userQuery.raw,
-      userMessage: userQuery.cleaned,
+      userMessageRaw: capTraceUserMessage(userQuery.raw),
+      userMessage: capTraceUserMessage(userQuery.cleaned),
       userMessageCapabilities: userQuery.capabilities,
     }
   }
@@ -654,8 +683,8 @@ export async function resolveIntentRoute(
     classifierProviderName: cls.providerName,
     classifierModelName: cls.modelName,
     classifierPromptVersion: cls.promptVersion,
-    userMessageRaw: userQuery.raw,
-    userMessage: cls.userText || userQuery.cleaned,
+    userMessageRaw: capTraceUserMessage(userQuery.raw),
+    userMessage: capTraceUserMessage(cls.userText || userQuery.cleaned),
     userMessageCapabilities: userQuery.capabilities,
     classifierSystemPrompt: cls.systemPrompt,
     classifierReasoning: cls.reasoning,

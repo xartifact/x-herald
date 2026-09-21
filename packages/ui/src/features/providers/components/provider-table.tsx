@@ -1,5 +1,6 @@
 import { Pencil, Trash2, Eye, EyeOff, BrainCircuit, RefreshCw } from 'lucide-react'
 
+import { formatDate } from '@xartifact/x-herald-shared'
 import { StatusToggle } from '../../../shared/components/status-toggle'
 import { Badge } from '../../../shared/components/ui/badge'
 import { Button } from '../../../shared/components/ui/button'
@@ -107,7 +108,7 @@ export function ProviderTable({
                   </TableCell>
                   <TableCell>
                     <span className="text-sm text-muted-foreground">
-                      {new Date(provider.createdAt).toLocaleDateString('zh-CN')}
+                      {formatDate(provider.createdAt)}
                     </span>
                   </TableCell>
                   <TableCell className="text-right">

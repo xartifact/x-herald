@@ -1,3 +1,4 @@
+import { formatTime } from '@xartifact/x-herald-shared'
 import { Separator } from '../../../../shared/components/ui/separator'
 import { cn } from '../../../../shared/lib/utils'
 import type { Log } from '@xartifact/x-herald-shared'
@@ -36,7 +37,7 @@ export function LogSheetStatusBar({ log, formatDuration, formatTokens }: LogShee
         </span>
       </div>
       <div className="flex items-center gap-2">
-        <span>{new Date(log.createdAt).toLocaleTimeString('zh-CN')}</span>
+        <span>{formatTime(log.createdAt)}</span>
       </div>
     </div>
   )

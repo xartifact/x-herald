@@ -1,5 +1,6 @@
 import { Eye, EyeOff, Plus } from 'lucide-react'
 
+import { formatDate } from '@xartifact/x-herald-shared'
 import type { ModelInstance } from '@xartifact/x-herald-shared'
 import { Button } from '../../../shared/components/ui/button'
 import { Separator } from '../../../shared/components/ui/separator'
@@ -56,7 +57,7 @@ export function ProviderCardBody({
         </div>
         <div>
           <span className="text-muted-foreground">创建时间:</span>
-          <span className="ml-2">{new Date(provider.createdAt).toLocaleDateString('zh-CN')}</span>
+          <span className="ml-2">{formatDate(provider.createdAt)}</span>
         </div>
       </div>
 

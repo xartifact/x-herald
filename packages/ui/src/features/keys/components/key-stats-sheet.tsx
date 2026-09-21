@@ -1,3 +1,4 @@
+import { formatDateTime } from '@xartifact/x-herald-shared'
 import { Button } from '../../../shared/components/ui/button'
 import type { KeyStat } from '@xartifact/x-herald-shared'
 import { Separator } from '../../../shared/components/ui/separator'
@@ -99,9 +100,7 @@ export function KeyStatsSheet({
   const totalTokens = stat?.totalTokens ?? 0
   const avgResponseTime = stat?.avgResponseTimeMs ?? 0
 
-  const lastUsedText = stat?.lastUsedAt
-    ? new Date(stat.lastUsedAt).toLocaleString('zh-CN')
-    : '从未使用'
+  const lastUsedText = stat?.lastUsedAt ? formatDateTime(stat.lastUsedAt) : '从未使用'
 
   const keyId = virtualKey?.id ?? ''
   const { data: usage } = useKeyUsage(keyId)

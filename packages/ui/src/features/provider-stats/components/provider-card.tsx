@@ -1,5 +1,6 @@
 import { Server } from 'lucide-react'
 
+import { formatDateTime } from '@xartifact/x-herald-shared'
 import { cn } from '../../../shared/lib/utils'
 import type { ProviderStat } from '@xartifact/x-herald-shared'
 import { Badge } from '../../../shared/components/ui'
@@ -34,7 +35,7 @@ export function ProviderCard({ stat, rank }: ProviderCardProps) {
           </Badge>
         </div>
         <span className="text-xs text-muted-foreground">
-          最后请求: {new Date(stat.lastRequestAt).toLocaleString('zh-CN')}
+          最后请求: {formatDateTime(stat.lastRequestAt)}
         </span>
       </div>
 

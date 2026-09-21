@@ -18,6 +18,7 @@ import {
   Textarea,
   put,
 } from '@xartifact/x-herald-ui'
+import { formatDateTime } from '@xartifact/x-herald-shared'
 import { AlertCircle, Check, Save } from 'lucide-react'
 
 interface ClassifierPromptData {
@@ -83,7 +84,7 @@ export function ClassifierPromptTab() {
 
   const initial = data?.content ?? ''
   const version = data?.version ?? 0
-  const updatedAt = data?.updatedAt ? new Date(data.updatedAt).toLocaleString('zh-CN') : '—'
+  const updatedAt = data?.updatedAt ? formatDateTime(data.updatedAt) : '—'
 
   return (
     <div className="space-y-6">

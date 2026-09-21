@@ -1,5 +1,6 @@
 import { ChevronRight, GitBranch, X } from 'lucide-react'
 
+import { formatDateTime } from '@xartifact/x-herald-shared'
 import { Badge } from '../../../../shared/components/ui/badge'
 import { Button } from '../../../../shared/components/ui/button'
 import { cn } from '../../../../shared/lib/utils'
@@ -61,7 +62,7 @@ export function LogSheetToolbar({ log, onClose, onOpenTrace }: LogSheetToolbarPr
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
         <span className="text-xs text-muted-foreground font-mono hidden md:inline">
-          {new Date(log.createdAt).toLocaleString('zh-CN')}
+          {formatDateTime(log.createdAt)}
         </span>
         {onOpenTrace && (
           <Button

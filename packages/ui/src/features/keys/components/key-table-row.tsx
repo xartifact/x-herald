@@ -1,5 +1,6 @@
 import { Pencil, Trash2, RefreshCw, BarChart2 } from 'lucide-react'
 
+import { formatDate } from '@xartifact/x-herald-shared'
 import type { KeyStat } from '@xartifact/x-herald-shared'
 import { Badge } from '../../../shared/components/ui/badge'
 import { Button } from '../../../shared/components/ui/button'
@@ -16,7 +17,7 @@ function formatRelativeTime(dateStr: string | null): string {
   if (diff < 3_600_000) return `${Math.floor(diff / 60_000)} 分钟前`
   if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)} 小时前`
   if (diff < 2_592_000_000) return `${Math.floor(diff / 86_400_000)} 天前`
-  return new Date(dateStr).toLocaleDateString('zh-CN')
+  return formatDate(dateStr)
 }
 
 function formatTokensCompact(n: number): string {

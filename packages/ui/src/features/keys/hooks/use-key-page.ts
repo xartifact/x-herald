@@ -1,3 +1,4 @@
+import { formatDate as sharedFormatDate } from '@xartifact/x-herald-shared'
 import { useState, useMemo } from 'react'
 
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -189,7 +190,7 @@ export function useKeyPage() {
     const date = new Date(dateStr)
     const now = new Date()
     if (date < now) return '已过期'
-    return date.toLocaleDateString('zh-CN')
+    return sharedFormatDate(date)
   }
 
   return {

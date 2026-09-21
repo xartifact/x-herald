@@ -246,20 +246,11 @@ export function ModelGroupsPage() {
     toggleInstance.mutate({ id: instance.id })
   }
 
-  const handleMoveInstance = useCallback(
-    (groupId: string, instanceId: string, direction: 'up' | 'down') => {
-      const groupInstances = instancesByGroup.get(groupId)
-      if (!groupInstances) return
-      const index = groupInstances.findIndex((i) => i.id === instanceId)
-      if (index === -1) return
-      if (direction === 'up' && index === 0) return
-      if (direction === 'down' && index === groupInstances.length - 1) return
-      const swapIndex = direction === 'up' ? index - 1 : index + 1
-      const newOrder = [...groupInstances]
-      ;[newOrder[index], newOrder[swapIndex]] = [newOrder[swapIndex], newOrder[index]]
-      reorderInstances.mutate({ groupId, instanceIds: newOrder.map((i) => i.id) })
+  const handleReorderInstances = useCallback(
+    (groupId: string, orderedIds: string[]) => {
+      reorderInstances.mutate({ groupId, instanceIds: orderedIds })
     },
-    [instancesByGroup, reorderInstances],
+    [reorderInstances],
   )
 
   const onInstanceSubmit = async (data: Record<string, any>) => {
@@ -357,9 +348,7 @@ export function ModelGroupsPage() {
               onEditInstance={handleEditInstance}
               onDeleteInstance={handleDeleteInstance}
               onToggleInstance={handleToggleInstance}
-              onMoveInstance={(instanceId, direction) =>
-                handleMoveInstance(group.id, instanceId, direction)
-              }
+              onReorderInstances={(orderedIds) => handleReorderInstances(group.id, orderedIds)}
               onDetachInstance={(instance) =>
                 detachInstance.mutate({ groupId: group.id, instanceId: instance.id })
               }

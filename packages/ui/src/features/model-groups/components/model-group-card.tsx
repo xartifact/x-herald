@@ -20,7 +20,8 @@ interface ModelGroupCardProps {
   onEditInstance: (instance: ModelInstance) => void
   onDeleteInstance: (instance: ModelInstance) => void
   onToggleInstance: (instance: ModelInstance) => void
-  onMoveInstance: (instanceId: string, direction: 'up' | 'down') => void
+  /** 拖拽结束后提交该组新的实例 id 顺序 */
+  onReorderInstances: (orderedIds: string[]) => void
   onDetachInstance?: (instance: ModelInstance) => void
   getProviderName: (providerId: string) => string
 }
@@ -36,7 +37,7 @@ export function ModelGroupCard({
   onEditInstance,
   onDeleteInstance,
   onToggleInstance,
-  onMoveInstance,
+  onReorderInstances,
   onDetachInstance,
   getProviderName,
 }: ModelGroupCardProps) {
@@ -109,7 +110,7 @@ export function ModelGroupCard({
                 onEdit={onEditInstance}
                 onDelete={onDeleteInstance}
                 onToggle={onToggleInstance}
-                onMove={onMoveInstance}
+                onReorder={onReorderInstances}
                 onDetach={
                   onDetachInstance ? (_groupId, instance) => onDetachInstance(instance) : undefined
                 }

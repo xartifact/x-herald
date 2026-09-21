@@ -184,11 +184,29 @@ export function useReorderInstances() {
       )
       if (!response.success) throw new Error(response.error || '更新组内顺序失败')
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: modelGroupKeys.instances() })
+    // 乐观更新：拖拽即时生效；失败回滚，成功由 invalidate 以服务端顺序兜底
+    onMutate: async ({ instanceIds }) => {
+      await queryClient.cancelQueries({ queryKey: modelGroupKeys.instances() })
+      const previous = queryClient.getQueryData<ModelInstance[]>(modelGroupKeys.instances())
+      queryClient.setQueryData<ModelInstance[]>(modelGroupKeys.instances(), (old) => {
+        if (!old) return old
+        const rank = new Map(instanceIds.map((id, i) => [id, i]))
+        return old.toSorted(
+          (a, b) =>
+            (rank.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+            (rank.get(b.id) ?? Number.MAX_SAFE_INTEGER),
+        )
+      })
+      return { previous }
     },
-    onError: (error: Error) => {
+    onError: (error: Error, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(modelGroupKeys.instances(), context.previous)
+      }
       toast.error(error.message)
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: modelGroupKeys.instances() })
     },
   })
 }

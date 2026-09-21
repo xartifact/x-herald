@@ -15,6 +15,53 @@ import type { ModelSchema } from '@xartifact/x-herald-shared'
 
 const ID_PATTERN = /^[A-Za-z0-9._:/\\-]+$/
 
+/**
+ * 网关能如实转发的通用推理档位。
+ *
+ * 网关对 `reasoning_effort` 是**透传**（ingress 原样收、egress 原样发，
+ * 见 `openai/ingress.ts` / `openai/egress.ts`），因此可转发的档位由上游
+ * 模型决定。在没有上游档位明细时的保守集合取 OpenAI 文档化的三档。
+ */
+const DEFAULT_REASONING_EFFORTS = ['low', 'medium', 'high'] as const
+const DEFAULT_REASONING_EFFORT = 'medium'
+
+/** 关闭推理的档位标记；OpenRouter 与客户端均以 `"none"` 表示关闭。 */
+const REASONING_OFF = 'none'
+
+/**
+ * 构造对外 `reasoning` 字段（OpenRouter 对象形状）。
+ *
+ * 修复背景：此前这里发射 `capabilities.reasoning` 的**布尔**镜像，而按
+ * OpenRouter 契约解码的客户端（`reasoning.supported_efforts` / `default_effort`）
+ * 会因类型不符而拿不到任何档位信息。现在改为对象形状，与 OpenRouter
+ * `/api/v1/models` 对齐。
+ *
+ * 取值优先级：
+ *   1. 上游档位明细（`m.reasoningOptions`，同步时从供应商 `/models` 捕获并落库）
+ *      —— 原样转发，这是对 OpenRouter 最忠实的兼容。
+ *   2. 无上游明细但模型支持推理 → 用网关可透传的保守集合，并补上 `"none"`，
+ *      让客户端能关闭推理。
+ *   3. 不支持推理 → 返回 `undefined`（调用方省略该字段）。
+ *
+ * 注意 `capabilities.reasoning`（布尔能力位）**保留不变**：
+ * 「是否支持推理」与「支持哪些档位」是两个正交信息。
+ */
+function buildReasoningOptions(m: AccessibleModel): ModelSchema['reasoning'] {
+  const upstream = m.reasoningOptions
+  if (upstream && (upstream.supported_efforts?.length || upstream.default_effort)) {
+    return upstream
+  }
+
+  if (!m.capabilities?.reasoning) return undefined
+
+  // 无上游明细：给出可透传的档位集，并附加关闭项
+  const efforts = [...DEFAULT_REASONING_EFFORTS, REASONING_OFF]
+  return {
+    supported_efforts: efforts,
+    default_effort: DEFAULT_REASONING_EFFORT,
+  }
+}
+
 /** 把内部 AccessibleModel 映射为对外 ModelSchema；id 不合法时跳过 */
 function toModelSchema(m: AccessibleModel): ModelSchema | null {
   if (!ID_PATTERN.test(m.name)) return null
@@ -46,7 +93,7 @@ function toModelSchema(m: AccessibleModel): ModelSchema | null {
   if (caps) {
     entry.contextWindow = caps.contextWindow
     entry.maxTokens = caps.maxOutputTokens
-    entry.reasoning = caps.reasoning
+    entry.reasoning = buildReasoningOptions(m)
     entry.input = ['text', ...(caps.vision ? ['image'] : [])]
   }
   if (entry.compat?.max_tokens_field) entry.maxTokensField = entry.compat.max_tokens_field

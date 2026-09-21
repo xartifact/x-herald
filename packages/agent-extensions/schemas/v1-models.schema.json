@@ -87,10 +87,7 @@
           "minimum": 0,
           "description": "camelCase mirror of max_output_tokens, emitted by newer gateway versions. Same value; consumers should read max_output_tokens first."
         },
-        "reasoning": {
-          "type": "boolean",
-          "description": "camelCase mirror of capabilities.reasoning, emitted by newer gateway versions. Same value."
-        },
+        "reasoning": { "$ref": "#/$defs/ReasoningOptions" },
         "input": {
           "type": "array",
           "description": "camelCase mirror of capabilities.vision, emitted by newer gateway versions as the derived input-mode list. ['text','image'] when vision is on.",
@@ -135,6 +132,31 @@
         "reasoning": {
           "type": "boolean",
           "description": "Model supports extended thinking. Maps to pi's reasoning: true."
+        }
+      }
+    },
+    "ReasoningOptions": {
+      "type": "object",
+      "description": "Reasoning effort options, shaped after OpenRouter's top-level `reasoning` field. Says which efforts the model accepts; `capabilities.reasoning` (boolean) separately says whether it reasons at all.",
+      "additionalProperties": false,
+      "properties": {
+        "mandatory": {
+          "type": "boolean",
+          "description": "Reasoning cannot be turned off. OpenRouter parity."
+        },
+        "default_enabled": {
+          "type": "boolean",
+          "description": "Reasoning is on by default. OpenRouter parity."
+        },
+        "supported_efforts": {
+          "type": "array",
+          "description": "Effort values the model accepts; \"none\" disables reasoning. Order is not significant.",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "default_effort": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Effort applied when the client expresses no preference."
         }
       }
     },
@@ -325,6 +347,10 @@
             "supports_developer_role": true,
             "supports_reasoning_effort": true,
             "max_tokens_field": "max_completion_tokens"
+          },
+          "reasoning": {
+            "supported_efforts": ["low", "medium", "high", "none"],
+            "default_effort": "medium"
           }
         }
       ]

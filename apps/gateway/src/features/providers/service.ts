@@ -9,6 +9,7 @@ import { providers } from '@xartifact/x-herald-db'
 import type { ProtocolsConfig } from './db'
 import type { ProviderModelInfo } from '@xartifact/x-herald-shared'
 import { normalizeProviderModel, buildInstanceMetadata } from './service-helpers'
+
 const logger = rootLogger.child({ module: 'providers-service' })
 
 export const ProtocolConfigSchema = z
@@ -70,6 +71,16 @@ export const SyncModelsSchema = z.object({
           vision: z.boolean().optional(),
           jsonMode: z.boolean().optional(),
           reasoning: z.boolean().optional(),
+        })
+        .optional(),
+      // 推理档位明细（OpenRouter 顶层 reasoning 形状）；落库到实例 metadata，
+      // 供 /v1/models 回放为 OpenRouter 形状。省略表示上游未提供档位信息。
+      reasoning: z
+        .object({
+          mandatory: z.boolean().optional(),
+          default_enabled: z.boolean().optional(),
+          supported_efforts: z.array(z.string()).optional(),
+          default_effort: z.string().optional(),
         })
         .optional(),
     }),

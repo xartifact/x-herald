@@ -81,6 +81,34 @@ export interface ModelThinkingLevelMap {
   max?: string | null
 }
 
+// ── Reasoning options ────────────────────────────────────────────────────────
+
+/**
+ * 模型可用的推理档位描述，形状对齐 OpenRouter `/api/v1/models` 的顶层
+ * `reasoning` 字段。
+ *
+ * 与 `capabilities.reasoning`（布尔）的分工：
+ *   - `capabilities.reasoning: boolean` —— 「是否支持推理」，闭合集合里的能力位。
+ *   - `reasoning: ModelReasoningOptions` —— 「支持哪些档位」，供客户端渲染选择器。
+ *
+ * 上游（尤其 OpenRouter）把档位明细放在 `reasoning` 对象里；网关同步时若只做
+ * 布尔强转会把 `supported_efforts` / `default_effort` 等销毁，导致客户端永远
+ * 只能提供「开/关」。此类型用于把该信息一路保留到 `/v1/models` 输出。
+ */
+export interface ModelReasoningOptions {
+  /** 是否强制推理（客户端无法关闭）。OpenRouter 同名字段。 */
+  mandatory?: boolean
+  /** 默认是否开启推理。OpenRouter 同名字段。 */
+  default_enabled?: boolean
+  /**
+   * 可接受的档位取值。`"none"` 表示关闭推理。
+   * 严格来说由上游定义（如 OpenRouter 报 `["max","high","low"]`）。
+   */
+  supported_efforts?: string[]
+  /** 默认档位；须是 `supported_efforts` 中的一项。 */
+  default_effort?: string
+}
+
 // ── Compat ───────────────────────────────────────────────────────────────────
 
 /**
@@ -159,11 +187,19 @@ export interface ModelSchema {
   contextWindow?: number
   /** 与 max_output_tokens 同值 */
   maxTokens?: number
-  /** 与 capabilities.reasoning 同值 */
-  reasoning?: boolean
+  /**
+   * 推理档位描述，形状对齐 OpenRouter 顶层 `reasoning` 字段。
+   *
+   * 此前这里是 `capabilities.reasoning` 的布尔镜像；改为对象形状以对齐
+   * OpenRouter 契约 —— 只发布尔会让按 OpenRouter 解码的客户端丢掉全部档位
+   * 信息（`supported_efforts` / `default_effort`）。
+   *
+   * 「是否支持推理」的布尔语义仍由 `capabilities.reasoning` 承载，
+   * 两者并用：能力位读 capabilities，档位读本字段。
+   */
+  reasoning?: ModelReasoningOptions
   /** 输入模态列表；恒含 "text"，vision 时含 "image" */
   input?: string[]
-  /** 与 compat.max_tokens_field 同值 */
   maxTokensField?: 'max_completion_tokens' | 'max_tokens'
   /** 媒体输入约束，透传路由目标实例 metadata.mediaInput（无实例配置时省略） */
   mediaInput?: Record<string, unknown>

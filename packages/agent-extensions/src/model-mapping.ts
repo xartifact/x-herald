@@ -52,7 +52,11 @@ export function toPiModel(entry: GatewayModelEntry): ProviderModelConfig {
   const model: ProviderModelConfig = {
     id: entry.id,
     name,
-    reasoning: caps.reasoning ?? entry.reasoning ?? false,
+    // pi's `reasoning` is a boolean capability flag. The gateway's top-level
+    // `reasoning` is now the OpenRouter effort-options object, so it can no
+    // longer be used as a boolean fallback — presence of the object (or any
+    // effort in it) means the model reasons.
+    reasoning: caps.reasoning ?? (entry.reasoning ? true : false),
     input,
     cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
     contextWindow,

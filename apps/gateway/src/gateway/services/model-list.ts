@@ -16,6 +16,7 @@ import type {
   ModelCompat,
   ModelHeaders,
   ModelThinkingLevelMap,
+  ModelReasoningOptions,
   InstanceConfig,
 } from '@xartifact/x-herald-shared'
 import { getRouteRuleEngine } from './route-rule-engine'
@@ -39,6 +40,11 @@ export interface AccessibleModel {
   compat: ModelCompat | null
   headers: ModelHeaders | null
   thinkingLevelMap: ModelThinkingLevelMap | null
+  /**
+   * 推理档位明细（OpenRouter 顶层 `reasoning` 形状）。
+   * 来自同步时落库的实例 metadata；上游未提供时为 null。
+   */
+  reasoningOptions?: ModelReasoningOptions | null
   /** 透传路由目标实例 metadata.mediaInput（媒体输入约束，无实例配置时为 null） */
   mediaInput?: Record<string, unknown> | null
 }
@@ -191,11 +197,38 @@ function pickPositiveNumber(v: unknown): number | undefined {
   return typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : undefined
 }
 
+/** 从实例 metadata 读推理档位明细（syncModels 落库的 OpenRouter 形状） */
+function readInstanceReasoning(
+  metadata: Record<string, unknown> | null | undefined,
+): ModelReasoningOptions | null {
+  const raw = metadata?.reasoning
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
+  const r = raw as Record<string, unknown>
+  const out: ModelReasoningOptions = {}
+  if (typeof r.mandatory === 'boolean') out.mandatory = r.mandatory
+  if (typeof r.default_enabled === 'boolean') out.default_enabled = r.default_enabled
+  if (Array.isArray(r.supported_efforts)) {
+    const list = r.supported_efforts.filter(
+      (e): e is string => typeof e === 'string' && e.length > 0,
+    )
+    if (list.length > 0) out.supported_efforts = list
+  }
+  if (typeof r.default_effort === 'string' && r.default_effort.length > 0) {
+    out.default_effort = r.default_effort
+  }
+  return Object.keys(out).length > 0 ? out : null
+}
+
 /** 从实例 metadata/config 读上游真实能力；metadata 优先（syncModels 管线规范位置） */
 function readInstanceRealCaps(
   metadata: Record<string, unknown> | null | undefined,
   config: InstanceConfig | null | undefined,
-): { contextWindow: number; maxOutputTokens: number; mediaInput?: Record<string, unknown> } | null {
+): {
+  contextWindow: number
+  maxOutputTokens: number
+  mediaInput?: Record<string, unknown>
+  reasoning?: ModelReasoningOptions
+} | null {
   const meta = metadata ?? {}
   const overrides = (config?.capabilityOverrides ?? {}) as Record<string, unknown>
   const contextWindow = pickPositiveNumber(meta.contextWindow ?? overrides.contextWindow)
@@ -204,11 +237,15 @@ function readInstanceRealCaps(
     meta.mediaInput && typeof meta.mediaInput === 'object'
       ? (meta.mediaInput as Record<string, unknown>)
       : undefined
-  if (contextWindow === undefined && maxOutputTokens === undefined && !mediaInput) return null
+  const reasoning = readInstanceReasoning(meta)
+  if (contextWindow === undefined && maxOutputTokens === undefined && !mediaInput && !reasoning) {
+    return null
+  }
   return {
     contextWindow: contextWindow ?? 0,
     maxOutputTokens: maxOutputTokens ?? 0,
     ...(mediaInput && { mediaInput }),
+    ...(reasoning && { reasoning }),
   }
 }
 
@@ -358,16 +395,23 @@ export async function fetchAccessibleModels(virtualKey: VirtualKey): Promise<Acc
             )
         : []
 
-    // amId → 目标组全部实例的 MAX(真实 contextWindow / maxOutputTokens)；mediaInput 取首个非空
+    // amId → 目标组全部实例的 MAX(contextWindow/maxOutputTokens)；mediaInput 与
+    // reasoning 档位取首个非空（同组候选实例共享同一上游契约）
     const realCapsByAm = new Map<
       string,
-      { contextWindow: number; maxOutputTokens: number; mediaInput?: Record<string, unknown> }
+      {
+        contextWindow: number
+        maxOutputTokens: number
+        mediaInput?: Record<string, unknown>
+        reasoning?: ModelReasoningOptions
+      }
     >()
     for (const [amId, groupIds] of amToGroupIds) {
       let real: {
         contextWindow: number
         maxOutputTokens: number
         mediaInput?: Record<string, unknown>
+        reasoning?: ModelReasoningOptions
       } | null = null
       for (const row of instanceRows) {
         if (!groupIds.has(row.groupId)) continue
@@ -377,6 +421,7 @@ export async function fetchAccessibleModels(virtualKey: VirtualKey): Promise<Acc
         real.contextWindow = Math.max(real.contextWindow, caps.contextWindow)
         real.maxOutputTokens = Math.max(real.maxOutputTokens, caps.maxOutputTokens)
         if (!real.mediaInput && caps.mediaInput) real.mediaInput = caps.mediaInput
+        if (!real.reasoning && caps.reasoning) real.reasoning = caps.reasoning
       }
       if (real) realCapsByAm.set(amId, real)
     }
@@ -439,6 +484,7 @@ export async function fetchAccessibleModels(virtualKey: VirtualKey): Promise<Acc
           createdAt: am.createdAt,
           capabilities,
           mediaInput: real?.mediaInput ?? null,
+          reasoningOptions: real?.reasoning ?? null,
           ...extras,
         }
       }
@@ -451,6 +497,7 @@ export async function fetchAccessibleModels(virtualKey: VirtualKey): Promise<Acc
         createdAt: am.createdAt,
         capabilities,
         mediaInput: real?.mediaInput ?? null,
+        reasoningOptions: real?.reasoning ?? null,
         cost: inherited?.cost ?? null,
         compat: inherited?.compat ?? null,
         headers: inherited?.headers ?? null,

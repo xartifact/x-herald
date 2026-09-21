@@ -1,3 +1,5 @@
+import type { ModelReasoningOptions } from './model-schema'
+
 export type RoutingStrategy =
   | 'round_robin'
   | 'weighted'
@@ -115,6 +117,13 @@ export interface ProviderModelInfo {
     jsonMode?: boolean
     reasoning?: boolean
   }
+  /**
+   * 推理档位描述（OpenRouter 顶层 `reasoning` 形状）。
+   *
+   * 与上面 `capabilities.reasoning`（布尔）并存：布尔说「是否支持」，
+   * 本字段说「支持哪些档位」。上游未提供档位明细时省略。
+   */
+  reasoning?: ModelReasoningOptions
 }
 
 export interface InstanceConfig {

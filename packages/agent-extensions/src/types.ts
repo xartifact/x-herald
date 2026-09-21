@@ -61,6 +61,18 @@ export type GatewayThinkingLevelMap = {
   max?: GatewayThinkingLevel
 }
 
+/**
+ * Reasoning effort options — OpenRouter's top-level `reasoning` shape.
+ * Distinct from `GatewayCapabilities.reasoning` (boolean): that says whether
+ * the model reasons, this says which efforts it accepts.
+ */
+export interface GatewayReasoningOptions {
+  mandatory?: boolean
+  default_enabled?: boolean
+  supported_efforts?: string[]
+  default_effort?: string
+}
+
 export interface GatewayModelEntry {
   id: string
   object?: string
@@ -88,7 +100,8 @@ export interface GatewayModelEntry {
   // fallbacks in case the gateway drops the snake_case spelling.
   contextWindow?: number
   maxTokens?: number
-  reasoning?: boolean
+  /** Reasoning effort options (OpenRouter top-level shape). See GatewayReasoningOptions. */
+  reasoning?: GatewayReasoningOptions
   input?: ('text' | 'image')[]
   maxTokensField?: 'max_completion_tokens' | 'max_tokens'
 }

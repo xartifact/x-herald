@@ -1,4 +1,9 @@
-import type { InstanceCost, InstanceCostTier, ProviderModelInfo } from '@xartifact/x-herald-shared'
+import type {
+  InstanceCost,
+  InstanceCostTier,
+  ModelReasoningOptions,
+  ProviderModelInfo,
+} from '@xartifact/x-herald-shared'
 
 /**
  * 供应商模型字段别名注册表。
@@ -160,6 +165,7 @@ export function normalizeProviderModel(
   const maxOutputTokens = pickNum(raw, FIELD_ALIASES.maxOutputTokens)
   const cost = normalizeCostRaw(raw)
   const capabilities = normalizeCapabilitiesRaw(raw)
+  const reasoning = normalizeReasoningOptionsRaw(raw)
 
   const info: ProviderModelInfo = { id, name, synced }
   if (description) info.description = description
@@ -167,6 +173,8 @@ export function normalizeProviderModel(
   if (maxOutputTokens != null) info.maxOutputTokens = maxOutputTokens
   if (cost) info.cost = cost
   if (capabilities) info.capabilities = capabilities
+  // 档位明细与布尔能力位并存：前者供客户端渲染选择器，后者是能力位
+  if (reasoning) info.reasoning = reasoning
   return info
 }
 
@@ -252,9 +260,51 @@ export function normalizeCapabilitiesRaw(
 }
 
 /**
+ * 从上游 `/models` 原始对象提取推理档位描述。
+ *
+ * **这是修复根因的关键**：`normalizeCapabilitiesRaw` 用 `Boolean(v)` 判断
+ * `reasoning`，而 `Boolean({...})` 恒为 `true` —— OpenRouter 的
+ * `{"mandatory":false,"supported_efforts":["max","high","low"],"default_effort":"high"}`
+ * 会被压成 `true`，档位明细全部销毁，客户端从此只能提供「开/关」。
+ *
+ * 这里在布尔之外**额外**保留对象形状，两者并存：
+ *   - `capabilities.reasoning: boolean` → 是否支持推理（能力位，语义正确，保留）
+ *   - `reasoning: ModelReasoningOptions` → 支持哪些档位（本函数产出）
+ *
+ * 仅在拿到至少一个有效字段时返回；`mandatory:false` 这类**只有空壳**的对象
+ * （OpenRouter 用它表示"支持但无档位约束"）会归一为不返回档位列表，
+ * 由调用方决定回退到「开/关」。
+ */
+export function normalizeReasoningOptionsRaw(
+  raw: Record<string, unknown>,
+): ModelReasoningOptions | undefined {
+  const candidate = getPath(raw, 'reasoning')
+  if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) return undefined
+
+  const r = candidate as Record<string, unknown>
+  const out: ModelReasoningOptions = {}
+
+  if (typeof r.mandatory === 'boolean') out.mandatory = r.mandatory
+  if (typeof r.default_enabled === 'boolean') out.default_enabled = r.default_enabled
+
+  const efforts = r.supported_efforts
+  if (Array.isArray(efforts)) {
+    const list = efforts.filter((e): e is string => typeof e === 'string' && e.length > 0)
+    if (list.length > 0) out.supported_efforts = list
+  }
+
+  const defaultEffort = r.default_effort
+  if (typeof defaultEffort === 'string' && defaultEffort.length > 0) {
+    out.default_effort = defaultEffort
+  }
+
+  return Object.keys(out).length > 0 ? out : undefined
+}
+
+/**
  * 从同步模型数据构建 metadata JSONB。
  *
- * 将供应商提供的 contextWindow / maxOutputTokens / capabilities
+ * 将供应商提供的 contextWindow / maxOutputTokens / capabilities / reasoning
  * 存入 metadata，供后续 /v1/models 端点组装。
  */
 export function buildInstanceMetadata(m: {
@@ -267,6 +317,8 @@ export function buildInstanceMetadata(m: {
     jsonMode?: boolean
     reasoning?: boolean
   }
+  /** 推理档位明细（OpenRouter 形状）；同步时落库，供 /v1/models 回放 */
+  reasoning?: ModelReasoningOptions
 }): Record<string, unknown> | null {
   const meta: Record<string, unknown> = {}
   if (m.contextWindow != null) meta.contextWindow = m.contextWindow
@@ -278,5 +330,6 @@ export function buildInstanceMetadata(m: {
     }
     if (Object.keys(caps).length > 0) meta.capabilities = caps
   }
+  if (m.reasoning && Object.keys(m.reasoning).length > 0) meta.reasoning = m.reasoning
   return Object.keys(meta).length > 0 ? meta : null
 }

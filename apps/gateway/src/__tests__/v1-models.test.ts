@@ -97,6 +97,16 @@ const CompatSchema = z
   })
   .passthrough()
 
+/** OpenRouter 顶层 reasoning 形状（网关 v1 契约） */
+const ReasoningOptionsSchema = z
+  .object({
+    mandatory: z.boolean().optional(),
+    default_enabled: z.boolean().optional(),
+    supported_efforts: z.array(z.string()).optional(),
+    default_effort: z.string().optional(),
+  })
+  .strict()
+
 const ModelSchema = z
   .object({
     id: z
@@ -117,7 +127,7 @@ const ModelSchema = z
     compat: CompatSchema.optional(),
     contextWindow: z.number().int().positive().optional(),
     maxTokens: z.number().int().positive().optional(),
-    reasoning: z.boolean().optional(),
+    reasoning: ReasoningOptionsSchema.optional(),
     input: z.array(z.string()).optional(),
     maxTokensField: z.enum(['max_completion_tokens', 'max_tokens']).optional(),
     mediaInput: z.record(z.string(), z.unknown()).optional(),
@@ -252,10 +262,113 @@ describe('GET /api/v1/models — x-herald schema v1 (OpenAI protocol)', () => {
     if (!entry) return
     expect(entry.contextWindow).toBe(entry.context_window)
     expect(entry.maxTokens).toBe(entry.max_output_tokens)
-    expect(entry.reasoning).toBe((entry.capabilities as Record<string, unknown>).reasoning)
+    // 顶层 reasoning 现为 OpenRouter 对象形状（不再是 capabilities.reasoning 的布尔镜像）：
+    // 「是否支持推理」由 capabilities.reasoning 承载；不支持推理时顶层字段整体省略。
+    expect((entry.capabilities as Record<string, unknown>).reasoning).toBe(false)
+    expect(entry.reasoning).toBeUndefined()
     expect(entry.maxTokensField).toBe((entry.compat as Record<string, unknown>).max_tokens_field)
     // fixture vision=false → 仅 text
     expect(entry.input).toEqual(['text'])
+  })
+})
+
+describe('顶层 reasoning — OpenRouter 对象形状（修复布尔镜像）', () => {
+  const makeEnv = () => createProxyTestEnv({ protocol: 'openai', accessModelName: 'gpt-4-test' })
+
+  /** 把接入模型标记为支持推理，并给实例写入档位 metadata */
+  async function seedReasoning(env: ProxyTestEnv, metadata: Record<string, unknown> | null) {
+    const db = getDatabase()
+    const [am] = await db.select().from(accessModels).where(eq(accessModels.id, env.accessModelId))
+    await db
+      .update(accessModels)
+      .set({
+        capabilities: { ...((am?.capabilities ?? {}) as Record<string, unknown>), reasoning: true },
+      })
+      .where(eq(accessModels.id, env.accessModelId))
+    if (metadata) {
+      await db.update(modelInstances).set({ metadata }).where(eq(modelInstances.id, env.instanceId))
+    }
+  }
+
+  async function getEntry(env: ProxyTestEnv) {
+    const res = await env.app.request('/api/v1/models', {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${env.virtualKey}` },
+    })
+    const body = (await res.json()) as { data: Array<Record<string, unknown>> }
+    return body.data.find((m) => m.id === 'gpt-4-test')
+  }
+
+  it('上游档位明细被原样转发（OpenRouter 兼容的核心路径）', async () => {
+    const env = await makeEnv()
+    try {
+      await seedReasoning(env, {
+        reasoning: {
+          mandatory: false,
+          supported_efforts: ['xhigh', 'medium'],
+          default_effort: 'xhigh',
+        },
+      })
+      const entry = await getEntry(env)
+      expect(entry).toBeDefined()
+      expect(entry!.reasoning).toEqual({
+        mandatory: false,
+        supported_efforts: ['xhigh', 'medium'],
+        default_effort: 'xhigh',
+      })
+      // 能力位与档位并存，互不取代
+      expect((entry!.capabilities as Record<string, unknown>).reasoning).toBe(true)
+    } finally {
+      await env.close()
+    }
+  })
+
+  it('无上游明细但支持推理 → 回退为可透传档位并含 none 关闭项', async () => {
+    const env = await makeEnv()
+    try {
+      await seedReasoning(env, null)
+      const entry = await getEntry(env)
+      expect(entry).toBeDefined()
+      const reasoning = entry!.reasoning as Record<string, unknown>
+      expect(reasoning).toBeDefined()
+      expect(reasoning.supported_efforts).toContain('none')
+      expect(reasoning.default_effort).toBe('medium')
+    } finally {
+      await env.close()
+    }
+  })
+
+  it('不支持推理的模型不发射 reasoning 字段', async () => {
+    const env = await makeEnv()
+    try {
+      const entry = await getEntry(env)
+      expect(entry).toBeDefined()
+      expect(entry!.reasoning).toBeUndefined()
+    } finally {
+      await env.close()
+    }
+  })
+
+  it('发射的 reasoning 通过严格 ModelSchema 校验（闭合集）', async () => {
+    const env = await makeEnv()
+    try {
+      await seedReasoning(env, {
+        reasoning: { supported_efforts: ['low', 'high'], default_effort: 'low' },
+      })
+      const res = await env.app.request('/api/v1/models', {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${env.virtualKey}` },
+      })
+      const parsed = ListResponseSchema.safeParse(await res.json())
+      if (!parsed.success) {
+        throw new Error(
+          'Schema validation failed: ' + JSON.stringify(parsed.error.format(), null, 2),
+        )
+      }
+      expect(parsed.success).toBe(true)
+    } finally {
+      await env.close()
+    }
   })
 })
 

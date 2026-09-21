@@ -48,7 +48,7 @@ describe('toPiModel', () => {
       id: 'camel',
       contextWindow: 8_192,
       maxTokens: 4_096,
-      reasoning: true,
+      reasoning: { supported_efforts: ['low', 'high'] },
       input: ['text', 'image'],
     })
     expect(m.contextWindow).toBe(8_192)

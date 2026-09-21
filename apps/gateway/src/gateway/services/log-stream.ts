@@ -209,6 +209,32 @@ export async function logStreamStart(params: StreamLogParams): Promise<LogStartR
   await recordClientRequestedModel(params.originalModelName || params.modelName)
   return result
 }
+/**
+ * The transformed request body to persist, or `null` when it carries no
+ * information beyond `request_body`.
+ *
+ * Same-protocol passthrough (OpenAI→OpenAI, Anthropic→Anthropic) forwards the
+ * client body nearly verbatim — only `model` is rewritten — so the copy in
+ * `request_attempts.transformed_request_body` is a near-duplicate of
+ * `request_logs.request_body`. Those copies accounted for most of the 6.7 GB
+ * this column held, so passthrough rows store `null` instead. Cross-protocol
+ * conversions still store the full body: there the transformed request is the
+ * only record of what actually went upstream, and it is the training-relevant
+ * form.
+ *
+ * `null` is also the honest value when either protocol is unknown: without
+ * proof of a conversion, storing a possible duplicate is the behaviour this
+ * change exists to stop.
+ * @param params - the log-start parameters.
+ * @returns the body to persist, or null.
+ * @see docs/log-storage-optimization-plan.md (Phase 2)
+ */
+export function transformedBodyForStorage(params: StreamLogParams): unknown {
+  const { incomingProtocol, targetProtocol, transformedRequestBody } = params
+  if (incomingProtocol === undefined || targetProtocol === undefined) return null
+  return incomingProtocol === targetProtocol ? null : (transformedRequestBody ?? null)
+}
+
 
 export async function logRequestStart(params: StreamLogParams): Promise<LogStartResult> {
   return createStreamLog({ ...params, isStream: false })
@@ -236,9 +262,8 @@ async function createStreamLogById(
         providerName: params.providerName,
         targetProtocol: params.targetProtocol,
         status: 'pending',
-        retryCount: 0,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        transformedRequestBody: params.transformedRequestBody as any,
+        transformedRequestBody: transformedBodyForStorage(params) as any,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         providerRequestHeaders: params.providerRequestHeaders as any,
         createdAt: new Date(),

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 
-import { buildLogInsertValues } from './log-stream'
+import { buildLogInsertValues, transformedBodyForStorage } from './log-stream'
 import type { StreamLogParams } from './log-stream'
 
 function makeParams(
@@ -65,5 +65,60 @@ describe('buildLogInsertValues requestCategory', () => {
       }),
     )
     expect(values.requestCategory).toBe('other')
+  })
+})
+
+/**
+ * Phase 2 of docs/log-storage-optimization-plan.md: a same-protocol passthrough
+ * forwards the client body nearly verbatim, so persisting it again under
+ * `request_attempts.transformed_request_body` was pure duplication — the bulk
+ * of that column's 6.7 GB. Only a real cross-protocol conversion is worth
+ * storing, because there the transformed body is the only record of what went
+ * upstream.
+ */
+describe('transformedBodyForStorage', () => {
+  const body = { model: 'gpt-4o', messages: [{ role: 'user', content: 'hi' }] }
+
+  it('stores null for same-protocol passthrough (the duplicate case)', () => {
+    expect(
+      transformedBodyForStorage(
+        makeParams({ incomingProtocol: 'openai', targetProtocol: 'openai', transformedRequestBody: body }),
+      ),
+    ).toBeNull()
+    expect(
+      transformedBodyForStorage(
+        makeParams({
+          incomingProtocol: 'anthropic',
+          targetProtocol: 'anthropic',
+          transformedRequestBody: body,
+        }),
+      ),
+    ).toBeNull()
+  })
+
+  it('stores the full body for a cross-protocol conversion', () => {
+    expect(
+      transformedBodyForStorage(
+        makeParams({
+          incomingProtocol: 'anthropic',
+          targetProtocol: 'openai',
+          transformedRequestBody: body,
+        }),
+      ),
+    ).toEqual(body)
+  })
+
+  it('stores null when a protocol is unknown, rather than risk a duplicate', () => {
+    expect(
+      transformedBodyForStorage(makeParams({ transformedRequestBody: body })),
+    ).toBeNull()
+  })
+
+  it('normalizes a missing cross-protocol body to null (column stays nullable)', () => {
+    expect(
+      transformedBodyForStorage(
+        makeParams({ incomingProtocol: 'openai', targetProtocol: 'anthropic' }),
+      ),
+    ).toBeNull()
   })
 })

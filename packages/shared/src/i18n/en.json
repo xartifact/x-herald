@@ -1,0 +1,32 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "refresh": "Refresh",
+    "close": "Close",
+    "confirm": "Confirm",
+    "loading": "Loading…",
+    "empty": "No data",
+    "error": "Error",
+    "success": "Success",
+    "enabled": "Enabled",
+    "disabled": "Disabled"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "providers": "Providers",
+    "keys": "Virtual Keys",
+    "logs": "Request Logs",
+    "settings": "Settings"
+  },
+  "errors": {
+    "PROVIDER_HAS_KEYS": "Cannot delete provider: {keyCount} active key(s) remain",
+    "KEY_EXPIRED": "Key has expired",
+    "NETWORK": "Request failed. Please try again.",
+    "UNKNOWN": "An unknown error occurred"
+  }
+}

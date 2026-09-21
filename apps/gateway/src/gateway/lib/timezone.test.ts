@@ -34,9 +34,7 @@ describe('startOfDayInTimezone', () => {
     // 2026-03-05T23:30Z is already 2026-03-06 07:30 in Shanghai, so that zone's
     // day began at 2026-03-05T16:00Z — the boundary the server-zone version missed.
     const at = new Date('2026-03-05T23:30:00.000Z')
-    expect(startOfDayInTimezone('Asia/Shanghai', at).toISOString()).toBe(
-      '2026-03-05T16:00:00.000Z',
-    )
+    expect(startOfDayInTimezone('Asia/Shanghai', at).toISOString()).toBe('2026-03-05T16:00:00.000Z')
     expect(startOfDayInTimezone('UTC', at).toISOString()).toBe('2026-03-05T00:00:00.000Z')
   })
 

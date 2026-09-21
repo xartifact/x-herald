@@ -14,6 +14,7 @@ import {
 import { allNavItems } from './admin-nav-config'
 import { NavDesktopDropdowns } from './nav-desktop-dropdowns'
 import { NavMobileMenu, NavMobileSubnav } from './nav-mobile-section'
+import { LocaleSwitcher } from './locale-switcher'
 
 function ThemeToggle() {
   const { setTheme } = useTheme()
@@ -76,6 +77,7 @@ export default function AdminNav() {
                 )}
               </span>
             )}
+            <LocaleSwitcher />
             <ThemeToggle />
             <Button
               variant="ghost"

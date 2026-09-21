@@ -4,7 +4,6 @@ import { getTransformer } from '../../transformer'
 import { rateLimitEngine } from '../rate-limit-engine'
 import { logEventBus } from '../log-event-bus'
 import { costService } from '../../../features/costs/service'
-import { trackKeyUsage } from '../../../features/keys/usage-tracker'
 import {
   upgradeToStreamLog,
   finalizeStreamLog as finalizeStreamLogRecord,
@@ -173,14 +172,6 @@ async function finalizeStreamWithLog(
       outputTokens: usage.outputTokens,
       instanceCost: params.routingTrace?.instanceCost,
     })
-  }
-
-  if (params.virtualKey?.id && usage.inputTokens > 0 && usage.outputTokens > 0) {
-    trackKeyUsage({
-      keyId: params.virtualKey.id,
-      inputTokens: usage.inputTokens,
-      outputTokens: usage.outputTokens,
-    }).catch(() => {}) // fire-and-forget, non-blocking
   }
 }
 

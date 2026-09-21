@@ -1,10 +1,26 @@
-import { eq, sql, and, lt, or, isNull } from '@xartifact/x-herald-db'
+import { eq, and, lt, or, isNull } from '@xartifact/x-herald-db'
 
 import type { DbClient } from '../../db/client'
 import { getDatabase } from '../../db/client'
 import logger from '../../lib/logger'
 
 import { virtualKeys } from '@xartifact/x-herald-db'
+
+/**
+ * 密钥「最近使用」的维护。
+ *
+ * 历史说明：本模块原有一个 `trackKeyUsage`，负责递增 `virtual_keys.total_requests`
+ * / `total_tokens` 并 upsert `key_usage_daily`。整条链路已于本次迭代**停止写入**：
+ *
+ * - `key_usage_daily` 自建表以来从未被任何代码读取；且其 schema 声明
+ *   （`timestamp`）与迁移 0027 的 `DATE` 不符，是潜在的类型漂移。
+ * - `virtual_keys` 的两个累计列在 `getKeyStats` 重写后失去唯一读取点。
+ *
+ * 但它们**保留数据**（含超出日志 30 天留存窗口的历史，不可再生），
+ * 计划在下个版本迭代删除。届时需一并清理 schema 定义与迁移 0027。
+ *
+ * `touchKeyLastUsed` 不受影响，继续维护 `lastUsedAt`。
+ */
 
 /**
  * 「最近使用」的写入节流窗口（毫秒）。
@@ -21,11 +37,9 @@ const lastTouchAt = new Map<string, number>()
 /**
  * 记录密钥「最近使用」时间。
  *
- * 与 `trackKeyUsage` 分开的原因：「最近使用」的语义是**发起过请求**，
- * 而 `trackKeyUsage` 带 `inputTokens > 0 && outputTokens > 0` 门禁（服务计费口径）。
- * 两者耦合会让单边 token 的请求漏记 —— 缓存命中、纯 output 补全、thinking-only、
- * embedding、被取消的流都只落 `request_logs` 而不刷新 lastUsedAt，
- * 表现为面板显示「从未使用」但日志里有记录。
+ * 语义是**发起过请求**，因此与 token 用量无关 —— 缓存命中、纯 output 补全、
+ * thinking-only、embedding、被取消的流都必须刷新它，否则面板显示「从未使用」
+ * 但日志里有记录。
  *
  * 调用时机：认证通过、限流通过之后（认证失败/被拒不算「使用」）。
  * 失败仅记日志，不影响请求。
@@ -56,39 +70,5 @@ export async function touchKeyLastUsed(keyId: string, db?: DbClient): Promise<vo
     lastTouchAt.delete(keyId)
     // 非致命：统计信息缺失不应影响请求
     logger.warn({ err: error, keyId }, 'Failed to touch key lastUsedAt')
-  }
-}
-
-/**
- * 更新密钥的计费口径用量（token 与请求计数）。
- * 仅在请求实际产生 token 用量时调用。
- */
-export async function trackKeyUsage(
-  params: {
-    keyId: string
-    inputTokens: number
-    outputTokens: number
-  },
-  db?: DbClient,
-): Promise<void> {
-  try {
-    const updateCounters = async (trx: DbClient) => {
-      await trx
-        .update(virtualKeys)
-        .set({
-          totalRequests: sql`${virtualKeys.totalRequests} + 1`,
-          totalTokens: sql`${virtualKeys.totalTokens} + ${params.inputTokens + params.outputTokens}`,
-        })
-        .where(eq(virtualKeys.id, params.keyId))
-    }
-
-    if (db) {
-      await updateCounters(db)
-    } else {
-      await getDatabase().transaction(updateCounters)
-    }
-  } catch (error) {
-    // 非致命错误，记录日志但不抛出
-    logger.warn({ err: error, keyId: params.keyId }, 'Failed to track key usage')
   }
 }

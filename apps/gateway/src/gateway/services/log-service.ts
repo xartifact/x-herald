@@ -4,7 +4,6 @@ import { IS_PRODUCTION } from '../../config/env'
 import { getDatabase } from '../../db/client'
 import logger from '../../lib/logger'
 import type { VirtualKey } from '@xartifact/x-herald-db'
-import { trackKeyUsage } from '../../features/keys/usage-tracker'
 import { requestLogs, requestAttempts } from '@xartifact/x-herald-db'
 import type { FailoverReason } from '../../features/logs/db'
 import { costService } from '../../features/costs/service'
@@ -299,17 +298,6 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
             trx,
           )
         }
-
-        if (params.virtualKey?.id && inputTokens > 0 && outputTokens > 0) {
-          await trackKeyUsage(
-            {
-              keyId: params.virtualKey.id,
-              inputTokens,
-              outputTokens,
-            },
-            trx,
-          )
-        }
       })
 
       logger.debug(
@@ -401,17 +389,6 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
             inputTokens,
             outputTokens,
             instanceCost: params.routingTrace?.instanceCost,
-          },
-          trx,
-        )
-      }
-
-      if (params.virtualKey?.id && inputTokens > 0 && outputTokens > 0) {
-        await trackKeyUsage(
-          {
-            keyId: params.virtualKey.id,
-            inputTokens,
-            outputTokens,
           },
           trx,
         )

@@ -3,7 +3,6 @@ import { describe, it, expect, mock, beforeEach, afterAll } from 'bun:test'
 const realDbClient = await import('../../../db/client')
 const originalGetDatabase = realDbClient.getDatabase
 const realLogger = await import('../../../lib/logger')
-const realUsageTracker = await import('../../../features/keys/usage-tracker')
 const realCostService = await import('../../../features/costs/service')
 const realClientModelRecorder =
   await import('../../../features/logs/services/client-model-recorder')
@@ -81,7 +80,6 @@ afterAll(() => {
     schema: realDbClient.schema,
   }))
   mock.module('../../../lib/logger', () => realLogger)
-  mock.module('../../../features/keys/usage-tracker', () => realUsageTracker)
   mock.module('../../../features/costs/service', () => realCostService)
   mock.module(
     '../../../features/logs/services/client-model-recorder',
@@ -91,10 +89,6 @@ afterAll(() => {
   mock.module('../rate-limit-engine', () => realRateLimitEngine)
   mock.module('../token-estimator', () => realTokenEstimator)
 })
-
-mock.module('../../../features/keys/usage-tracker', () => ({
-  trackKeyUsage: mock(async () => {}),
-}))
 
 mock.module('../../../features/costs/service', () => ({
   costService: {
@@ -160,8 +154,6 @@ describe('logRequest', () => {
     rle.rateLimitEngine.check.mockClear()
     const cs = await import('../../../features/costs/service')
     cs.costService.recordCost.mockClear()
-    const ut = await import('../../../features/keys/usage-tracker')
-    ut.trackKeyUsage.mockClear()
     estimateUsageFromContent.mockClear()
     const crm = await import('../../../features/logs/services/client-model-recorder')
     crm.recordClientRequestedModel.mockClear()
@@ -238,27 +230,6 @@ describe('logRequest', () => {
 
       // After estimation: 50+30=80 > 0, so cost IS recorded
       expect(costService.recordCost).toHaveBeenCalledTimes(1)
-    })
-
-    it('should call trackKeyUsage when inputTokens and outputTokens > 0', async () => {
-      const { trackKeyUsage } = await import('../../../features/keys/usage-tracker')
-
-      await logRequest(createBaseParams({ inputTokens: 10, outputTokens: 5 }))
-
-      expect(trackKeyUsage).toHaveBeenCalled()
-      const callArg = (trackKeyUsage as ReturnType<typeof mock>).mock.calls[0][0]
-      expect(callArg.keyId).toBe('vk-1')
-      expect(callArg.inputTokens).toBe(10)
-      expect(callArg.outputTokens).toBe(5)
-    })
-
-    it('should NOT call trackKeyUsage when inputTokens is 0', async () => {
-      const { trackKeyUsage } = await import('../../../features/keys/usage-tracker')
-
-      await logRequest(createBaseParams({ inputTokens: 0, outputTokens: 5 }))
-
-      // inputTokens=0 → condition (inputTokens>0 && outputTokens>0) is false
-      expect(trackKeyUsage).toHaveBeenCalledTimes(0)
     })
 
     it('should call recordClientRequestedModel via dynamic import', async () => {

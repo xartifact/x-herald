@@ -11,7 +11,6 @@ const realTransformer = await import('../../transformer')
 const realLogService = await import('../log-service')
 const realLogEventBus = await import('../log-event-bus')
 const realCostService = await import('../../../features/costs/service')
-const realUsageTracker = await import('../../../features/keys/usage-tracker')
 const realMetadataExtractor = await import('../metadata-extractor')
 const realRateLimitEngine = await import('../rate-limit-engine')
 
@@ -25,7 +24,6 @@ const mockMarkStreamFailed = mock(() => Promise.resolve())
 const mockMarkStreamAborted = mock(() => Promise.resolve())
 const mockEmitLog = mock(() => undefined)
 const mockRecordCost = mock(() => Promise.resolve())
-const mockTrackKeyUsage = mock(() => Promise.resolve())
 const mockExtractMetadata = mock(() => ({}))
 const mockRateLimitCheck = mock(() => ({ allowed: true }))
 
@@ -51,10 +49,6 @@ mock.module('../../../features/costs/service', () => ({
   costService: {
     recordCost: mockRecordCost,
   },
-}))
-
-mock.module('../../../features/keys/usage-tracker', () => ({
-  trackKeyUsage: mockTrackKeyUsage,
 }))
 
 mock.module('../metadata-extractor', () => ({
@@ -144,7 +138,6 @@ describe('handleStreamingResponse', () => {
     mockMarkStreamAborted.mockClear()
     mockEmitLog.mockClear()
     mockRecordCost.mockClear()
-    mockTrackKeyUsage.mockClear()
     mockExtractMetadata.mockClear()
     mockRateLimitCheck.mockClear()
   })
@@ -157,7 +150,6 @@ describe('handleStreamingResponse', () => {
     mockMarkStreamAborted.mockClear()
     mockEmitLog.mockClear()
     mockRecordCost.mockClear()
-    mockTrackKeyUsage.mockClear()
     mockExtractMetadata.mockClear()
     mockRateLimitCheck.mockClear()
   })
@@ -167,14 +159,12 @@ describe('handleStreamingResponse', () => {
     const realLogService = await import('../log-service')
     const realLogEventBus = await import('../log-event-bus')
     const realCostService = await import('../../../features/costs/service')
-    const realUsageTracker = await import('../../../features/keys/usage-tracker')
     const realMetadataExtractor = await import('../metadata-extractor')
     const realRateLimitEngine = await import('../rate-limit-engine')
     mock.module('../../transformer', () => realTransformer)
     mock.module('../log-service', () => realLogService)
     mock.module('../log-event-bus', () => realLogEventBus)
     mock.module('../../../features/costs/service', () => realCostService)
-    mock.module('../../../features/keys/usage-tracker', () => realUsageTracker)
     mock.module('../metadata-extractor', () => realMetadataExtractor)
     mock.module('../rate-limit-engine', () => realRateLimitEngine)
   })

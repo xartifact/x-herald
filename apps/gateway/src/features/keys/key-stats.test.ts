@@ -27,7 +27,7 @@ import {
 } from '../../test/crud-helper'
 import { getDatabase } from '../../db/client'
 import { eq, requestLogs, virtualKeys } from '@xartifact/x-herald-db'
-import { touchKeyLastUsed, trackKeyUsage } from './usage-tracker'
+import { touchKeyLastUsed } from './usage-tracker'
 import { getKeyStats } from '../logs/services/log-query'
 
 let ctx: CrudTestContext
@@ -171,12 +171,6 @@ describe('key usage stats', () => {
 
     const touched = (await db.select().from(virtualKeys)).find((k) => k.id === key.id)
     expect(touched?.lastUsedAt).not.toBeNull()
-
-    // 计费口径的 trackKeyUsage 只累计计数，不负责 lastUsedAt
-    await trackKeyUsage({ keyId: key.id, inputTokens: 10, outputTokens: 5 })
-    const counted = (await db.select().from(virtualKeys)).find((k) => k.id === key.id)
-    expect(counted?.totalRequests).toBe(1)
-    expect(counted?.totalTokens).toBe(15n)
   })
 
   it('软删除的密钥不出现在统计中', async () => {

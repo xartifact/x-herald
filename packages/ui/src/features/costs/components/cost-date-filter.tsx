@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import { CalendarIcon } from 'lucide-react'
 
 import { Button } from '../../../shared/components/ui'
+import { toLocalDateKey } from '@xartifact/x-herald-shared'
 
 export type DateRangePreset = 'today' | '7d' | '30d' | 'custom'
 
@@ -18,7 +19,10 @@ interface CostDateFilterProps {
 
 function getDateRange(preset: DateRangePreset): { startDate?: string; endDate?: string } {
   const now = new Date()
-  const endDate = now.toISOString().split('T')[0]
+  // Deliberately NOT `toISOString().split('T')[0]`: that reads the UTC day, so a
+  // user in UTC+8 opening the dashboard before 08:00 local would ask for
+  // yesterday's data and see an empty "today". Project through the local zone.
+  const endDate = toLocalDateKey(now)
 
   switch (preset) {
     case 'today': {
@@ -27,12 +31,12 @@ function getDateRange(preset: DateRangePreset): { startDate?: string; endDate?: 
     case '7d': {
       const start = new Date(now)
       start.setDate(start.getDate() - 7)
-      return { startDate: start.toISOString().split('T')[0], endDate }
+      return { startDate: toLocalDateKey(start), endDate }
     }
     case '30d': {
       const start = new Date(now)
       start.setDate(start.getDate() - 30)
-      return { startDate: start.toISOString().split('T')[0], endDate }
+      return { startDate: toLocalDateKey(start), endDate }
     }
     case 'custom':
     default:

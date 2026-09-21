@@ -18,6 +18,7 @@ import { getDatabase } from '../../../db/client'
 import { virtualKeys } from '@xartifact/x-herald-db'
 
 import { requestLogs, requestAttempts } from '@xartifact/x-herald-db'
+import { resolveTimezone, startOfDayInTimezone } from '../../../gateway/lib/timezone'
 
 import type { LogMetadata } from '../db'
 
@@ -353,7 +354,7 @@ export async function cleanupLogs(retentionDays: number) {
  * 修复前 `all` 分支还把 success/failure/token/avgResponseTime 硬编码为 0，
  * 导致用量面板切到「全部」时成功率恒 0%、平均响应时间恒 `-`。
  */
-export async function getKeyStats(period: string) {
+export async function getKeyStats(period: string, timezone?: string) {
   const db = getDatabase()
 
   // 时间窗：'all' 不加下限，其余按周期。注意 'all' 仍受日志留存期限制
@@ -362,8 +363,10 @@ export async function getKeyStats(period: string) {
   const conditions = [isNotNull(requestLogs.virtualKeyId)]
   const now = new Date()
   if (period === 'today') {
+    // 「今天」是调用方的今天：`new Date(y, m, d)` 用的是网关进程时区，
+    // Asia/Shanghai 的用户在本地 08:00 前会看到前一天（甚至空）的统计。
     conditions.push(
-      gte(requestLogs.createdAt, new Date(now.getFullYear(), now.getMonth(), now.getDate())),
+      gte(requestLogs.createdAt, startOfDayInTimezone(resolveTimezone(timezone), now)),
     )
   } else if (period === '7d') {
     conditions.push(gte(requestLogs.createdAt, new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)))

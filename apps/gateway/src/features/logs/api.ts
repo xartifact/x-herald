@@ -237,7 +237,8 @@ logsRoutes.post('/cleanup', async (c) => {
 
 logsRoutes.get('/stats/keys', async (c) => {
   try {
-    const data = await getKeyStats(c.req.query('period') ?? 'all')
+    // `?tz=` decides which local day "today" means; omitted/unrecognized → UTC.
+    const data = await getKeyStats(c.req.query('period') ?? 'all', c.req.query('tz'))
     return c.json({ success: true, data })
   } catch (error) {
     logger.error({ error }, 'Failed to fetch key stats')

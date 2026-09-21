@@ -3,6 +3,7 @@ import { Hono } from 'hono'
 
 import { getDatabase } from '../../db/client'
 import { circuitBreakerRegistry } from '../../gateway/services/circuit-breaker-state'
+import { localDayKey, resolveTimezone, startOfDayInTimezone } from '../../gateway/lib/timezone'
 
 import { circuitBreakerEvents } from '@xartifact/x-herald-db'
 
@@ -12,7 +13,11 @@ const circuitBreakerRoutes = new Hono()
 circuitBreakerRoutes.get('/stats', async (c) => {
   const db = getDatabase()
   const now = new Date()
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  // "Today" is the caller's day: `new Date(y, m, d)` would use the gateway
+  // process timezone, so a user in Asia/Shanghai would see the wrong day's
+  // count for the first eight hours of their day.
+  const timezone = resolveTimezone(c.req.query('tz'))
+  const todayStart = startOfDayInTimezone(timezone, now)
   const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
 
   const [todayOpened, weekOpened, topInstances, trippedCount] = await Promise.all([
@@ -70,7 +75,16 @@ circuitBreakerRoutes.get('/stats', async (c) => {
 
   return c.json({
     success: true,
-    data: { todayOpened, weekOpened, trippedInstanceCount: trippedCount, topInstances },
+    data: {
+      todayOpened,
+      weekOpened,
+      trippedInstanceCount: trippedCount,
+      topInstances,
+      // Which local day the count covers, and in which zone — without this the
+      // number is uninterpretable to a caller that passed a non-UTC tz.
+      todayKey: localDayKey(timezone, now),
+      timezone,
+    },
   })
 })
 

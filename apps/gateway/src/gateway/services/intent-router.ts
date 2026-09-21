@@ -34,6 +34,7 @@ function flattenMessageContent(content: unknown): string {
     .join('\n')
 }
 
+/** Noise wrappers that carry no training signal: agent scaffolding, tool traffic, directives. */
 const NOISE_BLOCK_PATTERNS: RegExp[] = [
   /<system-reminder>[\s\S]*?<\/system-reminder>/gi,
   /<system>[\s\S]*?<\/system>/gi,
@@ -47,7 +48,16 @@ const NOISE_BLOCK_PATTERNS: RegExp[] = [
   /\[Status:[^\]]*\][^\n]*/gi,
 ]
 
-function stripNoiseBlocks(text: string): string {
+/**
+ * Remove agent scaffolding and tool traffic from a message.
+ *
+ * Exported for the corpus exporter, which must strip the same noise the
+ * classifier does — the two would otherwise drift and the training corpus would
+ * carry blocks the routing path considers meaningless.
+ * @param text - raw message text.
+ * @returns the text with noise blocks removed.
+ */
+export function stripNoiseBlocks(text: string): string {
   let out = text
   for (const re of NOISE_BLOCK_PATTERNS) {
     out = out.replace(re, '')

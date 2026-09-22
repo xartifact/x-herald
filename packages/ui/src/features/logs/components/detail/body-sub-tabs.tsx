@@ -18,6 +18,16 @@ interface BodySubTabItem {
   label: string
   data: Record<string, unknown> | null
   emptyText: string
+  /**
+   * Explanation shown in place of `emptyText` when `data` is null and the
+   * absence is expected rather than missing data.
+   *
+   * Same-protocol passthrough deliberately stores no transformed body (the
+   * forwarded request is the client's own, so a copy would be pure duplication
+   * — see docs/log-storage-optimization-plan.md Phase 2). Rendering the generic
+   * "no data" message there reads as a defect, so this states what happened.
+   */
+  emptyNote?: string
 }
 
 interface BodySubTabsProps {
@@ -66,6 +76,13 @@ export function BodySubTabs({ tabs }: BodySubTabsProps) {
           >
             {tab.data ? (
               <JsonViewer data={tab.data} height="auto" />
+            ) : tab.emptyNote !== undefined ? (
+              <div
+                data-testid={`body-empty-note-${tab.key}`}
+                className="flex items-center justify-center h-[200px] text-sm text-muted-foreground"
+              >
+                {tab.emptyNote}
+              </div>
             ) : (
               <div className="flex items-center justify-center h-[200px] text-sm text-muted-foreground">
                 {tab.emptyText}

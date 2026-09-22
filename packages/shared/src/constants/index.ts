@@ -71,3 +71,6 @@ export const GIT_COMMIT_HASH = getEnv('GIT_COMMIT_HASH') || 'unknown'
 export const IS_DEVELOPMENT = getEnv('NODE_ENV') !== 'production'
 export const IS_PRODUCTION = getEnv('NODE_ENV') === 'production'
 export const ENABLE_LOG_CLEANUP = getEnv('ENABLE_LOG_CLEANUP') === 'true'
+// Defensive stream cleanup: waiting for the first response vs. inactivity after it starts.
+export const STREAM_WAITING_TIMEOUT_MS = 10 * 60 * 1000
+export const STREAM_IDLE_TIMEOUT_MS = 30 * 60 * 1000

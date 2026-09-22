@@ -43,24 +43,21 @@ jobs:
           name: gateway-coverage
           path: apps/gateway/coverage/
           retention-days: 14
-      # TODO: fix react-hook-form@7.80.0 + React 19 vitest module resolution conflict
-      - name: UI tests
-        working-directory: apps/web
-        run: bunx vitest run
-        continue-on-error: true
       - name: Cache Playwright
         id: playwright-cache
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('bun.lockb', 'apps/web/package.json') }}
+          key: ${{ runner.os }}-playwright-${{ hashFiles('bun.lock', 'apps/web/package.json') }}
       - name: Install Playwright
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: cd apps/web && bunx playwright install chromium
+        run: cd apps/web && bunx playwright install --with-deps chromium
+      - name: Install Playwright system dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: cd apps/web && bunx playwright install-deps chromium
       - name: E2E
         working-directory: apps/web
         run: bunx playwright test
-        continue-on-error: true
         env:
           ADMIN_PASSWORD: test
           JWT_SECRET: e2e-test-secret-key
@@ -68,6 +65,7 @@ jobs:
         run: cd apps/web && bun run build
 
   build:
+    needs: test
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -130,7 +128,7 @@ jobs:
           echo "Image tags: ${{ steps.meta.outputs.tags }}"
 
   deploy:
-    needs: build
+    needs: [test, build]
     runs-on: self-hosted
     # 兜底超时：self-hosted job 排队无上限，runner 离线会永久挂起
     # （2026-09-09 起 runner 离线，x-herald 的 deploy 排队 24h 后被系统取消）。

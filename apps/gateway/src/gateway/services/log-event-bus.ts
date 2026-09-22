@@ -1,4 +1,5 @@
 import EventEmitter from 'node:events'
+import { STREAM_WAITING_TIMEOUT_MS, STREAM_IDLE_TIMEOUT_MS } from '@xartifact/x-herald-shared'
 
 import logger from '../../lib/logger'
 
@@ -52,13 +53,9 @@ type ActiveStreamSnapshot =
   | (LiveStreamEvent & { event: 'started' })
   | (LiveStreamEvent & { event: 'chunk' })
 
-// 清理阈值（防御性措施：处理服务重启/异常残留）
-// waiting 超过此时间说明 TTFB 链路的超时机制未正常工作（服务重启等情况）
-const STALE_WAITING_MS = 10 * 60 * 1000 // 10 分钟（思考模型可能需要数分钟）
-const STALE_STARTED_MS = 30 * 60 * 1000 // 30 分钟（流式可能跑很久，但仍有限）
-
 class LogEventBus extends EventEmitter {
   readonly activeStreams = new Map<string, ActiveStreamSnapshot>()
+  private readonly lastActivityAt = new Map<string, number>()
 
   /** AbortController 注册表，用于手动取消 + TTFB 超时中断 */
   private readonly abortControllers = new Map<string, AbortController>()
@@ -83,28 +80,23 @@ class LogEventBus extends EventEmitter {
     let removed = 0
     const entries = Array.from(this.activeStreams.entries())
     for (const [logId, snapshot] of entries) {
-      const startTimeField =
-        snapshot.event === 'waiting' || snapshot.event === 'started' ? snapshot.startTime : 0
-      const elapsed = now - startTimeField
-      let isStale = false
+      const lastActivity = this.lastActivityAt.get(logId) ?? now
+      const elapsed = now - (snapshot.event === 'waiting' ? snapshot.startTime : lastActivity)
+      const threshold =
+        snapshot.event === 'waiting' ? STREAM_WAITING_TIMEOUT_MS : STREAM_IDLE_TIMEOUT_MS
 
-      if (snapshot.event === 'waiting' && elapsed > STALE_WAITING_MS) {
-        isStale = true
-      } else if (snapshot.event === 'started' && elapsed > STALE_STARTED_MS) {
-        isStale = true
-      }
-
-      if (isStale) {
+      if (elapsed > threshold) {
         logger.warn(
           {
             logId,
             event: snapshot.event,
             elapsedMs: elapsed,
-            threshold: snapshot.event === 'waiting' ? STALE_WAITING_MS : STALE_STARTED_MS,
+            threshold,
           },
           '[LogEventBus] Removing stale active stream',
         )
         this.activeStreams.delete(logId)
+        this.lastActivityAt.delete(logId)
         const ctrl = this.abortControllers.get(logId)
         if (ctrl && !ctrl.signal.aborted) {
           ctrl.abort()
@@ -133,6 +125,7 @@ class LogEventBus extends EventEmitter {
     this.abortControllers.delete(logId)
     const existed = this.activeStreams.has(logId)
     this.activeStreams.delete(logId)
+    this.lastActivityAt.delete(logId)
     if (existed) {
       super.emit('log', { event: 'aborted', logId, reason: 'cancelled' })
     }
@@ -142,8 +135,10 @@ class LogEventBus extends EventEmitter {
   emitLog(payload: LiveStreamEvent): void {
     if (payload.event === 'waiting' || payload.event === 'started' || payload.event === 'chunk') {
       this.activeStreams.set(payload.logId, payload)
+      this.lastActivityAt.set(payload.logId, Date.now())
     } else {
       this.activeStreams.delete(payload.logId)
+      this.lastActivityAt.delete(payload.logId)
       // 清理 AbortController（completed/aborted 后不再需要）
       if (payload.event === 'aborted' || payload.event === 'completed') {
         this.abortControllers.delete(payload.logId)
@@ -154,6 +149,7 @@ class LogEventBus extends EventEmitter {
 
   reset(): void {
     this.activeStreams.clear()
+    this.lastActivityAt.clear()
     this.abortControllers.clear()
     this.removeAllListeners()
   }

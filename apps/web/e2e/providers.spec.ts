@@ -12,7 +12,7 @@ test.describe('Providers', () => {
     await page.waitForLoadState('networkidle')
     await page.locator('input[placeholder="搜索供应商..."]').fill('nonexistent-xyz-no-match')
     await page.waitForLoadState('networkidle')
-    await expect(page.getByText('没有找到匹配的供应商')).toBeVisible()
+    await expect(page.getByText('没有找到匹配的结果')).toBeVisible()
   })
 
   test('create a new provider', async ({ page }) => {
@@ -54,7 +54,7 @@ test.describe('Providers', () => {
 
     await page.locator('input[placeholder="搜索供应商..."]').fill('nonexistent-xyz-123')
     await page.waitForLoadState('networkidle')
-    await expect(page.getByText('没有找到匹配的供应商')).toBeVisible()
+    await expect(page.getByText('没有找到匹配的结果')).toBeVisible()
   })
 
   test('edit provider', async ({ page }) => {

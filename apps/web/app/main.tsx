@@ -183,6 +183,7 @@ const routeTree = rootRoute.addChildren([
     routingTraceDetailRoute,
     consoleLogsRoute,
     metricsRoute,
+    clientModelsRoute,
     costsRoute,
     providerStatsRoute,
     aiAssistRoute,

@@ -12,7 +12,7 @@ test.describe('Model Groups', () => {
     await page.waitForLoadState('networkidle')
     await page.locator('input[placeholder="搜索模型组..."]').fill('nonexistent-xyz-no-match')
     await page.waitForLoadState('networkidle')
-    await expect(page.getByText('没有找到匹配的模型组')).toBeVisible()
+    await expect(page.getByText('没有找到匹配的结果')).toBeVisible()
   })
 
   test('create a new model group', async ({ page }) => {
@@ -52,7 +52,7 @@ test.describe('Model Groups', () => {
 
     await page.locator('input[placeholder="搜索模型组..."]').fill('nonexistent-xyz-123')
     await page.waitForLoadState('networkidle')
-    await expect(page.getByText('没有找到匹配的模型组')).toBeVisible()
+    await expect(page.getByText('没有找到匹配的结果')).toBeVisible()
   })
 
   test('edit a model group', async ({ page }) => {

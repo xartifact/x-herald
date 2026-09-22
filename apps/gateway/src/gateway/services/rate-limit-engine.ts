@@ -110,13 +110,11 @@ export class DailyAccumulator {
 
   record(tokens: number): { allowed: boolean; remaining: number; resetAt: number } {
     this.checkReset()
-    if (this.currentTokens + tokens > this.maxTokens) {
-      return { allowed: false, remaining: 0, resetAt: this.resetAt }
-    }
+    // Usage is reported after completion: even an over-limit response has consumed tokens.
     this.currentTokens += tokens
     return {
-      allowed: true,
-      remaining: this.maxTokens - this.currentTokens,
+      allowed: this.currentTokens <= this.maxTokens,
+      remaining: Math.max(0, this.maxTokens - this.currentTokens),
       resetAt: this.resetAt,
     }
   }
@@ -239,6 +237,12 @@ export class RateLimitEngine {
       counters = { rpm: null, rpd: null, token: null }
       this.counters.set(keyId, counters)
     }
+
+    // Omitted fields preserve counters for usage-only calls with {}.
+    // Explicit null/zero removes a limit disabled in the key configuration.
+    if (config.rpm !== undefined && !config.rpm) counters.rpm = null
+    if (config.rpd !== undefined && !config.rpd) counters.rpd = null
+    if (config.tokenLimitDaily !== undefined && !config.tokenLimitDaily) counters.token = null
 
     if (config.rpm && !counters.rpm) {
       counters.rpm = new SlidingWindowCounter(60_000, config.rpm, this.now)

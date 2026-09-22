@@ -12,7 +12,7 @@ test.describe('Keys', () => {
     await page.waitForLoadState('networkidle')
     await page.locator('input[placeholder="搜索密钥..."]').fill('nonexistent-xyz-no-match')
     await page.waitForLoadState('networkidle')
-    await expect(page.getByText('没有找到匹配的密钥')).toBeVisible()
+    await expect(page.getByText('没有找到匹配的结果')).toBeVisible()
   })
 
   test('create a new key', async ({ page }) => {
@@ -56,7 +56,7 @@ test.describe('Keys', () => {
 
     await page.locator('input[placeholder="搜索密钥..."]').fill('nonexistent-xyz-123')
     await page.waitForLoadState('networkidle')
-    await expect(page.getByText('没有找到匹配的密钥')).toBeVisible()
+    await expect(page.getByText('没有找到匹配的结果')).toBeVisible()
   })
 
   test('edit a key', async ({ page }) => {

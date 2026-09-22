@@ -66,17 +66,17 @@ export default function AdminNav() {
 
           <div className="flex items-center space-x-4">
             <span className="hidden md:block text-sm text-muted-foreground">{currentLabel}</span>
-            {(APP_VERSION !== 'dev' || GIT_COMMIT_HASH !== 'unknown') && (
-              <span className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground/60 font-mono">
-                {APP_VERSION !== 'dev' && <span>v{APP_VERSION}</span>}
-                {APP_VERSION !== 'dev' && GIT_COMMIT_HASH !== 'unknown' && (
-                  <span aria-hidden="true">·</span>
-                )}
-                {GIT_COMMIT_HASH !== 'unknown' && (
-                  <span title={`commit ${GIT_COMMIT_HASH}`}>{GIT_COMMIT_HASH}</span>
-                )}
-              </span>
-            )}
+            {/* 构建版本始终渲染，值为兜底时也显示 dev/unknown —— 版本区整体消失会
+                让「镜像没注入版本」这类发布问题变得不可见（此前正是如此：条件渲染
+                把故障藏了几个月）。显式的 dev/unknown 本身就是诊断信号。 */}
+            <span
+              className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground/60 font-mono"
+              title={`x-herald ${APP_VERSION} (commit ${GIT_COMMIT_HASH})`}
+            >
+              <span>{APP_VERSION === 'dev' ? 'dev' : `v${APP_VERSION}`}</span>
+              <span aria-hidden="true">·</span>
+              <span>{GIT_COMMIT_HASH}</span>
+            </span>
             <LocaleSwitcher />
             <ThemeToggle />
             <Button

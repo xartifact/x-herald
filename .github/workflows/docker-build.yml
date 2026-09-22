@@ -107,6 +107,14 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
             type=raw,value=alpha,enable=${{ !startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master' }}
 
+      - name: Resolve build version
+        id: build-version
+        # 版本信息必须显式算好再传：Docker 构建上下文里没有 .git（.dockerignore 排除），
+        # 镜像内 `git rev-parse` 必然失败，只能由 CI 传入。
+        run: |
+          echo "app_version=$(jq -r .version package.json)" >> "$GITHUB_OUTPUT"
+          echo "commit_hash=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
       - name: Build and push Docker image
         id: build-and-push
         uses: docker/build-push-action@v6
@@ -117,7 +125,8 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            GIT_HASH=${{ github.sha }}
+            GIT_COMMIT_HASH=${{ steps.build-version.outputs.commit_hash }}
+            APP_VERSION=${{ steps.build-version.outputs.app_version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -188,6 +197,19 @@ jobs:
             echo "  Attempt $RETRY_COUNT/$MAX_RETRIES (HTTP: $HTTP_CODE), retrying in 5s..."
             sleep 5
           done
+
+          # 版本断言：健康检查只看 HTTP 200，无法区分「新版上线」和「旧容器还在跑」。
+          # 镜像必须报告本次构建的 commit，否则视为部署失败 —— 正是这一缺口让
+          # dev/unknown 在线上存活了很久而无人察觉。
+          EXPECTED_HASH="${GITHUB_SHA::7}"
+          DEPLOYED_HASH=$(docker exec x-herald bun -e "fetch('http://localhost:3000/api/health').then(r=>r.json()).then(d=>console.log(d.commitHash)).catch(()=>console.log(''))" 2>/dev/null || echo "")
+          echo "Deployed commitHash: '${DEPLOYED_HASH}' (expected '${EXPECTED_HASH}')"
+          if [ "${DEPLOYED_HASH}" != "${EXPECTED_HASH}" ]; then
+            echo "✗ Running container does not report this build's commit"
+            echo "Container logs:"
+            docker-compose logs --tail=50 x-herald
+            exit 1
+          fi
 
           echo ""
           echo "Container status:"

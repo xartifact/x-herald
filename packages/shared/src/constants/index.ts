@@ -52,15 +52,15 @@ export const DEFAULTS = {
 } as const
 export const CATCHALL_VM_NAME = '__catchall__'
 
-// Engine env constants (shared for client use)
-// Avoid direct `process` global so this file stays typable without @types/node.
-const globalProcess = (globalThis as Record<string, unknown>).process as
-  | Record<string, unknown>
-  | undefined
-
+// Engine env constants (shared for client use).
+//
+// `process.env` is read as a direct expression on purpose: Vite's `define`
+// substitutes `process.env` textually, so an indirection — `globalThis.process`
+// included — is invisible to it, and every build-time value silently fell back
+// to its default in the browser bundle. The direct form is what lets `define`
+// reach these constants; under Bun/Node the global exists natively.
 function getEnv(key: string): string | undefined {
-  if (typeof globalProcess === 'undefined') return undefined
-  const env = globalProcess.env as Record<string, unknown> | undefined
+  const env = process.env
   if (!env) return undefined
   const value = env[key]
   return typeof value === 'string' ? value : undefined

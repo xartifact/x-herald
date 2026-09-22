@@ -9,7 +9,11 @@ import {
 } from '../../test/crud-helper'
 import type { CrudTestContext } from '../../test/crud-helper'
 
-// Override any leaked mock.module for db/client that may persist across files
+// 下面这段重新注册真实 db/client 的写法是无效的，保留只为不改动无关测试：
+// `mock.module()` 是「先注册者生效」，第二次注册（无论是 mock.restore() 还是
+// 再注册真实模块）都是 no-op，无法撤销先前文件留下的假模块。
+// 真正让测试文件之间互不污染的是运行时的 --isolate（见 apps/gateway/package.json
+// 与 scripts/ci.sh）。
 const realDbClient = await import('../../db/client')
 const originalGetDatabase = realDbClient.getDatabase
 mock.module('../../db/client', () => ({

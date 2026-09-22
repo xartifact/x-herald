@@ -19,7 +19,7 @@
     "format": "bunx oxfmt@0.57.0 .",
     "format:check": "bunx oxfmt@0.57.0 --check .",
     "check": "bun run lint && bun run format:check && bun run typecheck",
-    "test": "cd apps/gateway && bun test",
+    "test": "cd apps/gateway && bun run test",
     "test:ui": "cd packages/ui && bun run test:ui",
     "test:ui:watch": "cd packages/ui && bunx vitest",
     "test:e2e:ui": "cd apps/web && bunx playwright test --ui",

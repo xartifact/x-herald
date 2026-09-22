@@ -1,7 +1,5 @@
 import { describe, it, expect, mock, beforeEach, afterAll } from 'bun:test'
 
-const realDbClient = await import('../../db/client')
-const originalGetDatabase = realDbClient.getDatabase
 const realLogger = await import('../../lib/logger')
 
 // ─── Mock DB state ────────────────────────────────────────────────────────────
@@ -46,22 +44,14 @@ mock.module('../../lib/logger', () => ({
 // ─── Import module under test ─────────────────────────────────────────────────
 
 const { cleanupLogs, startAutoCleanup, stopAutoCleanup } = await import('./log-cleanup')
-
-// ─── Tests ────────────────────────────────────────────────────────────────────
-
 afterAll(() => {
-  mock.module('../../db/client', () => ({
-    getDatabase: originalGetDatabase,
-    closeDatabase: realDbClient.closeDatabase,
-    createDatabase: realDbClient.createDatabase,
-    schema: realDbClient.schema,
-  }))
   mock.module('../../lib/logger', () => realLogger)
 })
 
+// ─── Tests ────────────────────────────────────────────────────────────────────
+
 describe('cleanupLogs', () => {
   beforeEach(() => {
-    mock.restore()
     deleteResult = Promise.resolve([])
     selectResult = Promise.resolve([])
   })

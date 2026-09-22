@@ -1,7 +1,4 @@
-import { describe, it, expect, mock, beforeEach, afterAll, type Mock } from 'bun:test'
-
-const realDbClient = await import('../../../db/client')
-const originalGetDatabase = realDbClient.getDatabase
+import { describe, it, expect, mock, beforeEach, type Mock } from 'bun:test'
 
 let mockExecute: Mock<() => Promise<unknown>> = mock(
   (): Promise<unknown> => Promise.resolve({ rows: [] }),
@@ -18,15 +15,6 @@ mock.module('../../../db/client', () => ({
 }))
 
 import { alignToBucket, aggregateBucket, aggregateRecentBuckets } from './snapshot-aggregator'
-
-afterAll(() => {
-  mock.module('../../../db/client', () => ({
-    getDatabase: originalGetDatabase,
-    closeDatabase: realDbClient.closeDatabase,
-    createDatabase: realDbClient.createDatabase,
-    schema: realDbClient.schema,
-  }))
-})
 
 describe('alignToBucket', () => {
   it('aligns to nearest 5-minute bucket', () => {

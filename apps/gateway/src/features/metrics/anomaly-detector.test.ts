@@ -1,7 +1,4 @@
-import { describe, it, expect, mock, beforeEach, afterAll } from 'bun:test'
-
-const realDbClient = await import('../../db/client')
-const originalGetDatabase = realDbClient.getDatabase
+import { describe, it, expect, mock, beforeEach } from 'bun:test'
 
 import { instancePerfSnapshots, anomalyEvents } from '@xartifact/x-herald-db'
 
@@ -46,15 +43,6 @@ mock.module('../../db/client', () => ({
 }))
 
 import { AnomalyDetector } from './anomaly-detector'
-
-afterAll(() => {
-  mock.module('../../db/client', () => ({
-    getDatabase: originalGetDatabase,
-    closeDatabase: realDbClient.closeDatabase,
-    createDatabase: realDbClient.createDatabase,
-    schema: realDbClient.schema,
-  }))
-})
 
 function createSnapshot(overrides: Record<string, unknown> = {}) {
   return {

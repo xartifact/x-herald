@@ -1,6 +1,4 @@
-import { describe, it, expect, mock, beforeEach, afterEach, afterAll } from 'bun:test'
-
-const realDbClient = await import('../../db/client')
+import { describe, it, expect, mock, beforeEach } from 'bun:test'
 
 import { providers } from '@xartifact/x-herald-db'
 import {
@@ -70,20 +68,7 @@ const { exportConfig } = await import('./config-exporter')
 
 // ─── Tests ───────────────────────────────────────────────────────────────────
 
-afterAll(() => {
-  mock.module('../../db/client', () => ({
-    getDatabase: realDbClient.getDatabase,
-    closeDatabase: realDbClient.closeDatabase,
-    createDatabase: realDbClient.createDatabase,
-    schema: realDbClient.schema,
-  }))
-})
-
 describe('exportConfig', () => {
-  afterEach(() => {
-    mock.restore()
-  })
-
   beforeEach(() => {
     mockDb = createMockDb()
   })

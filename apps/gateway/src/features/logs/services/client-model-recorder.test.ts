@@ -1,7 +1,5 @@
 import { describe, it, expect, mock, beforeEach, afterAll } from 'bun:test'
 
-const realDbClient = await import('../../../db/client')
-const originalGetDatabase = realDbClient.getDatabase
 const realLogger = await import('../../../lib/logger')
 
 // ─── Mock DB state ────────────────────────────────────────────────────────────
@@ -61,22 +59,14 @@ mock.module('../../../lib/logger', () => ({
 
 const { recordClientRequestedModel, recordClientRequestedModels } =
   await import('./client-model-recorder')
-
-// ─── Tests ────────────────────────────────────────────────────────────────────
-
 afterAll(() => {
-  mock.module('../../../db/client', () => ({
-    getDatabase: originalGetDatabase,
-    closeDatabase: realDbClient.closeDatabase,
-    createDatabase: realDbClient.createDatabase,
-    schema: realDbClient.schema,
-  }))
   mock.module('../../../lib/logger', () => realLogger)
 })
 
+// ─── Tests ────────────────────────────────────────────────────────────────────
+
 describe('recordClientRequestedModel', () => {
   beforeEach(() => {
-    mock.restore()
     mockDb = createMockDb()
   })
 
@@ -113,7 +103,6 @@ describe('recordClientRequestedModel', () => {
 
 describe('recordClientRequestedModels', () => {
   beforeEach(() => {
-    mock.restore()
     mockDb = createMockDb()
   })
 

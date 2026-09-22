@@ -1,7 +1,4 @@
-import { describe, it, expect, mock, beforeEach, afterAll } from 'bun:test'
-
-const realDbClient = await import('../../../db/client')
-const originalGetDatabase = realDbClient.getDatabase
+import { describe, it, expect, mock, beforeEach } from 'bun:test'
 
 // ─── Mock DB with mutable state ───────────────────────────────────────────────
 
@@ -43,15 +40,6 @@ mock.module('../../../db/client', () => ({
   })),
 }))
 
-afterAll(() => {
-  mock.module('../../../db/client', () => ({
-    getDatabase: originalGetDatabase,
-    closeDatabase: realDbClient.closeDatabase,
-    createDatabase: realDbClient.createDatabase,
-    schema: realDbClient.schema,
-  }))
-})
-
 // ─── Import module under test ─────────────────────────────────────────────────
 
 const { cleanupStaleStreams, getIncompleteStreams } = await import('../stream-cleanup')
@@ -60,7 +48,6 @@ const { cleanupStaleStreams, getIncompleteStreams } = await import('../stream-cl
 
 describe('cleanupStaleStreams', () => {
   beforeEach(() => {
-    mock.restore()
     mockDb = createMockDb()
   })
 
@@ -108,7 +95,6 @@ describe('cleanupStaleStreams', () => {
 
 describe('getIncompleteStreams', () => {
   beforeEach(() => {
-    mock.restore()
     mockDb = createMockDb()
   })
 

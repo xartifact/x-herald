@@ -1,11 +1,5 @@
-import { describe, it, expect, mock, beforeEach, afterEach, afterAll } from 'bun:test'
-import { getDatabase } from '../../db/client'
-import * as realDbClient from '../../db/client'
+import { describe, it, expect, mock, beforeEach, afterAll } from 'bun:test'
 import * as realLogger from '../../lib/logger'
-
-const realGetDatabase = getDatabase
-
-let currentMockDb: ReturnType<typeof createMockDb> | null
 
 function createMockDb() {
   const selectWhereMock = mock((): Promise<unknown[]> => Promise.resolve([]))
@@ -45,14 +39,13 @@ function createMockDb() {
     _insertValues: insertValuesMock,
   }
 }
+let currentMockDb = createMockDb()
 
 mock.module('../../db/client', () => ({
-  ...realDbClient,
-  getDatabase: () => currentMockDb ?? realGetDatabase(),
+  getDatabase: () => currentMockDb ?? createMockDb(),
 }))
 
 mock.module('../../lib/logger', () => ({
-  ...realLogger,
   default: {
     child: () => ({ info: mock(), warn: mock(), error: mock() }),
     warn: mock(),
@@ -66,12 +59,6 @@ mock.module('../../lib/logger', () => ({
 import { CostService } from './service'
 
 afterAll(() => {
-  mock.module('../../db/client', () => ({
-    getDatabase: realGetDatabase,
-    closeDatabase: realDbClient.closeDatabase,
-    createDatabase: realDbClient.createDatabase,
-    schema: realDbClient.schema,
-  }))
   mock.module('../../lib/logger', () => realLogger)
 })
 
@@ -81,11 +68,6 @@ describe('costs service', () => {
   beforeEach(() => {
     currentMockDb = createMockDb()
     costService = new CostService()
-  })
-
-  afterEach(() => {
-    mock.restore()
-    currentMockDb = null
   })
 
   it('recordCost inserts cost record with calculated costs', async () => {

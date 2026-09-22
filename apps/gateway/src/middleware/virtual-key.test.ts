@@ -1,4 +1,4 @@
-import { describe, it, expect, mock, beforeEach, afterEach, afterAll } from 'bun:test'
+import { describe, it, expect, mock, beforeEach, afterAll } from 'bun:test'
 import { Hono } from 'hono'
 import type { VirtualKey } from '@xartifact/x-herald-db'
 
@@ -30,16 +30,11 @@ function createMockDb() {
 function createRateLimitResult() {
   return { allowed: true, rpm: null, rpd: null, token: null }
 }
-
-// ─── Capture real modules before mocking ──────────────────────────────────
-const realDbClient = await import('../db/client')
-const originalGetDatabase = realDbClient.getDatabase
+// ─── Capture non-DB modules before mocking ─────────────────────────────────
 const realRateLimitEngine = await import('../gateway/services/rate-limit-engine')
 const originalRateLimitEngine = realRateLimitEngine.rateLimitEngine
-const originalRateLimitEngineCheck = originalRateLimitEngine.check.bind(originalRateLimitEngine)
 const realLogger = await import('../lib/logger')
 const originalDefaultLogger = realLogger.default
-const originalChildMethod = originalDefaultLogger.child.bind(originalDefaultLogger)
 
 // ─── Mock modules ───────────────────────────────────────────────────────────
 mock.module('../db/client', () => ({
@@ -133,12 +128,6 @@ function clearCache() {
 
 // ─── Tests ──────────────────────────────────────────────────────────────────
 afterAll(() => {
-  mock.module('../db/client', () => ({
-    getDatabase: originalGetDatabase,
-    closeDatabase: realDbClient.closeDatabase,
-    createDatabase: realDbClient.createDatabase,
-    schema: realDbClient.schema,
-  }))
   mock.module('../gateway/services/rate-limit-engine', () => ({
     rateLimitEngine: originalRateLimitEngine,
   }))
@@ -153,10 +142,6 @@ describe('virtualKeyMiddleware', () => {
     clearCache()
     currentMockDb = createMockDb()
     currentRateLimitResult = createRateLimitResult()
-  })
-
-  afterEach(() => {
-    mock.restore()
   })
 
   // ══════════════════════════════════════════════════════════════════════════

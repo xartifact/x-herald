@@ -1,7 +1,5 @@
 import { describe, it, expect, mock, beforeEach, afterAll } from 'bun:test'
 
-const realDbClient = await import('../../db/client')
-const originalGetDatabase = realDbClient.getDatabase
 const realAiCaller = await import('../../lib/ai-caller')
 
 let queryIndex = 0
@@ -32,14 +30,7 @@ mock.module('../../lib/ai-caller', () => ({
 }))
 
 const { ErrorDiagnoser } = await import('./error-diagnoser')
-
 afterAll(() => {
-  mock.module('../../db/client', () => ({
-    getDatabase: originalGetDatabase,
-    closeDatabase: realDbClient.closeDatabase,
-    createDatabase: realDbClient.createDatabase,
-    schema: realDbClient.schema,
-  }))
   mock.module('../../lib/ai-caller', () => realAiCaller)
 })
 

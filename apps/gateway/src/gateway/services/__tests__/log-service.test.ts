@@ -1,7 +1,5 @@
 import { describe, it, expect, mock, beforeEach, afterAll } from 'bun:test'
 
-const realDbClient = await import('../../../db/client')
-const originalGetDatabase = realDbClient.getDatabase
 const realLogger = await import('../../../lib/logger')
 const realCostService = await import('../../../features/costs/service')
 const realClientModelRecorder =
@@ -9,8 +7,6 @@ const realClientModelRecorder =
 const realMetadataExtractor = await import('../metadata-extractor')
 const realRateLimitEngine = await import('../rate-limit-engine')
 const realTokenEstimator = await import('../token-estimator')
-
-// ─── Mock dependency state ────────────────────────────────────────────────────
 
 interface MockDbState {
   insertReturning: Promise<unknown>
@@ -71,14 +67,7 @@ mock.module('../../../lib/logger', () => ({
     })),
   },
 }))
-
 afterAll(() => {
-  mock.module('../../../db/client', () => ({
-    getDatabase: originalGetDatabase,
-    closeDatabase: realDbClient.closeDatabase,
-    createDatabase: realDbClient.createDatabase,
-    schema: realDbClient.schema,
-  }))
   mock.module('../../../lib/logger', () => realLogger)
   mock.module('../../../features/costs/service', () => realCostService)
   mock.module(
@@ -146,7 +135,6 @@ function createBaseParams(overrides: Record<string, unknown> = {}) {
 
 describe('logRequest', () => {
   beforeEach(async () => {
-    mock.restore()
     mockDb = createMockDb()
 
     // Clear shared mock call counts (mock.module mocks persist across tests)
@@ -329,7 +317,6 @@ describe('logRequest', () => {
 
 describe('markLogAsFailed', () => {
   beforeEach(() => {
-    mock.restore()
     mockDb = createMockDb()
   })
 

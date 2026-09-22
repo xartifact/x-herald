@@ -18,6 +18,7 @@
  * 加规则，再跑一遍这个脚本确认变化符合预期。
  */
 import { sanitizeToolSchema } from '../src/gateway/transformer/shared/tool-schema-sanitizer'
+import { selectReplayBody } from './replay-tool-schema-source'
 
 interface ToolLike {
   name?: string
@@ -78,15 +79,21 @@ async function runFromFile(filePath: string): Promise<void> {
 async function runFromRequestLog(requestLogId: string): Promise<void> {
   const { loadConfig } = await import('../src/config/loader')
   const { createDatabase, getDatabase, closeDatabase } = await import('../src/db/client')
-  const { requestAttempts, eq } = await import('@xartifact/x-herald-db')
+  const { requestAttempts, requestLogs, eq } = await import('@xartifact/x-herald-db')
 
   const config = loadConfig()
   await createDatabase(config.database)
   const db = getDatabase()
 
   const rows = await db
-    .select({ transformedRequestBody: requestAttempts.transformedRequestBody })
+    .select({
+      transformedRequestBody: requestAttempts.transformedRequestBody,
+      requestBody: requestLogs.requestBody,
+      incomingProtocol: requestLogs.incomingProtocol,
+      targetProtocol: requestLogs.targetProtocol,
+    })
     .from(requestAttempts)
+    .innerJoin(requestLogs, eq(requestAttempts.requestLogId, requestLogs.id))
     .where(eq(requestAttempts.requestLogId, requestLogId))
 
   if (rows.length === 0) {
@@ -96,9 +103,24 @@ async function runFromRequestLog(requestLogId: string): Promise<void> {
   }
 
   for (const row of rows) {
-    const tools = extractTools(row.transformedRequestBody)
-    if (tools.length === 0) continue
-    runDiff(tools)
+    const selection = selectReplayBody({
+      transformedRequestBody: row.transformedRequestBody,
+      requestBody: row.requestBody,
+      incomingProtocol: row.incomingProtocol,
+      targetProtocol: row.targetProtocol,
+    })
+
+    if (selection.kind === 'error') {
+      console.error(`无法重放 tool schema：${selection.message}`)
+      await closeDatabase()
+      process.exit(1)
+    }
+    if (selection.kind === 'original') {
+      console.error('Provider 请求体因同协议透传未存储；改用原始客户端请求体重放 tool schema。')
+    }
+
+    const tools = extractTools(selection.body)
+    if (tools.length > 0) runDiff(tools)
   }
 
   await closeDatabase()

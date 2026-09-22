@@ -5,6 +5,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        GIT_COMMIT_HASH: ${GIT_COMMIT_HASH:-unknown}
+        APP_VERSION: ${APP_VERSION:-dev}
+        BUILD_REF: ${BUILD_REF:-unknown}
     container_name: x-herald
     env_file:
       - .env

@@ -20,6 +20,8 @@ describe('health API', () => {
     const data = (await res.json()) as Record<string, unknown>
     expect(data.status).toBe('healthy')
     expect(data.version).toBeDefined()
+    expect(data.commitHash).toBeDefined()
+    expect(data.buildRef).toBeDefined()
     expect(data.uptime).toBeDefined()
     expect(data.database).toBe('connected')
     expect(data.timestamp).toBeDefined()

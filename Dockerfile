@@ -2,13 +2,15 @@ FROM oven/bun:1 AS base
 WORKDIR /app
 
 # 版本信息在此固化：`runner` 阶段的 ENV 决定容器内 /api/health 与 WebUI 报告的
-# version / commitHash，因此两个变量都声明在 base，供 builder（注入 SPA bundle）
-# 与 runner（运行网关）共用。此前 builder 用 `GIT_COMMIT_HASH`、CI 传 `GIT_HASH`，
-# 名字不一致导致 ARG 永远取默认值，生产版本号一直是 dev/unknown。
+# version / commitHash / buildRef，因此三个变量都声明在 base，供 builder（注入
+# SPA bundle）与 runner（运行网关）共用。此前 builder 用 `GIT_COMMIT_HASH`、CI
+# 传 `GIT_HASH`，名字不一致导致 ARG 永远取默认值，生产版本号一直是 dev/unknown。
 ARG APP_VERSION=dev
 ARG GIT_COMMIT_HASH=unknown
+ARG BUILD_REF=unknown
 ENV APP_VERSION=${APP_VERSION}
 ENV GIT_COMMIT_HASH=${GIT_COMMIT_HASH}
+ENV BUILD_REF=${BUILD_REF}
 
 # ---- 构建 ----
 FROM base AS builder

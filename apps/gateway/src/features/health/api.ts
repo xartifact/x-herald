@@ -1,7 +1,8 @@
 import { sql } from '@xartifact/x-herald-db'
+import type { GatewayHealthStatus } from '@xartifact/x-herald-shared'
 import { Hono } from 'hono'
 
-import { APP_VERSION, GIT_COMMIT_HASH } from '../../config'
+import { APP_VERSION, BUILD_REF, GIT_COMMIT_HASH } from '../../config'
 import { getDatabase } from '../../db/client'
 
 const health = new Hono()
@@ -13,14 +14,16 @@ health.get('/', async (c) => {
     const db = getDatabase()
     await db.execute(sql`SELECT 1`)
 
-    return c.json({
+    const payload: GatewayHealthStatus = {
       status: 'healthy',
       version: APP_VERSION,
       commitHash: GIT_COMMIT_HASH,
+      buildRef: BUILD_REF,
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       database: 'connected',
-    })
+    }
+    return c.json(payload)
   } catch (error) {
     return c.json(
       {

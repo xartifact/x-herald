@@ -3,6 +3,9 @@ export const APP_VERSION = process.env.APP_VERSION ?? 'dev'
 
 export const GIT_COMMIT_HASH = process.env.GIT_COMMIT_HASH ?? 'unknown'
 
+/** 构建来源：发布 tag 或触发部署的 Git 分支，默认 unknown。 */
+export const BUILD_REF = process.env.BUILD_REF ?? 'unknown'
+
 /** Cron 任务鉴权密钥，未配置则为空字符串 */
 export const CRON_SECRET = process.env.CRON_SECRET ?? ''
 

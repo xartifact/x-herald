@@ -25,13 +25,14 @@ services:
       args:
         GIT_COMMIT_HASH: ${GIT_COMMIT_HASH:-unknown}
         APP_VERSION: ${APP_VERSION:-dev}
+        BUILD_REF: ${BUILD_REF:-unknown}
     container_name: x-herald
     env_file:
       - .env
     environment:
-      # GIT_COMMIT_HASH / APP_VERSION 故意不在此声明：它们由 CI 经 build-args
-      # 固化进镜像 ENV。若在此写 `${GIT_COMMIT_HASH:-unknown}`，运行时值会把镜像
-      # 里正确的版本覆盖成 unknown —— 这正是线上长期显示 dev/unknown 的成因之一。
+      # GIT_COMMIT_HASH / APP_VERSION / BUILD_REF 故意不在此声明：它们由 CI 经
+      # build-args 固化进镜像 ENV。若在此写 `${GIT_COMMIT_HASH:-unknown}`，运行时值
+      # 会把镜像里正确的版本覆盖成 unknown —— 这正是线上长期显示 dev/unknown 的成因之一。
       NODE_ENV: production
       # 启动时自动跑 pending migrations；新部署 / 重建镜像后无需手动 psql。
       # 默认 prod 下是 false，但加上这个字段强制开启（服务进程就是迁移执行器）。

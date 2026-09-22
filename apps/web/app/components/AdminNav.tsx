@@ -1,7 +1,7 @@
 import { LogOut, Moon, Sun, Monitor } from 'lucide-react'
 import { useTheme } from 'next-themes'
 
-import { APP_VERSION, GIT_COMMIT_HASH } from '@xartifact/x-herald-shared'
+import { APP_VERSION, BUILD_REF, GIT_COMMIT_HASH } from '@xartifact/x-herald-shared'
 
 import { Button } from '@xartifact/x-herald-ui'
 import {
@@ -71,11 +71,13 @@ export default function AdminNav() {
                 把故障藏了几个月）。显式的 dev/unknown 本身就是诊断信号。 */}
             <span
               className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground/60 font-mono"
-              title={`x-herald ${APP_VERSION} (commit ${GIT_COMMIT_HASH})`}
+              title={`x-herald ${APP_VERSION} (commit ${GIT_COMMIT_HASH}, ref ${BUILD_REF})`}
             >
               <span>{APP_VERSION === 'dev' ? 'dev' : `v${APP_VERSION}`}</span>
               <span aria-hidden="true">·</span>
               <span>{GIT_COMMIT_HASH}</span>
+              <span aria-hidden="true">·</span>
+              <span>@{BUILD_REF}</span>
             </span>
             <LocaleSwitcher />
             <ThemeToggle />

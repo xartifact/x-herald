@@ -110,10 +110,12 @@ jobs:
       - name: Resolve build version
         id: build-version
         # 版本信息必须显式算好再传：Docker 构建上下文里没有 .git（.dockerignore 排除），
-        # 镜像内 `git rev-parse` 必然失败，只能由 CI 传入。
+        # 镜像内 `git rev-parse` 必然失败，只能由 CI 传入。BUILD_REF 保留触发源：
+        # tag 为发布 tag，分支为部署分支，供线上诊断区分 alpha/latest 来源。
         run: |
           echo "app_version=$(jq -r .version package.json)" >> "$GITHUB_OUTPUT"
           echo "commit_hash=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          echo "build_ref=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
 
       - name: Build and push Docker image
         id: build-and-push
@@ -127,6 +129,7 @@ jobs:
           build-args: |
             GIT_COMMIT_HASH=${{ steps.build-version.outputs.commit_hash }}
             APP_VERSION=${{ steps.build-version.outputs.app_version }}
+            BUILD_REF=${{ steps.build-version.outputs.build_ref }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -199,13 +202,17 @@ jobs:
           done
 
           # 版本断言：健康检查只看 HTTP 200，无法区分「新版上线」和「旧容器还在跑」。
-          # 镜像必须报告本次构建的 commit，否则视为部署失败 —— 正是这一缺口让
+          # 镜像必须报告本次构建的 commit/ref，否则视为部署失败 —— 正是这一缺口让
           # dev/unknown 在线上存活了很久而无人察觉。
           EXPECTED_HASH="${GITHUB_SHA::7}"
-          DEPLOYED_HASH=$(docker exec x-herald bun -e "fetch('http://localhost:3000/api/health').then(r=>r.json()).then(d=>console.log(d.commitHash)).catch(()=>console.log(''))" 2>/dev/null || echo "")
+          EXPECTED_REF="${GITHUB_REF_NAME}"
+          DEPLOYED_IDENTITY=$(docker exec x-herald bun -e "fetch('http://localhost:3000/api/health').then(r=>r.json()).then(d=>console.log(JSON.stringify({ commitHash: d.commitHash ?? '', buildRef: d.buildRef ?? '' }))).catch(()=>console.log('{}'))" 2>/dev/null || echo '{}')
+          DEPLOYED_HASH=$(printf '%s' "$DEPLOYED_IDENTITY" | jq -r '.commitHash // ""')
+          DEPLOYED_REF=$(printf '%s' "$DEPLOYED_IDENTITY" | jq -r '.buildRef // ""')
           echo "Deployed commitHash: '${DEPLOYED_HASH}' (expected '${EXPECTED_HASH}')"
-          if [ "${DEPLOYED_HASH}" != "${EXPECTED_HASH}" ]; then
-            echo "✗ Running container does not report this build's commit"
+          echo "Deployed buildRef: '${DEPLOYED_REF}' (expected '${EXPECTED_REF}')"
+          if [ "${DEPLOYED_HASH}" != "${EXPECTED_HASH}" ] || [ "${DEPLOYED_REF}" != "${EXPECTED_REF}" ]; then
+            echo "✗ Running container does not report this build's identity"
             echo "Container logs:"
             docker-compose logs --tail=50 x-herald
             exit 1

@@ -31,6 +31,21 @@ function resolveCommitHash(): string {
   }
 }
 
+function resolveBuildRef(): string {
+  if (process.env.BUILD_REF) return process.env.BUILD_REF
+  try {
+    return (
+      execSync('git branch --show-current', {
+        stdio: ['ignore', 'pipe', 'ignore'],
+      })
+        .toString()
+        .trim() || 'unknown'
+    )
+  } catch {
+    return 'unknown'
+  }
+}
+
 export default defineConfig({
   optimizeDeps: { force: true },
   define: {
@@ -42,6 +57,7 @@ export default defineConfig({
       LOG_ENABLE_REQUEST: 'false',
       APP_VERSION: resolveVersion(),
       GIT_COMMIT_HASH: resolveCommitHash(),
+      BUILD_REF: resolveBuildRef(),
     }),
   },
   resolve: {

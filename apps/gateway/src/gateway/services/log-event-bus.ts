@@ -1,5 +1,8 @@
 import EventEmitter from 'node:events'
-import { STREAM_WAITING_TIMEOUT_MS, STREAM_IDLE_TIMEOUT_MS } from '@xartifact/x-herald-shared'
+import {
+  STREAM_EVENT_BUS_STALE_TIMEOUT_MS,
+  STREAM_WAITING_TIMEOUT_MS,
+} from '@xartifact/x-herald-shared'
 
 import logger from '../../lib/logger'
 
@@ -83,7 +86,7 @@ class LogEventBus extends EventEmitter {
       const lastActivity = this.lastActivityAt.get(logId) ?? now
       const elapsed = now - (snapshot.event === 'waiting' ? snapshot.startTime : lastActivity)
       const threshold =
-        snapshot.event === 'waiting' ? STREAM_WAITING_TIMEOUT_MS : STREAM_IDLE_TIMEOUT_MS
+        snapshot.event === 'waiting' ? STREAM_WAITING_TIMEOUT_MS : STREAM_EVENT_BUS_STALE_TIMEOUT_MS
 
       if (elapsed > threshold) {
         logger.warn(

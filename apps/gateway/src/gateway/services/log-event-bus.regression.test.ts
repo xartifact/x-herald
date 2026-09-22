@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test'
-import { STREAM_IDLE_TIMEOUT_MS, STREAM_WAITING_TIMEOUT_MS } from '@xartifact/x-herald-shared'
+import {
+  STREAM_EVENT_BUS_STALE_TIMEOUT_MS,
+  STREAM_WAITING_TIMEOUT_MS,
+} from '@xartifact/x-herald-shared'
 
 import { logEventBus } from './log-event-bus'
 import type { LiveStreamEvent } from './log-event-bus'
@@ -57,7 +60,7 @@ describe('stalled stream cleanup', () => {
     chunk()
     const terminal: LiveStreamEvent[] = []
     logEventBus.on('log', (event: LiveStreamEvent) => terminal.push(event))
-    now += STREAM_IDLE_TIMEOUT_MS + 1
+    now += STREAM_EVENT_BUS_STALE_TIMEOUT_MS + 1
     await cleanupTick()
     expect(controller.signal.aborted).toBe(true)
     expect(logEventBus.activeStreams.has('stream')).toBe(false)
@@ -66,9 +69,9 @@ describe('stalled stream cleanup', () => {
 
   it('keeps a long-running stream alive while chunks continue arriving', async () => {
     const controller = start()
-    now += STREAM_IDLE_TIMEOUT_MS - 1
+    now += STREAM_EVENT_BUS_STALE_TIMEOUT_MS - 1
     chunk()
-    now += STREAM_IDLE_TIMEOUT_MS - 1
+    now += STREAM_EVENT_BUS_STALE_TIMEOUT_MS - 1
     await cleanupTick()
     expect(controller.signal.aborted).toBe(false)
     expect(logEventBus.activeStreams.has('stream')).toBe(true)
@@ -77,7 +80,8 @@ describe('stalled stream cleanup', () => {
   for (const event of ['waiting', 'started'] as const) {
     it(`still cleans up stalled ${event} streams without chunks`, async () => {
       const controller = start(event)
-      now += (event === 'waiting' ? STREAM_WAITING_TIMEOUT_MS : STREAM_IDLE_TIMEOUT_MS) + 1
+      now +=
+        (event === 'waiting' ? STREAM_WAITING_TIMEOUT_MS : STREAM_EVENT_BUS_STALE_TIMEOUT_MS) + 1
       await cleanupTick()
       expect(controller.signal.aborted).toBe(true)
       expect(logEventBus.activeStreams.size).toBe(0)
@@ -95,7 +99,7 @@ describe('stalled stream cleanup', () => {
       outputTokens: 1,
       responseTimeMs: 1,
     })
-    now += STREAM_IDLE_TIMEOUT_MS + 1
+    now += STREAM_EVENT_BUS_STALE_TIMEOUT_MS + 1
     await cleanupTick()
     expect(controller.signal.aborted).toBe(false)
     expect(logEventBus.activeStreams.size).toBe(0)

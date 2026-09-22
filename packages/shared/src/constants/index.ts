@@ -68,9 +68,14 @@ function getEnv(key: string): string | undefined {
 
 export const APP_VERSION = getEnv('APP_VERSION') || 'dev'
 export const GIT_COMMIT_HASH = getEnv('GIT_COMMIT_HASH') || 'unknown'
+/** Git ref that produced this build: a release tag or deployment branch. */
+export const BUILD_REF = getEnv('BUILD_REF') || 'unknown'
 export const IS_DEVELOPMENT = getEnv('NODE_ENV') !== 'production'
 export const IS_PRODUCTION = getEnv('NODE_ENV') === 'production'
 export const ENABLE_LOG_CLEANUP = getEnv('ENABLE_LOG_CLEANUP') === 'true'
-// Defensive stream cleanup: waiting for the first response vs. inactivity after it starts.
+// Keeps a waiting stream snapshot from leaking forever before its first response.
 export const STREAM_WAITING_TIMEOUT_MS = 10 * 60 * 1000
-export const STREAM_IDLE_TIMEOUT_MS = 30 * 60 * 1000
+// Event-bus-only stale snapshot cleanup; it is intentionally longer than request timeout.
+export const STREAM_EVENT_BUS_STALE_TIMEOUT_MS = 30 * 60 * 1000
+// Terminates an individual upstream response that stops yielding chunks.
+export const UPSTREAM_STREAM_IDLE_TIMEOUT_MS = 120_000

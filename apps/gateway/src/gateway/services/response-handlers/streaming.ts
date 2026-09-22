@@ -1,3 +1,5 @@
+import { UPSTREAM_STREAM_IDLE_TIMEOUT_MS } from '@xartifact/x-herald-shared'
+
 import logger from '../../../lib/logger'
 
 import { getTransformer } from '../../transformer'
@@ -298,18 +300,17 @@ export async function handleStreamingResponse(params: ResponseHandlerParams): Pr
     }
   }
 
-  const STREAM_IDLE_TIMEOUT_MS = 120000
-  let streamIdleTimer: ReturnType<typeof setTimeout> | null = null
+  let streamIdleTimer: NodeJS.Timeout | undefined
   const resetStreamIdleTimer = (controller: TransformStreamDefaultController<Uint8Array>) => {
-    if (streamIdleTimer) clearTimeout(streamIdleTimer)
+    clearTimeout(streamIdleTimer)
     streamIdleTimer = setTimeout(() => {
       logger.warn(
         { logId },
-        `Stream idle timeout after ${STREAM_IDLE_TIMEOUT_MS / 1000}s, terminating`,
+        `Upstream stream idle timeout after ${UPSTREAM_STREAM_IDLE_TIMEOUT_MS / 1000}s, terminating`,
       )
       controller.terminate()
       finalizeLog('failure').catch(() => {})
-    }, STREAM_IDLE_TIMEOUT_MS)
+    }, UPSTREAM_STREAM_IDLE_TIMEOUT_MS)
   }
 
   const usageExtractor = new TransformStream<Uint8Array, Uint8Array>({
@@ -340,7 +341,7 @@ export async function handleStreamingResponse(params: ResponseHandlerParams): Pr
       controller.enqueue(chunk)
     },
     async flush() {
-      if (streamIdleTimer) clearTimeout(streamIdleTimer)
+      clearTimeout(streamIdleTimer)
       await finalizeLog('success')
     },
   })
@@ -366,7 +367,7 @@ export async function handleStreamingResponse(params: ResponseHandlerParams): Pr
           { logId, chunkEmitCount, elapsedMs, likelyCause },
           'Client disconnected, finalizing stream log',
         )
-        if (streamIdleTimer) clearTimeout(streamIdleTimer)
+        clearTimeout(streamIdleTimer)
         if (isLogFinalized) {
           // 流已在 flush 中完成收尾（成功或已失败）：客户端断开只是读取完成后的正常收尾，
           // 不再覆盖已写入的状态，避免与 finalizeStreamLog 竞态产生矛盾记录。

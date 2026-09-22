@@ -341,8 +341,46 @@ describe('fetchRemoteModels', () => {
     expect(seenHeaders?.['x-goog-api-key']).toBe('goog-key')
   })
 
-  it('records fetchError on non-ok upstream response', async () => {
-    fetchMock.mockImplementation(async () => new Response('unauthorized', { status: 401 }))
+  it('surfaces insufficient balance from a bounded JSON error response', async () => {
+    fetchMock.mockImplementation(
+      async () =>
+        new Response(
+          JSON.stringify({
+            code: 'INSUFFICIENT_BALANCE',
+            message: 'Insufficient account balance',
+          }),
+          { status: 403, headers: { 'Content-Type': 'application/json' } },
+        ),
+    )
+    const db = createQueuedDb([
+      [
+        {
+          id: providerId,
+          name: 'moying',
+          enabled: true,
+          protocols: { openai: { enabled: true, baseUrl: 'https://llm.example.com/v1' } },
+        },
+      ],
+      [],
+    ])
+
+    const result = await fetchRemoteModels(providerId, db)
+
+    expect(result).toEqual({
+      ok: true,
+      models: [],
+      fetchError: 'OpenAI API returned 403 (INSUFFICIENT_BALANCE): Insufficient account balance',
+    })
+  })
+
+  it('surfaces an invalid-key message from a bounded JSON error response', async () => {
+    fetchMock.mockImplementation(
+      async () =>
+        new Response(JSON.stringify({ error: { message: 'Invalid API key' } }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+    )
     const db = createQueuedDb([
       [
         {
@@ -354,11 +392,91 @@ describe('fetchRemoteModels', () => {
       ],
       [],
     ])
+
+    const result = await fetchRemoteModels(providerId, db)
+
+    expect(result).toEqual({
+      ok: true,
+      models: [],
+      fetchError: 'OpenAI API returned 401: Invalid API key',
+    })
+  })
+
+  it('keeps malformed and non-JSON upstream errors generic', async () => {
+    fetchMock.mockImplementation(
+      async () => new Response('<html>secret=should-not-surface</html>', { status: 502 }),
+    )
+    const db = createQueuedDb([
+      [
+        {
+          id: providerId,
+          name: 'bai',
+          enabled: true,
+          protocols: { openai: { enabled: true, baseUrl: 'https://api.b.ai/v1' } },
+        },
+      ],
+      [],
+    ])
+
+    const result = await fetchRemoteModels(providerId, db)
+
+    expect(result).toEqual({ ok: true, models: [], fetchError: 'OpenAI API returned 502' })
+  })
+
+  it('keeps malformed JSON upstream errors generic', async () => {
+    fetchMock.mockImplementation(
+      async () =>
+        new Response('{not-json', { status: 502, headers: { 'Content-Type': 'application/json' } }),
+    )
+    const db = createQueuedDb([
+      [
+        {
+          id: providerId,
+          name: 'bai',
+          enabled: true,
+          protocols: { openai: { enabled: true, baseUrl: 'https://api.b.ai/v1' } },
+        },
+      ],
+      [],
+    ])
+
+    await expect(fetchRemoteModels(providerId, db)).resolves.toEqual({
+      ok: true,
+      models: [],
+      fetchError: 'OpenAI API returned 502',
+    })
+  })
+
+  it('redacts credentials from otherwise actionable JSON error messages', async () => {
+    fetchMock.mockImplementation(
+      async () =>
+        new Response(
+          JSON.stringify({
+            code: 'UPSTREAM_REJECTED',
+            message: 'Authorization: Bearer sk-secret-value; see https://user:password@example.com',
+          }),
+          { status: 403, headers: { 'Content-Type': 'application/json' } },
+        ),
+    )
+    const db = createQueuedDb([
+      [
+        {
+          id: providerId,
+          name: 'bai',
+          enabled: true,
+          protocols: { openai: { enabled: true, baseUrl: 'https://api.b.ai/v1' } },
+        },
+      ],
+      [],
+    ])
+
     const result = await fetchRemoteModels(providerId, db)
     expect(result.ok).toBe(true)
     if (result.ok) {
-      expect(result.fetchError).toBe('OpenAI API returned 401')
-      expect(result.models).toEqual([])
+      expect(result.fetchError).toContain('[REDACTED]')
+      expect(result.fetchError).toContain('[REDACTED_URL]')
+      expect(result.fetchError).not.toContain('sk-secret-value')
+      expect(result.fetchError).not.toContain('password@example.com')
     }
   })
 
@@ -371,9 +489,9 @@ describe('fetchRemoteModels', () => {
     }
   })
 
-  it('records fetchError when fetch throws', async () => {
+  it('keeps network failures generic', async () => {
     fetchMock.mockImplementation(async () => {
-      throw new TypeError('unknown certificate verification error')
+      throw new TypeError('request to https://user:secret@example.com failed')
     })
     const db = createQueuedDb([
       [
@@ -386,13 +504,11 @@ describe('fetchRemoteModels', () => {
       ],
       [],
     ])
-    const result = await fetchRemoteModels(providerId, db)
-    expect(result.ok).toBe(true)
-    if (result.ok) {
-      expect(result.fetchError).toBe('unknown certificate verification error')
-    }
-  })
 
+    const result = await fetchRemoteModels(providerId, db)
+
+    expect(result).toEqual({ ok: true, models: [], fetchError: 'Failed to fetch models' })
+  })
   it('trims trailing slash from baseUrl', async () => {
     let seenUrl = ''
     fetchMock.mockImplementation(async (url: string | URL) => {

@@ -333,3 +333,106 @@ export function buildInstanceMetadata(m: {
   if (m.reasoning && Object.keys(m.reasoning).length > 0) meta.reasoning = m.reasoning
   return Object.keys(meta).length > 0 ? meta : null
 }
+
+const UPSTREAM_ERROR_BODY_MAX_BYTES = 4_096
+const UPSTREAM_ERROR_MESSAGE_MAX_CHARS = 300
+
+function sanitizeUpstreamErrorText(value: string, maxLength: number): string | null {
+  const sanitized = value
+    .replace(/https?:\/\/[^\s"'<>]+/gi, '[REDACTED_URL]')
+    .replace(
+      /\b(authorization|api[_-]?key|access[_-]?token|token|secret|password)\s*[:=]\s*(?:bearer\s+)?[^\s,;)}\]]+/gi,
+      '$1=[REDACTED]',
+    )
+    .replace(/\bbearer\s+[a-z0-9._~+/-]+=*/gi, 'Bearer [REDACTED]')
+    .replace(/\b(?:sk|pk|rk)-[a-z0-9_-]+\b/gi, '[REDACTED]')
+    .replace(/\s+/g, ' ')
+    .trim()
+  if (!sanitized) return null
+  return sanitized.length > maxLength ? `${sanitized.slice(0, maxLength)}…` : sanitized
+}
+
+/**
+ * Reads only a small JSON error response. HTML and oversized bodies deliberately
+ * remain opaque so an upstream response cannot leak into the admin API or logs.
+ */
+export async function readUpstreamErrorBody(response: Response): Promise<string | null> {
+  if (
+    !response.headers.get('content-type')?.toLowerCase().split(';', 1)[0]?.trim().endsWith('json')
+  ) {
+    return null
+  }
+  const contentLength = Number(response.headers.get('content-length'))
+  if (Number.isFinite(contentLength) && contentLength > UPSTREAM_ERROR_BODY_MAX_BYTES) return null
+
+  const reader = response.body?.getReader()
+  if (!reader) return null
+
+  const decoder = new TextDecoder()
+  let size = 0
+  let body = ''
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      size += value.byteLength
+      if (size > UPSTREAM_ERROR_BODY_MAX_BYTES) {
+        await reader.cancel().catch(() => undefined)
+        return null
+      }
+      body += decoder.decode(value, { stream: true })
+    }
+    return body + decoder.decode()
+  } finally {
+    reader.releaseLock()
+  }
+}
+
+/** Extracts a whitelisted provider error code and message from a JSON error body. */
+export function extractUpstreamErrorDetails(
+  rawBody: string,
+): { code?: string; message?: string } | null {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(rawBody)
+  } catch {
+    return null
+  }
+
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null
+  const root = parsed as Record<string, unknown>
+  const nested = root.error
+  const source =
+    nested && typeof nested === 'object' && !Array.isArray(nested)
+      ? (nested as Record<string, unknown>)
+      : root
+  const codeValue =
+    typeof source.code === 'string' ? source.code : typeof root.code === 'string' ? root.code : null
+  const messageValue =
+    typeof source.message === 'string'
+      ? source.message
+      : typeof root.message === 'string'
+        ? root.message
+        : null
+  const code = codeValue ? sanitizeUpstreamErrorText(codeValue, 100) : null
+  const message = messageValue
+    ? sanitizeUpstreamErrorText(messageValue, UPSTREAM_ERROR_MESSAGE_MAX_CHARS)
+    : null
+
+  if (!code && !message) return null
+  return { ...(code ? { code } : {}), ...(message ? { message } : {}) }
+}
+
+/** Formats a bounded, actionable summary without exposing arbitrary upstream bodies. */
+export function formatUpstreamHttpError(
+  apiLabel: string,
+  status: number,
+  rawBody: string | null,
+): string {
+  const detail = rawBody ? extractUpstreamErrorDetails(rawBody) : null
+  const prefix = `${apiLabel} API returned ${status}`
+  if (!detail) return prefix
+  if (detail.code && detail.message) return `${prefix} (${detail.code}): ${detail.message}`
+  if (detail.code) return `${prefix} (${detail.code})`
+  return `${prefix}: ${detail.message}`
+}

@@ -8,7 +8,12 @@ import { modelInstances, modelGroups, modelGroupMemberships } from '@xartifact/x
 import { providers } from '@xartifact/x-herald-db'
 import type { ProtocolsConfig } from './db'
 import type { ProviderModelInfo } from '@xartifact/x-herald-shared'
-import { normalizeProviderModel, buildInstanceMetadata } from './service-helpers'
+import {
+  buildInstanceMetadata,
+  formatUpstreamHttpError,
+  normalizeProviderModel,
+  readUpstreamErrorBody,
+} from './service-helpers'
 
 const logger = rootLogger.child({ module: 'providers-service' })
 
@@ -244,7 +249,11 @@ export async function fetchRemoteModels(id: string, db?: Database): Promise<Fetc
         if (Array.isArray(body.data))
           remoteModels = body.data.map((m) => normalizeProviderModel(m, false))
       } else {
-        fetchError = `OpenAI API returned ${resp.status}`
+        fetchError = formatUpstreamHttpError(
+          'OpenAI',
+          resp.status,
+          await readUpstreamErrorBody(resp),
+        )
       }
     } else if (protocols.anthropic?.enabled && protocols.anthropic.baseUrl) {
       const url = `${protocols.anthropic.baseUrl.replace(/\/+$/, '')}/models`
@@ -259,7 +268,11 @@ export async function fetchRemoteModels(id: string, db?: Database): Promise<Fetc
         if (Array.isArray(body.data))
           remoteModels = body.data.map((m) => normalizeProviderModel(m, false))
       } else {
-        fetchError = `Anthropic API returned ${resp.status}`
+        fetchError = formatUpstreamHttpError(
+          'Anthropic',
+          resp.status,
+          await readUpstreamErrorBody(resp),
+        )
       }
     } else if (protocols.gemini?.enabled && protocols.gemini.baseUrl) {
       const url = `${protocols.gemini.baseUrl.replace(/\/+$/, '')}/models`
@@ -271,14 +284,18 @@ export async function fetchRemoteModels(id: string, db?: Database): Promise<Fetc
         if (Array.isArray(body.data))
           remoteModels = body.data.map((m) => normalizeProviderModel(m, false))
       } else {
-        fetchError = `Gemini API returned ${resp.status}`
+        fetchError = formatUpstreamHttpError(
+          'Gemini',
+          resp.status,
+          await readUpstreamErrorBody(resp),
+        )
       }
     } else {
       fetchError = 'No supported protocol enabled'
     }
-  } catch (err) {
-    fetchError = err instanceof Error ? err.message : 'Failed to fetch models'
-    logger.warn({ err, providerId: id }, 'Failed to fetch remote models')
+  } catch {
+    fetchError = 'Failed to fetch models'
+    logger.warn({ providerId: id }, 'Failed to fetch remote models')
   }
 
   const database = db ?? getDatabase()

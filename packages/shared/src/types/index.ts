@@ -1,4 +1,5 @@
 export * from './provider'
+export * from './ai-agent'
 export * from './key'
 export * from './auth'
 export * from './health'

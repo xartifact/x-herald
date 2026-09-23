@@ -83,10 +83,10 @@ SWARM_PLAN.*
 .codex/agent-memory/
 query_db.mjs
 
+.gitnexus/
 # Playwright
 test-results/
 playwright-report/
-.gitnexus
 .playwright-mcp/
 
 # Python

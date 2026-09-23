@@ -1,17 +1,29 @@
-import type { LLMAdapter, Message, ToolExecutor, Skill, AgentConfig, AgentResult } from './types'
+import { Agent as PiAgent } from '@earendil-works/pi-agent-core'
+import type { TextContent, ImageContent } from '@earendil-works/pi-ai'
+
+import { createAgentTools, createHistory } from './pi-adapters'
+
+import type {
+  AgentConfig,
+  AgentResult,
+  AgentRunParams,
+  LLMAdapter,
+  Skill,
+  ToolExecutor,
+} from './types'
+
+export const AGENT_DEFAULT_MAX_TURNS = 10
+export const AGENT_MAX_TURNS = 30
+export const AGENT_TIMEOUT_MS = 120_000
 
 export class Agent {
-  private adapter: LLMAdapter
-  private executors: Map<string, ToolExecutor>
-  private skills: Map<string, Skill>
-  private config: AgentConfig
+  private executors = new Map<string, ToolExecutor>()
+  private skills = new Map<string, Skill>()
 
-  constructor(adapter: LLMAdapter, config: AgentConfig = {}) {
-    this.adapter = adapter
-    this.executors = new Map()
-    this.skills = new Map()
-    this.config = { maxTurns: 10, ...config }
-  }
+  constructor(
+    private adapter: LLMAdapter,
+    private config: AgentConfig = {},
+  ) {}
 
   registerExecutor(executor: ToolExecutor): void {
     this.executors.set(executor.tool.name, executor)
@@ -21,103 +33,91 @@ export class Agent {
     this.skills.set(skill.name, skill)
   }
 
-  async run(params: {
-    prompt: string
-    skill?: string
-    tools?: string[] // 限制可用工具
-    maxTurns?: number
-  }): Promise<AgentResult> {
-    const skill = params.skill ? this.skills.get(params.skill) : null
-    const maxTurns = params.maxTurns || this.config.maxTurns || 10
-
-    // 构建工具列表
-    const availableToolNames =
-      params.tools || skill?.tools.map((t) => t.name) || Array.from(this.executors.keys())
-    const toolDefinitions = availableToolNames
-      .map((name) => this.executors.get(name)?.tool)
-      .filter(Boolean)
-      .map((tool) => ({
-        type: 'function' as const,
-        function: {
-          name: tool!.name,
-          description: tool!.description,
-          parameters: tool!.parameters,
-        },
-      }))
-
-    // 构建消息
-    const messages: Message[] = []
-    if (skill) {
-      messages.push({ role: 'system', content: skill.systemPrompt })
+  async run(params: AgentRunParams): Promise<AgentResult> {
+    const skill = params.skill ? this.skills.get(params.skill) : undefined
+    if (params.skill && !skill) throw new Error(`Unknown skill: ${params.skill}`)
+    const maxTurns = params.maxTurns ?? this.config.maxTurns ?? AGENT_DEFAULT_MAX_TURNS
+    if (!Number.isInteger(maxTurns) || maxTurns < 1 || maxTurns > AGENT_MAX_TURNS) {
+      throw new Error(`maxTurns must be an integer between 1 and ${AGENT_MAX_TURNS}`)
     }
-    messages.push({ role: 'user', content: params.prompt })
-
-    const toolCallResults: AgentResult['toolCalls'] = []
-
-    // Agent 循环
-    for (let turn = 0; turn < maxTurns; turn++) {
-      const result = await this.adapter.chat({
-        messages,
-        tools: toolDefinitions.length > 0 ? toolDefinitions : undefined,
-      })
-
-      // 处理工具调用
-      if (result.tool_calls && result.tool_calls.length > 0) {
-        // 添加 assistant 消息（带 tool_calls）
-        messages.push({
-          role: 'assistant',
-          content: result.content || null,
-          tool_calls: result.tool_calls,
+    const names = params.tools ??
+      skill?.tools.map((tool) => tool.name) ?? [...this.executors.keys()]
+    const tools = createAgentTools(names, this.executors)
+    params.signal?.throwIfAborted()
+    const runtime = await this.adapter.resolve()
+    const signal = AbortSignal.any([
+      AbortSignal.timeout(this.config.timeoutMs ?? AGENT_TIMEOUT_MS),
+      ...(params.signal ? [params.signal] : []),
+    ])
+    signal.throwIfAborted()
+    let turns = 0
+    let exhausted = false
+    const toolCalls: AgentResult['toolCalls'] = []
+    const argsByCall = new Map<string, Record<string, unknown>>()
+    // Never share Pi's mutable conversation state between HTTP requests.
+    const agent = new PiAgent({
+      initialState: {
+        model: runtime.model,
+        systemPrompt: params.systemPrompt ?? skill?.systemPrompt ?? '',
+        messages: createHistory(params.messages ?? [], runtime.model),
+        tools,
+      },
+      streamFn: (model, context, options) =>
+        runtime.streamFn(model, context, {
+          ...options,
+          temperature: this.config.temperature,
+        }),
+      getApiKey: () => runtime.apiKey,
+      toolExecution: 'sequential',
+      finishTurn: ({ message }) => {
+        turns++
+        exhausted = turns >= maxTurns && message.stopReason === 'toolUse'
+        if (turns >= maxTurns) return { action: 'end' }
+      },
+    })
+    agent.subscribe((event) => {
+      if (event.type === 'tool_execution_start') argsByCall.set(event.toolCallId, event.args)
+      if (event.type === 'tool_execution_end') {
+        toolCalls.push({
+          name: event.toolName,
+          args: argsByCall.get(event.toolCallId) ?? {},
+          result: event.isError
+            ? {
+                error: (event.result.content as Array<TextContent | ImageContent>)
+                  .filter((c) => c.type === 'text')
+                  .map((c) => c.text)
+                  .join('\n'),
+              }
+            : event.result.details,
         })
-
-        // 执行每个工具调用
-        for (const tc of result.tool_calls) {
-          const executor = this.executors.get(tc.function.name)
-          let toolResult: unknown = null
-
-          if (executor) {
-            try {
-              const args = JSON.parse(tc.function.arguments)
-              toolResult = await executor.execute(args)
-              toolCallResults.push({
-                name: tc.function.name,
-                args,
-                result: toolResult,
-              })
-            } catch (error) {
-              toolResult = { error: error instanceof Error ? error.message : String(error) }
-              toolCallResults.push({
-                name: tc.function.name,
-                args: JSON.parse(tc.function.arguments),
-                result: toolResult,
-              })
-            }
-          } else {
-            toolResult = { error: `Tool '${tc.function.name}' not found` }
-          }
-
-          // 添加 tool 结果消息
-          messages.push({
-            role: 'tool',
-            content: JSON.stringify(toolResult),
-            tool_call_id: tc.id,
-          })
-        }
-      } else {
-        // 无工具调用，返回最终结果
-        return {
-          content: result.content || '',
-          toolCalls: toolCallResults,
-          turns: turn + 1,
-        }
       }
+      params.onEvent?.(event)
+    })
+    const abort = () => agent.abort()
+    signal.addEventListener('abort', abort, { once: true })
+    try {
+      await agent.prompt(params.prompt)
+    } finally {
+      signal.removeEventListener('abort', abort)
     }
-
-    // 达到最大轮次
+    const last = agent.state.messages.toReversed().find((message) => message.role === 'assistant')
+    const status =
+      signal.aborted || last?.stopReason === 'aborted'
+        ? 'aborted'
+        : last?.stopReason === 'error' || last?.stopReason === 'length' || agent.state.errorMessage
+          ? 'error'
+          : exhausted
+            ? 'max_turns'
+            : 'completed'
     return {
-      content: messages[messages.length - 1]?.content || '',
-      toolCalls: toolCallResults,
-      turns: maxTurns,
+      content:
+        last?.content
+          .filter((block) => block.type === 'text')
+          .map((block) => block.text)
+          .join('') ?? '',
+      toolCalls,
+      turns,
+      execution: { runtime: 'pi', status, turns },
     }
   }
 }

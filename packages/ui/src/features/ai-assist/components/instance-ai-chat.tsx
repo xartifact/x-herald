@@ -4,8 +4,9 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 
-import type { InstanceConfig } from '@xartifact/x-herald-shared'
+import type { InstanceAgentResponse, AgentExecution } from '@xartifact/x-herald-shared'
 import { Button } from '../../../shared/components/ui/button'
+import { generateId } from '../../../shared/lib/utils'
 import {
   Sheet,
   SheetContent,
@@ -31,12 +32,13 @@ export function InstanceAiChat({ instanceId, instanceName }: InstanceAiChatProps
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [undoStack, setUndoStack] = useState<ActionRecord[]>([])
+  const [execution, setExecution] = useState<AgentExecution | null>(null)
   const queryClient = useQueryClient()
 
   const sendMessage = async (content: string) => {
     if (!content.trim() || loading) return
     const userMessage: ChatMessage = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       role: 'user',
       content: content.trim(),
     }
@@ -44,6 +46,7 @@ export function InstanceAiChat({ instanceId, instanceName }: InstanceAiChatProps
     setMessages(nextMessages)
     setInput('')
     setLoading(true)
+    setExecution(null)
 
     try {
       const response = await fetch(`/api/ai/agent/instance/${instanceId}`, {
@@ -58,30 +61,28 @@ export function InstanceAiChat({ instanceId, instanceName }: InstanceAiChatProps
         success: boolean
         error?: string
         code?: string
-        data?: {
-          explanation: string
-          previousConfig: InstanceConfig | null
-          newConfig: InstanceConfig
-          instanceName: string
-        }
+        execution?: AgentExecution
+        data?: InstanceAgentResponse
       }
 
       if (!result.success || !result.data) {
+        setExecution(result.execution ?? null)
         const errMsg =
           result.code === 'AI_NOT_CONFIGURED'
             ? '未配置 AI 功能模型，请先在「设置 → AI 功能模型」中选择一个模型。'
             : (result.error ?? '请求失败，请重试。')
         setMessages((prev) => [
           ...prev,
-          { id: crypto.randomUUID(), role: 'assistant', content: errMsg } as ChatMessage,
+          { id: generateId(), role: 'assistant', content: errMsg } as ChatMessage,
         ])
         return
       }
 
       const { explanation, previousConfig } = result.data
+      setExecution(result.data.execution)
       setMessages((prev) => [
         ...prev,
-        { id: crypto.randomUUID(), role: 'assistant', content: explanation } as ChatMessage,
+        { id: generateId(), role: 'assistant', content: explanation } as ChatMessage,
       ])
       setUndoStack((prev) => [...prev, { instanceId, instanceName, previousConfig, explanation }])
       queryClient.invalidateQueries({ queryKey: ['model-instances'] })
@@ -90,7 +91,7 @@ export function InstanceAiChat({ instanceId, instanceName }: InstanceAiChatProps
       setMessages((prev) => [
         ...prev,
         {
-          id: crypto.randomUUID(),
+          id: generateId(),
           role: 'assistant',
           content: '网络请求失败，请检查连接后重试。',
         } as ChatMessage,
@@ -136,6 +137,17 @@ export function InstanceAiChat({ instanceId, instanceName }: InstanceAiChatProps
           <SheetDescription className="text-xs">{instanceName}</SheetDescription>
         </SheetHeader>
         <ChatMessageList messages={messages} loading={loading} onSend={sendMessage} />
+        {(loading || execution) && (
+          <output className="px-4 text-xs text-muted-foreground">
+            {loading
+              ? '正在分析实例配置…'
+              : execution?.status === 'completed'
+                ? `配置已更新 · ${execution.turns} 轮分析`
+                : execution?.status === 'max_turns'
+                  ? '达到分析轮次上限，未保存配置'
+                  : '分析未完成，未保存配置'}
+          </output>
+        )}
         <ChatUndoRecords records={undoStack} onUndo={handleUndo} />
         <ChatInput
           input={input}

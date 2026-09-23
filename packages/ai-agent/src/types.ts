@@ -1,7 +1,15 @@
-// ─── LLM Adapter 接口（由 engine 实现）──────────────────────
+import type { StreamFn, AgentEvent } from '@earendil-works/pi-agent-core'
+import type { Model } from '@earendil-works/pi-ai'
+import type { AgentExecution } from '@xartifact/x-herald-shared'
+
+export interface AgentRuntime {
+  model: Model<'openai-completions'>
+  streamFn: StreamFn
+  apiKey?: string
+}
 
 export interface LLMAdapter {
-  chat(params: { messages: Message[]; tools?: ToolDefinition[] }): Promise<ChatResult>
+  resolve(): Promise<AgentRuntime>
 }
 
 export interface Message {
@@ -46,7 +54,7 @@ export interface ToolDefinition_Input {
 
 export interface ToolExecutor {
   tool: ToolDefinition_Input
-  execute(args: Record<string, unknown>): Promise<unknown>
+  execute(args: Record<string, unknown>, signal?: AbortSignal): Promise<unknown>
 }
 
 // ─── Skill 定义 ────────────────────────────────────────────
@@ -63,6 +71,18 @@ export interface Skill {
 export interface AgentConfig {
   maxTurns?: number
   temperature?: number
+  timeoutMs?: number
+}
+
+export interface AgentRunParams {
+  prompt: string
+  skill?: string
+  tools?: string[]
+  maxTurns?: number
+  systemPrompt?: string
+  messages?: Array<{ role: 'user' | 'assistant'; content: string }>
+  signal?: AbortSignal
+  onEvent?: (event: AgentEvent) => void
 }
 
 // ─── Agent 结果 ────────────────────────────────────────────
@@ -75,4 +95,5 @@ export interface AgentResult {
     result: unknown
   }>
   turns: number
+  execution: AgentExecution
 }

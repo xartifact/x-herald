@@ -16,6 +16,7 @@ describe('CI failure propagation', () => {
         *) case "$PWD" in
           */apps/gateway) stage=backend ;;
           */packages/agent-extensions) stage=extensions ;;
+          */packages/ai-agent) stage=agent ;;
           *) return 90 ;;
         esac ;;
       esac
@@ -41,7 +42,7 @@ describe('CI failure propagation', () => {
     expect(result.stdout).toContain('executed:backend')
   })
 
-  for (const stage of ['check', 'scripts', 'ui', 'extensions', 'backend']) {
+  for (const stage of ['check', 'scripts', 'ui', 'agent', 'extensions', 'backend']) {
     it(`fails when ${stage} fails`, () => {
       const result = run(stage)
       expect(result.status).toBe(1)

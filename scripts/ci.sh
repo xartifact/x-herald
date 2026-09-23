@@ -14,6 +14,10 @@ bun test scripts/ci.test.ts
 echo "==> UI tests"
 bun run test:ui
 
+echo "==> ai-agent tests"
+cd "$PROJECT_ROOT/packages/ai-agent"
+bun test --reporter=dots
+
 echo "==> agent-extensions tests"
 cd "$PROJECT_ROOT/packages/agent-extensions"
 bun test --reporter=dots

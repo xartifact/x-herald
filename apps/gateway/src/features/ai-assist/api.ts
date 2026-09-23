@@ -1,10 +1,11 @@
 import { eq } from '@xartifact/x-herald-db'
 import { Hono } from 'hono'
 import { streamSSE } from 'hono/streaming'
-import { jsonrepair } from 'jsonrepair'
+import { instanceAgentRequestSchema, agentRunRequestSchema } from '@xartifact/x-herald-shared'
+import type { InstanceAgentResponse } from '@xartifact/x-herald-shared'
 
 import { getDatabase } from '../../db/client'
-import { callAI, AiNotConfiguredError } from '../../lib'
+import { AiNotConfiguredError } from '../../lib'
 import { rootLogger } from '../../lib'
 import { modelInstances } from '@xartifact/x-herald-db'
 import type { InstanceConfig } from '../model-groups/db'
@@ -14,6 +15,7 @@ import { ErrorDiagnoser } from './error-diagnoser'
 import { ErrorPatternLearner } from './error-patterns'
 import { buildSystemPrompt } from './prompt'
 import { getAgent } from './agent-setup'
+import { generateInstanceConfig, InstanceAgentError } from './instance-agent'
 
 const logger = rootLogger.child({ module: 'ai-assist' })
 
@@ -21,17 +23,6 @@ const aiRoutes = new Hono()
 
 const diagnoser = new ErrorDiagnoser()
 const patternLearner = new ErrorPatternLearner()
-
-interface AgentRequest {
-  messages: Array<{ role: 'user' | 'assistant'; content: string }>
-}
-
-interface AgentResponse {
-  explanation: string
-  previousConfig: InstanceConfig | null
-  newConfig: InstanceConfig
-  instanceName: string
-}
 
 interface ApplyFixRequest {
   instanceId: string
@@ -55,11 +46,14 @@ interface ApplyFixRequest {
 // POST /api/ai/agent/instance/:id
 aiRoutes.post('/agent/instance/:id', async (c) => {
   const instanceId = c.req.param('id')
-  const body = await c.req.json<AgentRequest>()
-
-  if (!body.messages?.length) {
-    return c.json({ success: false, error: 'messages is required' }, 400)
+  const input = instanceAgentRequestSchema.safeParse(await c.req.json())
+  if (!input.success) {
+    return c.json(
+      { success: false, error: input.error.issues[0]?.message ?? 'Invalid messages' },
+      400,
+    )
   }
+  const body = input.data
 
   const db = getDatabase()
 
@@ -92,29 +86,26 @@ aiRoutes.post('/agent/instance/:id', async (c) => {
     currentConfig: previousConfig,
   })
 
-  let rawText: string
+  let parsed: Awaited<ReturnType<typeof generateInstanceConfig>>
   try {
-    const aiResponse = await callAI([{ role: 'system', content: systemPrompt }, ...body.messages])
-    rawText = aiResponse.content
+    parsed = await generateInstanceConfig({
+      agent: getAgent(),
+      systemPrompt,
+      messages: body.messages,
+      signal: c.req.raw.signal,
+    })
   } catch (err) {
+    if (err instanceof InstanceAgentError) {
+      return c.json(
+        { success: false, error: err.message, code: err.code, execution: err.execution },
+        422,
+      )
+    }
     if (err instanceof AiNotConfiguredError) {
       return c.json({ success: false, error: err.message, code: 'AI_NOT_CONFIGURED' }, 503)
     }
     logger.warn({ err }, 'AI call failed')
     return c.json({ success: false, error: 'AI request failed' }, 500)
-  }
-
-  // 解析 AI 返回的 JSON（容错处理）
-  let parsed: { config: InstanceConfig; explanation: string }
-  try {
-    const repaired = jsonrepair(rawText.trim())
-    parsed = JSON.parse(repaired)
-    if (!parsed.config || typeof parsed.config !== 'object') {
-      throw new Error('Invalid config shape')
-    }
-  } catch (err) {
-    logger.warn({ err, rawText }, 'Failed to parse AI response')
-    return c.json({ success: false, error: 'AI returned invalid JSON. Please try again.' }, 422)
   }
 
   // 写库
@@ -125,11 +116,12 @@ aiRoutes.post('/agent/instance/:id', async (c) => {
 
   logger.info({ instanceId, instanceName: instance.name }, 'AI updated instance config')
 
-  const response: AgentResponse = {
+  const response: InstanceAgentResponse = {
     explanation: parsed.explanation ?? '',
     previousConfig,
     newConfig: parsed.config,
     instanceName: instance.name,
+    execution: parsed.execution,
   }
 
   return c.json({ success: true, data: response })
@@ -164,16 +156,14 @@ aiRoutes.post('/agent/instance/:id/undo', async (c) => {
 
 // POST /api/ai/agent/run - General Agent execution
 aiRoutes.post('/agent/run', async (c) => {
-  const body = await c.req.json<{
-    prompt: string
-    skill?: string
-    tools?: string[]
-    maxTurns?: number
-  }>()
-
-  if (!body.prompt) {
-    return c.json({ success: false, error: 'prompt is required' }, 400)
+  const input = agentRunRequestSchema.safeParse(await c.req.json())
+  if (!input.success) {
+    return c.json(
+      { success: false, error: input.error.issues[0]?.message ?? 'Invalid request' },
+      400,
+    )
   }
+  const body = input.data
 
   try {
     const agent = getAgent()
@@ -182,7 +172,19 @@ aiRoutes.post('/agent/run', async (c) => {
       skill: body.skill,
       tools: body.tools,
       maxTurns: body.maxTurns,
+      signal: c.req.raw.signal,
     })
+    if (result.execution.status !== 'completed') {
+      return c.json(
+        {
+          success: false,
+          error: 'Agent execution did not complete',
+          code: 'AGENT_INCOMPLETE',
+          data: result,
+        },
+        422,
+      )
+    }
     return c.json({ success: true, data: result })
   } catch (err) {
     if (err instanceof AiNotConfiguredError) {
@@ -206,7 +208,19 @@ aiRoutes.post('/agent/diagnose', async (c) => {
     const result = await agent.run({
       prompt: `Diagnose this request error: logId=${body.logId}`,
       skill: 'error-diagnosis',
+      signal: c.req.raw.signal,
     })
+    if (result.execution.status !== 'completed') {
+      return c.json(
+        {
+          success: false,
+          error: 'Agent execution did not complete',
+          code: 'AGENT_INCOMPLETE',
+          data: result,
+        },
+        422,
+      )
+    }
     return c.json({ success: true, data: result })
   } catch (err) {
     if (err instanceof AiNotConfiguredError) {
@@ -230,7 +244,19 @@ aiRoutes.post('/agent/generate-config', async (c) => {
     const result = await agent.run({
       prompt: `Generate configuration for instance ${body.instanceId}: ${body.description}`,
       skill: 'config-generation',
+      signal: c.req.raw.signal,
     })
+    if (result.execution.status !== 'completed') {
+      return c.json(
+        {
+          success: false,
+          error: 'Agent execution did not complete',
+          code: 'AGENT_INCOMPLETE',
+          data: result,
+        },
+        422,
+      )
+    }
     return c.json({ success: true, data: result })
   } catch (err) {
     if (err instanceof AiNotConfiguredError) {

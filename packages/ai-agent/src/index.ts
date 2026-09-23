@@ -1,5 +1,6 @@
 // 核心
 export { Agent } from './agent'
+export { createOpenAIAdapter } from './openai-adapter'
 
 // 类型
 export type {
@@ -13,6 +14,8 @@ export type {
   Skill,
   AgentConfig,
   AgentResult,
+  AgentRuntime,
+  AgentRunParams,
 } from './types'
 
 // 内置工具

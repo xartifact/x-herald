@@ -25,7 +25,7 @@ ${JSON.stringify(ctx.currentConfig ?? {}, null, 2)}
 
 \`\`\`typescript
 interface InstanceConfig {
-  // 参数映射：限制参数范围或设置默认值
+  // 参数映射：当前 OpenAI 出站仅执行 default；不要依赖 min/max/transform
   parameterMapping?: Record<string, {
     min?: number;       // 最小值限制
     max?: number;       // 最大值限制
@@ -71,10 +71,13 @@ interface InstanceConfig {
     action: {
       type: 'add' | 'remove' | 'rename' | 'transform';
       targetParam: string;  // 操作的目标参数名
-      value?: unknown;      // add/transform 时的固定值
-      expression?: string;  // transform 时的表达式，如 "\${reasoning.effort} === 'high' ? 16000 : 8000"
+      value?: unknown;      // add 时的固定值，也用于覆盖已有值
+      expression?: string;  // 支持路径取值或真值三元式；不支持比较、JS 或 eval
     };
   }>;
+
+  // 最终请求体顶层合并，可注入协议专属字段
+  requestInject?: Record<string, unknown>;
 
   // Schema 清理配置（用于 tool function schema 兼容性处理）
   schemaConfig?: {
@@ -87,18 +90,14 @@ interface InstanceConfig {
 
 ## 典型示例
 
-### 示例 1：reasoning/thinking 参数映射
-用户说：「当 reasoning 参数存在时，映射为 thinking enabled，预算 8000 tokens」
+### 示例 1：思考程度按值映射
+用户说：「把 xhigh 映射为 high，其他程度保持不变」
 \`\`\`json
 {
   "parameterTransforms": [
     {
-      "when": { "paramName": "reasoning", "operator": "exists" },
-      "action": { "type": "add", "targetParam": "thinking", "value": { "type": "enabled", "budget_tokens": 8000 } }
-    },
-    {
-      "when": { "paramName": "reasoning", "operator": "exists" },
-      "action": { "type": "remove", "targetParam": "reasoning" }
+      "when": { "paramName": "reasoning.effort", "operator": "eq", "value": "xhigh" },
+      "action": { "type": "add", "targetParam": "reasoning.effort", "value": "high" }
     }
   ]
 }
@@ -147,6 +146,9 @@ interface InstanceConfig {
 }
 
 规则：
+- parameterTransforms 操作内部标准请求（如 reasoning.effort），不是原始 reasoning_effort；协议专属字段用 requestInject 注入
+- 同协议透传会跳过这些转换；不能声称保存配置就证明上游兼容性已验证
+- 不要凭模型名称猜测支持的取值；解释中区分用户明确要求与尚未验证的假设
 - config 是完整对象，不是增量 patch——要包含原有配置中保留的字段
 - 如果用户要求删除某项配置，在 config 中省略该字段
 - explanation 控制在 50 字以内，简洁说明改动内容

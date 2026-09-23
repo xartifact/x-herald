@@ -229,9 +229,13 @@ describe('callAI', () => {
 })
 
 describe('createLLMAdapter', () => {
-  it('returns an object with a chat method', () => {
+  it('resolves the configured gateway model into a Pi runtime', async () => {
     const adapter = createLLMAdapter()
-    expect(adapter).toBeDefined()
-    expect(typeof adapter.chat).toBe('function')
+    const runtime = await adapter.resolve()
+    expect(runtime.model.id).toBe('gpt-4o')
+    expect(runtime.model.baseUrl).toBe('https://api.example.com')
+    expect(runtime.model.api).toBe('openai-completions')
+    expect(runtime.apiKey).toBe('sk-test')
+    expect(typeof runtime.streamFn).toBe('function')
   })
 })

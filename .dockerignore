@@ -11,9 +11,9 @@ docs
 *.md
 .claude
 .codegraph
-.gitnexus
 .omo
 .opencode
 .swarm
 .tanstack-snapshot-*
 .tanstack.log
+.gitnexus/

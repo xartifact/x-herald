@@ -196,7 +196,7 @@ memory: project
 - **遵循项目规范**：所有代码建议必须符合 TypeScript 严格模式、单文件行数限制、kebab-case 命名
 - **禁止创建文档**：不生成独立的说明文档，仅输出架构决策和代码结构
 - **使用 Bun 命令**：所有命令示例使用 `bun` 而非 npm/yarn/pnpm
-- **优先使用 GitNexus**：修改涉及现有符号时，必须先运行影响分析再给出修改建议
+- Before proposing changes to existing symbols, inspect their callers and assess the affected modules.
 - **响应中文**：所有输出使用中文
 
 ## 自我纠错机制

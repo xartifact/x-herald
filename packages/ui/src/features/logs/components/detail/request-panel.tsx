@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { z } from 'zod'
 
+import type { Log } from '@xartifact/x-herald-shared'
+
 import { HeadersViewer } from '../../../../shared'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../../shared/components/ui/tabs'
 import { cn } from '../../../../shared/lib/utils'
-import type { Log } from '@xartifact/x-herald-shared'
-
+import { reconstructJsonBody } from './reconstruct-body'
 import { BodySubTabs } from './body-sub-tabs'
 import { MessageAnalysisPanel } from './message-analysis-panel'
 import { MessageTimelineSection } from './message-timeline-section'
@@ -24,21 +25,6 @@ const RequestBodySchema = z.object({
 interface RequestPanelProps {
   log: Log
   className?: string
-}
-
-/**
- * Whether this log is a same-protocol passthrough.
- *
- * Such a request stores no transformed body by design (the forwarded request is
- * the client's own), so a null body is expected rather than missing. Both
- * protocols must be present and equal: without them there is no evidence of a
- * passthrough, and the generic "no data" message remains the honest answer.
- * @param log - the log being displayed.
- * @returns true when the request was forwarded on the same protocol.
- */
-function isSameProtocolPassthrough(log: Log): boolean {
-  const { incomingProtocol, targetProtocol } = log
-  return incomingProtocol !== null && targetProtocol !== null && incomingProtocol === targetProtocol
 }
 
 export function RequestPanel({ log, className }: RequestPanelProps) {
@@ -84,18 +70,10 @@ export function RequestPanel({ log, className }: RequestPanelProps) {
               {
                 key: 'provider',
                 label: 'Provider',
-                data: log.transformedRequestBody ?? null,
+                data:
+                  log.transformedRequestBody ??
+                  reconstructJsonBody(log.requestBody, log.transformedRequestDiff),
                 emptyText: '无 Provider 请求数据',
-                // A null body on a same-protocol request is not missing data:
-                // passthrough deliberately stores none (Phase 2 of the storage
-                // plan) because the forwarded request is the client's own.
-                // Saying "no data" there would read as a defect.
-                ...(isSameProtocolPassthrough(log)
-                  ? {
-                      emptyNote:
-                        '同协议透传：转发给 Provider 的请求与客户端请求一致，未单独存储（见存储优化方案 Phase 2）',
-                    }
-                  : {}),
               },
               {
                 key: 'standard',

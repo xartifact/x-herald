@@ -1,8 +1,10 @@
+import type { Log } from '@xartifact/x-herald-shared'
+
 import { HeadersViewer } from '../../../../shared'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../../shared/components/ui/tabs'
 import { cn } from '../../../../shared/lib/utils'
-import type { Log } from '@xartifact/x-herald-shared'
 
+import { reconstructJsonBody } from './reconstruct-body'
 import { BodySubTabs } from './body-sub-tabs'
 
 interface ResponsePanelProps {
@@ -44,7 +46,9 @@ export function ResponsePanel({ log, className }: ResponsePanelProps) {
               {
                 key: 'provider',
                 label: 'Provider',
-                data: log.providerResponseBody ?? null,
+                data:
+                  log.providerResponseBody ??
+                  reconstructJsonBody(log.responseBody, log.providerResponseDiff),
                 emptyText: '无 Provider 响应数据',
               },
               {

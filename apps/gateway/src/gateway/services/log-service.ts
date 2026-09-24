@@ -1,4 +1,5 @@
 import { eq } from '@xartifact/x-herald-db'
+import { computeJsonDiff, type JsonDiff } from '@xartifact/x-herald-shared'
 
 import { IS_PRODUCTION } from '../../config/env'
 import { getDatabase } from '../../db/client'
@@ -66,9 +67,11 @@ export interface LogRequestParams {
   providerRequestHeaders?: Record<string, string>
   requestBody?: unknown
   transformedRequestBody?: unknown
+  transformedRequestDiff?: JsonDiff
   providerResponseHeaders?: Record<string, string>
   clientResponseHeaders?: Record<string, string>
   providerResponseBody?: unknown
+  providerResponseDiff?: JsonDiff
   responseBody?: unknown
   errorMessage?: string
   errorType?: string
@@ -110,6 +113,30 @@ export interface LogRequestParams {
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
+}
+
+function requestDiffForStorage(params: LogRequestParams): JsonDiff | null {
+  if (params.incomingProtocol === undefined || params.targetProtocol === undefined) return null
+  if (params.incomingProtocol !== params.targetProtocol) return null
+  if (params.requestBody === undefined || params.transformedRequestBody === undefined) return null
+  return computeJsonDiff(params.requestBody, params.transformedRequestBody)
+}
+
+function responseDiffForStorage(params: LogRequestParams): JsonDiff | null {
+  if (params.providerResponseBody === undefined || params.responseBody === undefined) return null
+  return computeJsonDiff(params.responseBody, params.providerResponseBody)
+}
+
+function providerResponseBodyForStorage(params: LogRequestParams): unknown {
+  if (
+    params.incomingProtocol !== undefined &&
+    params.targetProtocol !== undefined &&
+    params.incomingProtocol === params.targetProtocol &&
+    responseDiffForStorage(params) !== null
+  ) {
+    return null
+  }
+  return params.providerResponseBody
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -277,8 +304,8 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
               durationMs: params.responseTimeMs,
               ...(params.providerTtfbMs !== undefined && { ttfbMs: params.providerTtfbMs }),
               retryCount: params.retryCount ?? 0,
-              providerResponseBody: params.providerResponseBody as AnyRecord,
-              providerResponseHeaders: params.providerResponseHeaders as AnyRecord,
+              providerResponseBody: providerResponseBodyForStorage(params) as AnyRecord,
+              providerResponseDiff: params.providerResponseDiff ?? responseDiffForStorage(params),
             })
             .where(eq(requestAttempts.id, attemptId))
         }
@@ -370,12 +397,16 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
         statusCode: params.statusCode,
         durationMs: params.responseTimeMs,
         ...(params.providerTtfbMs !== undefined && { ttfbMs: params.providerTtfbMs }),
-        retryCount: params.retryCount ?? 0,
-        transformedRequestBody: params.transformedRequestBody as AnyRecord,
+        transformedRequestBody:
+          params.incomingProtocol !== undefined &&
+          params.targetProtocol !== undefined &&
+          params.incomingProtocol === params.targetProtocol
+            ? null
+            : (params.transformedRequestBody as AnyRecord),
+        transformedRequestDiff: params.transformedRequestDiff ?? requestDiffForStorage(params),
         providerRequestHeaders: params.providerRequestHeaders as AnyRecord,
-        providerResponseBody: params.providerResponseBody as AnyRecord,
-        providerResponseHeaders: params.providerResponseHeaders as AnyRecord,
-        createdAt: new Date(),
+        providerResponseBody: providerResponseBodyForStorage(params) as AnyRecord,
+        providerResponseDiff: params.providerResponseDiff ?? responseDiffForStorage(params),
       })
 
       if (params.providerName && inputTokens + outputTokens > 0) {

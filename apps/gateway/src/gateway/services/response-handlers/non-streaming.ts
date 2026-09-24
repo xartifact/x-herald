@@ -1,3 +1,5 @@
+import { computeJsonDiff } from '@xartifact/x-herald-shared'
+
 import logger from '../../../lib/logger'
 
 import { getTransformer } from '../../transformer'
@@ -142,13 +144,12 @@ async function handlePassthrough(
   // 纯增量：仅当请求体含 dimensions 且响应含 data[].embedding 时生效，chat 等其余路径不受影响。
   const alignedData = enforceEmbeddingDimensions(providerResponseData, params.rawBody)
   const responseBody = alignedData ?? providerResponseData
-
-  for (const [key, value] of Object.entries(mergedHeaders)) c.header(key, value)
   await logRequest({
     ...buildBaseLogParams(params, responseTimeMs, providerResponseHeaders, mergedHeaders),
     streaming: false,
     providerResponseBody: providerResponseData,
     responseBody,
+    providerResponseDiff: computeJsonDiff(responseBody, providerResponseData),
   })
   if (isMapped && originalModelName && responseBody?.model !== undefined)
     responseBody.model = originalModelName

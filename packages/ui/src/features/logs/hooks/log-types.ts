@@ -1,3 +1,4 @@
+import type { JsonDiff } from '@xartifact/x-herald-shared'
 export interface LogMetadata {
   messageSequence?: {
     totalCount: number
@@ -122,8 +123,9 @@ export interface Log extends LogListItem {
   providerRequestHeaders?: Record<string, string> | null
   standardRequestBody?: Record<string, unknown> | null
   transformedRequestBody?: Record<string, unknown> | null
-  providerResponseHeaders?: Record<string, string> | null
+  transformedRequestDiff?: JsonDiff | null
   providerResponseBody?: Record<string, unknown> | null
+  providerResponseDiff?: JsonDiff | null
   standardResponseBody?: Record<string, unknown> | null
   clientIp: string | null
   userAgent: string | null

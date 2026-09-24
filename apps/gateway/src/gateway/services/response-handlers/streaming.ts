@@ -1,3 +1,5 @@
+import { computeJsonDiff } from '@xartifact/x-herald-shared'
+
 import { UPSTREAM_STREAM_IDLE_TIMEOUT_MS } from '@xartifact/x-herald-shared'
 
 import logger from '../../../lib/logger'
@@ -145,6 +147,18 @@ async function finalizeStreamWithLog(
       streamContent: fullContent,
       streamProgress: progress,
     },
+    providerResponseDiff: computeJsonDiff(
+      {
+        ...(clientCollector.getSummary(incomingProtocol) as Record<string, unknown>),
+        streamContent: fullContent,
+        streamProgress: progress,
+      },
+      {
+        ...(providerCollector.getSummary(targetProtocol) as Record<string, unknown>),
+        streamContent: providerCollector.getFullContent(),
+        streamProgress: providerCollector.getProgress(),
+      },
+    ),
     streamContent: fullContent,
     streamProgress: progress,
     metadata,

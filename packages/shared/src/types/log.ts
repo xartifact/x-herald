@@ -1,3 +1,4 @@
+import type { JsonDiff } from '../lib/json-diff'
 // Log viewer types — matches the API response shapes from apps/web/src/hooks/log-types.ts
 // These are application-layer types shared by engine API and UI components
 
@@ -123,8 +124,10 @@ export interface Log extends LogListItem {
   providerRequestHeaders?: Record<string, string> | null
   standardRequestBody?: Record<string, unknown> | null
   transformedRequestBody?: Record<string, unknown> | null
+  transformedRequestDiff?: JsonDiff | null
   providerResponseHeaders?: Record<string, string> | null
   providerResponseBody?: Record<string, unknown> | null
+  providerResponseDiff?: JsonDiff | null
   standardResponseBody?: Record<string, unknown> | null
   clientIp: string | null
   userAgent: string | null

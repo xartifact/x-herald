@@ -44,12 +44,12 @@
 - **结果**：metadata 写入量下降 90%+（3.3 MB/行 → 几 KB/行）；消息分析不受影响（仍读 `request_body`）
 - **验证**：`bun test` 相关用例（routing-trace-recorder / intent-router 已有覆盖）+ 代理意图路由冒烟
 
-### Phase 2：同协议透传不写 transformedRequestBody（纯代码，~2h）
+### Phase 2：同协议透传保存差异而非重复全文
 
-- **问题**：`transformedRequestBody` 从 10+ 处写入（chat-completion / anthropic / responses / embedding / error-handler / non-streaming / log-stream 等）。OpenAI→OpenAI 透传时它与 `request_body` 内容近似，占 attempts 6.7 GB 的大头
-- **改动**：仅当 `incomingProtocol !== targetProtocol`（真实跨协议转换）时写入 transformed body；同协议透传写入 `null`。UI 详情页透传场景展示「透传」（现有 nullable 类型已兼容）
-- **结果**：attempts 新增量大幅下降；跨协议全文保留（满足训练）
-- **验证**：代理透传测试 + 跨协议转换测试（`proxy.test.ts` / `proxy-cross-provider-failover.test.ts` 已有链路）
+- **问题**：`transformedRequestBody` 从 10+ 处写入（chat-completion / anthropic / responses / embedding / error-handler / non-streaming / log-stream 等）。OpenAI→OpenAI 透传时它与 `request_body` 内容近似，占 attempts 6.7 GB 的大头；Provider 响应同理。
+- **改动**：仅当 `incomingProtocol !== targetProtocol`（真实跨协议转换）时写入完整 transformed body；同协议透传写入客户端请求到 Provider 请求的 JSON diff。响应保存客户端响应到 Provider 响应的 JSON diff。详情 API/UI 应用 diff 重建完整 Provider 内容；旧日志无 diff 时仍显示可用的直接 Provider body或诚实的空状态。
+- **结果**：同协议重复全文显著下降，同时满足请求详情展示「客户端请求 + diff = Provider 请求」及「客户端响应 + diff = Provider 响应」；跨协议全文保留（满足训练）。
+- **验证**：代理透传测试 + 跨协议转换测试（`proxy.test.ts` / `proxy-cross-provider-failover.test.ts` 已有链路），并验证 JSON diff/apply 的边界行为。
 
 ### Phase 3：训练语料按需导出（独立脚本，~2h）
 

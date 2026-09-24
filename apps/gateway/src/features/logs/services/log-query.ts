@@ -141,8 +141,10 @@ export async function getLogDetail(id: string) {
   const attempts = await db
     .select({
       transformedRequestBody: requestAttempts.transformedRequestBody,
+      transformedRequestDiff: requestAttempts.transformedRequestDiff,
       providerRequestHeaders: requestAttempts.providerRequestHeaders,
       providerResponseBody: requestAttempts.providerResponseBody,
+      providerResponseDiff: requestAttempts.providerResponseDiff,
       providerResponseHeaders: requestAttempts.providerResponseHeaders,
     })
     .from(requestAttempts)
@@ -152,13 +154,14 @@ export async function getLogDetail(id: string) {
         eq(requestAttempts.candidateIndex, log[0].candidateIndex),
       ),
     )
-    .limit(1)
   const attempt = attempts[0]
   return {
     ...log[0],
     transformedRequestBody: attempt?.transformedRequestBody ?? null,
+    transformedRequestDiff: attempt?.transformedRequestDiff ?? null,
     providerRequestHeaders: attempt?.providerRequestHeaders ?? null,
     providerResponseBody: attempt?.providerResponseBody ?? null,
+    providerResponseDiff: attempt?.providerResponseDiff ?? null,
     providerResponseHeaders: attempt?.providerResponseHeaders ?? null,
   }
 }

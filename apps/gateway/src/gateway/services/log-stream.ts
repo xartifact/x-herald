@@ -28,6 +28,7 @@ function reportFailureToXTinker(error: Error, metadata?: Record<string, string>)
 }
 import type { VirtualKey } from '@xartifact/x-herald-db'
 import { requestLogs, requestAttempts } from '@xartifact/x-herald-db'
+import { computeJsonDiff, type JsonDiff } from '@xartifact/x-herald-shared'
 import type {
   StreamProgress,
   StreamContent,
@@ -56,10 +57,10 @@ export interface StreamLogParams {
   // Failover 链路追踪
   requestGroupId: string
   candidateIndex: number
-  // Provider 视角（存入 requestAttempts）
   instanceId?: string
   providerRequestHeaders?: Record<string, string>
   transformedRequestBody?: unknown
+  transformedRequestDiff?: JsonDiff
   routingTrace?: {
     matchedRuleId?: string
     matchedRuleName?: string
@@ -178,7 +179,9 @@ async function createStreamLog(
             status: 'pending',
             retryCount: 0,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            transformedRequestBody: params.transformedRequestBody as any,
+            transformedRequestBody: transformedBodyForStorage(params) as any,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            transformedRequestDiff: transformedRequestDiffForStorage(params) as any,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             providerRequestHeaders: params.providerRequestHeaders as any,
             createdAt: new Date(),
@@ -235,6 +238,13 @@ export function transformedBodyForStorage(params: StreamLogParams): unknown {
   return incomingProtocol === targetProtocol ? null : (transformedRequestBody ?? null)
 }
 
+export function transformedRequestDiffForStorage(params: StreamLogParams): JsonDiff | null {
+  if (params.incomingProtocol === undefined || params.targetProtocol === undefined) return null
+  if (params.incomingProtocol !== params.targetProtocol) return null
+  if (params.requestBody === undefined || params.transformedRequestBody === undefined) return null
+  return computeJsonDiff(params.requestBody, params.transformedRequestBody)
+}
+
 export async function logRequestStart(params: StreamLogParams): Promise<LogStartResult> {
   return createStreamLog({ ...params, isStream: false })
 }
@@ -263,6 +273,8 @@ async function createStreamLogById(
         status: 'pending',
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         transformedRequestBody: transformedBodyForStorage(params) as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        transformedRequestDiff: transformedRequestDiffForStorage(params) as any,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         providerRequestHeaders: params.providerRequestHeaders as any,
         createdAt: new Date(),
@@ -351,6 +363,7 @@ export interface FinalizeStreamParams {
   clientResponseHeaders: Record<string, string>
   providerResponseBody: unknown
   responseBody: unknown
+  providerResponseDiff?: JsonDiff
   streamContent: StreamContent
   streamProgress: StreamProgress
   metadata?: LogMetadata
@@ -435,6 +448,12 @@ export async function finalizeStreamLog(
             retryCount: params.retryCount ?? 0,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             providerResponseBody: params.providerResponseBody as any,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            providerResponseDiff:
+              params.providerResponseDiff ??
+              (params.providerResponseBody !== undefined && params.responseBody !== undefined
+                ? (computeJsonDiff(params.responseBody, params.providerResponseBody) as any)
+                : null),
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             providerResponseHeaders: params.providerResponseHeaders as any,
           })

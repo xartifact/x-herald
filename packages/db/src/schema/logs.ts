@@ -121,10 +121,12 @@ export const requestAttempts = pgTable(
     retryCount: integer('retry_count').default(0).notNull(),
     ttfbMs: integer('ttfb_ms'),
     durationMs: integer('duration_ms'),
-    // Provider 视角的请求/响应体
+    // Provider 视角的请求/响应体及客户端视角到 Provider 视角的 JSON diff
     transformedRequestBody: jsonb('transformed_request_body'),
+    transformedRequestDiff: jsonb('transformed_request_diff'),
     providerRequestHeaders: jsonb('provider_request_headers'),
     providerResponseBody: jsonb('provider_response_body'),
+    providerResponseDiff: jsonb('provider_response_diff'),
     providerResponseHeaders: jsonb('provider_response_headers'),
     createdAt: timestamp('created_at')
       .$defaultFn(() => new Date())

@@ -1,8 +1,4 @@
-import {
-  applyJsonDiff,
-  type JsonDiff,
-  type JsonValue,
-} from '@xartifact/x-herald-shared'
+import { applyJsonDiff, type JsonDiff, type JsonValue } from '@xartifact/x-herald-shared'
 
 /** Reconstructs an object payload, returning null for absent or invalid inputs. */
 export function reconstructJsonBody(

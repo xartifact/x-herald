@@ -57,7 +57,9 @@ describe('RequestPanel provider payload', () => {
         ],
       }),
     )
-    expect(screen.getByText('{"messages":[{"role":"user","content":"sanitized"}],"model":"gpt-4o"}')).toBeTruthy()
+    expect(
+      screen.getByText('{"messages":[{"role":"user","content":"sanitized"}],"model":"gpt-4o"}'),
+    ).toBeTruthy()
     expect(screen.queryByText(/同协议透传/)).toBeNull()
   })
 

@@ -22,7 +22,7 @@ export interface ProtocolExtendedConfig extends ProtocolConfig {
 }
 
 // 支持的协议类型
-export type ProtocolType = 'openai' | 'anthropic' | 'gemini' | 'custom'
+export type ProtocolType = 'openai' | 'anthropic' | 'gemini' | 'jev' | 'custom'
 
 // 协议配置映射
 export type ProtocolsConfig = Partial<Record<ProtocolType, ProtocolExtendedConfig>>

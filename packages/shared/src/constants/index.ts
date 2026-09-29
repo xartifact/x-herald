@@ -15,6 +15,7 @@ export const PROTOCOLS = {
   OPENAI: 'openai',
   ANTHROPIC: 'anthropic',
   GEMINI: 'gemini',
+  JEV: 'jev',
 } as const
 
 export const REQUEST_STATUS = {

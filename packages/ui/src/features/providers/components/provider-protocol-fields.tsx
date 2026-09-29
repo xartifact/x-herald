@@ -13,7 +13,7 @@ import { Switch } from '../../../shared/components/ui/switch'
 
 import type { ProtocolOption, ProviderFormData } from './provider-form-types'
 
-type ProtocolKey = 'openai' | 'anthropic' | 'gemini'
+type ProtocolKey = 'openai' | 'anthropic' | 'gemini' | 'jev'
 
 interface ProviderProtocolFieldsProps {
   form: UseFormReturn<ProviderFormData>

@@ -38,6 +38,7 @@ const defaultValues: ProviderFormData = {
     openai: { enabled: true, baseUrl: 'https://api.openai.com/v1' },
     anthropic: { enabled: false, baseUrl: '' },
     gemini: { enabled: false, baseUrl: '' },
+    jev: { enabled: false, baseUrl: 'https://api.typesafe.ai' },
   },
 }
 
@@ -61,6 +62,10 @@ function providerToForm(p: Provider): ProviderFormData {
         enabled: !!p.protocols.gemini?.enabled,
         baseUrl: p.protocols.gemini?.baseUrl ?? '',
         toolSchemaSanitization: p.protocols.gemini?.toolSchemaSanitization ?? false,
+      },
+      jev: {
+        enabled: !!p.protocols.jev?.enabled,
+        baseUrl: p.protocols.jev?.baseUrl ?? 'https://api.typesafe.ai',
       },
     },
   }

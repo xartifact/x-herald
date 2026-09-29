@@ -30,7 +30,7 @@ export interface PreparedRequest {
   headers: Record<string, string>
   body: string | null
   isPassthroughEnabled?: boolean
-  targetProtocol?: 'openai' | 'anthropic'
+  targetProtocol?: string
 }
 
 export interface MarkLogFailedParams {

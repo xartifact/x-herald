@@ -12,5 +12,6 @@ export interface ProviderFormData {
     openai?: { enabled: boolean; baseUrl?: string; toolSchemaSanitization?: boolean }
     anthropic?: { enabled: boolean; baseUrl?: string; toolSchemaSanitization?: boolean }
     gemini?: { enabled: boolean; baseUrl?: string; toolSchemaSanitization?: boolean }
+    jev?: { enabled: boolean; baseUrl?: string; toolSchemaSanitization?: boolean }
   }
 }

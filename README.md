@@ -23,6 +23,7 @@ x-herald 是一个透明代理网关，统一管理对 LLM 服务商的访问。
 | 流式（SSE）双向转换 | ✅ |
 | Anthropic thinking 块支持 | ✅ |
 | Gemini 协议支持（定型中） | 🔄 |
+| JEV System One 透明代理 | ✅ |
 
 ### 路由与模型管理
 
@@ -218,6 +219,7 @@ bun run ci               # 本地全量 CI（format + lint + typecheck + tests�
 | `POST` | `/api/v1/responses` | OpenAI Responses（兼容） |
 | `POST` | `/api/v1/messages` | Anthropic Messages |
 | `POST` | `/api/v1/messages/count_tokens` | Anthropic Token 计数 |
+| `POST` | `/api/v1/systemone` | JEV System One（透明代理） |
 | `GET`  | `/api/v1/models` | 可用虚拟模型列表 |
 
 管理 API（需登录）：`/api/providers`、`/api/model-groups`、`/api/virtual-models`、`/api/model-routes`、`/api/keys`、`/api/logs`、`/api/config`、`/api/settings`

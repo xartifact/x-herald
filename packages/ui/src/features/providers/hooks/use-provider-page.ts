@@ -42,6 +42,7 @@ export function useProviderPage() {
         openai: { enabled: true, baseUrl: 'https://api.openai.com/v1' },
         anthropic: { enabled: false, baseUrl: 'https://api.anthropic.com/v1' },
         gemini: { enabled: false, baseUrl: 'https://generativelanguage.googleapis.com/v1' },
+        jev: { enabled: false, baseUrl: 'https://api.typesafe.ai' },
       },
     },
   })
@@ -111,6 +112,12 @@ export function useProviderPage() {
               toolSchemaSanitization: provider.protocols.gemini.toolSchemaSanitization ?? false,
             }
           : { enabled: false, baseUrl: 'https://generativelanguage.googleapis.com/v1' },
+        jev: provider.protocols.jev
+          ? {
+              enabled: true,
+              baseUrl: provider.protocols.jev.baseUrl,
+            }
+          : { enabled: false, baseUrl: 'https://api.typesafe.ai' },
       },
     })
     setShowFormApiKey(false)
@@ -139,6 +146,7 @@ export function useProviderPage() {
         openai: { enabled: true, baseUrl: 'https://api.openai.com/v1' },
         anthropic: { enabled: false, baseUrl: 'https://api.anthropic.com/v1' },
         gemini: { enabled: false, baseUrl: 'https://generativelanguage.googleapis.com/v1' },
+        jev: { enabled: false, baseUrl: 'https://api.typesafe.ai' },
       },
     })
     setDialogOpen(true)

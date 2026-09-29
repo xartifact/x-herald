@@ -19,7 +19,7 @@ import type { AbortManager } from '../shared/abort-manager'
 import type { MarkLogFailedParams, PreparedRequest } from '../shared/failover-executor'
 import { joinUrl } from '../shared/join-url'
 
-const EMBEDDINGS_ENDPOINT = '/v1/embeddings'
+const DEFAULT_ENDPOINT = '/v1/embeddings'
 
 interface CandidateInfo {
   instance: ModelInstance
@@ -30,7 +30,7 @@ interface CandidateInfo {
   decision: { strategy: string }
 }
 
-interface EmbeddingRequestContext {
+interface PassthroughRequestContext {
   rawBody: { model?: string; [key: string]: unknown }
   standardRequestBody?: StandardRequest
   virtualKey: VirtualKey
@@ -41,30 +41,30 @@ interface EmbeddingRequestContext {
   requestPath: string
   requestMethod: string
   isStreaming: boolean
-  incomingProtocol: 'openai' | 'anthropic'
+  incomingProtocol: string
   startTime: number
   requestId: string
 }
 
-export interface EmbeddingExecutorConfig {
+export interface PassthroughExecutorConfig {
   c: Context
   candidate: CandidateInfo
-  req: EmbeddingRequestContext
+  req: PassthroughRequestContext
   abortManager: AbortManager
   providerUrl: string
-  targetProtocol: 'openai' | 'anthropic'
+  endpoint?: string
+  targetProtocol: string
   retryCount: number
   requestGroupId: string
   candidateIndex: number
 }
 
 /**
- * Embedding 候选执行器：透传原始 body 到上游 /v1/embeddings。
+ * 透明请求候选执行器：保留请求体字段，仅重写路由到的上游模型。
  *
- * 与 chat 不同，embedding 不做协议转换——请求体原样转发，仅改写 `model`
- * 为目标实例的实际模型名。复用 failover/retry/熔断/日志/错误处理链路。
+ * 适用于不参与聊天协议转换的模型 API（例如 embeddings 和 JEV System One）。
  */
-export class EmbeddingCandidateExecutor {
+export class PassthroughCandidateExecutor {
   logId?: string
   attemptId?: string
   transformedBody?: unknown
@@ -77,7 +77,7 @@ export class EmbeddingCandidateExecutor {
     providerName: string
   }
 
-  constructor(private readonly config: EmbeddingExecutorConfig) {
+  constructor(private readonly config: PassthroughExecutorConfig) {
     const { instance, provider, group } = config.candidate
     this.circuitBreakerMeta = {
       instanceName: instance.name,
@@ -89,7 +89,7 @@ export class EmbeddingCandidateExecutor {
   async prepareRequest(): Promise<PreparedRequest> {
     const { instance, provider, mapping } = this.candidate
     const { rawBody, requestId } = this.req
-    const { providerUrl, targetProtocol } = this.config
+    const { providerUrl, targetProtocol, endpoint = DEFAULT_ENDPOINT } = this.config
 
     const filtered = Object.fromEntries(
       Object.entries(this.req.clientRequestHeaders).filter(([k]) => !shouldFilterHeader(k)),
@@ -101,7 +101,7 @@ export class EmbeddingCandidateExecutor {
       model: instance.actualModelName,
     }
 
-    const targetUrl = joinUrl(providerUrl, EMBEDDINGS_ENDPOINT)
+    const targetUrl = joinUrl(providerUrl, endpoint)
     const pHeaders: Record<string, string> = {
       ...filtered,
       authorization: `Bearer ${provider.apiKey}`,
@@ -136,7 +136,7 @@ export class EmbeddingCandidateExecutor {
     this.providerRequestHeaders = pHeaders
     this.preprocessEndTime = Date.now()
 
-    logger.debug({ requestId, targetUrl, targetProtocol, model: mapping.modelName }, 'embedding')
+    logger.debug({ requestId, targetUrl, targetProtocol, model: mapping.modelName }, 'passthrough')
     return {
       url: targetUrl,
       headers: pHeaders,
@@ -237,7 +237,7 @@ export class EmbeddingCandidateExecutor {
   private get candidate(): CandidateInfo {
     return this.config.candidate
   }
-  private get req(): EmbeddingRequestContext {
+  private get req(): PassthroughRequestContext {
     return this.config.req
   }
 }

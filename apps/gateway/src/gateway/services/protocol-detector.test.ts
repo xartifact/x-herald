@@ -234,6 +234,14 @@ describe('getProviderUrl', () => {
   it('returns null when provider has no protocols', () => {
     expect(getProviderUrl({}, 'openai')).toBeNull()
   })
+
+  it('returns the configured JEV URL', () => {
+    const provider = {
+      protocols: { jev: { enabled: true, baseUrl: 'https://api.typesafe.ai' } },
+    }
+
+    expect(getProviderUrl(provider, 'jev')).toBe('https://api.typesafe.ai')
+  })
 })
 
 // ---------------------------------------------------------------------------

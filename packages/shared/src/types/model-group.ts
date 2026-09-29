@@ -28,7 +28,7 @@ export interface GroupFormData {
   aliases: string
   displayName: string
   description: string
-  category: 'chat' | 'embedding' | 'image' | 'audio'
+  category: 'chat' | 'embedding' | 'image' | 'audio' | 'system_one'
   capabilities: {
     streaming: boolean
     functionCalling: boolean

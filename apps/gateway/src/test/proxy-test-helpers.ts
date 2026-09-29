@@ -34,7 +34,7 @@ import { invalidateVirtualKeyCache } from '../middleware/virtual-key'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-export type UpstreamProtocol = 'openai' | 'anthropic'
+export type UpstreamProtocol = 'openai' | 'anthropic' | 'jev'
 
 export interface ProxyTestEnvOptions {
   /** Upstream provider protocol — determines default endpoint path */
@@ -47,6 +47,8 @@ export interface ProxyTestEnvOptions {
   providerApiKey?: string
   /** Virtual key string clients use for auth (auto-generated if omitted) */
   virtualKey?: string
+  /** Model group category; JEV uses `system_one`. */
+  category?: string
 }
 
 export interface ProxyTestEnv {
@@ -86,6 +88,11 @@ export interface ProxyTestEnv {
     body: Record<string, unknown>,
     headers?: Record<string, string>,
   ): Response | Promise<Response>
+  /** POST /api/v1/systemone (JEV System One) */
+  proxySystemOne(
+    body: Record<string, unknown>,
+    headers?: Record<string, string>,
+  ): Response | Promise<Response>
 
   // ── Lifecycle ──────────────────────────────────────────────────────────────
 
@@ -111,8 +118,12 @@ export async function createProxyTestEnv(options: ProxyTestEnvOptions = {}): Pro
   const accessModelName = options.accessModelName ?? 'gpt-4'
   const actualModelName =
     options.actualModelName ??
-    (protocol === 'openai' ? 'gpt-4-turbo' : 'claude-3-5-sonnet-20241022')
-  const vkString = options.virtualKey ?? 'xg_test_' + crypto.randomUUID().slice(0, 12)
+    (protocol === 'openai'
+      ? 'gpt-4-turbo'
+      : protocol === 'anthropic'
+        ? 'claude-3-5-sonnet-20241022'
+        : 'jev-latest')
+  const vkString = options.virtualKey ?? `xg_test_${crypto.randomUUID().slice(0, 12)}`
 
   // 1. Start mock upstream
   const upstream = createMockUpstream()
@@ -145,6 +156,7 @@ export async function createProxyTestEnv(options: ProxyTestEnvOptions = {}): Pro
       name: 'test-proxy-group',
       displayName: 'Test Proxy Group',
       capabilities: DEFAULT_CAPABILITIES,
+      category: options.category ?? (protocol === 'jev' ? 'system_one' : 'chat'),
       supportedProtocols: [protocol],
       enabled: true,
     })
@@ -235,6 +247,13 @@ export async function createProxyTestEnv(options: ProxyTestEnvOptions = {}): Pro
 
     proxyResponses: (body: Record<string, unknown>, headers?: Record<string, string>) =>
       engine.app.request('/api/v1/responses', {
+        method: 'POST',
+        headers: authHeaders(headers),
+        body: JSON.stringify(body),
+      }),
+
+    proxySystemOne: (body: Record<string, unknown>, headers?: Record<string, string>) =>
+      engine.app.request('/api/v1/systemone', {
         method: 'POST',
         headers: authHeaders(headers),
         body: JSON.stringify(body),

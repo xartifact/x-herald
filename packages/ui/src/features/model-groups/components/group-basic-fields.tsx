@@ -116,6 +116,7 @@ export function GroupBasicFields({ form }: GroupBasicFieldsProps) {
                 <SelectItem value="embedding">嵌入</SelectItem>
                 <SelectItem value="image">图像</SelectItem>
                 <SelectItem value="audio">音频</SelectItem>
+                <SelectItem value="system_one">JEV System One</SelectItem>
               </SelectContent>
             </Select>
           </FormItem>

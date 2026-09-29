@@ -7,6 +7,7 @@ import { virtualKeyMiddleware } from '../middleware/virtual-key'
 import actuatorRoutes from './routes/actuator'
 import anthropicRoutes from './routes/anthropic'
 import embeddingRoutes from './routes/embedding'
+import jevRoutes from './routes/jev'
 import openaiRoutes from './routes/openai'
 import { resolveClientIp } from './services/client-identifier'
 import { logRequest } from './services/log-service'
@@ -117,6 +118,7 @@ gatewayRoutes.route('/', actuatorRoutes)
 gatewayRoutes.route('/', openaiRoutes)
 gatewayRoutes.route('/', embeddingRoutes)
 gatewayRoutes.route('/', anthropicRoutes)
+gatewayRoutes.route('/', jevRoutes)
 
 /**
  * GET /v1/models — 统一模型列表端点

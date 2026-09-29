@@ -37,4 +37,5 @@ export interface ExtendedProtocolsConfig {
   openai?: ExtendedProtocolConfig
   anthropic?: ExtendedProtocolConfig
   gemini?: ExtendedProtocolConfig
+  jev?: ExtendedProtocolConfig
 }

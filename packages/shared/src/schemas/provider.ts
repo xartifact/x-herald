@@ -8,6 +8,7 @@ export const PROTOCOL_OPTIONS = [
     label: 'Google Gemini',
     defaultUrl: 'https://generativelanguage.googleapis.com/v1',
   },
+  { value: 'jev', label: 'JEV System One', defaultUrl: 'https://api.typesafe.ai' },
 ] as const
 
 export const providerSchema = z.object({
@@ -31,6 +32,13 @@ export const providerSchema = z.object({
         })
         .optional(),
       gemini: z
+        .object({
+          enabled: z.boolean(),
+          baseUrl: z.string().url('请输入有效的 URL').or(z.literal('')).optional(),
+          toolSchemaSanitization: z.boolean().optional(),
+        })
+        .optional(),
+      jev: z
         .object({
           enabled: z.boolean(),
           baseUrl: z.string().url('请输入有效的 URL').or(z.literal('')).optional(),

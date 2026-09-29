@@ -290,6 +290,34 @@ export async function fetchRemoteModels(id: string, db?: Database): Promise<Fetc
           await readUpstreamErrorBody(resp),
         )
       }
+    } else if (protocols.jev?.enabled && protocols.jev.baseUrl) {
+      const url = `${protocols.jev.baseUrl.replace(/\/+$/, '')}/models`
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (provider.apiKey) headers.Authorization = `Bearer ${provider.apiKey}`
+      const resp = await fetch(url, { headers, signal: AbortSignal.timeout(15000) })
+      if (resp.ok) {
+        const body = (await resp.json()) as {
+          models?: Array<{ name?: string; description?: string }>
+        }
+        if (Array.isArray(body.models)) {
+          remoteModels = body.models
+            .filter((model): model is { name: string; description?: string } => Boolean(model.name))
+            .map((model) => ({
+              id: model.name,
+              name: model.name,
+              description: model.description,
+              synced: false,
+              capabilities: {
+                streaming: false,
+                functionCalling: false,
+                vision: false,
+                jsonMode: true,
+              },
+            }))
+        }
+      } else {
+        fetchError = formatUpstreamHttpError('JEV', resp.status, await readUpstreamErrorBody(resp))
+      }
     } else {
       fetchError = 'No supported protocol enabled'
     }

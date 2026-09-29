@@ -1,29 +1,31 @@
 import type { Context } from 'hono'
 
 import type { VirtualKey } from '@xartifact/x-herald-db'
+
 import logger from '../../../lib/logger'
 import { accessModelRouter } from '../../services/access-model-router'
 import { identifyClient, resolveClientIp } from '../../services/client-identifier'
 import { handleGatewayError } from '../../services/error-handler'
+import { markStreamAborted } from '../../services/log-service'
 import { ModelNotFoundError } from '../../services/model-group-router'
-import { getProviderProtocol, getProviderUrl } from '../../services/protocol-detector'
-import type { ResponseHandlerParams } from '../../services/response-handlers/params'
+import { getProviderUrl } from '../../services/protocol-detector'
 import { handleNonStreamingResponse } from '../../services/response-handlers'
+import type { ResponseHandlerParams } from '../../services/response-handlers/params'
 import { createTransformerContext } from '../../transformer'
+import { PassthroughCandidateExecutor } from '../openai/embedding-executor'
 import { AbortManager } from '../shared/abort-manager'
 import { executeFailoverIteration } from '../shared/failover-executor'
-import { markStreamAborted } from '../../services/log-service'
-import { PassthroughCandidateExecutor } from './embedding-executor'
 
-const EMBEDDING_CATEGORY = 'embedding'
+const JEV_PROTOCOL = 'jev'
+const JEV_CATEGORY = 'system_one'
+const JEV_ENDPOINT = '/v1/systemone'
+
 /**
- * 处理 OpenAI 兼容的 /v1/embeddings 请求。
- *
- * 与 chat 不同，embedding 是透传调用：不做协议转换，仅用 `model` 路由到
- * category=embedding 的模型组，并把原始 body 原样转发到上游 /v1/embeddings。
- * 复用虚拟 key 认证、模型路由、熔断、failover/retry、日志与错误处理链路。
+ * Transparently proxies JEV System One requests. The client-supplied `model` is
+ * used for gateway routing and is replaced with the selected instance model
+ * before forwarding to the provider.
  */
-export async function handleEmbeddingRequest(
+export async function handleJevSystemOne(
   c: Context,
   preprocessedBody?: Record<string, unknown>,
 ): Promise<Response> {
@@ -34,29 +36,21 @@ export async function handleEmbeddingRequest(
   const userAgent = c.req.header('user-agent') || 'unknown'
   const requestPath = c.req.path
   const requestMethod = c.req.method
-
   const clientRequestHeaders: Record<string, string> = {}
   c.req.raw.headers.forEach((value, key) => {
     clientRequestHeaders[key.toLowerCase()] = value
   })
-
   const clientInfo = identifyClient(userAgent, clientRequestHeaders)
-  const incomingProtocol = 'openai' as const
   let retryCount = 0
 
   try {
     const rawBody =
       (preprocessedBody as { model?: string; [key: string]: unknown }) ??
       ((await c.req.json()) as { model?: string; [key: string]: unknown })
-
     const model = rawBody.model
-    logger.info({ requestId, model, protocol: incomingProtocol }, 'Processing embedding request')
-
     if (typeof model !== 'string' || !model) {
       return c.json({ error: { type: 'invalid_request_error', message: 'Missing model' } }, 400)
     }
-
-    // 虚拟 key 的允许模型校验（与 chat 一致）
     if (virtualKey.allowedModels?.length && !virtualKey.allowedModels.includes(model)) {
       return c.json(
         {
@@ -78,17 +72,13 @@ export async function handleEmbeddingRequest(
       virtualKeyId: virtualKey.id,
       requestGroupId,
     })
-    if (!candidates.length) throw new ModelNotFoundError(model)
-
-    // 仅用 category=embedding 的模型组；若首选候选不属于 embedding 组则跳过
-    const embeddingCandidates = candidates.filter((cd) => cd.group.category === EMBEDDING_CATEGORY)
-    if (embeddingCandidates.length === 0) {
-      throw new ModelNotFoundError(model)
-    }
+    const jevCandidates = candidates.filter(
+      (candidate) => candidate.group.category === JEV_CATEGORY,
+    )
+    if (jevCandidates.length === 0) throw new ModelNotFoundError(model)
 
     const abortManager = new AbortManager(c.req.raw.signal)
     abortManager.registerClientDisconnect()
-
     const req = {
       rawBody,
       virtualKey,
@@ -99,26 +89,24 @@ export async function handleEmbeddingRequest(
       requestPath,
       requestMethod,
       isStreaming: false,
-      incomingProtocol,
+      incomingProtocol: JEV_PROTOCOL,
       startTime,
       requestId,
     }
 
     try {
-      for (let i = 0; i < embeddingCandidates.length; i++) {
-        const routeResult = embeddingCandidates[i]
+      for (let index = 0; index < jevCandidates.length; index++) {
+        const routeResult = jevCandidates[index]
         const { instance, provider, group, decision, mapping } = routeResult
-        const isLastCandidate = i === embeddingCandidates.length - 1
-
-        const targetProtocol = getProviderProtocol(incomingProtocol, provider)
-        const providerUrl = getProviderUrl(provider, targetProtocol)
+        const isLastCandidate = index === jevCandidates.length - 1
+        const providerUrl = getProviderUrl(provider, JEV_PROTOCOL)
         if (!providerUrl) {
           if (!isLastCandidate) continue
           return c.json(
             {
               error: {
                 type: 'protocol_error',
-                message: `Protocol '${targetProtocol}' not configured for provider`,
+                message: `Protocol '${JEV_PROTOCOL}' not configured for provider`,
               },
             },
             400,
@@ -138,21 +126,20 @@ export async function handleEmbeddingRequest(
           req,
           abortManager,
           providerUrl,
-          targetProtocol,
+          endpoint: JEV_ENDPOINT,
+          targetProtocol: JEV_PROTOCOL,
           retryCount,
           requestGroupId,
-          candidateIndex: i,
+          candidateIndex: index,
         })
-
         const retryConfig = {
           maxRetries: instance.config?.retryConfig?.maxRetries ?? 2,
           baseDelay: instance.config?.retryConfig?.retryDelay ?? 500,
-          maxDelay: 30000,
+          maxDelay: 30_000,
           retryableStatusCodes: instance.config?.retryConfig?.retryableStatusCodes ?? [
             429, 500, 502, 503, 504, 521, 524,
           ],
         }
-
         const result = await executeFailoverIteration({
           c,
           abortManager,
@@ -175,21 +162,19 @@ export async function handleEmbeddingRequest(
           logFailoverAttempts: instance.config?.logFailoverAttempts ?? true,
           onPrepareRequest: () => executor.prepareRequest(),
           onBeforeFetch: () => executor.beforeFetch(),
-          onRetry: (a, d, r) => executor.retry(a, d, r),
+          onRetry: (attempt, delay, response) => executor.retry(attempt, delay, response),
           onRecordFailure: () => executor.recordFailure(),
           onRecordSuccess: () => executor.recordSuccess(),
           onMarkLogAsFailed: (params) => executor.markLogFailed(params),
           onLogEventBusEmitAborted: (id) => executor.emitAbortedEvent(id),
-          handleGatewayError: (code, msg) => executor.gatewayError(code, msg),
-          handleProviderError: (resp, rb) => executor.providerError(resp, rb),
-          handleProviderErrorPassthrough: (resp, rb) => executor.providerErrorPassthrough(resp, rb),
+          handleGatewayError: (code, message) => executor.gatewayError(code, message),
+          handleProviderError: (response, body) => executor.providerError(response, body),
+          handleProviderErrorPassthrough: (response, body) =>
+            executor.providerErrorPassthrough(response, body),
         })
-
         retryCount = result.retryCount ?? 0
         if (result.type === 'abort') {
           if (result.aborted === 'client_disconnect') {
-            // 客户端断开（TTFB 阶段）：记录为 cancelled，不计入失败率
-            logger.info({ requestId }, 'Client disconnected, marking as cancelled')
             if (executor.logId) {
               await markStreamAborted(executor.logId, executor.attemptId ?? '', false, {
                 forceCancelled: true,
@@ -212,31 +197,24 @@ export async function handleEmbeddingRequest(
             isStreaming: false,
             startTime,
             transformedBody: executor.transformedBody,
-            incomingProtocol,
-            targetProtocol,
+            incomingProtocol: JEV_PROTOCOL,
+            targetProtocol: JEV_PROTOCOL,
             logId: executor.logId,
             retryCount,
           })
         }
-        if (result.type === 'failover') {
-          logger.warn(
-            { requestId, instanceId: instance.id, statusCode: result.response?.status },
-            '[Embedding Failover] Instance failed, switching to next candidate',
-          )
-          continue
-        }
+        if (result.type === 'failover') continue
         if (result.type === 'error') return result.response!
 
-        // 成功路径：复用非流式响应处理器，把 pending 日志收尾为 success + tokens
-        const handlerParams: ResponseHandlerParams = {
+        const responseParams: ResponseHandlerParams = {
           c,
           response: result.response!,
           ctx: createTransformerContext(requestId),
-          incomingProtocol,
-          targetProtocol,
+          incomingProtocol: JEV_PROTOCOL,
+          targetProtocol: JEV_PROTOCOL,
           virtualKey,
           provider,
-          originalModelName: String(rawBody.model || 'unknown'),
+          originalModelName: model,
           resolvedModelName: mapping.modelName,
           mappingType: mapping.mappingType,
           isMapped: mapping.isMapped,
@@ -268,21 +246,20 @@ export async function handleEmbeddingRequest(
             instanceCost: instance.costPer1kTokens,
           },
         }
-        return handleNonStreamingResponse(handlerParams)
+        return handleNonStreamingResponse(responseParams)
       }
     } finally {
       abortManager.dispose()
     }
 
-    throw new Error('All candidate instances exhausted')
+    throw new Error('All JEV candidate instances exhausted')
   } catch (error) {
-    logger.error({ error, requestId }, 'Embedding gateway error')
+    logger.error({ error, requestId }, 'JEV System One gateway error')
     return handleGatewayError({
       error: error instanceof Error ? error : new Error(String(error)),
       c,
       virtualKey,
       requestHeaders: clientRequestHeaders,
-      providerRequestHeaders: undefined,
       clientIp,
       userAgent,
       clientType: clientInfo.type,
@@ -290,9 +267,8 @@ export async function handleEmbeddingRequest(
       requestMethod,
       isStreaming: false,
       startTime,
-      transformedBody: undefined,
-      incomingProtocol,
-      targetProtocol: 'openai',
+      incomingProtocol: JEV_PROTOCOL,
+      targetProtocol: JEV_PROTOCOL,
       logId: undefined,
       retryCount,
     })

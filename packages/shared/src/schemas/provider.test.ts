@@ -75,19 +75,18 @@ describe('providerSchema', () => {
 
 describe('PROTOCOL_OPTIONS', () => {
   it('contains expected protocols', () => {
-    expect(PROTOCOL_OPTIONS).toHaveLength(3)
-    const values = PROTOCOL_OPTIONS.map((p) => p.value)
-    expect(values).toContain('openai')
-    expect(values).toContain('anthropic')
-    expect(values).toContain('gemini')
+    expect(PROTOCOL_OPTIONS.map((option) => option.value)).toEqual([
+      'openai',
+      'anthropic',
+      'gemini',
+      'jev',
+    ])
   })
 
   it('has label and defaultUrl for each option', () => {
     for (const option of PROTOCOL_OPTIONS) {
-      expect(option.label).toBeDefined()
-      expect(option.defaultUrl).toBeDefined()
-      expect(typeof option.label).toBe('string')
-      expect(typeof option.defaultUrl).toBe('string')
+      expect(option.label).toBeTruthy()
+      expect(option.defaultUrl).toMatch(/^https:\/\//)
     }
   })
 })

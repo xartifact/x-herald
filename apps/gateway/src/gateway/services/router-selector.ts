@@ -273,7 +273,8 @@ export async function filterCandidates(
         rejections.push({ instanceName: instance.name, reason: 'vision not supported' })
         return false
       }
-      const protocol = provider.protocols?.openai || provider.protocols?.anthropic
+      const protocol =
+        provider.protocols?.openai || provider.protocols?.anthropic || provider.protocols?.jev
       if (!protocol?.enabled) {
         rejections.push({ instanceName: instance.name, reason: 'provider protocol not enabled' })
         return false

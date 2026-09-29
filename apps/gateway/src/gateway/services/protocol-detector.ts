@@ -101,7 +101,7 @@ export function getProviderUrl(
       | Record<string, { enabled?: boolean; baseUrl?: string }>
       | Partial<Record<string, { enabled?: boolean; baseUrl?: string }>>
   },
-  protocol: 'openai' | 'anthropic',
+  protocol: 'openai' | 'anthropic' | 'jev',
 ): string | null {
   const config = provider.protocols?.[protocol]
   if (!config?.enabled || !config.baseUrl) return null

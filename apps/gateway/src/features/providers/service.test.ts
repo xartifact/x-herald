@@ -341,6 +341,39 @@ describe('fetchRemoteModels', () => {
     expect(seenHeaders?.['x-goog-api-key']).toBe('goog-key')
   })
 
+  it('uses bearer authentication and parses the JEV model catalog', async () => {
+    let seenHeaders: Record<string, string> | undefined
+    fetchMock.mockImplementation(async (url: string | URL, init?: RequestInit) => {
+      expect(String(url)).toBe('https://api.typesafe.ai/models')
+      seenHeaders = (init?.headers ?? {}) as Record<string, string>
+      return new Response(
+        JSON.stringify({ models: [{ name: 'jev-latest', description: 'Latest JEV model' }] }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      )
+    })
+    const db = createQueuedDb([
+      [
+        {
+          id: providerId,
+          name: 'jev',
+          enabled: true,
+          apiKey: 'jev-key',
+          protocols: { jev: { enabled: true, baseUrl: 'https://api.typesafe.ai' } },
+        },
+      ],
+      [],
+    ])
+
+    const result = await fetchRemoteModels(providerId, db)
+
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.models).toHaveLength(1)
+      expect(result.models[0]).toMatchObject({ id: 'jev-latest', description: 'Latest JEV model' })
+    }
+    expect(seenHeaders?.Authorization).toBe('Bearer jev-key')
+  })
+
   it('surfaces insufficient balance from a bounded JSON error response', async () => {
     fetchMock.mockImplementation(
       async () =>

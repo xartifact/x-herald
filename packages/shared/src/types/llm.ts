@@ -5,7 +5,7 @@
 
 // ==================== 消息类型 ====================
 
-export type ProtocolType = 'openai' | 'anthropic' | 'gemini' | 'vertex' | 'custom'
+export type ProtocolType = 'openai' | 'anthropic' | 'gemini' | 'jev' | 'vertex' | 'custom'
 export type MessageRole = 'user' | 'assistant' | 'system' | 'tool'
 
 export type CacheControl = Record<string, unknown>

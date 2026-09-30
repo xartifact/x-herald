@@ -36,7 +36,6 @@ x-herald 的修复机制：实例级配置 `patchMissingReasoningContent: true`�
 
 | 项       | 值                                                                                                                |
 | -------- | ----------------------------------------------------------------------------------------------------------------- |
-| 环境     | x99 (100.80.110.125), 容器 `x-herald`                                                                             |
 | 入口模型 | `Plan`（access_model）                                                                                            |
 | 请求     | `reasoning_effort: "xhigh"`, stream, 42 条 assistant 消息全缺 reasoning_content                                   |
 | 路由     | Plan → intent → 降级链 primary `Deepseek-v4-flash` 组                                                             |
@@ -60,12 +59,7 @@ router-selector 按 `priority` 升序 + `enabled` 过滤选择；组内两个开
 
 ## 5. 生产诊断命令
 
-容器内 `packages/db/node_modules/postgres` 可用，Bun 一行脚本直连 DB：
-
-```bash
-# 脚本经 stdin 传入，规避本地 shell 转义（fish/zsh 会吞 $ 与 $$）
-ssh tailscale.x99-arch-server.local 'bash -s' < /tmp/diag.sh
-```
+容器内 `packages/db/node_modules/postgres` 可用，Bun 一行脚本直连 DB。请通过当前部署环境的受控运维通道执行下列脚本：
 
 ```js
 // /tmp/diag.sh 内容（docker exec x-herald sh -c 'cd /app/packages/db && bun -e "..."'）

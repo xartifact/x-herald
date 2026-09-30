@@ -224,6 +224,31 @@ bun run ci               # 本地全量 CI（format + lint + typecheck + tests�
 
 管理 API（需登录）：`/api/providers`、`/api/model-groups`、`/api/virtual-models`、`/api/model-routes`、`/api/keys`、`/api/logs`、`/api/config`、`/api/settings`
 
+### JEV System One
+
+JEV 是状态到类型化决策结果的 System One API，不是 Chat Completions 协议。先在管理界面创建服务商并启用 **JEV System One** 协议，配置 `https://api.typesafe.ai` 与 JEV API key；再创建 `system_one` 类别的模型组、模型实例和访问模型路由。网关仅会把 `/api/v1/systemone` 请求路由到 `system_one` 模型组。
+
+请求必须带虚拟密钥，`model` 使用 x-herald 访问模型名；网关将它替换为选中实例的实际 JEV 模型名后，透明转发 `state` 和 `questions`：
+
+```bash
+curl -X POST http://localhost:3000/api/v1/systemone \
+  -H 'Authorization: Bearer <virtual-key>' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "model": "jev-router",
+    "state": "订单被重复扣款。",
+    "questions": {
+      "refund": {
+        "type": "noul",
+        "instructions": "客户是否要求退款？"
+      }
+    }
+  }'
+```
+
+响应保持 JEV 的 `answers`、`usage` 和 `metadata` 结构；该端点不支持聊天消息或 SSE 流式响应。
+
+
 ---
 
 ## Docker 部署

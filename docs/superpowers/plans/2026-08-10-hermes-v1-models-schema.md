@@ -16,7 +16,6 @@
 - **snake_case：** 所有对外字段 snake*case，`data[].id` 保持 `/^[A-Za-z0-9.*:\/-]+$/`（`ID_PATTERN` 已强制，勿动）。
 - **三层完整性（AGENTS.md）：** shared（类型）+ gateway（路由/服务）+ 测试缺一不可；不建静态 provider 价格/上下文表（YAGNI，sync 管线已覆盖 OpenRouter passthrough）。
 - **禁止 DDL：** 本方案只读 jsonb，零数据库结构变更，不需要迁移文件。
-- **x99 验证注意：** Hermes 探测有 30s TTL 缓存；改完网关需重启生效（路由注册在 `createEngine` 中先于 SPA `serveStatic`，**无需重建 SPA**）。
 - 不要创建总结文档（repo 规则）；commit message 遵循 `feat(gateway): <subject>`，72 字符内小写开头。
 
 ---
@@ -584,7 +583,7 @@ git commit -m "feat(gateway): merge instance metadata context into v1/models"
 
 ---
 
-### Task 4: 全量验证（本地 + x99 验收）
+### Task 4: 全量验证
 
 **Files:** 无改动（仅验证）
 
@@ -595,7 +594,7 @@ cd apps/gateway && bun test src/__tests__/v1-models.test.ts
 bun run typecheck
 ```
 
-预期：v1-models.test.ts 全绿；typecheck 通过。
+预期：v1-models 全部通过；typecheck 无错误。
 
 - [ ] **Step 2: 回归（模型列表相关既有测试）**
 
@@ -606,23 +605,9 @@ bun test src/gateway/services/access-model-router.test.ts
 
 预期：全绿（`fetchAccessibleModels` 行为在无实例 metadata 时不变）。
 
-- [ ] **Step 3: x99 验收（Hermes 侧，规格 §7 原脚本）**
+- [ ] **Step 3: 可选——`bun run ci` 全量回归**
 
-部署重启网关后执行：
-
-```bash
-cd ~/.hermes/hermes-agent && venv/bin/python3 -c "
-import sys; sys.path.insert(0,'.')
-from agent.model_metadata import get_model_context_length
-print(get_model_context_length('Agent','http://127.0.0.1:5005/api/v1',
-      api_key='xg_d97e1602dd9c6ec0a2b1a2e6de886e0f29c3d8de642cec694469c3f61a327165'))"
-```
-
-预期：返回 `1048576`，且不再打 "Could not determine context length" 警告。注意 30s TTL 缓存：若此前探测失败过，等待或清缓存后再验。
-
-- [ ] **Step 4: 可选——`bun run ci` 全量回归**
-
-提交约束要求提交前全量通过；若改动已合并到主干，由合入方执行 `bun run ci`。
+提交约束要求提交前全量通过；若改动已合并到主干，由合入方执行 `bun run ci`.
 
 ---
 

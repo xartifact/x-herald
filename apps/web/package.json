@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "predev": "rm -rf node_modules/.vite node_modules/.vite-temp",
+    "dev": "vite --force",
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",

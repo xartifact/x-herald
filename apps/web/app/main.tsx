@@ -1,30 +1,84 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { RouterProvider, createRouter, createRoute, createRootRoute } from '@tanstack/react-router'
+import {
+  RouterProvider,
+  createRouter,
+  createRoute,
+  createRootRoute,
+  lazyRouteComponent,
+} from '@tanstack/react-router'
 import { RootLayout } from './routes/__root'
 import { LoginPage } from './routes/login'
 import { AdminLayout } from './routes/admin'
-import { DashboardPage } from './routes/admin/index'
-import { ProvidersPage } from './routes/admin/providers/index'
-import { KeysPage } from './routes/admin/keys/index'
-import { ModelGroupsPage } from './routes/admin/model-groups/index'
-import { SettingsPage } from './routes/admin/settings/index'
-import { AccessModelsPage } from './routes/admin/access-models/index'
-import { AccessModelDetailPage } from './routes/admin/access-models/detail'
-import { PotentialModelsPage } from './routes/admin/potential-models/index'
-import { CircuitBreakerPage } from './routes/admin/circuit-breaker/index'
-import { LogsPage } from './routes/admin/logs/index'
-import { LogDetailPage } from './routes/admin/logs/log-detail'
-import { RoutingTracesPage } from './routes/admin/routing-traces/index'
-import { RoutingTraceDetailPage } from './routes/admin/routing-traces/log-detail'
-import { ConsoleLogsPage } from './routes/admin/console-logs/index'
-import { MetricsPage } from './routes/admin/metrics/index'
-import { ClientModelsPage } from './routes/admin/client-models/index'
-import { CostsPage } from './routes/admin/costs/index'
-import { ProviderStatsPage } from './routes/admin/provider-stats/index'
-import { AiAssistPage } from './routes/admin/ai-assist/index'
-import { IntentRecognitionPage } from './routes/admin/intent-recognition'
-import { RouteOverviewPage } from './routes/admin/route-overview/index'
+const DashboardPage = lazyRouteComponent(() => import('./routes/admin/index'), 'DashboardPage')
+const ProvidersPage = lazyRouteComponent(
+  () => import('./routes/admin/providers/index'),
+  'ProvidersPage',
+)
+const KeysPage = lazyRouteComponent(() => import('./routes/admin/keys/index'), 'KeysPage')
+const ModelGroupsPage = lazyRouteComponent(
+  () => import('./routes/admin/model-groups/index'),
+  'ModelGroupsPage',
+)
+const SettingsPage = lazyRouteComponent(
+  () => import('./routes/admin/settings/index'),
+  'SettingsPage',
+)
+const AccessModelsPage = lazyRouteComponent(
+  () => import('./routes/admin/access-models/index'),
+  'AccessModelsPage',
+)
+const AccessModelDetailPage = lazyRouteComponent(
+  () => import('./routes/admin/access-models/detail'),
+  'AccessModelDetailPage',
+)
+const PotentialModelsPage = lazyRouteComponent(
+  () => import('./routes/admin/potential-models/index'),
+  'PotentialModelsPage',
+)
+const CircuitBreakerPage = lazyRouteComponent(
+  () => import('./routes/admin/circuit-breaker/index'),
+  'CircuitBreakerPage',
+)
+const LogsPage = lazyRouteComponent(() => import('./routes/admin/logs/index'), 'LogsPage')
+const LogDetailPage = lazyRouteComponent(
+  () => import('./routes/admin/logs/log-detail'),
+  'LogDetailPage',
+)
+const RoutingTracesPage = lazyRouteComponent(
+  () => import('./routes/admin/routing-traces/index'),
+  'RoutingTracesPage',
+)
+const RoutingTraceDetailPage = lazyRouteComponent(
+  () => import('./routes/admin/routing-traces/log-detail'),
+  'RoutingTraceDetailPage',
+)
+const ConsoleLogsPage = lazyRouteComponent(
+  () => import('./routes/admin/console-logs/index'),
+  'ConsoleLogsPage',
+)
+const MetricsPage = lazyRouteComponent(() => import('./routes/admin/metrics/index'), 'MetricsPage')
+const ClientModelsPage = lazyRouteComponent(
+  () => import('./routes/admin/client-models/index'),
+  'ClientModelsPage',
+)
+const CostsPage = lazyRouteComponent(() => import('./routes/admin/costs/index'), 'CostsPage')
+const ProviderStatsPage = lazyRouteComponent(
+  () => import('./routes/admin/provider-stats/index'),
+  'ProviderStatsPage',
+)
+const AiAssistPage = lazyRouteComponent(
+  () => import('./routes/admin/ai-assist/index'),
+  'AiAssistPage',
+)
+const IntentRecognitionPage = lazyRouteComponent(
+  () => import('./routes/admin/intent-recognition/index'),
+  'IntentRecognitionPage',
+)
+const RouteOverviewPage = lazyRouteComponent(
+  () => import('./routes/admin/route-overview/index'),
+  'RouteOverviewPage',
+)
 
 import './styles/app.css'
 

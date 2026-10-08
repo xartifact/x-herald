@@ -3,6 +3,7 @@ import { Hono } from 'hono'
 import { rootLogger } from '../../lib'
 
 import { rateLimitEngine } from '../../gateway/services/rate-limit-engine'
+import { getWorkspaceId } from '../workspaces/context'
 
 import { countKeys, createKey, deleteKey, getKey, listKeys, resetKey, updateKey } from './service'
 
@@ -12,12 +13,13 @@ const keysRoutes = new Hono()
 
 keysRoutes.get('/', async (c) => {
   try {
+    const workspaceId = getWorkspaceId(c)
     const page = Math.max(1, parseInt(c.req.query('page') || '1'))
     const pageSize = Math.min(Math.max(1, parseInt(c.req.query('pageSize') || '50')), 200)
     const search = c.req.query('search') || undefined
     const [data, total] = await Promise.all([
-      listKeys({ search, limit: pageSize, offset: (page - 1) * pageSize }),
-      countKeys(search),
+      listKeys({ search, limit: pageSize, offset: (page - 1) * pageSize, workspaceId }),
+      countKeys(search, undefined, workspaceId),
     ])
     const totalPages = Math.max(1, Math.ceil(total / pageSize))
     return c.json({
@@ -33,7 +35,7 @@ keysRoutes.get('/', async (c) => {
 
 keysRoutes.get('/:id', async (c) => {
   try {
-    const key = await getKey(c.req.param('id'))
+    const key = await getKey(c.req.param('id'), undefined, getWorkspaceId(c))
     if (!key) return c.json({ error: 'Virtual key not found', code: 'KEY_NOT_FOUND' }, 404)
     return c.json({ success: true, data: key })
   } catch (error) {
@@ -47,7 +49,7 @@ keysRoutes.post('/', async (c) => {
     const body = await c.req.json()
     if (!body.name)
       return c.json({ error: 'Missing required field: name', code: 'VALIDATION_ERROR' }, 400)
-    const data = await createKey(body)
+    const data = await createKey(body, undefined, getWorkspaceId(c))
     return c.json({ success: true, data }, 201)
   } catch (error) {
     logger.warn({ err: error }, 'Failed to create virtual key')
@@ -57,7 +59,12 @@ keysRoutes.post('/', async (c) => {
 
 keysRoutes.put('/:id', async (c) => {
   try {
-    const data = await updateKey(c.req.param('id'), await c.req.json())
+    const data = await updateKey(
+      c.req.param('id'),
+      await c.req.json(),
+      undefined,
+      getWorkspaceId(c),
+    )
     if (!data) return c.json({ error: 'Virtual key not found', code: 'KEY_NOT_FOUND' }, 404)
     return c.json({ success: true, data })
   } catch (error) {
@@ -68,7 +75,7 @@ keysRoutes.put('/:id', async (c) => {
 
 keysRoutes.delete('/:id', async (c) => {
   try {
-    const deleted = await deleteKey(c.req.param('id'))
+    const deleted = await deleteKey(c.req.param('id'), undefined, getWorkspaceId(c))
     if (!deleted) return c.json({ error: 'Virtual key not found', code: 'KEY_NOT_FOUND' }, 404)
     return c.json({ success: true, message: 'Virtual key deleted successfully' })
   } catch (error) {
@@ -79,7 +86,7 @@ keysRoutes.delete('/:id', async (c) => {
 
 keysRoutes.post('/:id/reset', async (c) => {
   try {
-    const data = await resetKey(c.req.param('id'))
+    const data = await resetKey(c.req.param('id'), undefined, getWorkspaceId(c))
     if (!data) return c.json({ error: 'Virtual key not found', code: 'KEY_NOT_FOUND' }, 404)
     return c.json({ success: true, data, message: 'API key has been reset successfully' })
   } catch (error) {
@@ -90,7 +97,7 @@ keysRoutes.post('/:id/reset', async (c) => {
 
 keysRoutes.get('/:id/usage', async (c) => {
   try {
-    const key = await getKey(c.req.param('id'))
+    const key = await getKey(c.req.param('id'), undefined, getWorkspaceId(c))
     if (!key) return c.json({ error: 'Virtual key not found', code: 'KEY_NOT_FOUND' }, 404)
 
     const status = rateLimitEngine.getStatus(key.id, {
@@ -108,7 +115,7 @@ keysRoutes.get('/:id/usage', async (c) => {
 
 keysRoutes.post('/:id/reset-usage', async (c) => {
   try {
-    const key = await getKey(c.req.param('id'))
+    const key = await getKey(c.req.param('id'), undefined, getWorkspaceId(c))
     if (!key) return c.json({ error: 'Virtual key not found', code: 'KEY_NOT_FOUND' }, 404)
 
     const body = await c.req.json().catch(() => ({}))

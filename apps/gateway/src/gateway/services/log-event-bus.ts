@@ -9,6 +9,7 @@ import logger from '../../lib/logger'
 export type LiveStreamEvent =
   | {
       event: 'waiting'
+      workspaceId?: string
       logId: string
       modelName: string
       originalModelName?: string
@@ -19,6 +20,7 @@ export type LiveStreamEvent =
     }
   | {
       event: 'started'
+      workspaceId?: string
       logId: string
       modelName: string
       originalModelName?: string
@@ -29,6 +31,7 @@ export type LiveStreamEvent =
     }
   | {
       event: 'chunk'
+      workspaceId?: string
       logId: string
       outputTokens: number
       totalChunks: number
@@ -37,6 +40,7 @@ export type LiveStreamEvent =
     }
   | {
       event: 'completed'
+      workspaceId?: string
       logId: string
       status: 'success' | 'failure'
       inputTokens: number
@@ -46,6 +50,7 @@ export type LiveStreamEvent =
     }
   | {
       event: 'aborted'
+      workspaceId?: string
       logId: string
       reason?: 'client_disconnect' | 'timeout' | 'cancelled' | 'stale_cleanup'
     }
@@ -105,7 +110,12 @@ class LogEventBus extends EventEmitter {
           ctrl.abort()
         }
         this.abortControllers.delete(logId)
-        super.emit('log', { event: 'aborted', logId, reason: 'stale_cleanup' })
+        super.emit('log', {
+          event: 'aborted',
+          workspaceId: snapshot.workspaceId,
+          logId,
+          reason: 'stale_cleanup',
+        })
         removed++
       }
     }
@@ -121,6 +131,7 @@ class LogEventBus extends EventEmitter {
 
   /** 取消指定请求（手动操作或外部请求） */
   abortRequest(logId: string): boolean {
+    const snapshot = this.activeStreams.get(logId)
     const ctrl = this.abortControllers.get(logId)
     if (ctrl && !ctrl.signal.aborted) {
       ctrl.abort()
@@ -130,7 +141,12 @@ class LogEventBus extends EventEmitter {
     this.activeStreams.delete(logId)
     this.lastActivityAt.delete(logId)
     if (existed) {
-      super.emit('log', { event: 'aborted', logId, reason: 'cancelled' })
+      super.emit('log', {
+        event: 'aborted',
+        workspaceId: snapshot?.workspaceId,
+        logId,
+        reason: 'cancelled',
+      })
     }
     return existed
   }

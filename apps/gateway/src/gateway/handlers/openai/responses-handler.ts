@@ -276,6 +276,7 @@ export async function handleResponsesAPI(
         (m) => Array.isArray(m.content) && m.content.some((c) => c.type === 'image_url'),
       ),
       virtualKeyId: virtualKey.id,
+      workspaceId: virtualKey.workspaceId,
     })
     if (!routeResult) throw new ModelNotFoundError(standardReq.model)
 

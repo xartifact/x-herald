@@ -75,9 +75,9 @@ function buildAnalysisMessages(messages: RawMessage[]): { role: string; content:
 
 export async function buildAnalysisStream(
   logId: string,
-  options: { indices?: number[]; mode?: AnalysisMode } = {},
+  options: { indices?: number[]; mode?: AnalysisMode; workspaceId?: string } = {},
 ): Promise<ReadableStream<Uint8Array>> {
-  const log = await getLogDetail(logId)
+  const log = await getLogDetail(logId, options.workspaceId)
   if (!log) throw new AnalyzeLogError('Log not found', 404)
 
   const rawMessages = (log.requestBody as Record<string, unknown> | null)?.messages

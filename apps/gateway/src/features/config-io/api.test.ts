@@ -8,7 +8,7 @@ import {
   unauthGet,
   uniqueName,
 } from '../../test/crud-helper'
-import { testRequest } from '../../test/hono-helper'
+import { authenticatedRequest, testRequest } from '../../test/hono-helper'
 
 import type { CrudTestContext } from '../../test/crud-helper'
 
@@ -123,6 +123,74 @@ describe('config-io API', () => {
       expect(body.data.virtualKeys.length).toBeGreaterThanOrEqual(1)
       expect(body.data.virtualKeys.some((k) => k.name === keyName)).toBe(true)
     })
+
+    it('exports workspace-owned groups and keys only for the selected workspace while keeping providers shared', async () => {
+      const workspaceResponse = await authenticatedRequest(
+        ctx.app,
+        'POST',
+        '/api/workspaces',
+        ctx.token,
+        { body: { name: uniqueName('export-workspace') } },
+      )
+      const workspace = (await workspaceResponse.json()) as { data: { id: string } }
+      const headers = { 'X-Workspace-Id': workspace.data.id }
+      const groupName = uniqueName('isolated-export-group')
+      const keyName = uniqueName('isolated-export-key')
+      const providerName = uniqueName('shared-export-provider')
+
+      expect(
+        (
+          await authenticatedRequest(ctx.app, 'POST', '/api/model-groups', ctx.token, {
+            headers,
+            body: { name: groupName, displayName: groupName },
+          })
+        ).status,
+      ).toBe(201)
+      expect(
+        (
+          await authenticatedRequest(ctx.app, 'POST', '/api/keys', ctx.token, {
+            headers,
+            body: { name: keyName },
+          })
+        ).status,
+      ).toBe(201)
+      expect(
+        (
+          await authPost(ctx, '/api/providers', {
+            name: providerName,
+            protocols: { openai: { baseUrl: 'https://api.example.com', enabled: true } },
+          })
+        ).status,
+      ).toBe(201)
+
+      const defaultExport = await authGet(ctx, '/api/config/export')
+      const workspaceExport = await authenticatedRequest(
+        ctx.app,
+        'GET',
+        '/api/config/export',
+        ctx.token,
+        { headers },
+      )
+      const defaultBody = (await defaultExport.json()) as {
+        data: {
+          modelGroups: { name: string }[]
+          virtualKeys: { name: string }[]
+          providers: { name: string }[]
+        }
+      }
+      const workspaceBody = (await workspaceExport.json()) as typeof defaultBody
+
+      expect(defaultBody.data.modelGroups.some((group) => group.name === groupName)).toBe(false)
+      expect(defaultBody.data.virtualKeys.some((key) => key.name === keyName)).toBe(false)
+      expect(workspaceBody.data.modelGroups.some((group) => group.name === groupName)).toBe(true)
+      expect(workspaceBody.data.virtualKeys.some((key) => key.name === keyName)).toBe(true)
+      expect(defaultBody.data.providers.some((provider) => provider.name === providerName)).toBe(
+        true,
+      )
+      expect(workspaceBody.data.providers.some((provider) => provider.name === providerName)).toBe(
+        true,
+      )
+    })
   })
 
   describe('POST /api/config/import', () => {
@@ -233,6 +301,77 @@ describe('config-io API', () => {
       expect(body.summary.providers.created).toBe(1)
       expect(body.summary.providers.updated).toBe(0)
       expect(body.summary.providers.errors).toBe(0)
+    })
+
+    it('imports same-named groups and keys independently in the selected workspace', async () => {
+      const workspaceResponse = await authenticatedRequest(
+        ctx.app,
+        'POST',
+        '/api/workspaces',
+        ctx.token,
+        { body: { name: uniqueName('import-workspace') } },
+      )
+      const workspace = (await workspaceResponse.json()) as { data: { id: string } }
+      const groupName = uniqueName('same-import-group')
+      const keyName = uniqueName('same-import-key')
+      const importBody = {
+        version: '2',
+        data: {
+          ...emptyExportData,
+          modelGroups: [
+            {
+              name: groupName,
+              aliases: [],
+              displayName: groupName,
+              description: null,
+              category: 'chat',
+              capabilities: { streaming: true },
+              supportedProtocols: ['openai'],
+              enabled: true,
+              metadata: null,
+            },
+          ],
+          virtualKeys: [
+            {
+              name: keyName,
+              key: `xg_${crypto.randomUUID()}`,
+              allowedModels: null,
+              rateLimitRpm: null,
+              rateLimitRpd: null,
+              tokenLimitDaily: null,
+              enabled: true,
+              expiresAt: null,
+            },
+          ],
+        },
+      }
+
+      const defaultImport = await authPost(ctx, '/api/config/import', importBody)
+      const workspaceImportBody = {
+        ...importBody,
+        data: {
+          ...importBody.data,
+          virtualKeys: [{ ...importBody.data.virtualKeys[0], key: `xg_${crypto.randomUUID()}` }],
+        },
+      }
+      const workspaceImport = await authenticatedRequest(
+        ctx.app,
+        'POST',
+        '/api/config/import',
+        ctx.token,
+        { headers: { 'X-Workspace-Id': workspace.data.id }, body: workspaceImportBody },
+      )
+      const defaultResult = (await defaultImport.json()) as {
+        summary: { modelGroups: { created: number }; virtualKeys: { created: number } }
+      }
+      const workspaceResult = (await workspaceImport.json()) as typeof defaultResult
+
+      expect(defaultImport.status).toBe(200)
+      expect(workspaceImport.status).toBe(200)
+      expect(defaultResult.summary.modelGroups.created).toBe(1)
+      expect(defaultResult.summary.virtualKeys.created).toBe(1)
+      expect(workspaceResult.summary.modelGroups.created).toBe(1)
+      expect(workspaceResult.summary.virtualKeys.created).toBe(1)
     })
 
     it('importing same config twice shows updated (not created)', async () => {

@@ -8,6 +8,7 @@ import rootLogger from '../../lib/logger'
 import { invalidateVirtualKeyCache } from '../../middleware/virtual-key'
 
 import { virtualKeys, type NewVirtualKey } from '@xartifact/x-herald-db'
+import { DEFAULT_WORKSPACE_ID } from '../workspaces/context'
 
 const logger = rootLogger.child({ module: 'keys-service' })
 
@@ -16,6 +17,7 @@ function generateApiKey(): string {
 }
 
 export interface ListKeysOptions {
+  workspaceId?: string
   search?: string
   limit?: number
   offset?: number
@@ -23,7 +25,10 @@ export interface ListKeysOptions {
 
 export async function listKeys(options: ListKeysOptions = {}, db?: Database) {
   const database = db ?? getDatabase()
-  const conditions = [isNull(virtualKeys.deletedAt)]
+  const conditions = [
+    isNull(virtualKeys.deletedAt),
+    eq(virtualKeys.workspaceId, options.workspaceId ?? DEFAULT_WORKSPACE_ID),
+  ]
   if (options.search) {
     conditions.push(ilike(virtualKeys.name, `%${options.search}%`))
   }
@@ -37,9 +42,13 @@ export async function listKeys(options: ListKeysOptions = {}, db?: Database) {
     .offset(options.offset ?? 0)
 }
 
-export async function countKeys(search?: string, db?: Database) {
+export async function countKeys(
+  search?: string,
+  db?: Database,
+  workspaceId = DEFAULT_WORKSPACE_ID,
+) {
   const database = db ?? getDatabase()
-  const conditions = [isNull(virtualKeys.deletedAt)]
+  const conditions = [isNull(virtualKeys.deletedAt), eq(virtualKeys.workspaceId, workspaceId)]
   if (search) {
     conditions.push(ilike(virtualKeys.name, `%${search}%`))
   }
@@ -51,9 +60,13 @@ export async function countKeys(search?: string, db?: Database) {
   return rows[0]?.total ?? 0
 }
 
-export async function getKey(id: string, db?: Database) {
+export async function getKey(id: string, db?: Database, workspaceId = DEFAULT_WORKSPACE_ID) {
   const database = db ?? getDatabase()
-  const rows = await database.select().from(virtualKeys).where(eq(virtualKeys.id, id)).limit(1)
+  const rows = await database
+    .select()
+    .from(virtualKeys)
+    .where(and(eq(virtualKeys.id, id), eq(virtualKeys.workspaceId, workspaceId)))
+    .limit(1)
   return rows[0] ?? null
 }
 
@@ -67,11 +80,16 @@ interface CreateKeyData {
   expiresAt?: string | null
 }
 
-export async function createKey(data: CreateKeyData, db?: Database) {
+export async function createKey(
+  data: CreateKeyData,
+  db?: Database,
+  workspaceId = DEFAULT_WORKSPACE_ID,
+) {
   const database = db ?? getDatabase()
   const newKey: NewVirtualKey = {
     key: generateApiKey(),
     name: data.name,
+    workspaceId,
     allowedModels: data.allowedModels ?? null,
     rateLimitRpm: data.rateLimitRpm ?? null,
     rateLimitRpd: data.rateLimitRpd ?? null,
@@ -94,9 +112,14 @@ interface UpdateKeyData {
   expiresAt?: string | null
 }
 
-export async function updateKey(id: string, data: UpdateKeyData, db?: Database) {
+export async function updateKey(
+  id: string,
+  data: UpdateKeyData,
+  db?: Database,
+  workspaceId = DEFAULT_WORKSPACE_ID,
+) {
   const database = db ?? getDatabase()
-  const existing = await getKey(id, db)
+  const existing = await getKey(id, db, workspaceId)
   if (!existing) return null
 
   const update: Partial<NewVirtualKey> & { updatedAt: Date } = { updatedAt: new Date() }
@@ -113,16 +136,20 @@ export async function updateKey(id: string, data: UpdateKeyData, db?: Database) 
   const rows = await database
     .update(virtualKeys)
     .set(update)
-    .where(eq(virtualKeys.id, id))
+    .where(and(eq(virtualKeys.id, id), eq(virtualKeys.workspaceId, workspaceId)))
     .returning()
   invalidateVirtualKeyCache(existing.key)
   logger.info({ keyId: id }, 'Virtual key updated')
   return rows[0] ?? null
 }
 
-export async function deleteKey(id: string, db?: Database): Promise<boolean> {
+export async function deleteKey(
+  id: string,
+  db?: Database,
+  workspaceId = DEFAULT_WORKSPACE_ID,
+): Promise<boolean> {
   const database = db ?? getDatabase()
-  const existing = await getKey(id, db)
+  const existing = await getKey(id, db, workspaceId)
   if (!existing || existing.deletedAt) return false
   // 逻辑删除：标记 deletedAt 而非物理删除。
   // 保留行以维持 request_logs 的外键引用完整性。
@@ -130,20 +157,20 @@ export async function deleteKey(id: string, db?: Database): Promise<boolean> {
   await database
     .update(virtualKeys)
     .set({ deletedAt: new Date(), updatedAt: new Date() })
-    .where(eq(virtualKeys.id, id))
+    .where(and(eq(virtualKeys.id, id), eq(virtualKeys.workspaceId, workspaceId)))
   logger.info({ keyId: id }, 'Virtual key soft-deleted')
   return true
 }
 
-export async function resetKey(id: string, db?: Database) {
+export async function resetKey(id: string, db?: Database, workspaceId = DEFAULT_WORKSPACE_ID) {
   const database = db ?? getDatabase()
-  const existing = await getKey(id, db)
+  const existing = await getKey(id, db, workspaceId)
   if (!existing) return null
   const newApiKey = generateApiKey()
   const rows = await database
     .update(virtualKeys)
     .set({ key: newApiKey, updatedAt: new Date() })
-    .where(eq(virtualKeys.id, id))
+    .where(and(eq(virtualKeys.id, id), eq(virtualKeys.workspaceId, workspaceId)))
     .returning()
   invalidateVirtualKeyCache(existing.key)
   logger.info({ keyId: id }, 'Virtual key reset')

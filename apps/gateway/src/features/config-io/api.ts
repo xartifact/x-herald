@@ -3,6 +3,7 @@ import { Hono } from 'hono'
 import { rootLogger } from '../../lib'
 
 import { exportConfig, importConfig, EXPORT_VERSION } from '.'
+import { getWorkspaceId } from '../workspaces/context'
 
 const logger = rootLogger.child({ module: 'config-io' })
 
@@ -13,7 +14,7 @@ const configIORoutes = new Hono()
  */
 configIORoutes.get('/export', async (c) => {
   try {
-    const data = await exportConfig()
+    const data = await exportConfig(getWorkspaceId(c))
     const date = new Date().toISOString().slice(0, 10)
     const filename = `x-herald-config-${date}.json`
 
@@ -57,7 +58,7 @@ configIORoutes.post('/import', async (c) => {
       return c.json({ success: false, error: 'Missing data field' }, 400)
     }
 
-    const result = await importConfig(body.data)
+    const result = await importConfig(body.data, getWorkspaceId(c))
 
     logger.info({ summary: result.summary }, 'Config imported')
 

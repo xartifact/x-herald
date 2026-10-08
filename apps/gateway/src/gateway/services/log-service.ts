@@ -201,6 +201,7 @@ function buildLogInsertValues(
 ): AnyRecord {
   const errorType = params.errorType ?? (params.status === 'failure' ? 'provider_error' : undefined)
   return {
+    workspaceId: params.virtualKey.workspaceId,
     requestGroupId: params.requestGroupId ?? crypto.randomUUID(),
     candidateIndex: params.candidateIndex ?? 0,
     virtualKeyId: params.virtualKey.id,
@@ -314,6 +315,7 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
           await costService.recordCost(
             {
               requestLogId: logId,
+              workspaceId: params.virtualKey.workspaceId,
               keyId: params.virtualKey.id,
               keyName: params.virtualKey.name,
               modelName: params.modelName,
@@ -413,6 +415,7 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
         await costService.recordCost(
           {
             requestLogId: logId,
+            workspaceId: params.virtualKey.workspaceId,
             keyId: params.virtualKey.id,
             keyName: params.virtualKey.name,
             modelName: params.modelName,

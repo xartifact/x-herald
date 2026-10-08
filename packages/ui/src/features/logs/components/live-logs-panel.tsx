@@ -21,7 +21,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/compon
 const API_BASE = '/api'
 
 function authHeaders() {
-  return { Authorization: `Bearer ${localStorage.getItem('admin_token') || ''}` }
+  const workspaceId = localStorage.getItem('active_workspace_id')
+  return {
+    Authorization: `Bearer ${localStorage.getItem('admin_token') || ''}`,
+    ...(workspaceId ? { 'X-Workspace-Id': workspaceId } : {}),
+  }
 }
 
 function formatElapsed(ms: number): string {

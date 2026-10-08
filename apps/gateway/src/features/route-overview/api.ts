@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 
 import { getRouteOverview } from '../route-rules/service'
+import { getWorkspaceId } from '../workspaces/context'
 
 /**
  * 全局路由俯瞰图：聚合所有接入模型的路由规则到一个图形画布的总览端点。
@@ -9,7 +10,7 @@ import { getRouteOverview } from '../route-rules/service'
 const overviewRoutes = new Hono()
 
 overviewRoutes.get('/', async (c) => {
-  const data = await getRouteOverview()
+  const data = await getRouteOverview(undefined, getWorkspaceId(c))
   return c.json({ success: true, data })
 })
 

@@ -29,6 +29,7 @@ import {
   type RouteChainSnapshot,
 } from '../routing-trace-recorder'
 import type { RouteCondition } from '@xartifact/x-herald-shared'
+import { DEFAULT_WORKSPACE_ID } from '../../../features/workspaces/context'
 import type { LegacyRuleMatch } from './types'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -179,7 +180,13 @@ export async function routeToInstance(
   const membershipResult = await db
     .select({ groupId: modelGroupMemberships.groupId })
     .from(modelGroupMemberships)
-    .where(eq(modelGroupMemberships.instanceId, instance.id))
+    .innerJoin(modelGroups, eq(modelGroupMemberships.groupId, modelGroups.id))
+    .where(
+      and(
+        eq(modelGroupMemberships.instanceId, instance.id),
+        eq(modelGroups.workspaceId, context.workspaceId ?? DEFAULT_WORKSPACE_ID),
+      ),
+    )
     .limit(1)
   if (membershipResult.length > 0) {
     const groupResult = await db
@@ -192,6 +199,7 @@ export async function routeToInstance(
 
   const resolvedGroup = group || {
     id: 'access',
+    workspaceId: context.workspaceId ?? DEFAULT_WORKSPACE_ID,
     name: am.name,
     displayName: am.displayName || am.name,
     description: null,

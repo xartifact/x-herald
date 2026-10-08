@@ -310,6 +310,7 @@ export async function fetchAccessibleModels(virtualKey: VirtualKey): Promise<Acc
     .where(
       and(
         eq(accessModels.enabled, true),
+        eq(accessModels.workspaceId, virtualKey.workspaceId),
         ne(accessModels.name, CATCHALL_VM_NAME),
         isNull(accessModels.deletedAt),
       ),
@@ -351,6 +352,7 @@ export async function fetchAccessibleModels(virtualKey: VirtualKey): Promise<Acc
               and(
                 inArray(modelGroups.id, Array.from(targetGroupIds)),
                 eq(modelGroups.enabled, true),
+                eq(modelGroups.workspaceId, virtualKey.workspaceId),
                 isNull(modelGroups.deletedAt),
               ),
             )
@@ -390,6 +392,7 @@ export async function fetchAccessibleModels(virtualKey: VirtualKey): Promise<Acc
                 eq(providers.enabled, true),
                 isNull(providers.deletedAt),
                 eq(modelGroups.enabled, true),
+                eq(modelGroups.workspaceId, virtualKey.workspaceId),
                 isNull(modelGroups.deletedAt),
               ),
             )
@@ -514,7 +517,13 @@ export async function fetchAccessibleModels(virtualKey: VirtualKey): Promise<Acc
       capabilities: modelGroups.capabilities,
     })
     .from(modelGroups)
-    .where(and(eq(modelGroups.enabled, true), isNull(modelGroups.deletedAt)))
+    .where(
+      and(
+        eq(modelGroups.enabled, true),
+        eq(modelGroups.workspaceId, virtualKey.workspaceId),
+        isNull(modelGroups.deletedAt),
+      ),
+    )
 
   return allGroups
     .filter((group) => {

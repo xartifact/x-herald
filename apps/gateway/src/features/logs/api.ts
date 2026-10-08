@@ -23,14 +23,17 @@ import { AnalyzeLogError, buildAnalysisStream } from './services/log-analyzer'
 import { getIntentLogsPage, getIntentStats } from './services/intent-log-service'
 import type { IntentSource } from '@xartifact/x-herald-db'
 import { INTENT_SOURCE_VALUES } from '@xartifact/x-herald-db'
+import { getWorkspaceId } from '../workspaces/context'
 const logsRoutes = new Hono()
 
 logsRoutes.get('/live', (c) => {
+  const workspaceId = getWorkspaceId(c)
   return streamSSE(c, async (s) => {
     for (const snapshot of logEventBus.activeStreams.values()) {
-      await s.writeSSE({ data: JSON.stringify(snapshot) })
+      if (snapshot.workspaceId === workspaceId) await s.writeSSE({ data: JSON.stringify(snapshot) })
     }
     const handler = async (payload: LiveStreamEvent) => {
+      if (payload.workspaceId !== workspaceId) return
       try {
         await s.writeSSE({ data: JSON.stringify(payload) })
       } catch {
@@ -69,6 +72,10 @@ logsRoutes.get('/live', (c) => {
 
 logsRoutes.post('/live/:logId/cancel', async (c) => {
   const logId = c.req.param('logId')
+  const snapshot = logEventBus.activeStreams.get(logId)
+  if (!snapshot || snapshot.workspaceId !== getWorkspaceId(c)) {
+    return c.json({ success: false, error: '该请求不在活跃状态中' }, 404)
+  }
   const existed = logEventBus.abortRequest(logId)
   return existed
     ? c.json({ success: true, message: `已取消请求 ${logId}` })
@@ -79,6 +86,7 @@ logsRoutes.get('/', async (c) => {
   try {
     const q = c.req.query()
     const result = await getLogsPage({
+      workspaceId: getWorkspaceId(c),
       cursor: q.cursor,
       pageSize: parseInt(q.pageSize || '50'),
       virtualKeyId: q.virtualKeyId,
@@ -111,7 +119,10 @@ logsRoutes.get('/', async (c) => {
 logsRoutes.get('/client-models', async (c) => {
   try {
     const q = c.req.query()
-    const data = await getClientModelStats({ startDate: q.startDate, endDate: q.endDate })
+    const data = await getClientModelStats(
+      { startDate: q.startDate, endDate: q.endDate },
+      getWorkspaceId(c),
+    )
     return c.json({ success: true, data })
   } catch (error) {
     logger.warn({ err: error }, 'Failed to get client model stats')
@@ -124,7 +135,7 @@ logsRoutes.get('/client-models', async (c) => {
 
 logsRoutes.get('/conversation/:conversationId', async (c) => {
   try {
-    const data = await getConversationTrace(c.req.param('conversationId'))
+    const data = await getConversationTrace(c.req.param('conversationId'), getWorkspaceId(c))
     return c.json({ success: true, data })
   } catch (error) {
     logger.warn({ err: error }, 'Failed to get conversation trace')
@@ -144,6 +155,7 @@ logsRoutes.get('/intents', async (c) => {
         ? intentSource
         : undefined
     const result = await getIntentLogsPage({
+      workspaceId: getWorkspaceId(c),
       cursor: q.cursor,
       pageSize: parseInt(q.pageSize || '50'),
       virtualKeyId: q.virtualKeyId,
@@ -169,6 +181,7 @@ logsRoutes.get('/intents/stats', async (c) => {
   try {
     const q = c.req.query()
     const data = await getIntentStats({
+      workspaceId: getWorkspaceId(c),
       startDate: q.startDate,
       endDate: q.endDate,
       virtualKeyId: q.virtualKeyId,
@@ -182,7 +195,7 @@ logsRoutes.get('/intents/stats', async (c) => {
 
 logsRoutes.get('/:id', async (c) => {
   try {
-    const log = await getLogDetail(c.req.param('id'))
+    const log = await getLogDetail(c.req.param('id'), getWorkspaceId(c))
     if (!log) return c.json({ error: 'Log not found', code: 'LOG_NOT_FOUND' }, 404)
     return c.json({ success: true, data: log })
   } catch (error) {
@@ -193,7 +206,7 @@ logsRoutes.get('/:id', async (c) => {
 
 logsRoutes.delete('/:id', async (c) => {
   try {
-    const deleted = await deleteLog(c.req.param('id'))
+    const deleted = await deleteLog(c.req.param('id'), getWorkspaceId(c))
     if (!deleted) return c.json({ error: 'Log not found', code: 'LOG_NOT_FOUND' }, 404)
     logger.info({ logId: c.req.param('id') }, 'Log deleted')
     return c.json({ success: true, message: 'Log deleted successfully' })
@@ -206,7 +219,10 @@ logsRoutes.delete('/:id', async (c) => {
 logsRoutes.get('/stats/overview', async (c) => {
   try {
     const q = c.req.query()
-    const data = await getOverviewStats({ startDate: q.startDate, endDate: q.endDate })
+    const data = await getOverviewStats(
+      { startDate: q.startDate, endDate: q.endDate },
+      getWorkspaceId(c),
+    )
     return c.json({ success: true, data })
   } catch (error) {
     logger.warn({ err: error }, 'Failed to get log stats')
@@ -216,7 +232,7 @@ logsRoutes.get('/stats/overview', async (c) => {
 
 logsRoutes.get('/stats/storage', async (c) => {
   try {
-    return c.json({ success: true, data: await getStorageStats() })
+    return c.json({ success: true, data: await getStorageStats(getWorkspaceId(c)) })
   } catch (error) {
     logger.warn({ err: error }, 'Failed to get storage stats')
     return c.json({ error: 'Failed to get storage stats', code: 'STORAGE_STATS_ERROR' }, 500)
@@ -226,7 +242,7 @@ logsRoutes.get('/stats/storage', async (c) => {
 logsRoutes.post('/cleanup', async (c) => {
   try {
     const body = await c.req.json()
-    const data = await cleanupLogs(body.retentionDays || 30)
+    const data = await cleanupLogs(body.retentionDays || 30, getWorkspaceId(c))
     logger.info(data, 'Logs cleaned up')
     return c.json({ success: true, data, message: `Deleted ${data.deletedCount} expired logs` })
   } catch (error) {
@@ -238,7 +254,11 @@ logsRoutes.post('/cleanup', async (c) => {
 logsRoutes.get('/stats/keys', async (c) => {
   try {
     // `?tz=` decides which local day "today" means; omitted/unrecognized → UTC.
-    const data = await getKeyStats(c.req.query('period') ?? 'all', c.req.query('tz'))
+    const data = await getKeyStats(
+      c.req.query('period') ?? 'all',
+      c.req.query('tz'),
+      getWorkspaceId(c),
+    )
     return c.json({ success: true, data })
   } catch (error) {
     logger.error({ error }, 'Failed to fetch key stats')
@@ -249,7 +269,10 @@ logsRoutes.get('/stats/keys', async (c) => {
 logsRoutes.get('/stats/providers', async (c) => {
   try {
     const q = c.req.query()
-    const data = await getProviderStats({ startDate: q.startDate, endDate: q.endDate })
+    const data = await getProviderStats(
+      { startDate: q.startDate, endDate: q.endDate },
+      getWorkspaceId(c),
+    )
     return c.json({ success: true, data })
   } catch (error) {
     logger.warn({ err: error }, 'Failed to get provider stats')
@@ -264,6 +287,7 @@ logsRoutes.post('/:id/analyze', async (c) => {
   const body = (await c.req.json().catch(() => ({}))) as { indices?: number[]; mode?: string }
   try {
     const analysisStream = await buildAnalysisStream(c.req.param('id'), {
+      workspaceId: getWorkspaceId(c),
       indices: body.indices,
       mode: body.mode as 'full' | 'system' | 'user' | undefined,
     })

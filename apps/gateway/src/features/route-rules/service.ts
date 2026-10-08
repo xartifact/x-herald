@@ -11,7 +11,16 @@
  *   - RouteRuleEngine 只读缓存，永不直接查 DB（避免请求路径里的重复 IO）
  */
 
-import { accessModels, and, eq, isNull, ne, routeRules } from '@xartifact/x-herald-db'
+import {
+  accessModels,
+  and,
+  eq,
+  inArray,
+  isNull,
+  modelGroups,
+  ne,
+  routeRules,
+} from '@xartifact/x-herald-db'
 import type { RouteRule } from '@xartifact/x-herald-db'
 import type { AccessModelRouteOverview, CanvasGraph } from '@xartifact/x-herald-shared'
 
@@ -19,6 +28,7 @@ import type { Database } from '../../db/client'
 import { getDatabase } from '../../db/client'
 import rootLogger from '../../lib/logger'
 import { AppError } from '../../middleware/error'
+import { DEFAULT_WORKSPACE_ID } from '../workspaces/context'
 
 const logger = rootLogger.child({ module: 'route-rules-service' })
 
@@ -64,18 +74,32 @@ export async function getActiveRouteRule(
 }
 
 /** 列出某个接入模型的全部版本（草稿 + 历史 + active），按版本号倒序。 */
-export async function listVersions(accessModelId: string, db?: Database): Promise<RouteRule[]> {
+export async function listVersions(
+  accessModelId: string,
+  db?: Database,
+  workspaceId = DEFAULT_WORKSPACE_ID,
+): Promise<RouteRule[]> {
   const database = db ?? getDatabase()
   return database
     .select()
     .from(routeRules)
-    .where(eq(routeRules.accessModelId, accessModelId))
+    .where(
+      and(eq(routeRules.accessModelId, accessModelId), eq(routeRules.workspaceId, workspaceId)),
+    )
     .orderBy(routeRules.version)
 }
 
-export async function getVersion(id: string, db?: Database): Promise<RouteRule | null> {
+export async function getVersion(
+  id: string,
+  db?: Database,
+  workspaceId = DEFAULT_WORKSPACE_ID,
+): Promise<RouteRule | null> {
   const database = db ?? getDatabase()
-  const rows = await database.select().from(routeRules).where(eq(routeRules.id, id)).limit(1)
+  const rows = await database
+    .select()
+    .from(routeRules)
+    .where(and(eq(routeRules.id, id), eq(routeRules.workspaceId, workspaceId)))
+    .limit(1)
   return rows[0] ?? null
 }
 
@@ -85,15 +109,46 @@ export async function saveDraft(
   graph: CanvasGraph,
   meta?: { name?: string; description?: string | null },
   db?: Database,
+  workspaceId = DEFAULT_WORKSPACE_ID,
 ): Promise<RouteRule> {
   const database = db ?? getDatabase()
-  const existing = await listVersions(accessModelId, database)
+  const [accessModel] = await database
+    .select({ id: accessModels.id })
+    .from(accessModels)
+    .where(and(eq(accessModels.id, accessModelId), eq(accessModels.workspaceId, workspaceId)))
+    .limit(1)
+  if (!accessModel) throw new AppError(404, 'Access model not found', 'ACCESS_MODEL_NOT_FOUND')
+
+  const targetGroupIds = Array.from(
+    new Set(
+      graph.nodes.flatMap((node) => {
+        if (node.type !== 'target') return []
+        const data = node.data as { actionType?: string; targetId?: string }
+        return data.actionType === 'route_to_group' && data.targetId ? [data.targetId] : []
+      }),
+    ),
+  )
+  if (targetGroupIds.length > 0) {
+    const groups = await database
+      .select({ id: modelGroups.id })
+      .from(modelGroups)
+      .where(and(eq(modelGroups.workspaceId, workspaceId), inArray(modelGroups.id, targetGroupIds)))
+    if (groups.length !== targetGroupIds.length) {
+      throw new AppError(
+        400,
+        'Route graph references a model group outside this workspace',
+        'CROSS_WORKSPACE_ROUTE_TARGET',
+      )
+    }
+  }
+  const existing = await listVersions(accessModelId, database, workspaceId)
   const nextVersion = existing.reduce((max, v) => Math.max(max, v.version), 0) + 1
 
   const [created] = await database
     .insert(routeRules)
     .values({
       accessModelId,
+      workspaceId,
       graph,
       name: meta?.name ?? '默认路由规则',
       description: meta?.description ?? null,
@@ -105,9 +160,13 @@ export async function saveDraft(
 }
 
 /** 激活一个版本：先清空该接入模型下所有行的 active，再置目标行 active=true。 */
-export async function activateVersion(id: string, db?: Database): Promise<RouteRule> {
+export async function activateVersion(
+  id: string,
+  db?: Database,
+  workspaceId = DEFAULT_WORKSPACE_ID,
+): Promise<RouteRule> {
   const database = db ?? getDatabase()
-  const target = await getVersion(id, database)
+  const target = await getVersion(id, database, workspaceId)
   if (!target) {
     throw new AppError(404, `Route rule '${id}' not found`, 'ROUTE_RULE_NOT_FOUND')
   }
@@ -115,11 +174,17 @@ export async function activateVersion(id: string, db?: Database): Promise<RouteR
   await database
     .update(routeRules)
     .set({ active: false, updatedAt: new Date() })
-    .where(and(eq(routeRules.accessModelId, target.accessModelId), ne(routeRules.id, id)))
+    .where(
+      and(
+        eq(routeRules.accessModelId, target.accessModelId),
+        eq(routeRules.workspaceId, workspaceId),
+        ne(routeRules.id, id),
+      ),
+    )
   const [activated] = await database
     .update(routeRules)
     .set({ active: true, updatedAt: new Date() })
-    .where(eq(routeRules.id, id))
+    .where(and(eq(routeRules.id, id), eq(routeRules.workspaceId, workspaceId)))
     .returning()
 
   activeCache.set(activated.accessModelId, activated)
@@ -133,9 +198,13 @@ export async function activateVersion(id: string, db?: Database): Promise<RouteR
 }
 
 /** 删除一个版本；拒绝删除当前 active 的版本。 */
-export async function deleteVersion(id: string, db?: Database): Promise<void> {
+export async function deleteVersion(
+  id: string,
+  db?: Database,
+  workspaceId = DEFAULT_WORKSPACE_ID,
+): Promise<void> {
   const database = db ?? getDatabase()
-  const target = await getVersion(id, database)
+  const target = await getVersion(id, database, workspaceId)
   if (!target) {
     throw new AppError(404, `Route rule '${id}' not found`, 'ROUTE_RULE_NOT_FOUND')
   }
@@ -146,7 +215,9 @@ export async function deleteVersion(id: string, db?: Database): Promise<void> {
       'ROUTE_RULE_ACTIVE_DELETE',
     )
   }
-  await database.delete(routeRules).where(eq(routeRules.id, id))
+  await database
+    .delete(routeRules)
+    .where(and(eq(routeRules.id, id), eq(routeRules.workspaceId, workspaceId)))
 }
 
 /** 订阅路由规则变更通知（RouteRuleEngine 注册以接收按接入模型的 invalidate 信号）。 */
@@ -171,7 +242,10 @@ function notifySubscribers(accessModelId: string): void {
  * 全局路由俯瞰图数据：汇总所有未删除的接入模型及其 active 路由规则图。
  * 直接查库（不依赖内存缓存），返回条目数组，供前端一次性总览所有路由配置。
  */
-export async function getRouteOverview(db?: Database): Promise<AccessModelRouteOverview> {
+export async function getRouteOverview(
+  db?: Database,
+  workspaceId = DEFAULT_WORKSPACE_ID,
+): Promise<AccessModelRouteOverview> {
   const database = db ?? getDatabase()
 
   const [ams, activeRows] = await Promise.all([
@@ -183,7 +257,7 @@ export async function getRouteOverview(db?: Database): Promise<AccessModelRouteO
         enabled: accessModels.enabled,
       })
       .from(accessModels)
-      .where(isNull(accessModels.deletedAt))
+      .where(and(eq(accessModels.workspaceId, workspaceId), isNull(accessModels.deletedAt)))
       .orderBy(accessModels.name),
     database
       .select({
@@ -194,7 +268,7 @@ export async function getRouteOverview(db?: Database): Promise<AccessModelRouteO
         graph: routeRules.graph,
       })
       .from(routeRules)
-      .where(eq(routeRules.active, true)),
+      .where(and(eq(routeRules.active, true), eq(routeRules.workspaceId, workspaceId))),
   ])
 
   const ruleByAm = new Map(activeRows.map((r) => [r.accessModelId, r]))

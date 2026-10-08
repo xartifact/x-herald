@@ -17,6 +17,7 @@ import type { ModelMappingResult } from './model-mapping'
 import { getRouteRuleEngine } from './route-rule-engine'
 import { gatewayBusinessMetrics } from '../../features/metrics/gateway-business-metrics'
 import { lookupActivePotentialTarget, recordPotentialHit } from '../../features/potential-models'
+import { DEFAULT_WORKSPACE_ID } from '../../features/workspaces/context'
 import type { RouteAction } from '@xartifact/x-herald-shared'
 import {
   buildFailureSnapshot,
@@ -91,6 +92,7 @@ export class AccessModelRouter {
       .where(
         and(
           eq(accessModels.name, context.requestedModel),
+          eq(accessModels.workspaceId, context.workspaceId ?? DEFAULT_WORKSPACE_ID),
           eq(accessModels.enabled, true),
           isNull(accessModels.deletedAt),
         ),
@@ -170,6 +172,7 @@ export class AccessModelRouter {
       .where(
         and(
           eq(accessModels.name, CATCHALL_VM_NAME),
+          eq(accessModels.workspaceId, context.workspaceId ?? DEFAULT_WORKSPACE_ID),
           eq(accessModels.enabled, true),
           isNull(accessModels.deletedAt),
         ),

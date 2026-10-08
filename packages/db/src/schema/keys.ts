@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm'
 import {
   pgTable,
   varchar,
@@ -9,11 +10,16 @@ import {
   bigint,
   primaryKey,
 } from 'drizzle-orm/pg-core'
+import { workspaces } from './workspaces'
 
 export const virtualKeys = pgTable('virtual_keys', {
   id: uuid('id').primaryKey().defaultRandom(),
   key: varchar('key', { length: 255 }).notNull().unique(),
   name: varchar('name', { length: 255 }).notNull(),
+  workspaceId: uuid('workspace_id')
+    .notNull()
+    .default(sql`'00000000-0000-0000-0000-000000000001'::uuid`)
+    .references(() => workspaces.id, { onDelete: 'restrict' }),
   allowedModels: text('allowed_models').array(),
   rateLimitRpm: integer('rate_limit_rpm'),
   rateLimitRpd: integer('rate_limit_rpd'),

@@ -5,8 +5,10 @@ import { createProxyTestEnv } from '../test/proxy-test-helpers'
 import type { ProxyTestEnv } from '../test/proxy-test-helpers'
 
 import { getDatabase } from '../db/client'
-import { modelInstances, accessModels, modelGroups } from '../db'
+import { modelInstances, accessModels, modelGroups, virtualKeys } from '../db'
 import { eq } from '@xartifact/x-herald-db'
+import { DEFAULT_WORKSPACE_ID } from '../features/workspaces/context'
+import { authenticatedRequest } from '../test/hono-helper'
 
 // ── Zod schemas mirroring ~/.pi/agent/extensions/x-herald/schemas/v1-models.schema.json ──
 
@@ -185,6 +187,48 @@ describe('GET /api/v1/models — x-herald schema v1 (OpenAI protocol)', () => {
     const body = (await res.json()) as { object: string; data: unknown[] }
     expect(body.object).toBe('list')
     expect(Array.isArray(body.data)).toBe(true)
+  })
+
+  it('derives model-list scope from the virtual key and ignores a spoofed workspace header', async () => {
+    const workspaceResponse = await authenticatedRequest(
+      env.app,
+      'POST',
+      '/api/workspaces',
+      env.token,
+      { body: { name: `Proxy workspace ${crypto.randomUUID()}` } },
+    )
+    const workspaceBody = (await workspaceResponse.json()) as { data: { id: string } }
+    const workspaceId = workspaceBody.data.id
+    const privateModelName = `private-model-${crypto.randomUUID()}`
+    const privateKey = `sk-workspace-${crypto.randomUUID()}`
+
+    await getDatabase()
+      .insert(accessModels)
+      .values({
+        name: privateModelName,
+        workspaceId,
+        enabled: true,
+        capabilities: { streaming: true, contextWindow: 4096, maxTokens: 1024 },
+      })
+    await getDatabase()
+      .insert(virtualKeys)
+      .values({ name: 'workspace-key', key: privateKey, workspaceId })
+
+    const privateKeyResponse = await env.app.request('/api/v1/models', {
+      headers: {
+        Authorization: `Bearer ${privateKey}`,
+        'X-Workspace-Id': DEFAULT_WORKSPACE_ID,
+      },
+    })
+    const privateKeyBody = (await privateKeyResponse.json()) as { data: Array<{ id: string }> }
+    expect(privateKeyResponse.status).toBe(200)
+    expect(privateKeyBody.data.some((model) => model.id === privateModelName)).toBe(true)
+    expect(privateKeyBody.data.some((model) => model.id === 'gpt-4-test')).toBe(false)
+
+    const defaultKeyResponse = await listModels(env, { 'X-Workspace-Id': workspaceId })
+    const defaultKeyBody = (await defaultKeyResponse.json()) as { data: Array<{ id: string }> }
+    expect(defaultKeyBody.data.some((model) => model.id === 'gpt-4-test')).toBe(true)
+    expect(defaultKeyBody.data.some((model) => model.id === privateModelName)).toBe(false)
   })
 
   it('model entry exposes id, object, owned_by, context_window, max_output_tokens, capabilities', async () => {

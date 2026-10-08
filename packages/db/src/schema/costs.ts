@@ -1,9 +1,15 @@
 import { index, integer, pgTable, real, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
+import { workspaces } from './workspaces'
 
 export const costRecords = pgTable(
   'cost_records',
   {
     id: uuid('id').primaryKey().defaultRandom(),
+    workspaceId: uuid('workspace_id')
+      .notNull()
+      .default(sql`'00000000-0000-0000-0000-000000000001'::uuid`)
+      .references(() => workspaces.id, { onDelete: 'restrict' }),
     requestLogId: varchar('request_log_id', { length: 255 }),
     keyId: varchar('key_id', { length: 255 }),
     keyName: varchar('key_name', { length: 255 }),
@@ -21,6 +27,7 @@ export const costRecords = pgTable(
     index('idx_cost_records_provider').on(table.providerName),
     index('idx_cost_records_model').on(table.modelName),
     index('idx_cost_records_created').on(table.createdAt),
+    index('idx_cost_records_workspace_created').on(table.workspaceId, table.createdAt),
   ],
 )
 

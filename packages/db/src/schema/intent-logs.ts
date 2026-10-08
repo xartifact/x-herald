@@ -10,6 +10,8 @@ import {
   index,
   jsonb,
 } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
+import { workspaces } from './workspaces'
 
 export const INTENT_SOURCE_VALUES = [
   'model_name',
@@ -25,6 +27,10 @@ export const intentLogs = pgTable(
   'intent_logs',
   {
     id: uuid('id').primaryKey().defaultRandom(),
+    workspaceId: uuid('workspace_id')
+      .notNull()
+      .default(sql`'00000000-0000-0000-0000-000000000001'::uuid`)
+      .references(() => workspaces.id, { onDelete: 'restrict' }),
     requestGroupId: uuid('request_group_id'),
     virtualKeyId: uuid('virtual_key_id'),
     virtualKeyName: varchar('virtual_key_name', { length: 255 }),
@@ -70,6 +76,7 @@ export const intentLogs = pgTable(
     index('idx_intent_logs_created_at').on(table.createdAt),
     index('idx_intent_logs_request_group_id').on(table.requestGroupId),
     index('idx_intent_logs_classifier_category').on(table.classifierCategory),
+    index('idx_intent_logs_workspace_created').on(table.workspaceId, table.createdAt),
   ],
 )
 

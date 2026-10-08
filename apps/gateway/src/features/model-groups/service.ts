@@ -19,12 +19,14 @@ import type {
   ModelCapabilities,
   RoutingConfig,
 } from '@xartifact/x-herald-shared'
+import { DEFAULT_WORKSPACE_ID } from '../workspaces/context'
 
 const logger = rootLogger.child({ module: 'model-groups-service' })
 
 export async function fetchGroupIdsByInstanceIds(
   instanceIds: string[],
   db?: Database,
+  workspaceId = DEFAULT_WORKSPACE_ID,
 ): Promise<
   Map<
     string,
@@ -43,7 +45,13 @@ export async function fetchGroupIdsByInstanceIds(
       priority: modelGroupMemberships.priority,
     })
     .from(modelGroupMemberships)
-    .where(inArray(modelGroupMemberships.instanceId, instanceIds))
+    .innerJoin(modelGroups, eq(modelGroupMemberships.groupId, modelGroups.id))
+    .where(
+      and(
+        inArray(modelGroupMemberships.instanceId, instanceIds),
+        eq(modelGroups.workspaceId, workspaceId),
+      ),
+    )
   const map = new Map<string, { groupIds: string[]; groupPriorities: Record<string, number> }>()
   for (const row of rows) {
     const entry = map.get(row.instanceId) ?? { groupIds: [], groupPriorities: {} }
@@ -81,18 +89,33 @@ export async function setInstanceGroups(
   instanceId: string,
   groupIds: string[],
   db?: Database,
+  workspaceId = DEFAULT_WORKSPACE_ID,
 ): Promise<void> {
   const database = db ?? getDatabase()
   // 保留已存在组的排序，避免重建时打乱组内顺序
   const existing = await database
     .select({ groupId: modelGroupMemberships.groupId, priority: modelGroupMemberships.priority })
     .from(modelGroupMemberships)
-    .where(eq(modelGroupMemberships.instanceId, instanceId))
+    .innerJoin(modelGroups, eq(modelGroupMemberships.groupId, modelGroups.id))
+    .where(
+      and(
+        eq(modelGroupMemberships.instanceId, instanceId),
+        eq(modelGroups.workspaceId, workspaceId),
+      ),
+    )
   const existingPriority = new Map(existing.map((e) => [e.groupId, e.priority]))
 
-  await database
-    .delete(modelGroupMemberships)
-    .where(eq(modelGroupMemberships.instanceId, instanceId))
+  if (existing.length > 0) {
+    await database.delete(modelGroupMemberships).where(
+      and(
+        eq(modelGroupMemberships.instanceId, instanceId),
+        inArray(
+          modelGroupMemberships.groupId,
+          existing.map((membership) => membership.groupId),
+        ),
+      ),
+    )
+  }
 
   if (groupIds.length > 0) {
     let nextPriority = existing.length ? Math.max(...existing.map((e) => e.priority)) + 1 : 0
@@ -105,7 +128,7 @@ export async function setInstanceGroups(
   }
 }
 
-export async function listInstances(db?: Database) {
+export async function listInstances(db?: Database, workspaceId = DEFAULT_WORKSPACE_ID) {
   const database = db ?? getDatabase()
   const rows = await database
     .select({
@@ -124,16 +147,17 @@ export async function listInstances(db?: Database) {
   const groupIdsMap = await fetchGroupIdsByInstanceIds(
     instances.map((i) => i.id),
     db,
+    workspaceId,
   )
   return attachGroupIds(instances, groupIdsMap)
 }
 
-export async function listGroups(db?: Database) {
+export async function listGroups(db?: Database, workspaceId = DEFAULT_WORKSPACE_ID) {
   const database = db ?? getDatabase()
   return database
     .select()
     .from(modelGroups)
-    .where(isNull(modelGroups.deletedAt))
+    .where(and(eq(modelGroups.workspaceId, workspaceId), isNull(modelGroups.deletedAt)))
     .orderBy(desc(modelGroups.createdAt))
 }
 
@@ -149,7 +173,11 @@ interface CreateInstanceData {
   groupId?: string
 }
 
-export async function createInstance(data: CreateInstanceData, db?: Database) {
+export async function createInstance(
+  data: CreateInstanceData,
+  db?: Database,
+  workspaceId = DEFAULT_WORKSPACE_ID,
+) {
   const database = db ?? getDatabase()
   const groupIds: string[] = Array.isArray(data.groupIds)
     ? data.groupIds
@@ -161,7 +189,7 @@ export async function createInstance(data: CreateInstanceData, db?: Database) {
     const groups = await database
       .select({ id: modelGroups.id })
       .from(modelGroups)
-      .where(inArray(modelGroups.id, groupIds))
+      .where(and(inArray(modelGroups.id, groupIds), eq(modelGroups.workspaceId, workspaceId)))
     if (groups.length !== groupIds.length)
       return { error: 'One or more model groups not found' as const }
   }
@@ -216,7 +244,12 @@ interface UpdateInstanceData {
   groupId?: string | null
 }
 
-export async function updateInstance(id: string, data: UpdateInstanceData, db?: Database) {
+export async function updateInstance(
+  id: string,
+  data: UpdateInstanceData,
+  db?: Database,
+  workspaceId = DEFAULT_WORKSPACE_ID,
+) {
   const database = db ?? getDatabase()
   const updateFields = {
     ...(data.providerId !== undefined && { providerId: data.providerId }),
@@ -249,10 +282,10 @@ export async function updateInstance(id: string, data: UpdateInstanceData, db?: 
           ? [data.groupId]
           : []
         : []
-    await setInstanceGroups(id, groupIds, db)
+    await setInstanceGroups(id, groupIds, db, workspaceId)
   }
 
-  const groupIdsMap = await fetchGroupIdsByInstanceIds([id], db)
+  const groupIdsMap = await fetchGroupIdsByInstanceIds([id], db, workspaceId)
   return attachGroupIds([updated], groupIdsMap)[0]
 }
 
@@ -272,7 +305,12 @@ export async function deleteInstance(id: string, db?: Database) {
   return deleted ?? null
 }
 
-export async function setInstanceGroupsById(id: string, groupIds: string[], db?: Database) {
+export async function setInstanceGroupsById(
+  id: string,
+  groupIds: string[],
+  db?: Database,
+  workspaceId = DEFAULT_WORKSPACE_ID,
+) {
   const database = db ?? getDatabase()
   const instance = await database
     .select()
@@ -286,18 +324,25 @@ export async function setInstanceGroupsById(id: string, groupIds: string[], db?:
     const groups = await database
       .select({ id: modelGroups.id })
       .from(modelGroups)
-      .where(inArray(modelGroups.id, resolvedGroupIds))
+      .where(
+        and(inArray(modelGroups.id, resolvedGroupIds), eq(modelGroups.workspaceId, workspaceId)),
+      )
     if (groups.length !== resolvedGroupIds.length)
       return { error: 'One or more model groups not found' as const }
   }
 
-  await setInstanceGroups(id, resolvedGroupIds, db)
+  await setInstanceGroups(id, resolvedGroupIds, db, workspaceId)
   logger.info({ instanceId: id, groupIds: resolvedGroupIds }, 'Instance groups updated')
-  const relations = await fetchGroupIdsByInstanceIds([id], db)
+  const relations = await fetchGroupIdsByInstanceIds([id], db, workspaceId)
   return { data: attachGroupIds([instance[0]], relations)[0] }
 }
 
-export async function assignInstance(id: string, groupId: string | null, db?: Database) {
+export async function assignInstance(
+  id: string,
+  groupId: string | null,
+  db?: Database,
+  workspaceId = DEFAULT_WORKSPACE_ID,
+) {
   const database = db ?? getDatabase()
   const instance = await database
     .select()
@@ -310,18 +355,22 @@ export async function assignInstance(id: string, groupId: string | null, db?: Da
     const group = await database
       .select({ id: modelGroups.id })
       .from(modelGroups)
-      .where(eq(modelGroups.id, groupId))
+      .where(and(eq(modelGroups.id, groupId), eq(modelGroups.workspaceId, workspaceId)))
       .limit(1)
     if (group.length === 0) return { error: 'Model group not found' as const }
   }
 
   const groupIds = groupId ? [groupId] : []
-  await setInstanceGroups(id, groupIds, db)
-  const relations = await fetchGroupIdsByInstanceIds([id], db)
+  await setInstanceGroups(id, groupIds, db, workspaceId)
+  const relations = await fetchGroupIdsByInstanceIds([id], db, workspaceId)
   return { data: attachGroupIds([instance[0]], relations)[0] }
 }
 
-export async function toggleInstance(id: string, db?: Database) {
+export async function toggleInstance(
+  id: string,
+  db?: Database,
+  workspaceId = DEFAULT_WORKSPACE_ID,
+) {
   const database = db ?? getDatabase()
   const instance = await database
     .select()
@@ -334,7 +383,7 @@ export async function toggleInstance(id: string, db?: Database) {
     .set({ enabled: !instance[0].enabled, updatedAt: new Date() })
     .where(eq(modelInstances.id, id))
     .returning()
-  const groupIdsMap = await fetchGroupIdsByInstanceIds([id], db)
+  const groupIdsMap = await fetchGroupIdsByInstanceIds([id], db, workspaceId)
   return attachGroupIds([updated], groupIdsMap)[0]
 }
 
@@ -342,8 +391,15 @@ export async function reorderGroupInstances(
   groupId: string,
   instanceIds: string[],
   db?: Database,
+  workspaceId = DEFAULT_WORKSPACE_ID,
 ): Promise<void> {
   const database = db ?? getDatabase()
+  const [group] = await database
+    .select({ id: modelGroups.id })
+    .from(modelGroups)
+    .where(and(eq(modelGroups.id, groupId), eq(modelGroups.workspaceId, workspaceId)))
+    .limit(1)
+  if (!group) return
   for (let i = 0; i < instanceIds.length; i++) {
     await database
       .update(modelGroupMemberships)
@@ -366,6 +422,7 @@ export async function addInstancesToGroup(
   groupId: string,
   instanceIds: string[],
   db?: Database,
+  workspaceId = DEFAULT_WORKSPACE_ID,
 ): Promise<
   | { error: 'GROUP_NOT_FOUND' | 'INSTANCE_NOT_FOUND'; missingInstanceNames?: string[] }
   | { data: { added: string[]; skipped: number } }
@@ -375,7 +432,13 @@ export async function addInstancesToGroup(
   const [group] = await database
     .select({ id: modelGroups.id })
     .from(modelGroups)
-    .where(and(eq(modelGroups.id, groupId), isNull(modelGroups.deletedAt)))
+    .where(
+      and(
+        eq(modelGroups.id, groupId),
+        eq(modelGroups.workspaceId, workspaceId),
+        isNull(modelGroups.deletedAt),
+      ),
+    )
     .limit(1)
   if (!group) return { error: 'GROUP_NOT_FOUND' }
 
@@ -425,8 +488,15 @@ export async function removeInstanceFromGroup(
   groupId: string,
   instanceId: string,
   db?: Database,
+  workspaceId = DEFAULT_WORKSPACE_ID,
 ): Promise<{ removed: boolean }> {
   const database = db ?? getDatabase()
+  const [group] = await database
+    .select({ id: modelGroups.id })
+    .from(modelGroups)
+    .where(and(eq(modelGroups.id, groupId), eq(modelGroups.workspaceId, workspaceId)))
+    .limit(1)
+  if (!group) return { removed: false }
   const deleted = await database
     .delete(modelGroupMemberships)
     .where(
@@ -454,10 +524,15 @@ interface GroupData {
   metadata?: Record<string, unknown> | null
 }
 
-export async function createGroup(data: GroupData, db?: Database) {
+export async function createGroup(
+  data: GroupData,
+  db?: Database,
+  workspaceId = DEFAULT_WORKSPACE_ID,
+) {
   const database = db ?? getDatabase()
   const insertValues: NewModelGroup = {
     name: data.name,
+    workspaceId,
     displayName: data.displayName ?? data.name,
     aliases: data.aliases || [],
     description: data.description,
@@ -479,7 +554,12 @@ export async function createGroup(data: GroupData, db?: Database) {
   return group
 }
 
-export async function updateGroup(id: string, data: Partial<GroupData>, db?: Database) {
+export async function updateGroup(
+  id: string,
+  data: Partial<GroupData>,
+  db?: Database,
+  workspaceId = DEFAULT_WORKSPACE_ID,
+) {
   const database = db ?? getDatabase()
   const [updated] = await database
     .update(modelGroups)
@@ -495,31 +575,39 @@ export async function updateGroup(id: string, data: Partial<GroupData>, db?: Dat
       ...(data.metadata !== undefined && { metadata: data.metadata }),
       updatedAt: new Date(),
     })
-    .where(eq(modelGroups.id, id))
+    .where(and(eq(modelGroups.id, id), eq(modelGroups.workspaceId, workspaceId)))
     .returning()
   return updated ?? null
 }
 
-export async function deleteGroup(id: string, db?: Database) {
+export async function deleteGroup(id: string, db?: Database, workspaceId = DEFAULT_WORKSPACE_ID) {
   const database = db ?? getDatabase()
-  const existing = await database.select().from(modelGroups).where(eq(modelGroups.id, id)).limit(1)
+  const existing = await database
+    .select()
+    .from(modelGroups)
+    .where(and(eq(modelGroups.id, id), eq(modelGroups.workspaceId, workspaceId)))
+    .limit(1)
   if (!existing[0] || existing[0].deletedAt) return null
   const [deleted] = await database
     .update(modelGroups)
     .set({ deletedAt: new Date(), updatedAt: new Date() })
-    .where(eq(modelGroups.id, id))
+    .where(and(eq(modelGroups.id, id), eq(modelGroups.workspaceId, workspaceId)))
     .returning()
   return deleted ?? null
 }
 
-export async function toggleGroup(id: string, db?: Database) {
+export async function toggleGroup(id: string, db?: Database, workspaceId = DEFAULT_WORKSPACE_ID) {
   const database = db ?? getDatabase()
-  const group = await database.select().from(modelGroups).where(eq(modelGroups.id, id)).limit(1)
+  const group = await database
+    .select()
+    .from(modelGroups)
+    .where(and(eq(modelGroups.id, id), eq(modelGroups.workspaceId, workspaceId)))
+    .limit(1)
   if (group.length === 0) return null
   const [updated] = await database
     .update(modelGroups)
     .set({ enabled: !group[0].enabled, updatedAt: new Date() })
-    .where(eq(modelGroups.id, id))
+    .where(and(eq(modelGroups.id, id), eq(modelGroups.workspaceId, workspaceId)))
     .returning()
   return updated ?? null
 }

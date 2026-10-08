@@ -1,6 +1,7 @@
 import type { Provider } from '@xartifact/x-herald-db'
 import type { VirtualKey } from '@xartifact/x-herald-db'
 import type { ModelGroup, ModelInstance } from '@xartifact/x-herald-db'
+import { DEFAULT_WORKSPACE_ID } from '../features/workspaces/context'
 
 export function createTestProvider(overrides: Partial<Provider> = {}): Provider {
   return {
@@ -24,6 +25,7 @@ export function createTestProvider(overrides: Partial<Provider> = {}): Provider 
 export function createTestModelGroup(overrides: Partial<ModelGroup> = {}): ModelGroup {
   return {
     id: crypto.randomUUID(),
+    workspaceId: DEFAULT_WORKSPACE_ID,
     name: 'gpt-4',
     aliases: [],
     displayName: 'GPT-4',
@@ -73,6 +75,7 @@ export function createTestModelInstance(overrides: Partial<ModelInstance> = {}):
 export function createTestVirtualKey(overrides: Partial<VirtualKey> = {}): VirtualKey {
   return {
     id: crypto.randomUUID(),
+    workspaceId: DEFAULT_WORKSPACE_ID,
     key: 'sk-test-' + crypto.randomUUID().slice(0, 8),
     name: 'Test Key',
     allowedModels: null,

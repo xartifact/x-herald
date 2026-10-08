@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 
 import { rootLogger } from '../../lib'
+import { getWorkspaceId } from '../workspaces/context'
 
 import {
   listAccessModels,
@@ -17,7 +18,7 @@ const accessModelRoutes = new Hono()
 
 accessModelRoutes.get('/', async (c) => {
   try {
-    const results = await listAccessModels()
+    const results = await listAccessModels(undefined, getWorkspaceId(c))
     return c.json({ success: true, data: results })
   } catch (error) {
     logger.warn({ err: error }, 'Failed to list access models')
@@ -31,7 +32,7 @@ accessModelRoutes.get('/', async (c) => {
 accessModelRoutes.get('/:id', async (c) => {
   const id = c.req.param('id')
   try {
-    const result = await getAccessModel(id)
+    const result = await getAccessModel(id, undefined, getWorkspaceId(c))
     if (!result) return c.json({ success: false, error: 'Access model not found' }, 404)
     return c.json({ success: true, data: result })
   } catch (error) {
@@ -46,13 +47,17 @@ accessModelRoutes.get('/:id', async (c) => {
 accessModelRoutes.post('/', async (c) => {
   const data = await c.req.json()
   try {
-    const am = await createAccessModel({
-      name: data.name,
-      displayName: data.displayName || null,
-      description: data.description || null,
-      enabled: data.enabled ?? true,
-      capabilities: data.capabilities ?? null,
-    })
+    const am = await createAccessModel(
+      {
+        name: data.name,
+        displayName: data.displayName || null,
+        description: data.description || null,
+        enabled: data.enabled ?? true,
+        capabilities: data.capabilities ?? null,
+      },
+      undefined,
+      getWorkspaceId(c),
+    )
     return c.json({ success: true, data: am }, 201)
   } catch (error) {
     logger.warn({ err: error }, 'Failed to create access model')
@@ -66,13 +71,18 @@ accessModelRoutes.put('/:id', async (c) => {
   const id = c.req.param('id')
   const data = await c.req.json()
   try {
-    const updated = await updateAccessModel(id, {
-      name: data.name,
-      displayName: data.displayName,
-      description: data.description,
-      enabled: data.enabled,
-      capabilities: data.capabilities,
-    })
+    const updated = await updateAccessModel(
+      id,
+      {
+        name: data.name,
+        displayName: data.displayName,
+        description: data.description,
+        enabled: data.enabled,
+        capabilities: data.capabilities,
+      },
+      undefined,
+      getWorkspaceId(c),
+    )
     if (!updated) return c.json({ success: false, error: 'Access model not found' }, 404)
     return c.json({ success: true, data: updated })
   } catch (error) {
@@ -86,7 +96,7 @@ accessModelRoutes.put('/:id', async (c) => {
 accessModelRoutes.delete('/:id', async (c) => {
   const id = c.req.param('id')
   try {
-    const deleted = await deleteAccessModel(id)
+    const deleted = await deleteAccessModel(id, undefined, getWorkspaceId(c))
     if (!deleted) return c.json({ success: false, error: 'Access model not found' }, 404)
     return c.json({ success: true, data: deleted })
   } catch (error) {
@@ -100,7 +110,7 @@ accessModelRoutes.delete('/:id', async (c) => {
 accessModelRoutes.patch('/:id/toggle', async (c) => {
   const id = c.req.param('id')
   try {
-    const updated = await toggleAccessModel(id)
+    const updated = await toggleAccessModel(id, undefined, getWorkspaceId(c))
     if (!updated) return c.json({ success: false, error: 'Access model not found' }, 404)
     return c.json({ success: true, data: updated })
   } catch (error) {

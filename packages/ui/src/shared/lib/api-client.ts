@@ -42,6 +42,10 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     if (token) {
       finalHeaders['Authorization'] = `Bearer ${token}`
     }
+    if (endpoint.startsWith('/api/')) {
+      const workspaceId = localStorage.getItem('active_workspace_id')
+      if (workspaceId) finalHeaders['X-Workspace-Id'] = workspaceId
+    }
   }
 
   // 构建 URL（包含查询参数）

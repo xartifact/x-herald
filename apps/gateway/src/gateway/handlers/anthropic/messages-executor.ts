@@ -296,6 +296,7 @@ export class AnthropicMessagesExecutor {
     if (isStreaming && this.logId) {
       logEventBus.emitLog({
         event: 'waiting',
+        workspaceId: virtualKey.workspaceId,
         logId: this.logId,
         modelName:
           mapping.modelName || mapping.originalModel || (rawBody?.model as string) || 'unknown',
@@ -344,7 +345,11 @@ export class AnthropicMessagesExecutor {
   }
 
   emitAbortedEvent(id: string): void {
-    logEventBus.emitLog({ event: 'aborted', logId: id })
+    logEventBus.emitLog({
+      event: 'aborted',
+      workspaceId: this.config.req.virtualKey.workspaceId,
+      logId: id,
+    })
   }
 
   async gatewayError(_errorCode: string | Error, message?: string): Promise<Response> {

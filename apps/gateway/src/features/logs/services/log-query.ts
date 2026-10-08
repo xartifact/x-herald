@@ -19,6 +19,7 @@ import { virtualKeys } from '@xartifact/x-herald-db'
 
 import { requestLogs, requestAttempts } from '@xartifact/x-herald-db'
 import { resolveTimezone, startOfDayInTimezone } from '../../../gateway/lib/timezone'
+import { DEFAULT_WORKSPACE_ID } from '../../workspaces/context'
 
 import type { LogMetadata } from '../db'
 
@@ -28,6 +29,7 @@ interface DateRange {
 }
 
 interface LogsPageParams extends DateRange {
+  workspaceId: string
   cursor?: string // base64-encoded { createdAt: ISO, id: string }
   pageSize: number
   virtualKeyId?: string
@@ -78,7 +80,10 @@ function buildDateConditions(range: DateRange) {
 export async function getLogsPage(params: LogsPageParams) {
   const db = getDatabase()
   const { cursor, pageSize, virtualKeyId, modelName, status, clientType, requestCategory } = params
-  const conditions = [...buildDateConditions(params)]
+  const conditions = [
+    eq(requestLogs.workspaceId, params.workspaceId),
+    ...buildDateConditions(params),
+  ]
 
   if (virtualKeyId) conditions.push(eq(requestLogs.virtualKeyId, virtualKeyId))
   if (modelName) conditions.push(eq(requestLogs.modelName, modelName))
@@ -134,9 +139,13 @@ export async function getLogsPage(params: LogsPageParams) {
   return { logs, nextCursor, hasMore }
 }
 
-export async function getLogDetail(id: string) {
+export async function getLogDetail(id: string, workspaceId = DEFAULT_WORKSPACE_ID) {
   const db = getDatabase()
-  const log = await db.select().from(requestLogs).where(eq(requestLogs.id, id)).limit(1)
+  const log = await db
+    .select()
+    .from(requestLogs)
+    .where(and(eq(requestLogs.id, id), eq(requestLogs.workspaceId, workspaceId)))
+    .limit(1)
   if (!log[0]) return null
   const attempts = await db
     .select({
@@ -166,21 +175,23 @@ export async function getLogDetail(id: string) {
   }
 }
 
-export async function deleteLog(id: string): Promise<boolean> {
+export async function deleteLog(id: string, workspaceId = DEFAULT_WORKSPACE_ID): Promise<boolean> {
   const db = getDatabase()
   const existing = await db
     .select({ id: requestLogs.id })
     .from(requestLogs)
-    .where(eq(requestLogs.id, id))
+    .where(and(eq(requestLogs.id, id), eq(requestLogs.workspaceId, workspaceId)))
     .limit(1)
   if (existing.length === 0) return false
-  await db.delete(requestLogs).where(eq(requestLogs.id, id))
+  await db
+    .delete(requestLogs)
+    .where(and(eq(requestLogs.id, id), eq(requestLogs.workspaceId, workspaceId)))
   return true
 }
 
-export async function getOverviewStats(range: DateRange) {
+export async function getOverviewStats(range: DateRange, workspaceId = DEFAULT_WORKSPACE_ID) {
   const db = getDatabase()
-  const conditions = buildDateConditions(range)
+  const conditions = [eq(requestLogs.workspaceId, workspaceId), ...buildDateConditions(range)]
   const where = conditions.length > 0 ? and(...conditions) : undefined
 
   const OVERVIEW_SELECT = {
@@ -262,9 +273,13 @@ export async function getOverviewStats(range: DateRange) {
   }
 }
 
-export async function getClientModelStats(range: DateRange) {
+export async function getClientModelStats(range: DateRange, workspaceId = DEFAULT_WORKSPACE_ID) {
   const db = getDatabase()
-  const conditions = [isNotNull(requestLogs.originalModelName), ...buildDateConditions(range)]
+  const conditions = [
+    eq(requestLogs.workspaceId, workspaceId),
+    isNotNull(requestLogs.originalModelName),
+    ...buildDateConditions(range),
+  ]
   const where = and(...conditions)
 
   const stats = await db
@@ -296,43 +311,52 @@ export async function getClientModelStats(range: DateRange) {
   }))
 }
 
-export async function getStorageStats() {
+export async function getStorageStats(workspaceId = DEFAULT_WORKSPACE_ID) {
   const db = getDatabase()
   const RETENTION_DAYS = 30
   const cutoffDate = new Date()
   cutoffDate.setDate(cutoffDate.getDate() - RETENTION_DAYS)
 
   const [countResult, dateRange, expiredCount] = await Promise.all([
-    db.select({ count: sql<number>`count(*)` }).from(requestLogs),
-    db
-      .select({
-        oldest: sql<Date | null>`min(${requestLogs.createdAt})`,
-        newest: sql<Date | null>`max(${requestLogs.createdAt})`,
-      })
-      .from(requestLogs),
     db
       .select({ count: sql<number>`count(*)` })
       .from(requestLogs)
-      .where(lt(requestLogs.createdAt, cutoffDate)),
+      .where(eq(requestLogs.workspaceId, workspaceId)),
+    db
+      .select({
+        oldest: sql<Date | string | null>`min(${requestLogs.createdAt})`,
+        newest: sql<Date | string | null>`max(${requestLogs.createdAt})`,
+      })
+      .from(requestLogs)
+      .where(eq(requestLogs.workspaceId, workspaceId)),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(requestLogs)
+      .where(and(eq(requestLogs.workspaceId, workspaceId), lt(requestLogs.createdAt, cutoffDate))),
   ])
 
   return {
     totalCount: Number(countResult[0]?.count ?? 0),
-    oldestLogDate: dateRange[0]?.oldest?.toISOString() ?? null,
-    newestLogDate: dateRange[0]?.newest?.toISOString() ?? null,
+    oldestLogDate: toIsoString(dateRange[0]?.oldest),
+    newestLogDate: toIsoString(dateRange[0]?.newest),
     retentionDays: RETENTION_DAYS,
     cutoffDate: cutoffDate.toISOString(),
     estimatedExpiredLogs: String(expiredCount[0]?.count ?? 0),
   }
 }
 
-export async function cleanupLogs(retentionDays: number) {
+function toIsoString(value: Date | string | null | undefined): string | null {
+  if (!value) return null
+  return (value instanceof Date ? value : new Date(value)).toISOString()
+}
+
+export async function cleanupLogs(retentionDays: number, workspaceId = DEFAULT_WORKSPACE_ID) {
   const db = getDatabase()
   const cutoffDate = new Date()
   cutoffDate.setDate(cutoffDate.getDate() - retentionDays)
   const deleted = await db
     .delete(requestLogs)
-    .where(lt(requestLogs.createdAt, cutoffDate))
+    .where(and(eq(requestLogs.workspaceId, workspaceId), lt(requestLogs.createdAt, cutoffDate)))
     .returning({ id: requestLogs.id })
   return { deletedCount: deleted.length, retentionDays }
 }
@@ -357,13 +381,17 @@ export async function cleanupLogs(retentionDays: number) {
  * 修复前 `all` 分支还把 success/failure/token/avgResponseTime 硬编码为 0，
  * 导致用量面板切到「全部」时成功率恒 0%、平均响应时间恒 `-`。
  */
-export async function getKeyStats(period: string, timezone?: string) {
+export async function getKeyStats(
+  period: string,
+  timezone?: string,
+  workspaceId = DEFAULT_WORKSPACE_ID,
+) {
   const db = getDatabase()
 
   // 时间窗：'all' 不加下限，其余按周期。注意 'all' 仍受日志留存期限制
   // （request_logs 只保留 METRICS_RETENTION_DAYS），所以区间统计对 'all'
   // 表达的是「留存期内全部」；而 lastUsedAt 走独立列，不受此限制。
-  const conditions = [isNotNull(requestLogs.virtualKeyId)]
+  const conditions = [eq(requestLogs.workspaceId, workspaceId), isNotNull(requestLogs.virtualKeyId)]
   const now = new Date()
   if (period === 'today') {
     // 「今天」是调用方的今天：`new Date(y, m, d)` 用的是网关进程时区，
@@ -404,7 +432,7 @@ export async function getKeyStats(period: string, timezone?: string) {
       lastUsedAt: virtualKeys.lastUsedAt,
     })
     .from(virtualKeys)
-    .where(isNull(virtualKeys.deletedAt))
+    .where(and(eq(virtualKeys.workspaceId, workspaceId), isNull(virtualKeys.deletedAt)))
     .orderBy(desc(virtualKeys.lastUsedAt))
 
   return keys.map((k) => {
@@ -424,7 +452,10 @@ export async function getKeyStats(period: string, timezone?: string) {
   })
 }
 
-export async function getConversationTrace(conversationId: string) {
+export async function getConversationTrace(
+  conversationId: string,
+  workspaceId = DEFAULT_WORKSPACE_ID,
+) {
   const db = getDatabase()
   const logs = await db
     .select({
@@ -438,7 +469,9 @@ export async function getConversationTrace(conversationId: string) {
       errorMessage: requestLogs.errorMessage,
     })
     .from(requestLogs)
-    .where(eq(requestLogs.conversationId, conversationId))
+    .where(
+      and(eq(requestLogs.conversationId, conversationId), eq(requestLogs.workspaceId, workspaceId)),
+    )
     .orderBy(asc(requestLogs.createdAt))
 
   if (logs.length === 0) return []
@@ -489,9 +522,13 @@ export async function getConversationTrace(conversationId: string) {
   }))
 }
 
-export async function getProviderStats(range: DateRange) {
+export async function getProviderStats(range: DateRange, workspaceId = DEFAULT_WORKSPACE_ID) {
   const db = getDatabase()
-  const conditions = [isNotNull(requestLogs.providerId), ...buildDateConditions(range)]
+  const conditions = [
+    eq(requestLogs.workspaceId, workspaceId),
+    isNotNull(requestLogs.providerId),
+    ...buildDateConditions(range),
+  ]
   const ttfbExpr = sql`(${requestLogs.metadata}->'performance'->>'providerTtfbMs')::numeric`
 
   return db

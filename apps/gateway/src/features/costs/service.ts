@@ -1,11 +1,12 @@
 import type { InstanceCost } from '@xartifact/x-herald-shared'
-import { and, gte, lte, sql } from '@xartifact/x-herald-db'
+import { and, eq, gte, lte, sql } from '@xartifact/x-herald-db'
 
 import type { Database } from '../../db/client'
 import type { DbClient } from '../../db/client'
 import { getDatabase } from '../../db/client'
 import logger from '../../lib/logger'
 import { costRecords } from '@xartifact/x-herald-db'
+import { DEFAULT_WORKSPACE_ID } from '../workspaces/context'
 export interface ProviderPricing {
   inputPer1k: number
   outputPer1k: number
@@ -65,6 +66,7 @@ export class CostService {
 
   async recordCost(
     params: {
+      workspaceId?: string
       requestLogId?: string
       keyId?: string
       keyName?: string
@@ -86,6 +88,7 @@ export class CostService {
 
       const dbInstance = db ?? getDatabase()
       await dbInstance.insert(costRecords).values({
+        ...(params.workspaceId ? { workspaceId: params.workspaceId } : {}),
         requestLogId: params.requestLogId,
         keyId: params.keyId,
         keyName: params.keyName,
@@ -109,6 +112,7 @@ export class CostService {
       keyId?: string
       providerName?: string
       modelName?: string
+      workspaceId?: string
     },
     db?: Database,
   ): Promise<{
@@ -143,6 +147,7 @@ export class CostService {
       dimension: 'key' | 'provider' | 'model'
       startDate?: Date
       endDate?: Date
+      workspaceId?: string
     },
     db?: Database,
   ): Promise<
@@ -192,8 +197,9 @@ export class CostService {
     keyId?: string
     providerName?: string
     modelName?: string
+    workspaceId?: string
   }) {
-    const conds = []
+    const conds = [eq(costRecords.workspaceId, params.workspaceId ?? DEFAULT_WORKSPACE_ID)]
     if (params.startDate) conds.push(gte(costRecords.createdAt, params.startDate))
     if (params.endDate) conds.push(lte(costRecords.createdAt, params.endDate))
     if (params.keyId) conds.push(sql`${costRecords.keyId} = ${params.keyId}`)

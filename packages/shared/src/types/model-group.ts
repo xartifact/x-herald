@@ -223,6 +223,7 @@ export interface InstanceConfig {
 
 export interface ModelGroup {
   id: string
+  workspaceId?: string
   name: string
   aliases: string[] | null
   displayName: string

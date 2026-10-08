@@ -1,6 +1,9 @@
 export { providers } from './providers'
 export type { Provider, NewProvider } from './providers'
 
+export { workspaces } from './workspaces'
+export type { Workspace, NewWorkspace } from './workspaces'
+
 export { classifierPrompts } from './classifier-prompts'
 export type { ClassifierPrompt, NewClassifierPrompt } from './classifier-prompts'
 

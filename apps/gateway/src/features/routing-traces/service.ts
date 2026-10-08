@@ -18,8 +18,10 @@ import type { RouteCondition } from '@xartifact/x-herald-shared'
 
 import { getDatabase } from '../../db/client'
 import { requestAttempts, requestLogs } from '@xartifact/x-herald-db'
+import { DEFAULT_WORKSPACE_ID } from '../workspaces/context'
 
 export interface RoutingTraceFilters {
+  workspaceId?: string
   startDate?: string
   endDate?: string
   modelName?: string
@@ -55,6 +57,7 @@ interface RoutingTraceListRow {
 export async function listRoutingTraces(filters: RoutingTraceFilters) {
   const db = getDatabase()
   const conds: SQL[] = []
+  conds.push(eq(requestLogs.workspaceId, filters.workspaceId ?? DEFAULT_WORKSPACE_ID))
 
   // 仅查询 candidateIndex = 0 的日志行（每 group 一行；该行含完整 routeChain）
   conds.push(eq(requestLogs.candidateIndex, 0))
@@ -225,11 +228,15 @@ function toTraceSummary(row: RoutingTraceListRow) {
 /**
  * 获取单个 trace 的完整详情（含每个候选的 attempt outcome）
  */
-export async function getRoutingTraceDetail(logId: string) {
+export async function getRoutingTraceDetail(logId: string, workspaceId = DEFAULT_WORKSPACE_ID) {
   const db = getDatabase()
 
   // 主行（candidateIndex = 0，含完整 routeChain）
-  const [mainRow] = await db.select().from(requestLogs).where(eq(requestLogs.id, logId)).limit(1)
+  const [mainRow] = await db
+    .select()
+    .from(requestLogs)
+    .where(and(eq(requestLogs.id, logId), eq(requestLogs.workspaceId, workspaceId)))
+    .limit(1)
 
   if (!mainRow) return null
 

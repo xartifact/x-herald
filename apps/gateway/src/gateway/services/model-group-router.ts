@@ -6,6 +6,7 @@ import { fetchGroupInstancesPerf } from '../../features/metrics/services/instanc
 import { modelGroups, modelInstances, modelGroupMemberships } from '@xartifact/x-herald-db'
 import type { ModelGroup, ModelInstance } from '@xartifact/x-herald-db'
 import { providers } from '@xartifact/x-herald-db'
+import { DEFAULT_WORKSPACE_ID } from '../../features/workspaces/context'
 
 import { selectByStrategy, filterCandidates, buildSelectionReason } from './router-selector'
 import {
@@ -33,7 +34,13 @@ export class ModelGroupRouter {
     const groupResult = await db
       .select()
       .from(modelGroups)
-      .where(and(eq(modelGroups.id, groupId), isNull(modelGroups.deletedAt)))
+      .where(
+        and(
+          eq(modelGroups.id, groupId),
+          eq(modelGroups.workspaceId, context.workspaceId ?? DEFAULT_WORKSPACE_ID),
+          isNull(modelGroups.deletedAt),
+        ),
+      )
       .limit(1)
     if (groupResult.length === 0) {
       throw new ModelNotFoundError(
@@ -122,14 +129,23 @@ export class ModelGroupRouter {
     const candidates = await this.routeCandidatesByGroupId(groupId, context)
     return candidates[0] ?? null
   }
-  async listModelGroups(): Promise<ModelGroup[]> {
+  async listModelGroups(workspaceId = DEFAULT_WORKSPACE_ID): Promise<ModelGroup[]> {
     return getDatabase()
       .select()
       .from(modelGroups)
-      .where(and(eq(modelGroups.enabled, true), isNull(modelGroups.deletedAt)))
+      .where(
+        and(
+          eq(modelGroups.enabled, true),
+          eq(modelGroups.workspaceId, workspaceId),
+          isNull(modelGroups.deletedAt),
+        ),
+      )
   }
 
-  async getModelGroupDetail(groupId: string): Promise<{
+  async getModelGroupDetail(
+    groupId: string,
+    workspaceId = DEFAULT_WORKSPACE_ID,
+  ): Promise<{
     group: ModelGroup
     instances: Array<{ instance: ModelInstance; provider: typeof providers.$inferSelect }>
   } | null> {
@@ -137,7 +153,13 @@ export class ModelGroupRouter {
     const group = await db
       .select()
       .from(modelGroups)
-      .where(and(eq(modelGroups.id, groupId), isNull(modelGroups.deletedAt)))
+      .where(
+        and(
+          eq(modelGroups.id, groupId),
+          eq(modelGroups.workspaceId, workspaceId),
+          isNull(modelGroups.deletedAt),
+        ),
+      )
       .limit(1)
     if (group.length === 0) return null
 

@@ -7,8 +7,11 @@ import { post } from '@xartifact/x-herald-ui'
 async function exportConfigFn(): Promise<Blob> {
   // Blob 下载 — 使用 raw fetch（api-client 仅支持 JSON）
   const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null
+  const workspaceId =
+    typeof window !== 'undefined' ? localStorage.getItem('active_workspace_id') : null
   const headers: Record<string, string> = {}
   if (token) headers['Authorization'] = `Bearer ${token}`
+  if (workspaceId) headers['X-Workspace-Id'] = workspaceId
 
   const response = await fetch('/api/config/export', { headers })
   if (!response.ok) {

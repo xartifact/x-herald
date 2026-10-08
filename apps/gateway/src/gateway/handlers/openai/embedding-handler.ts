@@ -76,6 +76,7 @@ export async function handleEmbeddingRequest(
       hasTools: false,
       hasVision: false,
       virtualKeyId: virtualKey.id,
+      workspaceId: virtualKey.workspaceId,
       requestGroupId,
     })
     if (!candidates.length) throw new ModelNotFoundError(model)

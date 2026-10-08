@@ -78,9 +78,13 @@ export function useLiveLogs(enabled = true) {
     abortRef.current = controller
 
     const token = localStorage.getItem('admin_token')
+    const workspaceId = localStorage.getItem('active_workspace_id')
     fetch('/api/logs/live', {
       signal: controller.signal,
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(workspaceId ? { 'X-Workspace-Id': workspaceId } : {}),
+      },
     })
       .then((res) => {
         if (!res.body) return
@@ -191,8 +195,14 @@ export function useLiveLogs(enabled = true) {
   )
 
   useEffect(() => {
+    const handleWorkspaceChange = () => {
+      setStreams(new Map())
+      connect()
+    }
     connect()
+    window.addEventListener('workspace-changed', handleWorkspaceChange)
     return () => {
+      window.removeEventListener('workspace-changed', handleWorkspaceChange)
       abortRef.current?.abort()
       readerRef.current?.cancel().catch(() => {})
     }

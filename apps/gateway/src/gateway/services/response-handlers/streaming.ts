@@ -169,6 +169,7 @@ async function finalizeStreamWithLog(
 
   logEventBus.emitLog({
     event: 'completed',
+    workspaceId: params.virtualKey.workspaceId,
     logId,
     status,
     inputTokens: usage.inputTokens,
@@ -180,6 +181,7 @@ async function finalizeStreamWithLog(
   if (params.virtualKey?.id && params.provider.name && usage.inputTokens + usage.outputTokens > 0) {
     await costService.recordCost({
       requestLogId: logId,
+      workspaceId: params.virtualKey.workspaceId,
       keyId: params.virtualKey.id,
       keyName: params.virtualKey.name,
       modelName: params.resolvedModelName || params.originalModelName,
@@ -212,6 +214,7 @@ export async function handleStreamingResponse(params: ResponseHandlerParams): Pr
 
   logEventBus.emitLog({
     event: 'started',
+    workspaceId: params.virtualKey.workspaceId,
     logId,
     modelName: resolvedModelName || originalModelName || 'unknown',
     originalModelName: originalModelName ?? undefined,
@@ -343,6 +346,7 @@ export async function handleStreamingResponse(params: ResponseHandlerParams): Pr
           const fullContent = clientCollector.getFullContent()
           logEventBus.emitLog({
             event: 'chunk',
+            workspaceId: params.virtualKey.workspaceId,
             logId,
             outputTokens: usage.outputTokens,
             totalChunks: chunkEmitCount,
@@ -386,12 +390,16 @@ export async function handleStreamingResponse(params: ResponseHandlerParams): Pr
           // 流已在 flush 中完成收尾（成功或已失败）：客户端断开只是读取完成后的正常收尾，
           // 不再覆盖已写入的状态，避免与 finalizeStreamLog 竞态产生矛盾记录。
           logger.info({ logId }, 'Stream already finalized, skipping abort mark')
-          logEventBus.emitLog({ event: 'aborted', logId })
+          logEventBus.emitLog({
+            event: 'aborted',
+            workspaceId: params.virtualKey.workspaceId,
+            logId,
+          })
           return
         }
         await finalizeLog('failure')
         await markStreamAborted(logId, attemptId, hadPartialData)
-        logEventBus.emitLog({ event: 'aborted', logId })
+        logEventBus.emitLog({ event: 'aborted', workspaceId: params.virtualKey.workspaceId, logId })
       },
       { once: true },
     )

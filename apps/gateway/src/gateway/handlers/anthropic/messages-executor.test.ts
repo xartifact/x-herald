@@ -501,6 +501,7 @@ describe('AnthropicMessagesExecutor', () => {
       expect(mockLogEventBusEmitLog).toHaveBeenCalledWith({
         event: 'aborted',
         logId: 'log-1',
+        workspaceId: '00000000-0000-0000-0000-000000000001',
       })
     })
   })

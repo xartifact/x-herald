@@ -1,3 +1,4 @@
+import { eq, inArray } from '@xartifact/x-herald-db'
 import { getDatabase } from '../../index'
 import { gatewayConfigs } from '../../index'
 import { virtualKeys } from '../../index'
@@ -5,8 +6,11 @@ import { accessModels, modelGroupMemberships, modelGroups, modelInstances } from
 import { providers } from '../../index'
 
 import { EXPORT_VERSION, type EngineExportFormat } from './types'
+import { DEFAULT_WORKSPACE_ID } from '../workspaces/context'
 
-export async function exportConfig(): Promise<EngineExportFormat> {
+export async function exportConfig(
+  workspaceId = DEFAULT_WORKSPACE_ID,
+): Promise<EngineExportFormat> {
   const db = getDatabase()
 
   const [
@@ -19,12 +23,23 @@ export async function exportConfig(): Promise<EngineExportFormat> {
     allMemberships,
   ] = await Promise.all([
     db.select().from(providers),
-    db.select().from(modelGroups),
+    db.select().from(modelGroups).where(eq(modelGroups.workspaceId, workspaceId)),
     db.select().from(modelInstances),
-    db.select().from(accessModels),
-    db.select().from(virtualKeys),
+    db.select().from(accessModels).where(eq(accessModels.workspaceId, workspaceId)),
+    db.select().from(virtualKeys).where(eq(virtualKeys.workspaceId, workspaceId)),
     db.select().from(gatewayConfigs),
-    db.select().from(modelGroupMemberships),
+    db
+      .select()
+      .from(modelGroupMemberships)
+      .where(
+        inArray(
+          modelGroupMemberships.groupId,
+          db
+            .select({ id: modelGroups.id })
+            .from(modelGroups)
+            .where(eq(modelGroups.workspaceId, workspaceId)),
+        ),
+      ),
   ])
 
   const instanceGroupIds = new Map<string, string[]>()

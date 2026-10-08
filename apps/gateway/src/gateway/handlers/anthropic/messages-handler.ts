@@ -87,6 +87,7 @@ export async function handleAnthropicMessages(
         (m) => Array.isArray(m.content) && m.content.some((c) => c.type === 'image_url'),
       ),
       virtualKeyId: virtualKey.id,
+      workspaceId: virtualKey.workspaceId,
     })
     if (!candidates.length) throw new ModelNotFoundError(standardReq.model)
 
@@ -244,7 +245,11 @@ export async function handleAnthropicMessages(
               await markStreamAborted(executor.logId, executor.attemptId ?? '', false, {
                 forceCancelled: true,
               })
-              logEventBus.emitLog({ event: 'aborted', logId: executor.logId })
+              logEventBus.emitLog({
+                event: 'aborted',
+                workspaceId: virtualKey.workspaceId,
+                logId: executor.logId,
+              })
             }
             return new Response(null, { status: 499 })
           }

@@ -7,6 +7,7 @@ import type { RouteAction } from '@xartifact/x-herald-shared'
 import { activateVersion, deleteVersion, getVersion, listVersions, saveDraft } from './service'
 import { AppError } from '../../middleware/error'
 import { getRouteRuleEngine } from '../../gateway/services/route-rule-engine'
+import { getWorkspaceId } from '../workspaces/context'
 
 const SaveDraftBody = z.object({
   graph: CanvasGraphSchema,
@@ -46,13 +47,13 @@ function jsonAppError(c: Context, err: AppError): Response {
 
 // GET /api/access-models/:accessModelId/route-rules — 列出全部版本
 routeRulesRoutes.get('/', async (c) => {
-  const versions = await listVersions(requireAccessModelId(c))
+  const versions = await listVersions(requireAccessModelId(c), undefined, getWorkspaceId(c))
   return c.json({ success: true, data: versions })
 })
 
 // GET /api/access-models/:accessModelId/route-rules/:id — 取单个版本
 routeRulesRoutes.get('/:id', async (c) => {
-  const version = await getVersion(c.req.param('id'))
+  const version = await getVersion(c.req.param('id'), undefined, getWorkspaceId(c))
   if (!version) {
     return c.json({ success: false, error: 'not found', code: 'ROUTE_RULE_NOT_FOUND' }, 404)
   }
@@ -63,10 +64,16 @@ routeRulesRoutes.get('/:id', async (c) => {
 routeRulesRoutes.post('/', async (c) => {
   try {
     const body = SaveDraftBody.parse(await c.req.json())
-    const created = await saveDraft(requireAccessModelId(c), body.graph, {
-      name: body.name,
-      description: body.description,
-    })
+    const created = await saveDraft(
+      requireAccessModelId(c),
+      body.graph,
+      {
+        name: body.name,
+        description: body.description,
+      },
+      undefined,
+      getWorkspaceId(c),
+    )
     return c.json({ success: true, data: created }, 201)
   } catch (err) {
     if (err instanceof z.ZodError) {
@@ -83,7 +90,7 @@ routeRulesRoutes.post('/', async (c) => {
 // PATCH /api/access-models/:accessModelId/route-rules/:id/activate — 激活版本
 routeRulesRoutes.patch('/:id/activate', async (c) => {
   try {
-    const activated = await activateVersion(c.req.param('id'))
+    const activated = await activateVersion(c.req.param('id'), undefined, getWorkspaceId(c))
     return c.json({ success: true, data: activated })
   } catch (err) {
     if (err instanceof AppError) return jsonAppError(c, err)
@@ -94,7 +101,7 @@ routeRulesRoutes.patch('/:id/activate', async (c) => {
 // DELETE /api/access-models/:accessModelId/route-rules/:id — 删除版本
 routeRulesRoutes.delete('/:id', async (c) => {
   try {
-    await deleteVersion(c.req.param('id'))
+    await deleteVersion(c.req.param('id'), undefined, getWorkspaceId(c))
     return c.json({ success: true })
   } catch (err) {
     if (err instanceof AppError) return jsonAppError(c, err)
@@ -109,6 +116,14 @@ routeRulesRoutes.delete('/:id', async (c) => {
 // 返回值摘录编译后的 intentConfig，让运维确认 targetActions 等新字段已注入。
 routeRulesRoutes.post('/rebuild', async (c) => {
   const accessModelId = requireAccessModelId(c)
+  const workspaceId = getWorkspaceId(c)
+  const versions = await listVersions(accessModelId, undefined, workspaceId)
+  if (versions.length === 0) {
+    return c.json(
+      { success: false, error: 'Access model not found', code: 'ACCESS_MODEL_NOT_FOUND' },
+      404,
+    )
+  }
   const engine = getRouteRuleEngine()
   const before = engine.getMatchersForAccessModel(accessModelId).length
   await engine.rebuildOne(accessModelId)

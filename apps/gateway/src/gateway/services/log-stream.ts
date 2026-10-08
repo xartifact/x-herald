@@ -110,6 +110,7 @@ export function buildLogInsertValues(params: StreamLogParams & { isStream: boole
     }
   }
   return {
+    workspaceId: params.virtualKey.workspaceId,
     requestGroupId: params.requestGroupId,
     candidateIndex: params.candidateIndex,
     virtualKeyId: params.virtualKey.id,

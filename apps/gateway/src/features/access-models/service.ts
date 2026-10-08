@@ -1,16 +1,17 @@
-import { eq, isNull } from '@xartifact/x-herald-db'
+import { and, eq, isNull } from '@xartifact/x-herald-db'
 
 import type { Database } from '../../db/client'
 import { getDatabase } from '../../db/client'
 import rootLogger from '../../lib/logger'
 import { accessModels } from '@xartifact/x-herald-db'
 import type { ModelCapabilities } from '../model-groups/db'
+import { DEFAULT_WORKSPACE_ID } from '../workspaces/context'
 
 import { CATCHALL_VM_NAME, DEFAULT_ACCESS_MODEL_CAPABILITIES } from './constants'
 
 const logger = rootLogger.child({ module: 'access-models-service' })
 
-export async function listAccessModels(db?: Database) {
+export async function listAccessModels(db?: Database, workspaceId = DEFAULT_WORKSPACE_ID) {
   const database = db ?? getDatabase()
   return database
     .select({
@@ -24,10 +25,14 @@ export async function listAccessModels(db?: Database) {
       updatedAt: accessModels.updatedAt,
     })
     .from(accessModels)
-    .where(isNull(accessModels.deletedAt))
+    .where(and(eq(accessModels.workspaceId, workspaceId), isNull(accessModels.deletedAt)))
 }
 
-export async function getAccessModel(id: string, db?: Database) {
+export async function getAccessModel(
+  id: string,
+  db?: Database,
+  workspaceId = DEFAULT_WORKSPACE_ID,
+) {
   const database = db ?? getDatabase()
   const rows = await database
     .select({
@@ -41,7 +46,7 @@ export async function getAccessModel(id: string, db?: Database) {
       updatedAt: accessModels.updatedAt,
     })
     .from(accessModels)
-    .where(eq(accessModels.id, id))
+    .where(and(eq(accessModels.id, id), eq(accessModels.workspaceId, workspaceId)))
     .limit(1)
   return rows[0] ?? null
 }
@@ -55,12 +60,14 @@ export async function createAccessModel(
     capabilities?: ModelCapabilities | null
   },
   db?: Database,
+  workspaceId = DEFAULT_WORKSPACE_ID,
 ) {
   const database = db ?? getDatabase()
   const [am] = await database
     .insert(accessModels)
     .values({
       name: data.name,
+      workspaceId,
       displayName: data.displayName || null,
       description: data.description || null,
       enabled: data.enabled ?? true,
@@ -81,8 +88,9 @@ export async function updateAccessModel(
     capabilities?: ModelCapabilities | null
   },
   db?: Database,
+  workspaceId = DEFAULT_WORKSPACE_ID,
 ) {
-  const current = await getAccessModel(id, db)
+  const current = await getAccessModel(id, db, workspaceId)
   if (!current) return null
 
   const isSystem = current.name === CATCHALL_VM_NAME
@@ -101,13 +109,17 @@ export async function updateAccessModel(
   const [updated] = await database
     .update(accessModels)
     .set(updateData)
-    .where(eq(accessModels.id, id))
+    .where(and(eq(accessModels.id, id), eq(accessModels.workspaceId, workspaceId)))
     .returning()
   return updated ?? null
 }
 
-export async function deleteAccessModel(id: string, db?: Database) {
-  const current = await getAccessModel(id, db)
+export async function deleteAccessModel(
+  id: string,
+  db?: Database,
+  workspaceId = DEFAULT_WORKSPACE_ID,
+) {
+  const current = await getAccessModel(id, db, workspaceId)
   if (!current) return null
 
   if (current.deletedAt) return null
@@ -120,20 +132,24 @@ export async function deleteAccessModel(id: string, db?: Database) {
   const [deleted] = await database
     .update(accessModels)
     .set({ deletedAt: new Date(), updatedAt: new Date() })
-    .where(eq(accessModels.id, id))
+    .where(and(eq(accessModels.id, id), eq(accessModels.workspaceId, workspaceId)))
     .returning()
   return deleted ?? null
 }
 
-export async function toggleAccessModel(id: string, db?: Database) {
-  const current = await getAccessModel(id, db)
+export async function toggleAccessModel(
+  id: string,
+  db?: Database,
+  workspaceId = DEFAULT_WORKSPACE_ID,
+) {
+  const current = await getAccessModel(id, db, workspaceId)
   if (!current) return null
 
   const database = db ?? getDatabase()
   const [updated] = await database
     .update(accessModels)
     .set({ enabled: !current.enabled, updatedAt: new Date() })
-    .where(eq(accessModels.id, id))
+    .where(and(eq(accessModels.id, id), eq(accessModels.workspaceId, workspaceId)))
     .returning()
   return updated ?? null
 }

@@ -3,7 +3,8 @@ import { Hono } from 'hono'
 import { createTestEngine, destroyTestEngine, getAuthToken } from '../../test/setup'
 import { authenticatedRequest } from '../../test/hono-helper'
 import { modelGroupRouter } from './model-group-router'
-import type { RoutingContext } from './router-selector'
+import { ModelNotFoundError, type RoutingContext } from './router-selector'
+import { DEFAULT_WORKSPACE_ID } from '../../features/workspaces/context'
 
 let app: Hono
 let token: string
@@ -16,6 +17,8 @@ let instance1Id: string
 let instance2Id: string
 let disabledInstanceId: string
 let disabledProviderInstanceId: string
+let isolatedWorkspaceId: string
+let isolatedGroupId: string
 
 function uniqueName(prefix: string): string {
   return `${prefix}-${crypto.randomUUID().slice(0, 8)}`
@@ -43,6 +46,12 @@ describe('ModelGroupRouter integration', () => {
     const engine = await createTestEngine()
     app = engine.app
     token = await getAuthToken(app)
+
+    const workspaceResponse = await authenticatedRequest(app, 'POST', '/api/workspaces', token, {
+      body: { name: uniqueName('Routing workspace') },
+    })
+    const workspaceBody = (await workspaceResponse.json()) as { data: { id: string } }
+    isolatedWorkspaceId = workspaceBody.data.id
 
     // 1. Create an enabled provider
     const providerRes = await authenticatedRequest(app, 'POST', '/api/providers', token, {
@@ -99,6 +108,23 @@ describe('ModelGroupRouter integration', () => {
     })
     const emptyGroupData = (await emptyGroupRes.json()) as { data: { id: string } }
     emptyGroupId = emptyGroupData.data.id
+
+    const isolatedGroupResponse = await authenticatedRequest(
+      app,
+      'POST',
+      '/api/model-groups',
+      token,
+      {
+        headers: { 'X-Workspace-Id': isolatedWorkspaceId },
+        body: {
+          name: uniqueName('IsolatedGroup'),
+          displayName: 'Isolated Group',
+          capabilities: defaultCapabilities,
+        },
+      },
+    )
+    const isolatedGroupData = (await isolatedGroupResponse.json()) as { data: { id: string } }
+    isolatedGroupId = isolatedGroupData.data.id
 
     // 6. Create instances for the enabled group
     // Instance 1: priority 0, enabled
@@ -176,6 +202,16 @@ describe('ModelGroupRouter integration', () => {
 
   afterAll(async () => {
     await destroyTestEngine()
+  })
+
+  it('does not resolve a group owned by another workspace', async () => {
+    const context: RoutingContext = {
+      ...defaultContext,
+      workspaceId: DEFAULT_WORKSPACE_ID,
+    }
+    await expect(
+      modelGroupRouter.routeCandidatesByGroupId(isolatedGroupId, context),
+    ).rejects.toBeInstanceOf(ModelNotFoundError)
   })
 
   // ──────────────────────────────────────────────────────────────────────────

@@ -173,8 +173,19 @@ export async function createEngine(options: CreateEngineOptions = {}): Promise<E
       return authMiddleware(c, next)
     })
 
+    const { workspaceScopeMiddleware } = await import('./features/workspaces/middleware')
+    app.use('/api/*', async (c, next) => {
+      if (c.req.path === '/api/workspaces' || c.req.path.startsWith('/api/workspaces/')) {
+        return next()
+      }
+      return workspaceScopeMiddleware(c, next)
+    })
+
     const { default: healthRoutes } = await import('./features/health/api')
     app.route('/api/health', healthRoutes)
+
+    const { workspacesRoutes } = await import('./features/workspaces/api')
+    app.route('/api/workspaces', workspacesRoutes)
 
     const { default: authRoutes } = await import('./features/auth/api')
     app.route('/api/auth', authRoutes)

@@ -10,8 +10,9 @@ import {
 } from '../../test/crud-helper'
 import { authenticatedRequest } from '../../test/hono-helper'
 import { getDatabase } from '../../db/client'
-import { accessModels } from '@xartifact/x-herald-db'
+import { accessModels, modelGroups } from '@xartifact/x-herald-db'
 import type { CanvasGraph } from '@xartifact/x-herald-shared'
+import { createTestModelGroup } from '../../test/factories'
 
 interface RouteRuleDto {
   id: string
@@ -26,12 +27,14 @@ function authPatch(c: CrudTestContext, path: string): Response | Promise<Respons
 
 let ctx: CrudTestContext
 let amId: string
+let secondWorkspaceId: string
 
-async function createAccessModel(): Promise<string> {
+async function createAccessModel(workspaceId?: string): Promise<string> {
   const db = getDatabase()
   const id = crypto.randomUUID()
   await db.insert(accessModels).values({
     id,
+    workspaceId,
     name: `route-rules-api-test-${id.slice(0, 8)}`,
     displayName: null,
     description: null,
@@ -48,6 +51,17 @@ describe('route-rules API', () => {
   beforeAll(async () => {
     ctx = await setupCrudTest()
     amId = await createAccessModel()
+    const workspaceResponse = await authenticatedRequest(
+      ctx.app,
+      'POST',
+      '/api/workspaces',
+      ctx.token,
+      {
+        body: { name: `Route target isolation ${crypto.randomUUID()}` },
+      },
+    )
+    const workspace = (await workspaceResponse.json()) as { data: { id: string } }
+    secondWorkspaceId = workspace.data.id
   })
 
   afterAll(async () => {
@@ -71,6 +85,50 @@ describe('route-rules API', () => {
       graph: { nodes: [{ id: 'n1', type: 'condition', position: {}, data: 123 }], edges: [] },
     })
     expect(res.status).toBe(400)
+  })
+
+  it('does not expose or create route rules for an access model in another workspace', async () => {
+    const otherAccessModelId = await createAccessModel(secondWorkspaceId)
+    const listResponse = await authenticatedRequest(
+      ctx.app,
+      'GET',
+      `/api/access-models/${otherAccessModelId}/route-rules`,
+      ctx.token,
+    )
+    const listResult = await parseJson<RouteRuleDto[]>(listResponse)
+    const createResponse = await authPost(
+      ctx,
+      `/api/access-models/${otherAccessModelId}/route-rules`,
+      { graph: emptyGraph },
+    )
+    const createResult = await parseJson(createResponse)
+
+    expect(listResult.status).toBe(200)
+    expect(listResult.body.data).toEqual([])
+    expect(createResult.status).toBe(404)
+    expect(createResult.body.code).toBe('ACCESS_MODEL_NOT_FOUND')
+  })
+
+  it('rejects a route target that belongs to another workspace', async () => {
+    const foreignGroup = createTestModelGroup({ workspaceId: secondWorkspaceId })
+    await getDatabase().insert(modelGroups).values(foreignGroup)
+    const graph: CanvasGraph = {
+      nodes: [
+        {
+          id: 'target-1',
+          type: 'target',
+          position: { x: 0, y: 0 },
+          data: { actionType: 'route_to_group', targetId: foreignGroup.id },
+        },
+      ],
+      edges: [],
+    }
+
+    const res = await authPost(ctx, `/api/access-models/${amId}/route-rules`, { graph })
+    const { status, body } = await parseJson(res)
+
+    expect(status).toBe(400)
+    expect(body.code).toBe('CROSS_WORKSPACE_ROUTE_TARGET')
   })
 
   it('GET lists all versions for the access model', async () => {

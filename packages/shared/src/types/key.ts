@@ -1,5 +1,6 @@
 export interface VirtualKey {
   id: string
+  workspaceId?: string
   key: string
   name: string
   allowedModels: string[] | null

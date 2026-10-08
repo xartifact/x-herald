@@ -1,5 +1,7 @@
-import { LogOut, Moon, Sun, Monitor } from 'lucide-react'
+import React from 'react'
+import { LogOut, Moon, Sun, Monitor, Pencil, Plus, Trash2, Layers } from 'lucide-react'
 import { useTheme } from 'next-themes'
+import { useQueryClient } from '@tanstack/react-query'
 
 import { APP_VERSION, BUILD_REF, GIT_COMMIT_HASH } from '@xartifact/x-herald-shared'
 
@@ -10,6 +12,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@xartifact/x-herald-ui'
+import { del, get, post, put } from '@xartifact/x-herald-ui'
+import type { Workspace } from '@xartifact/x-herald-shared'
 
 import { allNavItems } from './admin-nav-config'
 import { NavDesktopDropdowns } from './nav-desktop-dropdowns'
@@ -45,6 +49,119 @@ function ThemeToggle() {
   )
 }
 
+function WorkspaceSwitcher() {
+  const [workspaces, setWorkspaces] = React.useState<Workspace[]>([])
+  const [activeId, setActiveId] = React.useState('')
+  const queryClient = useQueryClient()
+  const refreshWorkspaceData = React.useCallback(() => {
+    queryClient.removeQueries({ queryKey: [], type: 'inactive' })
+    void queryClient.resetQueries({ queryKey: [], type: 'active' })
+  }, [queryClient])
+
+  React.useEffect(() => {
+    const storedId = localStorage.getItem('active_workspace_id') ?? ''
+    setActiveId(storedId)
+    void get<Workspace[]>('/api/workspaces')
+      .then((rows) => {
+        setWorkspaces(rows)
+        if (!rows.some((row) => row.id === storedId)) {
+          const defaultWorkspace = rows.find((row) => row.isDefault) ?? rows[0]
+          if (defaultWorkspace) {
+            localStorage.setItem('active_workspace_id', defaultWorkspace.id)
+            setActiveId(defaultWorkspace.id)
+            if (storedId) {
+              window.dispatchEvent(new Event('workspace-changed'))
+              refreshWorkspaceData()
+            }
+          }
+        }
+      })
+      .catch(() => {})
+  }, [queryClient, refreshWorkspaceData])
+
+  const active = workspaces.find((workspace) => workspace.id === activeId)
+  const refresh = async () => setWorkspaces(await get<Workspace[]>('/api/workspaces'))
+  const switchTo = (id: string) => {
+    if (id === activeId) return
+    localStorage.setItem('active_workspace_id', id)
+    setActiveId(id)
+    window.dispatchEvent(new Event('workspace-changed'))
+    refreshWorkspaceData()
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="sm" aria-label="切换 workspace" className="max-w-44">
+          <Layers className="mr-2 h-4 w-4 shrink-0" />
+          <span className="truncate">{active?.name ?? 'Workspace'}</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        {workspaces.map((workspace) => (
+          <DropdownMenuItem key={workspace.id} onClick={() => switchTo(workspace.id)}>
+            <span className="flex-1 truncate">{workspace.name}</span>
+            {workspace.id === activeId ? <span aria-label="当前 workspace">✓</span> : null}
+          </DropdownMenuItem>
+        ))}
+        <DropdownMenuItem
+          onClick={async () => {
+            const name = window.prompt('新 workspace 名称')?.trim()
+            if (!name) return
+            try {
+              const created = await post<Workspace>('/api/workspaces', { name })
+              await refresh()
+              switchTo(created.id)
+            } catch (error) {
+              window.alert(error instanceof Error ? error.message : '创建 workspace 失败')
+            }
+          }}
+        >
+          <Plus className="mr-2 h-4 w-4" /> 新建 workspace
+        </DropdownMenuItem>
+        {active ? (
+          <>
+            <DropdownMenuItem
+              onClick={async () => {
+                const name = window.prompt('Workspace 名称', active.name)?.trim()
+                if (!name || name === active.name) return
+                try {
+                  await put(`/api/workspaces/${active.id}`, { name })
+                  await refresh()
+                } catch (error) {
+                  window.alert(error instanceof Error ? error.message : '重命名失败')
+                }
+              }}
+            >
+              <Pencil className="mr-2 h-4 w-4" /> 重命名当前 workspace
+            </DropdownMenuItem>
+            {!active.isDefault ? (
+              <DropdownMenuItem
+                onClick={async () => {
+                  if (!window.confirm(`删除空 workspace「${active.name}」？`)) return
+                  try {
+                    await del(`/api/workspaces/${active.id}`)
+                    const rows = await get<Workspace[]>('/api/workspaces')
+                    setWorkspaces(rows)
+                    const fallback = rows.find((workspace) => workspace.isDefault) ?? rows[0]
+                    if (fallback) switchTo(fallback.id)
+                  } catch (error) {
+                    window.alert(
+                      error instanceof Error ? error.message : '删除失败；只能删除空 workspace',
+                    )
+                  }
+                }}
+              >
+                <Trash2 className="mr-2 h-4 w-4" /> 删除当前 workspace
+              </DropdownMenuItem>
+            ) : null}
+          </>
+        ) : null}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
 export default function AdminNav() {
   const pathname = typeof window !== 'undefined' ? window.location.pathname : ''
 
@@ -66,6 +183,7 @@ export default function AdminNav() {
 
           <div className="flex items-center space-x-4">
             <span className="hidden md:block text-sm text-muted-foreground">{currentLabel}</span>
+            <WorkspaceSwitcher />
             {/* 构建版本始终渲染，值为兜底时也显示 dev/unknown —— 版本区整体消失会
                 让「镜像没注入版本」这类发布问题变得不可见（此前正是如此：条件渲染
                 把故障藏了几个月）。显式的 dev/unknown 本身就是诊断信号。 */}

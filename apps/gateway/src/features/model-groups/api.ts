@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 
 import { rootLogger } from '../../lib'
 import { modelGroupRouter } from '../../gateway/services/model-group-router'
+import { getWorkspaceId } from '../workspaces/context'
 
 import {
   addInstancesToGroup,
@@ -27,13 +28,13 @@ const logger = rootLogger.child({ module: 'model-groups' })
 const modelGroupRoutes = new Hono()
 
 modelGroupRoutes.get('/', async (c) => {
-  const data = await listGroups()
+  const data = await listGroups(undefined, getWorkspaceId(c))
   return c.json({ success: true, data })
 })
 
 modelGroupRoutes.get('/instances', async (c) => {
   try {
-    return c.json({ success: true, data: await listInstances() })
+    return c.json({ success: true, data: await listInstances(undefined, getWorkspaceId(c)) })
   } catch (error) {
     logger.warn({ err: error }, 'Failed to list model instances')
     return c.json(
@@ -44,7 +45,7 @@ modelGroupRoutes.get('/instances', async (c) => {
 })
 
 modelGroupRoutes.get('/:id', async (c) => {
-  const detail = await modelGroupRouter.getModelGroupDetail(c.req.param('id'))
+  const detail = await modelGroupRouter.getModelGroupDetail(c.req.param('id'), getWorkspaceId(c))
   if (!detail) return c.json({ success: false, error: 'Model group not found' }, 404)
   return c.json({ success: true, data: detail })
 })
@@ -52,7 +53,10 @@ modelGroupRoutes.get('/:id', async (c) => {
 modelGroupRoutes.post('/', async (c) => {
   try {
     const data = await c.req.json()
-    return c.json({ success: true, data: await createGroup(data) }, 201)
+    return c.json(
+      { success: true, data: await createGroup(data, undefined, getWorkspaceId(c)) },
+      201,
+    )
   } catch (error) {
     logger.warn({ err: error }, 'Failed to create model group')
     return c.json(
@@ -64,7 +68,12 @@ modelGroupRoutes.post('/', async (c) => {
 
 modelGroupRoutes.put('/:id', async (c) => {
   try {
-    const updated = await updateGroup(c.req.param('id'), await c.req.json())
+    const updated = await updateGroup(
+      c.req.param('id'),
+      await c.req.json(),
+      undefined,
+      getWorkspaceId(c),
+    )
     if (!updated) return c.json({ success: false, error: 'Model group not found' }, 404)
     return c.json({ success: true, data: updated })
   } catch (error) {
@@ -78,7 +87,7 @@ modelGroupRoutes.put('/:id', async (c) => {
 
 modelGroupRoutes.delete('/:id', async (c) => {
   try {
-    const deleted = await deleteGroup(c.req.param('id'))
+    const deleted = await deleteGroup(c.req.param('id'), undefined, getWorkspaceId(c))
     if (!deleted) return c.json({ success: false, error: 'Model group not found' }, 404)
     return c.json({ success: true, data: deleted })
   } catch (error) {
@@ -92,7 +101,7 @@ modelGroupRoutes.delete('/:id', async (c) => {
 
 modelGroupRoutes.patch('/:id/toggle', async (c) => {
   try {
-    const updated = await toggleGroup(c.req.param('id'))
+    const updated = await toggleGroup(c.req.param('id'), undefined, getWorkspaceId(c))
     if (!updated) return c.json({ success: false, error: 'Model group not found' }, 404)
     return c.json({ success: true, data: updated })
   } catch (error) {
@@ -107,7 +116,7 @@ modelGroupRoutes.patch('/:id/toggle', async (c) => {
 modelGroupRoutes.put('/groups/:groupId/instances/reorder', async (c) => {
   try {
     const { instanceIds } = await c.req.json<{ instanceIds: string[] }>()
-    await reorderGroupInstances(c.req.param('groupId'), instanceIds)
+    await reorderGroupInstances(c.req.param('groupId'), instanceIds, undefined, getWorkspaceId(c))
     return c.json({ success: true })
   } catch (error) {
     logger.warn({ err: error }, 'Failed to reorder model instances')
@@ -125,7 +134,12 @@ modelGroupRoutes.post('/groups/:groupId/instances', async (c) => {
     if (!Array.isArray(instanceIds) || instanceIds.length === 0) {
       return c.json({ success: false, error: 'instanceIds is required' }, 400)
     }
-    const result = await addInstancesToGroup(c.req.param('groupId'), instanceIds)
+    const result = await addInstancesToGroup(
+      c.req.param('groupId'),
+      instanceIds,
+      undefined,
+      getWorkspaceId(c),
+    )
     if ('error' in result) {
       return c.json(
         {
@@ -151,7 +165,12 @@ modelGroupRoutes.post('/groups/:groupId/instances', async (c) => {
 // 将实例从模型组解绑（不删除实例本身）
 modelGroupRoutes.delete('/groups/:groupId/instances/:instanceId', async (c) => {
   try {
-    const result = await removeInstanceFromGroup(c.req.param('groupId'), c.req.param('instanceId'))
+    const result = await removeInstanceFromGroup(
+      c.req.param('groupId'),
+      c.req.param('instanceId'),
+      undefined,
+      getWorkspaceId(c),
+    )
     return c.json({ success: true, data: result })
   } catch (error) {
     logger.warn({ err: error }, 'Failed to detach instance from group')
@@ -164,7 +183,7 @@ modelGroupRoutes.delete('/groups/:groupId/instances/:instanceId', async (c) => {
 
 modelGroupRoutes.post('/instances', async (c) => {
   try {
-    const result = await createInstance(await c.req.json())
+    const result = await createInstance(await c.req.json(), undefined, getWorkspaceId(c))
     if ('error' in result) return c.json({ success: false, error: result.error }, 404)
     return c.json({ success: true, data: result.data }, 201)
   } catch (error) {
@@ -178,7 +197,12 @@ modelGroupRoutes.post('/instances', async (c) => {
 
 modelGroupRoutes.put('/instances/:id', async (c) => {
   try {
-    const updated = await updateInstance(c.req.param('id'), await c.req.json())
+    const updated = await updateInstance(
+      c.req.param('id'),
+      await c.req.json(),
+      undefined,
+      getWorkspaceId(c),
+    )
     if (!updated) return c.json({ success: false, error: 'Model instance not found' }, 404)
     return c.json({ success: true, data: updated })
   } catch (error) {
@@ -193,7 +217,12 @@ modelGroupRoutes.put('/instances/:id', async (c) => {
 modelGroupRoutes.put('/instances/:id/groups', async (c) => {
   try {
     const { groupIds } = await c.req.json<{ groupIds: string[] }>()
-    const result = await setInstanceGroupsById(c.req.param('id'), groupIds)
+    const result = await setInstanceGroupsById(
+      c.req.param('id'),
+      groupIds,
+      undefined,
+      getWorkspaceId(c),
+    )
     if (!result) return c.json({ success: false, error: 'Model instance not found' }, 404)
     if ('error' in result) return c.json({ success: false, error: result.error }, 404)
     return c.json({ success: true, data: result.data })
@@ -236,7 +265,7 @@ modelGroupRoutes.post('/instances/:id/test', async (c) => {
 modelGroupRoutes.patch('/instances/:id/assign', async (c) => {
   try {
     const { groupId } = await c.req.json<{ groupId: string | null }>()
-    const result = await assignInstance(c.req.param('id'), groupId)
+    const result = await assignInstance(c.req.param('id'), groupId, undefined, getWorkspaceId(c))
     if ('error' in result) return c.json({ success: false, error: result.error }, 404)
     return c.json({ success: true, data: result.data })
   } catch (error) {
@@ -250,7 +279,7 @@ modelGroupRoutes.patch('/instances/:id/assign', async (c) => {
 
 modelGroupRoutes.patch('/instances/:id/toggle', async (c) => {
   try {
-    const updated = await toggleInstance(c.req.param('id'))
+    const updated = await toggleInstance(c.req.param('id'), undefined, getWorkspaceId(c))
     if (!updated) return c.json({ success: false, error: 'Model instance not found' }, 404)
     return c.json({ success: true, data: updated })
   } catch (error) {

@@ -11,12 +11,14 @@ import { getDatabase } from '../../../db/client'
 import rootLogger from '../../../lib/logger'
 import { intentLogs, modelGroups, virtualKeys, type IntentSource } from '@xartifact/x-herald-db'
 import type { NewIntentLog } from '@xartifact/x-herald-db'
+import { DEFAULT_WORKSPACE_ID } from '../../workspaces/context'
 
 const logger = rootLogger.child({ module: 'intent-log-service' })
 
 const INSERT_TIMEOUT_MS = 3_000
 
 export interface RecordIntentDecisionInput {
+  workspaceId?: string
   requestGroupId?: string
   virtualKeyId?: string
   accessModelId?: string
@@ -56,14 +58,17 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   ])
 }
 
-async function enrichTargetGroupName(groupId: string | null | undefined): Promise<string | null> {
+async function enrichTargetGroupName(
+  groupId: string | null | undefined,
+  workspaceId: string,
+): Promise<string | null> {
   if (!groupId) return null
   try {
     const db = getDatabase()
     const result = await db
       .select({ name: modelGroups.name })
       .from(modelGroups)
-      .where(eq(modelGroups.id, groupId))
+      .where(and(eq(modelGroups.id, groupId), eq(modelGroups.workspaceId, workspaceId)))
       .limit(1)
     return result[0]?.name ?? null
   } catch {
@@ -71,14 +76,17 @@ async function enrichTargetGroupName(groupId: string | null | undefined): Promis
   }
 }
 
-async function enrichVirtualKeyName(keyId: string | undefined): Promise<string | null> {
+async function enrichVirtualKeyName(
+  keyId: string | undefined,
+  workspaceId: string,
+): Promise<string | null> {
   if (!keyId) return null
   try {
     const db = getDatabase()
     const result = await db
       .select({ name: virtualKeys.name })
       .from(virtualKeys)
-      .where(eq(virtualKeys.id, keyId))
+      .where(and(eq(virtualKeys.id, keyId), eq(virtualKeys.workspaceId, workspaceId)))
       .limit(1)
     return result[0]?.name ?? null
   } catch {
@@ -87,14 +95,16 @@ async function enrichVirtualKeyName(keyId: string | undefined): Promise<string |
 }
 
 export function recordIntentDecision(input: RecordIntentDecisionInput): void {
+  const workspaceId = input.workspaceId ?? DEFAULT_WORKSPACE_ID
   void (async () => {
     try {
       const [virtualKeyName, targetGroupName] = await Promise.all([
-        enrichVirtualKeyName(input.virtualKeyId),
-        enrichTargetGroupName(input.targetGroupId),
+        enrichVirtualKeyName(input.virtualKeyId, workspaceId),
+        enrichTargetGroupName(input.targetGroupId, workspaceId),
       ])
 
       const row: NewIntentLog = {
+        workspaceId,
         requestGroupId: input.requestGroupId ?? null,
         virtualKeyId: input.virtualKeyId ?? null,
         virtualKeyName,
@@ -140,6 +150,7 @@ export function recordIntentDecision(input: RecordIntentDecisionInput): void {
 // ─── Query ──────────────────────────────────────────────────────────────────
 
 export interface IntentLogsPageParams {
+  workspaceId?: string
   cursor?: string
   pageSize: number
   virtualKeyId?: string
@@ -213,7 +224,7 @@ function decodeCursor(cursor: string): CursorPayload | null {
 }
 
 function buildFilterConditions(params: IntentLogsPageParams) {
-  const conditions = []
+  const conditions = [eq(intentLogs.workspaceId, params.workspaceId ?? DEFAULT_WORKSPACE_ID)]
   if (params.virtualKeyId) conditions.push(eq(intentLogs.virtualKeyId, params.virtualKeyId))
   if (params.accessModelId) conditions.push(eq(intentLogs.accessModelId, params.accessModelId))
   if (params.intentName) conditions.push(eq(intentLogs.intentName, params.intentName))
@@ -301,13 +312,14 @@ export interface IntentStats {
 }
 
 export async function getIntentStats(params: {
+  workspaceId?: string
   startDate?: string
   endDate?: string
   virtualKeyId?: string
 }): Promise<IntentStats> {
   const db = getDatabase()
 
-  const conditions = []
+  const conditions = [eq(intentLogs.workspaceId, params.workspaceId ?? DEFAULT_WORKSPACE_ID)]
   if (params.startDate) conditions.push(gte(intentLogs.createdAt, new Date(params.startDate)))
   if (params.endDate) conditions.push(lte(intentLogs.createdAt, new Date(params.endDate)))
   if (params.virtualKeyId) conditions.push(eq(intentLogs.virtualKeyId, params.virtualKeyId))

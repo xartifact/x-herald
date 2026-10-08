@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 
 import { costService } from './service'
+import { getWorkspaceId } from '../workspaces/context'
 
 const costRoutes = new Hono()
 
@@ -14,6 +15,7 @@ costRoutes.get('/summary', async (c) => {
       keyId,
       providerName,
       modelName,
+      workspaceId: getWorkspaceId(c),
     })
     return c.json({ success: true, data: summary })
   } catch {
@@ -29,6 +31,7 @@ costRoutes.get('/by-key', async (c) => {
       dimension: 'key',
       startDate: startDate ? new Date(startDate) : undefined,
       endDate: endDate ? new Date(endDate) : undefined,
+      workspaceId: getWorkspaceId(c),
     })
     return c.json({ success: true, data })
   } catch {
@@ -44,6 +47,7 @@ costRoutes.get('/by-provider', async (c) => {
       dimension: 'provider',
       startDate: startDate ? new Date(startDate) : undefined,
       endDate: endDate ? new Date(endDate) : undefined,
+      workspaceId: getWorkspaceId(c),
     })
     return c.json({ success: true, data })
   } catch {
@@ -59,6 +63,7 @@ costRoutes.get('/by-model', async (c) => {
       dimension: 'model',
       startDate: startDate ? new Date(startDate) : undefined,
       endDate: endDate ? new Date(endDate) : undefined,
+      workspaceId: getWorkspaceId(c),
     })
     return c.json({ success: true, data })
   } catch {

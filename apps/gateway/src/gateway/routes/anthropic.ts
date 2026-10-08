@@ -72,6 +72,7 @@ anthropicRoutes.post('/messages/count_tokens', async (c) => {
           Array.isArray(m.content) && m.content.some((c: { type?: string }) => c.type === 'image'),
       ),
       virtualKeyId: virtualKey.id,
+      workspaceId: virtualKey.workspaceId,
     })
 
     if (!routeResult) {

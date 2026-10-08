@@ -62,6 +62,8 @@ export interface RoutingContext {
   hasTools: boolean
   hasVision: boolean
   virtualKeyId: string
+  /** Derived from the authenticated virtual key; never trust a client workspace header. */
+  workspaceId?: string
   /** 一次客户端请求的分组 ID（intent_logs 关联用；由顶层 handler 生成传入） */
   requestGroupId?: string
   preferredProvider?: string

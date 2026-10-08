@@ -70,6 +70,7 @@ export async function handleJevSystemOne(
       hasTools: false,
       hasVision: false,
       virtualKeyId: virtualKey.id,
+      workspaceId: virtualKey.workspaceId,
       requestGroupId,
     })
     const jevCandidates = candidates.filter(

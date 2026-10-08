@@ -269,6 +269,7 @@ export class ChatCompletionCandidateExecutor {
     if (isStreaming && this.logId) {
       logEventBus.emitLog({
         event: 'waiting',
+        workspaceId: virtualKey.workspaceId,
         logId: this.logId,
         modelName:
           mapping.modelName || mapping.originalModel || (rawBody?.model as string) || 'unknown',
@@ -317,7 +318,11 @@ export class ChatCompletionCandidateExecutor {
   }
 
   emitAbortedEvent(id: string): void {
-    logEventBus.emitLog({ event: 'aborted', logId: id })
+    logEventBus.emitLog({
+      event: 'aborted',
+      workspaceId: this.config.req.virtualKey.workspaceId,
+      logId: id,
+    })
   }
 
   async gatewayError(errorOrCode: string | Error, fallbackMessage?: string): Promise<Response> {

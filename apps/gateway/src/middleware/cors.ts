@@ -11,7 +11,7 @@ export function createCorsMiddleware(config: GatewayConfig): MiddlewareHandler {
   return cors({
     origin: config.server.cors.origins,
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowHeaders: ['Content-Type', 'Authorization'],
+    allowHeaders: ['Content-Type', 'Authorization', 'X-Workspace-Id'],
     exposeHeaders: ['Content-Length'],
     credentials: true,
   })

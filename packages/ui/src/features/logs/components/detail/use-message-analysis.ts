@@ -82,10 +82,16 @@ export function useMessageAnalysis({ logId, selectedIndices }: UseMessageAnalysi
     setActiveMode(mode)
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : ''
+      const workspaceId =
+        typeof window !== 'undefined' ? localStorage.getItem('active_workspace_id') : ''
       const body = mode === 'selected' ? { indices: selectedIndices } : { mode }
       const response = await fetch(`/api/logs/${logId}/analyze`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token ?? ''}` },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token ?? ''}`,
+          ...(workspaceId ? { 'X-Workspace-Id': workspaceId } : {}),
+        },
         body: JSON.stringify(body),
       })
       if (!response.ok) {

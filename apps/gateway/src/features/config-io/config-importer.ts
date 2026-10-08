@@ -1,4 +1,4 @@
-import { and, eq } from '@xartifact/x-herald-db'
+import { and, eq, inArray } from '@xartifact/x-herald-db'
 import type { CircuitBreakerConfig, TtfbTimeoutConfig } from '@xartifact/x-herald-shared'
 
 import { getDatabase } from '../../index'
@@ -18,6 +18,7 @@ import {
 import { clearConfigCache, getConfig } from '../gateway-config/service'
 
 import { type EngineExportFormat, type EngineImportResult, type ImportSummaryItem } from './types'
+import { DEFAULT_WORKSPACE_ID } from '../workspaces/context'
 
 const logger = rootLogger.child({ module: 'config-io' })
 
@@ -25,7 +26,10 @@ function emptySummary(): ImportSummaryItem {
   return { created: 0, updated: 0, errors: 0 }
 }
 
-export async function importConfig(data: EngineExportFormat['data']): Promise<EngineImportResult> {
+export async function importConfig(
+  data: EngineExportFormat['data'],
+  workspaceId = DEFAULT_WORKSPACE_ID,
+): Promise<EngineImportResult> {
   const db = getDatabase()
   const errors: string[] = []
 
@@ -88,7 +92,7 @@ export async function importConfig(data: EngineExportFormat['data']): Promise<En
       const existing = await db
         .select({ id: modelGroups.id })
         .from(modelGroups)
-        .where(eq(modelGroups.name, g.name))
+        .where(and(eq(modelGroups.name, g.name), eq(modelGroups.workspaceId, workspaceId)))
         .limit(1)
       if (existing.length > 0) {
         await db
@@ -102,6 +106,7 @@ export async function importConfig(data: EngineExportFormat['data']): Promise<En
             supportedProtocols: g.supportedProtocols,
             enabled: g.enabled,
             metadata: g.metadata as never,
+            workspaceId,
             updatedAt: new Date(),
           })
           .where(eq(modelGroups.id, existing[0].id))
@@ -120,6 +125,7 @@ export async function importConfig(data: EngineExportFormat['data']): Promise<En
             supportedProtocols: g.supportedProtocols,
             enabled: g.enabled,
             metadata: g.metadata as never,
+            workspaceId,
           })
           .returning({ id: modelGroups.id })
         groupNameToId.set(g.name, created.id)
@@ -139,7 +145,7 @@ export async function importConfig(data: EngineExportFormat['data']): Promise<En
       const existing = await db
         .select({ id: accessModels.id })
         .from(accessModels)
-        .where(eq(accessModels.name, v.name))
+        .where(and(eq(accessModels.name, v.name), eq(accessModels.workspaceId, workspaceId)))
         .limit(1)
       if (existing.length > 0) {
         await db
@@ -159,6 +165,7 @@ export async function importConfig(data: EngineExportFormat['data']): Promise<En
           displayName: v.displayName,
           description: v.description,
           enabled: v.enabled,
+          workspaceId,
         })
         summary.accessModels.created++
         summary.virtualModels.created++
@@ -177,7 +184,7 @@ export async function importConfig(data: EngineExportFormat['data']): Promise<En
       const existing = await db
         .select({ id: virtualKeys.id })
         .from(virtualKeys)
-        .where(eq(virtualKeys.name, k.name))
+        .where(and(eq(virtualKeys.name, k.name), eq(virtualKeys.workspaceId, workspaceId)))
         .limit(1)
       const tokenLimitDaily = k.tokenLimitDaily != null ? BigInt(k.tokenLimitDaily) : null
       if (existing.length > 0) {
@@ -206,6 +213,7 @@ export async function importConfig(data: EngineExportFormat['data']): Promise<En
           tokenLimitDaily,
           enabled: k.enabled,
           expiresAt: k.expiresAt ? new Date(k.expiresAt) : null,
+          workspaceId,
         })
         invalidateVirtualKeyCache(k.key)
         summary.virtualKeys.created++
@@ -327,12 +335,27 @@ export async function importConfig(data: EngineExportFormat['data']): Promise<En
       }
 
       if (resolvedGroupIds.length > 0) {
+        const workspaceGroupIds = await db
+          .select({ id: modelGroups.id })
+          .from(modelGroups)
+          .where(
+            and(
+              eq(modelGroups.workspaceId, workspaceId),
+              inArray(modelGroups.id, resolvedGroupIds),
+            ),
+          )
+        const scopedGroupIds = workspaceGroupIds.map((row) => row.id)
         await db
           .delete(modelGroupMemberships)
-          .where(eq(modelGroupMemberships.instanceId, instanceId))
+          .where(
+            and(
+              eq(modelGroupMemberships.instanceId, instanceId),
+              inArray(modelGroupMemberships.groupId, scopedGroupIds),
+            ),
+          )
         await db
           .insert(modelGroupMemberships)
-          .values(resolvedGroupIds.map((gid) => ({ groupId: gid, instanceId })))
+          .values(scopedGroupIds.map((gid) => ({ groupId: gid, instanceId })))
       }
     } catch (err) {
       errors.push(`ModelInstance "${i.name}": ${err instanceof Error ? err.message : String(err)}`)

@@ -10,14 +10,20 @@ import {
   boolean,
   doublePrecision,
 } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
 
 import { virtualKeys } from './keys'
 import { providers } from './providers'
+import { workspaces } from './workspaces'
 
 export const requestLogs = pgTable(
   'request_logs',
   {
     id: uuid('id').primaryKey().defaultRandom(),
+    workspaceId: uuid('workspace_id')
+      .notNull()
+      .default(sql`'00000000-0000-0000-0000-000000000001'::uuid`)
+      .references(() => workspaces.id, { onDelete: 'restrict' }),
     requestGroupId: uuid('request_group_id').notNull(),
     candidateIndex: integer('candidate_index').default(0).notNull(),
     failoverReason: varchar('failover_reason', { length: 20 }),
@@ -74,6 +80,10 @@ export const requestLogs = pgTable(
   },
   (table) => ({
     virtualKeyIdIdx: index('idx_request_logs_virtual_key_id').on(table.virtualKeyId),
+    workspaceCreatedAtIdx: index('idx_request_logs_workspace_created_at').on(
+      table.workspaceId,
+      table.createdAt,
+    ),
     modelNameIdx: index('idx_request_logs_model_name').on(table.modelName),
     originalModelNameIdx: index('idx_request_logs_original_model_name').on(table.originalModelName),
     providerIdIdx: index('idx_request_logs_provider_id').on(table.providerId),

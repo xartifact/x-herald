@@ -26,6 +26,7 @@ function recordIntentResult(
   actualGroupId?: string,
 ): void {
   recordIntentDecision({
+    workspaceId: ctx.routingContext.workspaceId,
     requestGroupId: ctx.routingContext.requestGroupId,
     virtualKeyId: ctx.routingContext.virtualKeyId,
     accessModelId: ctx.am.id,

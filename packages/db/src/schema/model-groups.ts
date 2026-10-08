@@ -1,4 +1,5 @@
 import { relations } from 'drizzle-orm'
+import { sql } from 'drizzle-orm'
 import {
   pgTable,
   varchar,
@@ -9,8 +10,10 @@ import {
   text,
   integer,
   primaryKey,
+  uniqueIndex,
 } from 'drizzle-orm/pg-core'
 import { providers } from './providers'
+import { workspaces } from './workspaces'
 
 import type {
   ModelCapabilities,
@@ -19,22 +22,39 @@ import type {
   InstanceCost,
 } from '@xartifact/x-herald-shared'
 
-export const modelGroups = pgTable('model_groups', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  name: varchar('name', { length: 255 }).notNull().unique(),
-  aliases: jsonb('aliases').$type<string[]>().default([]),
-  displayName: varchar('display_name', { length: 255 }).notNull(),
-  description: text('description'),
-  category: varchar('category', { length: 50 }).default('chat').notNull(),
-  capabilities: jsonb('capabilities').$type<ModelCapabilities>().notNull(),
-  supportedProtocols: jsonb('supported_protocols').$type<string[]>().default(['openai']),
-  enabled: boolean('enabled').default(true).notNull(),
-  routingConfig: jsonb('routing_config').$type<RoutingConfig>(),
-  metadata: jsonb('metadata').$type<Record<string, unknown>>(),
-  deletedAt: timestamp('deleted_at'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-})
+export const modelGroups = pgTable(
+  'model_groups',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    name: varchar('name', { length: 255 }).notNull(),
+    workspaceId: uuid('workspace_id')
+      .notNull()
+      .default(sql`'00000000-0000-0000-0000-000000000001'::uuid`)
+      .references(() => workspaces.id, { onDelete: 'restrict' }),
+    aliases: jsonb('aliases').$type<string[]>().default([]),
+    displayName: varchar('display_name', { length: 255 }).notNull(),
+    description: text('description'),
+    category: varchar('category', { length: 50 }).default('chat').notNull(),
+    capabilities: jsonb('capabilities').$type<ModelCapabilities>().notNull(),
+    supportedProtocols: jsonb('supported_protocols').$type<string[]>().default(['openai']),
+    enabled: boolean('enabled').default(true).notNull(),
+    routingConfig: jsonb('routing_config').$type<RoutingConfig>(),
+    metadata: jsonb('metadata').$type<Record<string, unknown>>(),
+    deletedAt: timestamp('deleted_at'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    workspaceNameUnique: uniqueIndex('idx_model_groups_workspace_name').on(
+      table.workspaceId,
+      table.name,
+    ),
+    workspaceIdIdUnique: uniqueIndex('idx_model_groups_workspace_id_id').on(
+      table.workspaceId,
+      table.id,
+    ),
+  }),
+)
 
 export type ModelGroup = typeof modelGroups.$inferSelect
 export type NewModelGroup = typeof modelGroups.$inferInsert
@@ -103,17 +123,34 @@ export const modelGroupMembershipsRelations = relations(modelGroupMemberships, (
   }),
 }))
 
-export const accessModels = pgTable('access_models', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  name: varchar('name', { length: 255 }).notNull().unique(),
-  displayName: varchar('display_name', { length: 255 }),
-  description: text('description'),
-  enabled: boolean('enabled').default(true).notNull(),
-  capabilities: jsonb('capabilities').$type<ModelCapabilities>(),
-  deletedAt: timestamp('deleted_at'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-})
+export const accessModels = pgTable(
+  'access_models',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    name: varchar('name', { length: 255 }).notNull(),
+    workspaceId: uuid('workspace_id')
+      .notNull()
+      .default(sql`'00000000-0000-0000-0000-000000000001'::uuid`)
+      .references(() => workspaces.id, { onDelete: 'restrict' }),
+    displayName: varchar('display_name', { length: 255 }),
+    description: text('description'),
+    enabled: boolean('enabled').default(true).notNull(),
+    capabilities: jsonb('capabilities').$type<ModelCapabilities>(),
+    deletedAt: timestamp('deleted_at'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    workspaceNameUnique: uniqueIndex('idx_access_models_workspace_name').on(
+      table.workspaceId,
+      table.name,
+    ),
+    workspaceIdIdUnique: uniqueIndex('idx_access_models_workspace_id_id').on(
+      table.workspaceId,
+      table.id,
+    ),
+  }),
+)
 
 export type AccessModel = typeof accessModels.$inferSelect
 export type NewAccessModel = typeof accessModels.$inferInsert

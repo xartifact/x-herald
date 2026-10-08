@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 
 import { getRoutingTraceDetail, listRoutingTraces } from './service'
+import { getWorkspaceId } from '../workspaces/context'
 
 const routes = new Hono()
 
@@ -35,6 +36,7 @@ routes.get('/', async (c) => {
   }
 
   const result = await listRoutingTraces({
+    workspaceId: getWorkspaceId(c),
     modelName,
     matchedRuleId,
     outcome: outcome as ValidOutcome | undefined,
@@ -60,7 +62,7 @@ routes.get('/', async (c) => {
  */
 routes.get('/:logId', async (c) => {
   const logId = c.req.param('logId')
-  const detail = await getRoutingTraceDetail(logId)
+  const detail = await getRoutingTraceDetail(logId, getWorkspaceId(c))
   if (!detail) {
     return c.json({ error: 'Routing trace not found', code: 'NOT_FOUND' }, 404)
   }

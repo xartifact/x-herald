@@ -63,6 +63,12 @@ export function convertResponsesToChatFormat(
     result.tools = body.tools
   }
   if (body.tool_choice !== undefined) result.tool_choice = body.tool_choice
+  // Responses API 的 reasoning.effort 对应 Chat Completions 的 reasoning_effort。
+  // 不映射会静默丢失档位：上游模型收不到，日志里也看不到。
+  const reasoning = body.reasoning as { effort?: unknown } | undefined
+  if (typeof reasoning?.effort === 'string' && reasoning.effort.length > 0) {
+    result.reasoning_effort = reasoning.effort
+  }
   if (body.stop !== undefined) result.stop = body.stop
   if (body.stream_options !== undefined) result.stream_options = body.stream_options
 

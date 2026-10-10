@@ -156,6 +156,28 @@ describe('convertResponsesToChatFormat', () => {
     ])
   })
 
+  it('maps reasoning.effort to reasoning_effort', () => {
+    const body = {
+      model: 'gpt-4o',
+      input: [{ role: 'user', content: 'think hard' }],
+      reasoning: { effort: 'high', summary: 'auto' },
+    }
+
+    const result = convertResponsesToChatFormat(body)
+
+    expect(result.reasoning_effort).toBe('high')
+  })
+
+  it('omits reasoning_effort when reasoning.effort is absent', () => {
+    const result = convertResponsesToChatFormat({
+      model: 'gpt-4o',
+      input: [{ role: 'user', content: 'hi' }],
+      reasoning: { summary: 'auto' },
+    })
+
+    expect(result.reasoning_effort).toBeUndefined()
+  })
+
   it('passes through stop and stream_options', () => {
     const body = {
       model: 'gpt-4o',

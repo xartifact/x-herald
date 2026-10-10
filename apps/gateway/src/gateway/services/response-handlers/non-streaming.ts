@@ -55,6 +55,7 @@ function buildBaseLogParams(
     providerRequestHeaders: params.providerRequestHeaders,
     requestBody: rawBody,
     transformedRequestBody: params.transformedBody,
+    standardRequestBody: params.standardRequestBody,
     providerResponseHeaders,
     clientResponseHeaders: mergedHeaders,
     clientIp,

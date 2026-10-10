@@ -67,6 +67,8 @@ export interface LogRequestParams {
   providerRequestHeaders?: Record<string, string>
   requestBody?: unknown
   transformedRequestBody?: unknown
+  /** StandardRequest（ingress 归一化结果），供 metadata 提取 reasoning/thinking 等特征 */
+  standardRequestBody?: unknown
   transformedRequestDiff?: JsonDiff
   providerResponseHeaders?: Record<string, string>
   clientResponseHeaders?: Record<string, string>
@@ -152,6 +154,7 @@ interface LogData {
 function buildLogData(params: LogRequestParams): LogData {
   const metadata = extractMetadata({
     requestBody: params.requestBody,
+    standardRequestBody: params.standardRequestBody,
     responseBody: params.responseBody,
     errorMessage: params.errorMessage,
     errorType: params.errorType,

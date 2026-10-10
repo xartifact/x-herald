@@ -46,7 +46,22 @@ export function convertResponsesToChatFormat(
   if (body.max_output_tokens !== undefined) result.max_tokens = body.max_output_tokens
   if (body.temperature !== undefined) result.temperature = body.temperature
   if (body.top_p !== undefined) result.top_p = body.top_p
-  if (body.tools !== undefined) result.tools = body.tools
+  if (Array.isArray(body.tools)) {
+    // Responses API 的 function 工具是扁平格式 { type: 'function', name, parameters }，
+    // Chat Completions 是嵌套格式 { type: 'function', function: { name, parameters } }。
+    // 不转换的话，扁平工具流入 egress 适配器会在 tool.function.parameters 上崩溃。
+    result.tools = body.tools.map((tool) => {
+      if (typeof tool !== 'object' || tool === null) return tool
+      const t = tool as Record<string, unknown>
+      if (t.type === 'function' && !t.function && typeof t.name === 'string') {
+        const { name, description, parameters, strict, ...rest } = t
+        return { ...rest, function: { name, description, parameters, strict } }
+      }
+      return t
+    })
+  } else if (body.tools !== undefined) {
+    result.tools = body.tools
+  }
   if (body.tool_choice !== undefined) result.tool_choice = body.tool_choice
   if (body.stop !== undefined) result.stop = body.stop
   if (body.stream_options !== undefined) result.stream_options = body.stream_options

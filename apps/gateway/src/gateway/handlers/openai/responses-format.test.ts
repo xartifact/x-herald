@@ -116,6 +116,46 @@ describe('convertResponsesToChatFormat', () => {
     expect(result.tool_choice).toBe('auto')
   })
 
+  it('converts Responses flat function tools to Chat nested format', () => {
+    const body = {
+      model: 'gpt-4o',
+      input: [{ role: 'user', content: 'call tool' }],
+      tools: [
+        {
+          type: 'function',
+          name: 'get_weather',
+          description: 'Get weather',
+          parameters: { type: 'object', properties: {} },
+        },
+        {
+          type: 'function',
+          function: { name: 'already_nested', parameters: { type: 'object', properties: {} } },
+        },
+        { type: 'web_search' },
+      ],
+      tool_choice: 'auto',
+    }
+
+    const result = convertResponsesToChatFormat(body)
+
+    expect(result.tools).toEqual([
+      {
+        type: 'function',
+        function: {
+          name: 'get_weather',
+          description: 'Get weather',
+          parameters: { type: 'object', properties: {} },
+          strict: undefined,
+        },
+      },
+      {
+        type: 'function',
+        function: { name: 'already_nested', parameters: { type: 'object', properties: {} } },
+      },
+      { type: 'web_search' },
+    ])
+  })
+
   it('passes through stop and stream_options', () => {
     const body = {
       model: 'gpt-4o',

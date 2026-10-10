@@ -52,6 +52,7 @@ export async function adaptOpenAIRequest(
     const sanitizeSchema = ctx.provider?.protocols?.openai?.toolSchemaSanitization ?? false
 
     openaiReq.tools = transformedRequest.tools.map(({ _passthrough: _, ...tool }) => {
+      if (!tool.function) return tool
       let parameters = tool.function.parameters
       if (parameters) {
         parameters = cleanSchemaForOpenAI(parameters, schemaConfig) as typeof parameters

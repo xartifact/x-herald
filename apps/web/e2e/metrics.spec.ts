@@ -47,14 +47,19 @@ test.describe('Metrics', () => {
   test('shows provider quality table', async ({ page }) => {
     await page.goto('/admin/metrics')
     await page.waitForLoadState('networkidle')
-    const qualityLabel = page.getByText(/供应商质量|provider quality|质量/i).first()
-    const qualityVisible = await qualityLabel.isVisible().catch(() => false)
-    if (qualityVisible) {
-      await expect(qualityLabel).toBeVisible()
-    } else {
-      const tableCount = await page.locator('table').count()
-      expect(tableCount > 0).toBe(true)
-    }
+    // 数据加载完成前单次快照可能两者皆空；轮询等待任一状态出现
+    await expect
+      .poll(async () => {
+        const qualityVisible = await page
+          .getByText(/供应商质量|provider quality|质量/i)
+          .first()
+          .isVisible()
+          .catch(() => false)
+        if (qualityVisible) return true
+        const tableCount = await page.locator('table').count()
+        return tableCount > 0
+      })
+      .toBe(true)
   })
 
   test('page does not show error state', async ({ page }) => {

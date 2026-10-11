@@ -69,14 +69,14 @@ test.describe('Providers', () => {
     await page.getByRole('button', { name: '创建' }).click()
     await expect(page.getByText(originalName)).toBeVisible({ timeout: 15000 })
 
-    const card = page.locator(`div.rounded-xl.border:has-text("${originalName}")`).first()
-    const actionButtons = card.locator('div.flex.items-center.gap-1 button')
-    await actionButtons.nth(2).click()
+    // 新版供应商列表：行内按钮展开 Sheet，编辑入口在 Sheet 中
+    await page.getByRole('button', { name: `查看 ${originalName}` }).click()
+    await page.getByRole('button', { name: '编辑连接' }).click()
 
     await page.waitForSelector('[role="dialog"]')
     await page.locator('input[placeholder="X-AIO API"]').fill(newName)
     await page.getByRole('button', { name: '保存更改' }).click()
-    await expect(page.getByText(newName)).toBeVisible({ timeout: 15000 })
+    await expect(page.getByText(newName, { exact: true })).toBeVisible({ timeout: 15000 })
   })
 
   test('delete provider', async ({ page }) => {
@@ -92,11 +92,13 @@ test.describe('Providers', () => {
 
     page.on('dialog', (dialog) => dialog.accept())
 
-    const card = page.locator(`div.rounded-xl.border:has-text("${name}")`).first()
-    const actionButtons = card.locator('div.flex.items-center.gap-1 button')
-    await actionButtons.nth(3).click()
+    await page.getByRole('button', { name: `查看 ${name}` }).click()
+    await page.getByRole('button', { name: '删除供应商' }).click()
 
-    await expect(page.getByText(name)).not.toBeVisible({ timeout: 10000 })
+    // Sheet 标题在删除完成前仍渲染名称；以列表行（查看按钮的可及名）为消失判据
+    await expect(page.getByRole('button', { name: `查看 ${name}` })).not.toBeVisible({
+      timeout: 10000,
+    })
   })
 
   test('toggle provider enabled/disabled', async ({ page }) => {
@@ -110,13 +112,12 @@ test.describe('Providers', () => {
     await page.getByRole('button', { name: '创建' }).click()
     await expect(page.getByText(name)).toBeVisible({ timeout: 15000 })
 
-    const card = page.locator(`div.rounded-xl.border:has-text("${name}")`).first()
-    await card.getByText('启用').click()
-    await page.waitForLoadState('networkidle')
-    await expect(card.getByText('禁用')).toBeVisible()
+    // StatusToggle 在共享的列表容器内且全列表多行同名；按 aria-pressed 精确定位该行的开关
+    const row = page.locator(`[aria-label="查看 ${name}"]`).locator('xpath=..')
+    await row.getByRole('button', { pressed: true, name: '启用' }).click()
+    await expect(row.getByRole('button', { pressed: false, name: '禁用' })).toBeVisible()
 
-    await card.getByText('禁用').click()
-    await page.waitForLoadState('networkidle')
-    await expect(card.getByText('启用')).toBeVisible()
+    await row.getByRole('button', { pressed: false, name: '禁用' }).click()
+    await expect(row.getByRole('button', { pressed: true, name: '启用' })).toBeVisible()
   })
 })

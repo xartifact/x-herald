@@ -35,17 +35,22 @@ test.describe('Logs', () => {
   test('page has table or empty state for logs', async ({ page }) => {
     await page.goto('/admin/logs')
     await page.waitForLoadState('domcontentloaded')
-    const hasTable = await page
-      .locator('table')
-      .first()
-      .isVisible()
-      .catch(() => false)
-    const hasEmptyState = await page
-      .getByText('还没有请求日志')
-      .first()
-      .isVisible()
-      .catch(() => false)
-    expect(hasTable || hasEmptyState).toBe(true)
+    // 单次 isVisible 快照在数据加载完成前会两者皆空；用 expect 自动轮询等待
+    await expect
+      .poll(async () => {
+        const hasTable = await page
+          .locator('table')
+          .first()
+          .isVisible()
+          .catch(() => false)
+        const hasEmptyState = await page
+          .getByText('还没有请求日志')
+          .first()
+          .isVisible()
+          .catch(() => false)
+        return hasTable || hasEmptyState
+      })
+      .toBe(true)
   })
 
   test('cleanup dialog opens and shows form', async ({ page }) => {

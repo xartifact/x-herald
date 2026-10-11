@@ -46,11 +46,18 @@ test.describe('Client Models', () => {
       .first()
       .isVisible()
       .catch(() => false)
-    const hasEmpty = await page
-      .getByText(/暂无|空|没有|no data/i)
-      .first()
-      .isVisible()
-      .catch(() => false)
+    const hasEmpty =
+      (await page
+        .getByText(/暂无|空|没有|no data/i)
+        .first()
+        .isVisible()
+        .catch(() => false)) ||
+      // 空数据时统计栏渲染 "0 / 0 个模型" 计数而非显式空态文案
+      (await page
+        .getByText(/0 \/ 0 个模型/)
+        .first()
+        .isVisible()
+        .catch(() => false))
     const isLoading = await page
       .getByText('加载中...')
       .first()

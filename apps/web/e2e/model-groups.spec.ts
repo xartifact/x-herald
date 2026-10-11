@@ -30,7 +30,8 @@ test.describe('Model Groups', () => {
     await page
       .waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 10000 })
       .catch(() => {})
-    await expect(page.getByText(name)).toBeVisible({ timeout: 15000 })
+    // 组名出现在列表行副标题与详情卡两处，取首个命中避免 strict-mode 多元素
+    await expect(page.getByText(name).first()).toBeVisible({ timeout: 15000 })
   })
 
   test('search functionality', async ({ page }) => {
@@ -44,11 +45,11 @@ test.describe('Model Groups', () => {
     await page.locator('input[placeholder="gpt-4"]').fill(name)
     await page.locator('input[placeholder="GPT-4"]').fill(displayName)
     await page.getByRole('button', { name: '创建' }).click()
-    await expect(page.getByText(name)).toBeVisible({ timeout: 15000 })
+    await expect(page.getByText(name).first()).toBeVisible({ timeout: 15000 })
 
     await page.locator('input[placeholder="搜索模型组..."]').fill(name)
     await page.waitForLoadState('networkidle')
-    await expect(page.getByText(name)).toBeVisible()
+    await expect(page.getByText(name).first()).toBeVisible()
 
     await page.locator('input[placeholder="搜索模型组..."]').fill('nonexistent-xyz-123')
     await page.waitForLoadState('networkidle')
@@ -68,17 +69,17 @@ test.describe('Model Groups', () => {
     await page.locator('input[placeholder="gpt-4"]').fill(originalName)
     await page.locator('input[placeholder="GPT-4"]').fill(originalDisplayName)
     await page.getByRole('button', { name: '创建' }).click()
-    await expect(page.getByText(originalName)).toBeVisible({ timeout: 15000 })
+    await expect(page.getByText(originalName).first()).toBeVisible({ timeout: 15000 })
 
-    const card = page.locator(`div.rounded-xl.border:has-text("${originalName}")`).first()
-    const actionButtons = card.locator('div.flex.items-center.gap-2 button')
-    await actionButtons.nth(0).click()
+    await page.getByRole('button', { name: '编辑模型组', exact: true }).first().click()
 
     await page.waitForSelector('[role="dialog"]')
     await page.locator('input[placeholder="gpt-4"]').fill(newName)
     await page.locator('input[placeholder="GPT-4"]').fill(newDisplayName)
     await page.getByRole('button', { name: '保存更改' }).click()
-    await expect(page.getByText(newName)).toBeVisible({ timeout: 15000 })
+    await expect(page.getByRole('button', { name: new RegExp(newName) })).toBeVisible({
+      timeout: 15000,
+    })
   })
 
   test('delete a model group', async ({ page }) => {
@@ -92,14 +93,14 @@ test.describe('Model Groups', () => {
     await page.locator('input[placeholder="gpt-4"]').fill(name)
     await page.locator('input[placeholder="GPT-4"]').fill(displayName)
     await page.getByRole('button', { name: '创建' }).click()
-    await expect(page.getByText(name)).toBeVisible({ timeout: 15000 })
+    await expect(page.getByText(name).first()).toBeVisible({ timeout: 15000 })
 
     page.on('dialog', (dialog) => dialog.accept())
 
-    const card = page.locator(`div.rounded-xl.border:has-text("${name}")`).first()
-    const actionButtons = card.locator('div.flex.items-center.gap-2 button')
-    await actionButtons.nth(1).click()
+    await page.getByRole('button', { name: '删除模型组', exact: true }).first().click()
 
-    await expect(page.getByText(name)).not.toBeVisible({ timeout: 10000 })
+    await expect(page.getByRole('button', { name: new RegExp(displayName) })).not.toBeVisible({
+      timeout: 10000,
+    })
   })
 })

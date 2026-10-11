@@ -23,44 +23,47 @@ test.describe('Circuit Breaker', () => {
   test('shows realtime state section', async ({ page }) => {
     await page.goto('/admin/circuit-breaker')
     await page.waitForLoadState('networkidle')
-    // Check for realtime state table or heading
-    const realtimeVisible = await page
-      .getByText(/实时状态|实例状态|当前状态/i)
-      .first()
-      .isVisible()
-      .catch(() => false)
-    if (realtimeVisible) {
-      await expect(page.getByText(/实时状态|实例状态|当前状态/i).first()).toBeVisible()
-    } else {
-      // Table headers may vary — check for any table
-      const headerCount = await page.locator('th').count()
-      const isLoading = await page
-        .getByText('加载中...')
-        .isVisible()
-        .catch(() => false)
-      expect(headerCount > 0 || isLoading).toBe(true)
-    }
+    // 数据加载完成前单次快照可能两者皆空；轮询等待任一状态出现
+    await expect
+      .poll(async () => {
+        const realtimeVisible = await page
+          .getByText(/实时状态|实例状态|当前状态/i)
+          .first()
+          .isVisible()
+          .catch(() => false)
+        if (realtimeVisible) return true
+        // Table headers may vary — check for any table
+        const headerCount = await page.locator('th').count()
+        const isLoading = await page
+          .getByText('加载中...')
+          .isVisible()
+          .catch(() => false)
+        return headerCount > 0 || isLoading
+      })
+      .toBe(true)
   })
 
   test('shows event history section', async ({ page }) => {
     await page.goto('/admin/circuit-breaker')
     await page.waitForLoadState('networkidle')
-    const eventVisible = await page
-      .getByText(/事件历史|历史事件/i)
-      .first()
-      .isVisible()
-      .catch(() => false)
-    if (eventVisible) {
-      await expect(page.getByText(/事件历史|历史事件/i).first()).toBeVisible()
-    } else {
-      // Fallback: check for any table or loading state
-      const tableCount = await page.locator('table').count()
-      const isLoading = await page
-        .getByText('加载中...')
-        .isVisible()
-        .catch(() => false)
-      expect(tableCount > 0 || isLoading).toBe(true)
-    }
+    // 数据加载完成前单次快照可能两者皆空；轮询等待任一状态出现
+    await expect
+      .poll(async () => {
+        const eventVisible = await page
+          .getByText(/事件历史|历史事件/i)
+          .first()
+          .isVisible()
+          .catch(() => false)
+        if (eventVisible) return true
+        // Fallback: check for any table or loading state
+        const tableCount = await page.locator('table').count()
+        const isLoading = await page
+          .getByText('加载中...')
+          .isVisible()
+          .catch(() => false)
+        return tableCount > 0 || isLoading
+      })
+      .toBe(true)
   })
 
   test('shows refresh button', async ({ page }) => {
@@ -72,11 +75,15 @@ test.describe('Circuit Breaker', () => {
   test('event filter dropdown is present', async ({ page }) => {
     await page.goto('/admin/circuit-breaker')
     await page.waitForLoadState('networkidle')
-    const filterCount = await page
-      .locator('button, [role="combobox"], select')
-      .filter({ hasText: /全部|事件|类型|filter/i })
-      .count()
-    expect(filterCount > 0).toBe(true)
+    await expect
+      .poll(async () => {
+        const filterCount = await page
+          .locator('button, [role="combobox"], select')
+          .filter({ hasText: /全部|事件|类型|filter/i })
+          .count()
+        return filterCount > 0
+      })
+      .toBe(true)
   })
 
   test('page does not show error state', async ({ page }) => {

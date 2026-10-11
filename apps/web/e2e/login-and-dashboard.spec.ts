@@ -18,15 +18,20 @@ test.describe('Dashboard', () => {
   test('navigation links are present', async ({ page }) => {
     await page.goto('/admin')
     await page.waitForLoadState('networkidle')
-    await expect(page.locator('a[href="/admin/providers"]')).toBeVisible()
-    await expect(page.locator('a[href="/admin/model-groups"]')).toBeVisible()
-    await expect(page.locator('a[href="/admin/keys"]')).toBeVisible()
+    // 侧边栏导航与仪表盘快捷卡片都指向相同路由；限定在 nav 内避免 strict-mode 多元素命中
+    const nav = page.getByRole('navigation', { name: '管理导航' })
+    await expect(nav.locator('a[href="/admin/providers"]')).toBeVisible()
+    await expect(nav.locator('a[href="/admin/model-groups"]')).toBeVisible()
+    await expect(nav.locator('a[href="/admin/keys"]')).toBeVisible()
   })
 
   test('navigates to providers page via link', async ({ page }) => {
     await page.goto('/admin')
     await page.waitForLoadState('networkidle')
-    await page.locator('a[href="/admin/providers"]').click()
+    await page
+      .getByRole('navigation', { name: '管理导航' })
+      .locator('a[href="/admin/providers"]')
+      .click()
     await page.waitForLoadState('networkidle')
     await expect(page.getByRole('heading', { name: '供应商管理' })).toBeVisible()
   })

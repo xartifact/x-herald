@@ -32,15 +32,52 @@ export function estimateUsageFromContent(
   try {
     // 估算输入 tokens
     if (requestBody && typeof requestBody === 'object') {
-      const req = requestBody as any
-      if (req.messages && Array.isArray(req.messages)) {
-        for (const msg of req.messages) {
-          if (typeof msg.content === 'string') {
-            inputTokens += estimateTokens(msg.content)
-          } else if (Array.isArray(msg.content)) {
-            for (const part of msg.content) {
-              if (part.type === 'text' && part.text) {
-                inputTokens += estimateTokens(part.text)
+      const req = requestBody as Record<string, unknown>
+      const messages = req.messages
+      if (Array.isArray(messages)) {
+        for (const msg of messages) {
+          if (!msg || typeof msg !== 'object') continue
+          const content = (msg as Record<string, unknown>).content
+          if (typeof content === 'string') {
+            inputTokens += estimateTokens(content)
+          } else if (Array.isArray(content)) {
+            for (const part of content) {
+              if (
+                part &&
+                typeof part === 'object' &&
+                (part as Record<string, unknown>).type === 'text'
+              ) {
+                const text = (part as Record<string, unknown>).text
+                if (typeof text === 'string') inputTokens += estimateTokens(text)
+              }
+            }
+          }
+        }
+      }
+      // Responses API：instructions + input 数组（string 或 input_text 分块）
+      if (req.input !== undefined) {
+        const instructions = req.instructions
+        if (typeof instructions === 'string') inputTokens += estimateTokens(instructions)
+        if (typeof req.input === 'string') {
+          inputTokens += estimateTokens(req.input)
+        } else if (Array.isArray(req.input)) {
+          for (const item of req.input) {
+            if (typeof item === 'string') {
+              inputTokens += estimateTokens(item)
+            } else if (item && typeof item === 'object') {
+              const rec = item as Record<string, unknown>
+              if (typeof rec.text === 'string') inputTokens += estimateTokens(rec.text)
+              if (Array.isArray(rec.content)) {
+                for (const part of rec.content) {
+                  if (
+                    part &&
+                    typeof part === 'object' &&
+                    (part as Record<string, unknown>).type === 'input_text'
+                  ) {
+                    const text = (part as Record<string, unknown>).text
+                    inputTokens += estimateTokens(typeof text === 'string' ? text : '')
+                  }
+                }
               }
             }
           }
@@ -50,18 +87,21 @@ export function estimateUsageFromContent(
 
     // 估算输出 tokens
     if (responseBody && typeof responseBody === 'object') {
-      const res = responseBody as any
+      const res = responseBody as Record<string, unknown>
 
       // Phase 1: 处理流式响应摘要（使用完整内容）
       if (res.type === 'stream_summary') {
         // 新格式：thinkingContent + contentText
-        if (res.thinkingContent || res.contentText) {
-          outputTokens += estimateTokens(res.thinkingContent || '')
-          outputTokens += estimateTokens(res.contentText || '')
+        const thinkingContent = res.thinkingContent
+        const contentText = res.contentText
+        const contentPreview = res.contentPreview
+        if (typeof thinkingContent === 'string' || typeof contentText === 'string') {
+          if (typeof thinkingContent === 'string') outputTokens += estimateTokens(thinkingContent)
+          if (typeof contentText === 'string') outputTokens += estimateTokens(contentText)
         }
         // 后备：旧格式 contentPreview
-        else if (res.contentPreview) {
-          outputTokens = estimateTokens(res.contentPreview)
+        else if (typeof contentPreview === 'string') {
+          outputTokens = estimateTokens(contentPreview)
         }
       }
       // 处理标准响应
@@ -75,8 +115,33 @@ export function estimateUsageFromContent(
       // 处理 Anthropic 响应
       else if (res.content && Array.isArray(res.content)) {
         for (const block of res.content) {
-          if (block.type === 'text' && block.text) {
-            outputTokens += estimateTokens(block.text)
+          if (
+            block &&
+            typeof block === 'object' &&
+            (block as Record<string, unknown>).type === 'text'
+          ) {
+            const text = (block as Record<string, unknown>).text
+            if (typeof text === 'string') outputTokens += estimateTokens(text)
+          }
+        }
+      }
+      // 处理 Responses API 响应：output 数组（message/output_text、function_call args）
+      else if (res.object === 'response' && Array.isArray(res.output)) {
+        for (const item of res.output) {
+          if (!item || typeof item !== 'object') continue
+          const rec = item as Record<string, unknown>
+          if (typeof rec.args === 'string') outputTokens += estimateTokens(rec.args)
+          if (Array.isArray(rec.content)) {
+            for (const part of rec.content) {
+              if (
+                part &&
+                typeof part === 'object' &&
+                (part as Record<string, unknown>).type === 'output_text'
+              ) {
+                const text = (part as Record<string, unknown>).text
+                if (typeof text === 'string') outputTokens += estimateTokens(text)
+              }
+            }
           }
         }
       }

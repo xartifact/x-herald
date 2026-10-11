@@ -177,6 +177,20 @@ describe('createModelRemapStream', () => {
     expect(result).toContain('"model":"virtual-model"')
     expect(result).toContain('[DONE]')
   })
+
+  it('remaps Responses API response event model fields', async () => {
+    const input = [
+      'data: {"type":"response.created","response":{"id":"resp_1","model":"gpt-4-turbo"}}\n',
+      'data: {"type":"response.completed","response":{"id":"resp_1","model":"gpt-4-turbo","usage":{"input_tokens":1}}}\n',
+      'data: [DONE]\n',
+    ].join('')
+    const stream = createModelRemapStream('my-alias')
+    const result = await runTransform(input, stream)
+
+    expect(result).not.toContain('gpt-4-turbo')
+    expect(result).toContain('"model":"my-alias"')
+    expect(result).toContain('[DONE]')
+  })
 })
 
 /* ------------------------------------------------------------------ */
@@ -260,6 +274,26 @@ describe('extractUsageFromChunk', () => {
     const result = extractUsageFromChunk(chunk)
 
     expect(result).toEqual({ prompt_tokens: 3, completion_tokens: 7 })
+  })
+
+  it('extracts usage from Responses API response.completed format', () => {
+    const chunk = JSON.stringify({
+      type: 'response.completed',
+      response: { usage: { input_tokens: 13, output_tokens: 5, total_tokens: 18 } },
+    })
+    const result = extractUsageFromChunk(chunk)
+
+    expect(result).toEqual({ prompt_tokens: 13, completion_tokens: 5 })
+  })
+
+  it('returns null for response.completed without usage', () => {
+    const chunk = JSON.stringify({
+      type: 'response.completed',
+      response: { id: 'resp_1', output: [] },
+    })
+    const result = extractUsageFromChunk(chunk)
+
+    expect(result).toBeNull()
   })
 
   it('returns null for invalid JSON', () => {

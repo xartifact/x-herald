@@ -77,6 +77,16 @@ function remapModelInChunk(json: any, targetModel: string): boolean {
     json.message.model = targetModel
     modified = true
   }
+  // Responses API 流：response.created / response.completed 等事件的
+  // response.model 才是模型名载体（顶层无 model 字段）。
+  if (
+    typeof json.type === 'string' &&
+    json.type.startsWith('response.') &&
+    json.response?.model !== undefined
+  ) {
+    json.response.model = targetModel
+    modified = true
+  }
   return modified
 }
 
@@ -415,6 +425,14 @@ export function extractUsageFromChunk(
       return {
         prompt_tokens: json.usage.prompt_tokens,
         completion_tokens: json.usage.completion_tokens,
+      }
+    }
+
+    // 后备：Responses API 原生流 - response.completed 事件中的 response.usage
+    if (json.type === 'response.completed' && json.response?.usage) {
+      return {
+        prompt_tokens: json.response.usage.input_tokens,
+        completion_tokens: json.response.usage.output_tokens,
       }
     }
 

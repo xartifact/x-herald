@@ -1,32 +1,32 @@
 import type { Context } from 'hono'
 
-import { loadConfig } from '../../../config'
 import logger from '../../../lib/logger'
 import type { VirtualKey } from '@xartifact/x-herald-db'
-import type { ModelGroup, ModelInstance } from '@xartifact/x-herald-db'
+import type { ModelInstance } from '@xartifact/x-herald-db'
 import type { providers } from '@xartifact/x-herald-db'
-import type { StandardRequest, TransformerContext } from '@xartifact/x-herald-shared'
 
 import { accessModelRouter } from '../../services/access-model-router'
 import { identifyClient, resolveClientIp } from '../../services/client-identifier'
-import {
-  handleGatewayError,
-  handleProviderError,
-  handleProviderErrorPassthrough,
-} from '../../services/error-handler'
+import { handleGatewayError } from '../../services/error-handler'
 import { shouldFilterHeader } from '../../services/headers'
-import { logStartAsync } from '../../services/log-service'
+import { logRequest, logStartAsync } from '../../services/log-service'
 import type { ModelMappingResult } from '../../services/model-mapping'
-import { buildRouteChainSnapshot } from '../../services/routing-trace-recorder'
-import { ModelNotFoundError } from '../../services/model-group-router'
-import { getProviderProtocol, getProviderUrl, getEndpoint } from '../../services/protocol-detector'
 import {
-  handleNonStreamingResponse,
-  handleStreamingResponse,
-} from '../../services/response-handlers'
-import { getTransformer, createTransformerContext } from '../../transformer'
-import { buildHeaders } from '../../transformer/shared/parameter-transformer'
-import { sanitizeOpenAIToolsArray } from '../../transformer/shared/tool-schema-sanitizer'
+  buildRouteChainSnapshot,
+  type RouteChainSnapshot,
+} from '../../services/routing-trace-recorder'
+import { ModelNotFoundError } from '../../services/model-group-router'
+import type { RouteResult } from '../../services/router-selector'
+import { extractProviderResponseHeaders, parseProviderError } from '../../services/error-classifier'
+import { markStreamAborted } from '../../services/log-stream'
+import {
+  StreamResponseCollector,
+  createModelRemapStream,
+  getClientNonStreamingHeaders,
+  getClientStreamingHeaders,
+  mergeResponseHeaders,
+} from '../../services/response-handlers/shared'
+import { UPSTREAM_STREAM_IDLE_TIMEOUT_MS } from '@xartifact/x-herald-shared'
 import { AbortManager } from '../shared/abort-manager'
 import {
   calculateTtfbTimeout,
@@ -41,11 +41,6 @@ import {
   resolveAttemptBaseMs,
   resolveTotalLimitMs,
 } from '../../services/ttfb-timeout-policy'
-import {
-  convertChatToResponsesBody,
-  convertResponsesToChatFormat,
-  convertStreamToResponsesFormat,
-} from './responses-format'
 
 interface ProviderRequest {
   transformedBody: unknown
@@ -54,92 +49,34 @@ interface ProviderRequest {
   providerRequestHeaders: Record<string, string>
 }
 
-interface CandidateInfo {
-  instance: ModelInstance
-  provider: typeof providers.$inferSelect
-  group: ModelGroup
-  matchedRule?: { id: string; name: string; priority: number }
-  mapping: ModelMappingResult
-  decision: { strategy: string }
-}
-
-async function buildProviderRequest(opts: {
-  isPassthroughEnabled: boolean
-  rawBody: Record<string, unknown>
+export function buildProviderRequest(opts: {
+  responsesBody: Record<string, unknown>
   instance: ModelInstance
   provider: typeof providers.$inferSelect
   clientRequestHeaders: Record<string, string>
-  standardReq: StandardRequest
-  ctx: TransformerContext
-  targetProtocol: 'openai' | 'anthropic'
-  isStreaming: boolean
   providerUrl: string
-}): Promise<ProviderRequest> {
-  const {
-    isPassthroughEnabled,
-    rawBody,
-    instance,
-    provider,
-    clientRequestHeaders,
-    standardReq,
-    ctx,
-    targetProtocol,
-    isStreaming,
-    providerUrl,
-  } = opts
+}): ProviderRequest {
+  const { responsesBody, instance, provider, clientRequestHeaders, providerUrl } = opts
   const filtered = Object.fromEntries(
     Object.entries(clientRequestHeaders).filter(([k]) => !shouldFilterHeader(k)),
   )
 
-  if (isPassthroughEnabled) {
-    const transformedBody: { model?: string; tools?: unknown; [key: string]: unknown } = {
-      ...rawBody,
-      model: instance.actualModelName,
-    }
-    if (
-      provider.protocols?.openai?.toolSchemaSanitization &&
-      Array.isArray(transformedBody.tools)
-    ) {
-      transformedBody.tools = sanitizeOpenAIToolsArray(transformedBody.tools)
-    }
-    return {
-      transformedBody,
-      targetUrl: joinUrl(providerUrl, getEndpoint(targetProtocol, isStreaming)),
-      requestBody: JSON.stringify(transformedBody),
-      providerRequestHeaders: { ...filtered, authorization: `Bearer ${provider.apiKey}` },
-    }
+  const transformedBody: Record<string, unknown> = {
+    ...responsesBody,
+    model: instance.actualModelName,
   }
-
-  const egressTransformer = getTransformer(targetProtocol)
-  if (!egressTransformer?.adaptRequest)
-    throw new Error(`No adapter found for protocol: ${targetProtocol}`)
-  const adapted = await egressTransformer.adaptRequest(standardReq, ctx)
-  let pHeaders: Record<string, string> = {
-    ...filtered,
-    ...Object.fromEntries(
-      Object.entries(adapted.headers || {}).map(([k, v]) => [k.toLowerCase(), v]),
-    ),
-    authorization: `Bearer ${provider.apiKey}`,
-  }
-  if ((ctx.instanceConfig as Record<string, unknown>)?.customHeaders)
-    pHeaders = buildHeaders(
-      pHeaders,
-      (ctx.instanceConfig as Record<string, unknown>).customHeaders as Record<string, string>,
-      ctx,
-    )
   return {
-    transformedBody: adapted.body,
-    targetUrl: adapted.url || joinUrl(providerUrl, getEndpoint(targetProtocol, isStreaming)),
-    requestBody: JSON.stringify(adapted.body),
-    providerRequestHeaders: pHeaders,
+    transformedBody,
+    targetUrl: joinUrl(providerUrl, '/responses'),
+    requestBody: JSON.stringify(transformedBody),
+    providerRequestHeaders: { ...filtered, authorization: `Bearer ${provider.apiKey}` },
   }
 }
 
 function buildLogParams(opts: {
-  candidate: CandidateInfo
+  candidate: RouteResult
   clientRequestHeaders: Record<string, string>
   responsesBody: unknown
-  standardRequestBody: StandardRequest
   providerRequestHeaders: Record<string, string>
   transformedBody: unknown
   clientIp: string
@@ -147,8 +84,8 @@ function buildLogParams(opts: {
   clientType?: string
   requestPath: string
   requestMethod: string
-  incomingProtocol: 'openai'
-  targetProtocol: 'openai' | 'anthropic'
+  incomingProtocol: 'responses'
+  targetProtocol: 'responses'
   conversationId?: string
   virtualKey: VirtualKey
 }) {
@@ -225,11 +162,8 @@ export async function handleResponsesAPI(
   const clientInfo = identifyClient(userAgent, clientRequestHeaders)
   const clientType = clientInfo.type
   const conversationId = c.req.header('x-conversation-id') || undefined
-
   let rawBody: { model?: string; [key: string]: unknown } | undefined
   let transformedBody: unknown
-  const incomingProtocol = 'openai' as const
-  let targetProtocol: 'openai' | 'anthropic' | undefined
   let providerRequestHeaders: Record<string, string> | undefined
   let logId: string | undefined
   let attemptId: string | undefined
@@ -238,24 +172,29 @@ export async function handleResponsesAPI(
 
   try {
     const responsesBody = preprocessedBody ?? ((await c.req.json()) as Record<string, unknown>)
-    rawBody = convertResponsesToChatFormat(responsesBody) as {
-      model?: string
-      [key: string]: unknown
-    }
+    rawBody = responsesBody as { model?: string; [key: string]: unknown }
     logger.info(
-      { requestId, model: rawBody.model, protocol: incomingProtocol },
+      { requestId, model: rawBody.model, protocol: 'responses' },
       'Processing Responses API request',
     )
 
-    const ingressTransformer = getTransformer(incomingProtocol)
-    if (!ingressTransformer?.normalizeRequest)
-      throw new Error(`No transformer found for protocol: ${incomingProtocol}`)
+    const requestedModel = typeof rawBody.model === 'string' ? rawBody.model : ''
+    const isStreamingRequest = responsesBody.stream === true
+    const responsesTools = Array.isArray(responsesBody.tools) ? responsesBody.tools : []
+    const responsesInput = Array.isArray(responsesBody.input) ? responsesBody.input : []
+    const hasTools = responsesTools.length > 0
+    const hasVision = responsesInput.some((item) => {
+      if (!item || typeof item !== 'object' || !('content' in item)) return false
+      const content = (item as { content: unknown }).content
+      if (typeof content === 'string') return content.includes('input_image')
+      if (!Array.isArray(content)) return false
+      return content.some((part) => {
+        if (!part || typeof part !== 'object' || !('type' in part)) return false
+        return (part as { type: unknown }).type === 'input_image'
+      })
+    })
 
-    const ctx = createTransformerContext(requestId)
-    const standardReq = await ingressTransformer.normalizeRequest(rawBody, ctx)
-    const standardRequestBody = standardReq
-
-    if (virtualKey.allowedModels?.length && !virtualKey.allowedModels.includes(standardReq.model)) {
+    if (virtualKey.allowedModels?.length && !virtualKey.allowedModels.includes(requestedModel)) {
       return c.json(
         {
           error: {
@@ -268,21 +207,18 @@ export async function handleResponsesAPI(
     }
 
     const routeResult = await accessModelRouter.route({
-      requestedModel: standardReq.model,
-      streaming: standardReq.stream || false,
-      hasTools: !!standardReq.tools?.length,
-      request: standardReq,
-      hasVision: standardReq.messages.some(
-        (m) => Array.isArray(m.content) && m.content.some((c) => c.type === 'image_url'),
-      ),
+      requestedModel,
+      streaming: isStreamingRequest,
+      hasTools,
+      hasVision,
       virtualKeyId: virtualKey.id,
       workspaceId: virtualKey.workspaceId,
     })
-    if (!routeResult) throw new ModelNotFoundError(standardReq.model)
+    if (!routeResult) throw new ModelNotFoundError(requestedModel)
 
     const routeChain = buildRouteChainSnapshot(
       [routeResult],
-      standardReq.model,
+      requestedModel,
       undefined,
       routeResult.matchedRule
         ? {
@@ -294,7 +230,7 @@ export async function handleResponsesAPI(
         : undefined,
     )
 
-    const { instance, provider, group, decision, mapping, matchedRule } = routeResult
+    const { instance, provider, group, decision, mapping } = routeResult
     logger.debug(
       {
         requestId,
@@ -309,70 +245,58 @@ export async function handleResponsesAPI(
       'Model routed via group',
     )
 
-    targetProtocol = getProviderProtocol(incomingProtocol, provider)
-    const providerUrl = getProviderUrl(provider, targetProtocol)
-    if (!providerUrl)
+    const providerProtocols = provider.protocols as
+      | Record<string, { enabled?: boolean; baseUrl?: string }>
+      | undefined
+    if (!providerProtocols?.openai?.enabled) {
       return c.json(
         {
           error: {
             type: 'protocol_error',
-            message: `Protocol '${targetProtocol}' not configured for provider`,
+            message: `Responses API requires an OpenAI-compatible provider; provider '${provider.name}' does not enable the openai protocol`,
           },
         },
         400,
       )
-
-    const config = loadConfig()
-    const isSameProtocol = incomingProtocol === targetProtocol
-    const isPassthroughEnabled =
-      isSameProtocol &&
-      config.sameProtocolPassthrough.enabled &&
-      config.sameProtocolPassthrough.allowedProtocols.includes(incomingProtocol)
-
-    standardReq.model = instance.actualModelName
-    ctx.provider = {
-      name: provider.name,
-      baseUrl: providerUrl,
-      apiKey: provider.apiKey || '',
-      protocol: targetProtocol,
-      models: [],
-      protocols: provider.protocols as Record<string, { baseUrl: string; enabled: boolean }>,
     }
-    ctx.instanceConfig = (instance.config ?? undefined) as Record<string, unknown> | undefined
+    const providerUrl = providerProtocols.openai.baseUrl
+    if (!providerUrl) {
+      return c.json(
+        {
+          error: {
+            type: 'protocol_error',
+            message: `Protocol 'openai' not configured for provider '${provider.name}'`,
+          },
+        },
+        400,
+      )
+    }
 
-    const candidate: CandidateInfo = { instance, provider, group, matchedRule, mapping, decision }
-    const providerReq = await buildProviderRequest({
-      isPassthroughEnabled,
-      rawBody,
+    const providerReq = buildProviderRequest({
+      responsesBody: responsesBody as Record<string, unknown>,
       instance,
       provider,
       clientRequestHeaders,
-      standardReq,
-      ctx,
-      targetProtocol,
-      isStreaming,
       providerUrl,
     })
-    transformedBody = providerReq.transformedBody
     providerRequestHeaders = providerReq.providerRequestHeaders
+    transformedBody = providerReq.transformedBody
+    const targetUrl = providerReq.targetUrl
 
     logger.debug(
       {
         requestId,
-        targetUrl: providerReq.targetUrl,
-        targetProtocol,
-        model: standardReq.model,
-        isPassthrough: isPassthroughEnabled,
+        targetUrl,
+        model: instance.actualModelName,
       },
-      'Forwarding to provider',
+      'Forwarding Responses request to provider',
     )
 
     ;({ logId, attemptId } = logStartAsync({
       ...buildLogParams({
-        candidate,
+        candidate: routeResult,
         clientRequestHeaders,
         responsesBody,
-        standardRequestBody,
         providerRequestHeaders,
         transformedBody,
         clientIp,
@@ -380,15 +304,14 @@ export async function handleResponsesAPI(
         clientType,
         requestPath,
         requestMethod,
-        incomingProtocol,
-        targetProtocol,
+        incomingProtocol: 'responses',
+        targetProtocol: 'responses',
         conversationId,
         virtualKey,
       }),
       requestGroupId,
       candidateIndex: 0,
     }))
-    const preprocessEndTime = Date.now()
 
     const retryConfig: RetryConfig = {
       maxRetries: instance.config?.retryConfig?.maxRetries ?? 2,
@@ -424,10 +347,10 @@ export async function handleResponsesAPI(
       const retryResult = await executeWithRetry({
         abortManager,
         operation: async (signal) =>
-          fetch(providerReq.targetUrl, {
+          fetch(targetUrl, {
             method: 'POST',
             headers: providerRequestHeaders,
-            body: providerReq.requestBody,
+            body: JSON.stringify(transformedBody),
             signal,
             connectTimeout,
           } as RequestInit),
@@ -468,8 +391,6 @@ export async function handleResponsesAPI(
           isStreaming,
           startTime,
           transformedBody,
-          incomingProtocol,
-          targetProtocol,
           logId,
           retryCount,
         })
@@ -486,85 +407,315 @@ export async function handleResponsesAPI(
           { requestId, retryCount, statusCode: upstreamResponse.status },
           '[Retry] All retries exhausted',
         )
-      const errorHandler = isPassthroughEnabled
-        ? handleProviderErrorPassthrough
-        : handleProviderError
-      return errorHandler({
-        c,
-        response: upstreamResponse,
-        provider,
+      const responseTimeMs = Date.now() - startTime
+      const providerResponseHeaders = extractProviderResponseHeaders(upstreamResponse)
+      const errorBody = await parseProviderError(upstreamResponse)
+      const errorPayload = errorBody.error
+      const rawErrorMessage =
+        errorPayload && typeof errorPayload === 'object' && 'message' in errorPayload
+          ? String(errorPayload.message) || 'Provider request failed'
+          : 'Provider request failed'
+      await logRequest({
         virtualKey,
-        originalModelName: rawBody.model || 'unknown',
+        modelName: mapping.modelName,
+        originalModelName: mapping.originalModel,
+        providerId: provider.id,
+        providerName: provider.name,
+        status: 'failure',
+        statusCode: upstreamResponse.status,
+        responseTimeMs,
         requestHeaders: clientRequestHeaders,
         providerRequestHeaders,
-        rawBody,
+        requestBody: responsesBody,
+        transformedRequestBody: transformedBody,
+        providerResponseHeaders,
+        providerResponseBody: errorBody,
+        responseBody: errorBody,
+        errorMessage: rawErrorMessage,
+        errorType: 'provider_error',
         clientIp,
         userAgent,
+        clientType,
         requestPath,
         requestMethod,
-        isStreaming,
-        startTime,
-        transformedBody,
-        incomingProtocol,
-        targetProtocol,
+        streaming: isStreaming,
+        incomingProtocol: 'responses',
+        targetProtocol: 'responses',
+        conversationId,
         logId,
         attemptId,
         retryCount,
-        routingTrace: routeChain,
+        routingTrace: { routeChain },
+      })
+      // parseProviderError 已消费 body（内部 response.text()），直接复用
+      // upstreamResponse.body 会抛 "Body object should not be disturbed or locked"，
+      // 错误会被外层 catch 吞成通用网关 500。用已读出的错误体原样重建。
+      return new Response(JSON.stringify(errorBody), {
+        status: upstreamResponse.status,
+        statusText: upstreamResponse.statusText,
+        headers: providerResponseHeaders,
       })
     }
 
-    const handlerParams = {
-      c,
-      response: upstreamResponse,
-      ctx,
-      incomingProtocol,
-      targetProtocol,
-      virtualKey,
-      provider,
-      originalModelName: rawBody.model || 'unknown',
-      resolvedModelName: mapping.modelName,
-      mappingType: mapping.mappingType,
-      isMapped: mapping.isMapped,
-      startTime,
-      preprocessEndTime,
-      providerTtfbTime,
-      requestHeaders: clientRequestHeaders,
-      providerRequestHeaders,
-      rawBody,
-      standardRequestBody,
-      transformedBody,
-      clientIp,
-      userAgent,
-      requestPath,
-      requestMethod,
-      conversationId,
-      isPassthroughEnabled,
-      clientType,
-      logId,
-      retryCount,
-      request: c.req.raw,
-      routingTrace: {
-        matchedRuleId: matchedRule?.id,
-        matchedRuleName: matchedRule?.name,
-        matchedRulePriority: matchedRule?.priority,
-        modelGroupId: group.id,
-        modelGroupName: group.name,
-        instanceId: instance.id,
-        actualModelName: instance.actualModelName,
-        strategy: decision.strategy,
-        instanceCost: instance.costPer1kTokens,
+    function streamNativeResponses(params: {
+      upstreamResponse: Response
+      providerStream: ReadableStream<Uint8Array>
+      mergedHeaders: Record<string, string>
+      startTime: number
+      providerTtfbTime: number
+      virtualKey: VirtualKey
+      mapping: ModelMappingResult
+      provider: { id: string; name: string }
+      clientRequestHeaders: Record<string, string>
+      providerRequestHeaders: Record<string, string>
+      responsesBody: Record<string, unknown>
+      transformedBody: unknown
+      clientIp: string
+      userAgent: string
+      clientType?: string
+      requestPath: string
+      requestMethod: string
+      conversationId?: string
+      logId?: string
+      attemptId?: string
+      retryCount: number
+      routeChain: RouteChainSnapshot
+    }): Response {
+      const {
+        upstreamResponse,
+        providerStream,
+        mergedHeaders,
+        startTime,
+        providerTtfbTime,
+        virtualKey,
+        mapping,
+        provider,
+        clientRequestHeaders,
+        providerRequestHeaders,
+        responsesBody,
+        transformedBody,
+        clientIp,
+        userAgent,
+        clientType,
+        requestPath,
+        requestMethod,
+        conversationId,
+        logId,
+        attemptId,
+        retryCount,
         routeChain,
-      },
+      } = params
+
+      // 采集 usage（response.completed 事件）、thinking/content 分块与 provider 模型名。
+      // Responses 流事件没有 choices/delta 形状，StreamResponseCollector 的
+      // content/thinking 提取对它不生效，但 usage（extractUsageFromChunk 的
+      // response.completed 分支）和进度/时序采集仍然有效。
+      const collector = new StreamResponseCollector()
+      let isLogFinalized = false
+
+      const finalize = (status: 'success' | 'failure', statusCode: number) => {
+        if (isLogFinalized) return
+        isLogFinalized = true
+        const now = Date.now()
+        const usage = collector.getUsage()
+        void logRequest({
+          virtualKey,
+          modelName: mapping.modelName,
+          originalModelName: mapping.originalModel,
+          mappingType: mapping.mappingType,
+          isMapped: mapping.isMapped,
+          providerId: provider.id,
+          providerName: provider.name,
+          status,
+          statusCode,
+          responseTimeMs: now - startTime,
+          requestHeaders: clientRequestHeaders,
+          providerRequestHeaders,
+          requestBody: responsesBody,
+          transformedRequestBody: transformedBody,
+          inputTokens: usage.inputTokens,
+          outputTokens: usage.outputTokens,
+          streaming: true,
+          incomingProtocol: 'responses',
+          targetProtocol: 'responses',
+          conversationId,
+          clientIp,
+          userAgent,
+          clientType,
+          requestPath,
+          requestMethod,
+          logId,
+          attemptId,
+          retryCount,
+          providerTtfbMs: providerTtfbTime > 0 ? providerTtfbTime - (startTime + 1) : undefined,
+          streamDurationMs: now - Math.max(providerTtfbTime, startTime + 1),
+          routingTrace: { routeChain },
+        })
+      }
+
+      let streamIdleTimer: ReturnType<typeof setTimeout> | undefined
+      const resetStreamIdleTimer = (controller: TransformStreamDefaultController<Uint8Array>) => {
+        clearTimeout(streamIdleTimer)
+        streamIdleTimer = setTimeout(() => {
+          logger.warn(
+            { logId, attemptId },
+            `Upstream stream idle timeout after ${UPSTREAM_STREAM_IDLE_TIMEOUT_MS / 1000}s, terminating`,
+          )
+          controller.terminate()
+          finalize('failure', 599)
+        }, UPSTREAM_STREAM_IDLE_TIMEOUT_MS)
+      }
+
+      const decoder = new TextDecoder()
+      const monitorTransformer = {
+        transform(chunk: Uint8Array, controller: TransformStreamDefaultController<Uint8Array>) {
+          resetStreamIdleTimer(controller)
+          // SSE 事件可能跨 chunk 分割，逐行解析前先缓冲残行
+          const text = decoder.decode(chunk, { stream: true })
+          for (const line of text.split('\n')) {
+            if (!line.startsWith('data:')) continue
+            const data = line.slice(5).trim()
+            if (!data || data === '[DONE]') continue
+            collector.processEvent(data)
+          }
+          controller.enqueue(chunk)
+        },
+        flush() {
+          clearTimeout(streamIdleTimer)
+          finalize('success', upstreamResponse.status)
+        },
+        cancel(reason: unknown) {
+          // 客户端断开：把 logStartAsync 创建的日志行收尾为 aborted，
+          // 否则永远悬挂 incomplete；已收到的 usage 照常入账。
+          clearTimeout(streamIdleTimer)
+          finalize('failure', 499)
+          if (logId && attemptId && !logId.startsWith('temp-')) {
+            void markStreamAborted(logId, attemptId, true)
+          }
+          logger.info({ logId, attemptId, reason }, 'Responses stream cancelled by client')
+        },
+        // bun-types 的 Transformer 接口尚未声明 cancel（Bun 运行时已支持，实测触发）。
+        // 断言收窄到 Transformer 形状，类型补齐后可直接移除。
+      } as unknown as Transformer<Uint8Array, Uint8Array>
+      const monitor = new TransformStream<Uint8Array, Uint8Array>(monitorTransformer)
+
+      let clientStream: ReadableStream<Uint8Array> = providerStream.pipeThrough(monitor)
+      // 模型映射启用时，把流事件里的 response.model 回写为客户端请求的原始模型名。
+      if (mapping.isMapped && mapping.originalModel) {
+        clientStream = clientStream.pipeThrough(
+          createModelRemapStream(mapping.originalModel),
+        ) as unknown as ReadableStream<Uint8Array>
+      }
+      return new Response(clientStream, {
+        status: upstreamResponse.status,
+        statusText: upstreamResponse.statusText,
+        headers: mergedHeaders,
+      })
     }
 
-    if (standardReq.stream === true) {
-      const chatResponse = await handleStreamingResponse(handlerParams)
-      return convertStreamToResponsesFormat(chatResponse)
+    const responseTimeMs = Date.now() - startTime
+    const providerResponseHeaders = extractProviderResponseHeaders(upstreamResponse)
+    const mergedHeaders = mergeResponseHeaders(
+      getClientStreamingHeaders(providerResponseHeaders['content-type']),
+      providerResponseHeaders,
+    )
+    const providerStream = upstreamResponse.body
+    if (isStreaming && providerStream) {
+      return streamNativeResponses({
+        upstreamResponse,
+        providerStream,
+        mergedHeaders,
+        startTime,
+        providerTtfbTime,
+        virtualKey,
+        mapping,
+        provider,
+        clientRequestHeaders,
+        providerRequestHeaders,
+        responsesBody,
+        transformedBody,
+        clientIp,
+        userAgent,
+        clientType,
+        requestPath,
+        requestMethod,
+        conversationId,
+        logId,
+        attemptId,
+        retryCount,
+        routeChain,
+      })
     }
-    const chatResponse = await handleNonStreamingResponse(handlerParams)
-    const chatBody = (await chatResponse.json()) as Record<string, unknown>
-    return c.json(convertChatToResponsesBody(chatBody))
+    if (isStreaming) {
+      return new Response(null, {
+        status: upstreamResponse.status,
+        statusText: upstreamResponse.statusText,
+        headers: mergedHeaders,
+      })
+    }
+    const clonedForLog = upstreamResponse.clone()
+    const providerResponseBody = (await clonedForLog.json().catch(() => null)) as unknown
+    // Responses 非流式：usage 形状是 { input_tokens, output_tokens }，
+    // 不传给 logRequest 会走 messages/choices 估算 → 恒 0，token 日配额不扣。
+    const usage = (providerResponseBody as Record<string, unknown> | null)?.usage as
+      | { input_tokens?: number; output_tokens?: number }
+      | undefined
+    await logRequest({
+      virtualKey,
+      modelName: mapping.modelName,
+      originalModelName: mapping.originalModel,
+      mappingType: mapping.mappingType,
+      isMapped: mapping.isMapped,
+      providerId: provider.id,
+      providerName: provider.name,
+      status: 'success',
+      statusCode: upstreamResponse.status,
+      responseTimeMs,
+      requestHeaders: clientRequestHeaders,
+      providerRequestHeaders,
+      requestBody: responsesBody,
+      transformedRequestBody: transformedBody,
+      inputTokens: usage?.input_tokens,
+      outputTokens: usage?.output_tokens,
+      providerResponseHeaders,
+      providerResponseBody,
+      responseBody: providerResponseBody,
+      clientIp,
+      userAgent,
+      clientType,
+      requestPath,
+      requestMethod,
+      streaming: false,
+      incomingProtocol: 'responses',
+      targetProtocol: 'responses',
+      conversationId,
+      logId,
+      attemptId,
+      retryCount,
+      routingTrace: { routeChain },
+    })
+    // 模型映射启用时，响应体里的 model 是 provider 内部模型名；
+    // 回写 originalModelName 保持对客户端透明（与 chat 路径 non-streaming.ts 一致）。
+    // 仅 JSON 响应且包含 model 字段时改写；流式响应的改写成本高，保持原样。
+    if (
+      mapping.isMapped &&
+      mapping.originalModel &&
+      providerResponseBody &&
+      typeof providerResponseBody === 'object' &&
+      'model' in providerResponseBody
+    ) {
+      ;(providerResponseBody as Record<string, unknown>).model = mapping.originalModel
+      return new Response(JSON.stringify(providerResponseBody), {
+        status: upstreamResponse.status,
+        statusText: upstreamResponse.statusText,
+        headers: mergeResponseHeaders(getClientNonStreamingHeaders(), providerResponseHeaders),
+      })
+    }
+    return new Response(upstreamResponse.body, {
+      status: upstreamResponse.status,
+      statusText: upstreamResponse.statusText,
+      headers: mergeResponseHeaders(getClientNonStreamingHeaders(), providerResponseHeaders),
+    })
   } catch (error) {
     logger.error({ error, requestId }, 'Gateway error')
     return handleGatewayError({
@@ -581,8 +732,6 @@ export async function handleResponsesAPI(
       isStreaming,
       startTime,
       transformedBody,
-      incomingProtocol,
-      targetProtocol,
       logId,
       retryCount,
     })

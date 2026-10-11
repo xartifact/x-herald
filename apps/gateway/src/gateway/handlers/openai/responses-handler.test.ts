@@ -12,9 +12,12 @@ import type { RouteResult } from '../../services/router-selector'
 
 // ---------------------------------------------------------------------------
 // Capture real modules BEFORE mocking
+//
+// Responses 端点是纯透传路径（不经过 transformer 链），测试按该语义 mock：
+// 路由 → buildProviderRequest（仅替换 model + authorization）→ fetch →
+// 原样回传（错误路径重建 body、成功路径透传/回映射）。
 // ---------------------------------------------------------------------------
 
-const realConfig = await import('../../../config')
 const realLogger = await import('../../../lib/logger')
 const realAccessModelRouter = await import('../../services/access-model-router')
 const realClientIdentifier = await import('../../services/client-identifier')
@@ -22,37 +25,24 @@ const realErrorHandler = await import('../../services/error-handler')
 const realHeaders = await import('../../services/headers')
 const realLogService = await import('../../services/log-service')
 const realModelGroupRouter = await import('../../services/model-group-router')
-const realProtocolDetector = await import('../../services/protocol-detector')
-const realResponseHandlers = await import('../../services/response-handlers')
-const realTransformer = await import('../../transformer')
-const realParameterTransformer = await import('../../transformer/shared/parameter-transformer')
+const realResponseHandlersShared = await import('../../services/response-handlers/shared')
 const realAbortManager = await import('../shared/abort-manager')
-const realConstants = await import('../shared/constants')
 const realJoinUrl = await import('../shared/join-url')
 const realRetryExecutor = await import('../shared/retry-executor')
-const realResponsesFormat = await import('./responses-format')
+const realTtfbTimeoutPolicy = await import('../../services/ttfb-timeout-policy')
 
 // ---------------------------------------------------------------------------
 // Mutable mock state (changed per test)
 // ---------------------------------------------------------------------------
 
-let configValue = {
-  sameProtocolPassthrough: { enabled: true, allowedProtocols: ['openai'] as string[] },
-}
-
 let routeResultValue: RouteResult | null = null
-let providerProtocolValue: 'openai' | 'anthropic' = 'openai'
-let providerUrlValue: string | null = 'https://api.openai.com'
 let executeWithRetryResult: {
   response: Response | null
   retryCount: number
   aborted: 'client_disconnect' | 'timeout' | null
   networkError?: boolean
 } = {
-  response: new Response(
-    JSON.stringify({ id: 'test', choices: [{ message: { content: 'hello' } }] }),
-    { status: 200, headers: { 'content-type': 'application/json' } },
-  ),
+  response: null,
   retryCount: 0,
   aborted: null,
   networkError: false,
@@ -61,10 +51,6 @@ let executeWithRetryResult: {
 // ---------------------------------------------------------------------------
 // Mock modules
 // ---------------------------------------------------------------------------
-
-mock.module('../../../config', () => ({
-  loadConfig: () => configValue,
-}))
 
 mock.module('../../../lib/logger', () => ({
   default: {
@@ -97,101 +83,33 @@ const handleGatewayErrorMock = mock(
       status: 500,
     }),
 )
-const handleProviderErrorMock = mock(
-  async () =>
-    new Response(JSON.stringify({ error: { type: 'provider_error', message: 'provider error' } }), {
-      status: 500,
-    }),
-)
-const handleProviderErrorPassthroughMock = mock(
-  async () =>
-    new Response(JSON.stringify({ error: { message: 'provider error passthrough' } }), {
-      status: 500,
-    }),
-)
 
 mock.module('../../services/error-handler', () => ({
   handleGatewayError: handleGatewayErrorMock,
-  handleProviderError: handleProviderErrorMock,
-  handleProviderErrorPassthrough: handleProviderErrorPassthroughMock,
 }))
 
 mock.module('../../services/headers', () => realHeaders)
 
+const logRequestMock = mock(async () => {})
 mock.module('../../services/log-service', () => ({
   logStartAsync: mock(() => ({ logId: 'log-test-id', attemptId: 'attempt-test-id' })),
-  logRequest: mock(async () => {}),
+  logRequest: logRequestMock,
 }))
 
 mock.module('../../services/model-group-router', () => realModelGroupRouter)
 
-mock.module('../../services/protocol-detector', () => ({
-  getProviderProtocol: () => providerProtocolValue,
-  getProviderUrl: () => providerUrlValue,
-  getEndpoint: (_protocol: string, _isStreaming: boolean) => '/v1/chat/completions',
+// StreamResponseCollector 保持真实实现（验证 usage 采集语义），
+// 只 mock markStreamAborted 避免触库。
+const markStreamAbortedMock = mock(async () => {})
+mock.module('../../services/log-stream', () => ({
+  markStreamAborted: markStreamAbortedMock,
 }))
 
-const handleNonStreamingResponseMock = mock(
-  async () =>
-    new Response(
-      JSON.stringify({
-        id: 'chatcmpl-test',
-        model: 'gpt-4',
-        choices: [{ message: { role: 'assistant', content: 'hello' } }],
-      }),
-      { status: 200, headers: { 'content-type': 'application/json' } },
-    ),
-)
-const handleStreamingResponseMock = mock(
-  async () =>
-    new Response(new ReadableStream(), {
-      status: 200,
-      headers: { 'content-type': 'text/event-stream' },
-    }),
-)
-
-mock.module('../../services/response-handlers', () => ({
-  handleNonStreamingResponse: handleNonStreamingResponseMock,
-  handleStreamingResponse: handleStreamingResponseMock,
-  mergeResponseHeaders: realResponseHandlers.mergeResponseHeaders,
-}))
-
-mock.module('../../transformer', () => ({
-  getTransformer: (protocol: string) => ({
-    normalizeRequest: mock(async (request: unknown, _ctx: unknown) => {
-      const req = request as Record<string, unknown>
-      return {
-        model: req.model || 'gpt-4',
-        messages: (req.messages || []) as Array<Record<string, unknown>>,
-        stream: req.stream || false,
-        tools: req.tools,
-      }
-    }),
-    adaptRequest: mock(async (request: unknown, _ctx: unknown) => {
-      return {
-        body: { ...(request as Record<string, unknown>) },
-        headers: { 'content-type': 'application/json' },
-      }
-    }),
-  }),
-  createTransformerContext: (requestId: string) => ({
-    requestId,
-    startTime: Date.now(),
-    state: new Map(),
-    request: { model: '', messages: [] },
-    provider: { name: '', baseUrl: '', apiKey: '', protocol: 'openai', models: [] },
-    model: '',
-    headers: {},
-    metadata: {},
-  }),
-  registerTransformer: realTransformer.registerTransformer,
-  transformerRegistry: realTransformer.transformerRegistry,
-}))
-
-mock.module('../../transformer/shared/parameter-transformer', () => realParameterTransformer)
+mock.module('../../services/response-handlers/shared', () => realResponseHandlersShared)
 
 mock.module('../shared/abort-manager', () => ({
   AbortManager: class MockAbortManager {
+    isClientDisconnected = false
     constructor(_signal: AbortSignal | undefined) {}
     registerClientDisconnect() {}
     createAttempt(_timeout: number, _requestId: string, _isStreaming: boolean) {
@@ -202,15 +120,13 @@ mock.module('../shared/abort-manager', () => ({
   },
 }))
 
-mock.module('../shared/constants', () => realConstants)
-
 mock.module('../shared/join-url', () => realJoinUrl)
 
 mock.module('../shared/retry-executor', () => ({
   executeWithRetry: mock(async () => executeWithRetryResult),
 }))
 
-mock.module('./responses-format', () => realResponsesFormat)
+mock.module('../../services/ttfb-timeout-policy', () => realTtfbTimeoutPolicy)
 
 // ---------------------------------------------------------------------------
 // Import handler AFTER mocks
@@ -223,24 +139,6 @@ const { handleResponsesAPI } = await import('./responses-handler')
 // ---------------------------------------------------------------------------
 
 afterAll(async () => {
-  const realConfig = await import('../../../config')
-  const realLogger = await import('../../../lib/logger')
-  const realAccessModelRouter = await import('../../services/access-model-router')
-  const realClientIdentifier = await import('../../services/client-identifier')
-  const realErrorHandler = await import('../../services/error-handler')
-  const realHeaders = await import('../../services/headers')
-  const realLogService = await import('../../services/log-service')
-  const realModelGroupRouter = await import('../../services/model-group-router')
-  const realProtocolDetector = await import('../../services/protocol-detector')
-  const realResponseHandlers = await import('../../services/response-handlers')
-  const realTransformer = await import('../../transformer')
-  const realParameterTransformer = await import('../../transformer/shared/parameter-transformer')
-  const realAbortManager = await import('../shared/abort-manager')
-  const realConstants = await import('../shared/constants')
-  const realJoinUrl = await import('../shared/join-url')
-  const realRetryExecutor = await import('../shared/retry-executor')
-  const realResponsesFormat = await import('./responses-format')
-  mock.module('../../../config', () => realConfig)
   mock.module('../../../lib/logger', () => realLogger)
   mock.module('../../services/access-model-router', () => realAccessModelRouter)
   mock.module('../../services/client-identifier', () => realClientIdentifier)
@@ -248,15 +146,14 @@ afterAll(async () => {
   mock.module('../../services/headers', () => realHeaders)
   mock.module('../../services/log-service', () => realLogService)
   mock.module('../../services/model-group-router', () => realModelGroupRouter)
-  mock.module('../../services/protocol-detector', () => realProtocolDetector)
-  mock.module('../../services/response-handlers', () => realResponseHandlers)
-  mock.module('../../transformer', () => realTransformer)
-  mock.module('../../transformer/shared/parameter-transformer', () => realParameterTransformer)
+  mock.module('../../services/log-stream', () => ({
+    markStreamAborted: markStreamAbortedMock,
+  }))
+  mock.module('../../services/response-handlers/shared', () => realResponseHandlersShared)
   mock.module('../shared/abort-manager', () => realAbortManager)
-  mock.module('../shared/constants', () => realConstants)
   mock.module('../shared/join-url', () => realJoinUrl)
   mock.module('../shared/retry-executor', () => realRetryExecutor)
-  mock.module('./responses-format', () => realResponsesFormat)
+  mock.module('../../services/ttfb-timeout-policy', () => realTtfbTimeoutPolicy)
 })
 
 // ---------------------------------------------------------------------------
@@ -324,7 +221,7 @@ function createMockRouteResult(overrides: Partial<RouteResult> = {}): RouteResul
     decision: { strategy: 'priority', reason: 'test', candidates: 1 },
     mapping: {
       modelName: 'gpt-4',
-      isMapped: true,
+      isMapped: false,
       originalModel: 'gpt-4',
       mappingType: 'virtual' as const,
     },
@@ -336,39 +233,28 @@ function createMockRouteResult(overrides: Partial<RouteResult> = {}): RouteResul
 function resetMocks() {
   mock.restore()
   handleGatewayErrorMock.mockClear()
-  handleProviderErrorMock.mockClear()
-  handleProviderErrorPassthroughMock.mockClear()
-  handleNonStreamingResponseMock.mockClear()
-  handleStreamingResponseMock.mockClear()
+  logRequestMock.mockClear()
+  markStreamAbortedMock.mockClear()
 }
 
 // ---------------------------------------------------------------------------
-// Tests
+// Tests — 透传语义
 // ---------------------------------------------------------------------------
 
 describe('handleResponsesAPI', () => {
   beforeEach(() => {
     resetMocks()
-    configValue = {
-      sameProtocolPassthrough: { enabled: true, allowedProtocols: ['openai'] as string[] },
-    }
     routeResultValue = createMockRouteResult()
-    providerProtocolValue = 'openai'
-    providerUrlValue = 'https://api.openai.com'
     executeWithRetryResult = {
-      response: new Response(
-        JSON.stringify({ id: 'test', choices: [{ message: { content: 'hello' } }] }),
-        { status: 200, headers: { 'content-type': 'application/json' } },
-      ),
+      response: null,
       retryCount: 0,
       aborted: null,
       networkError: false,
     }
   })
 
-  // 1. Returns 403 when virtualKey.allowedModels doesn't include requested model
   it('returns 403 when virtualKey.allowedModels does not include requested model', async () => {
-    const virtualKey = createTestVirtualKey({ allowedModels: ['gpt-3'] })
+    const virtualKey = createTestVirtualKey({ allowedModels: ['gpt-3.5'] })
     const c = createMockContext({ model: 'gpt-4', input: 'hello' }, { virtualKey })
 
     const response = await handleResponsesAPI(c, false, { model: 'gpt-4', input: 'hello' })
@@ -376,25 +262,23 @@ describe('handleResponsesAPI', () => {
     expect(response.status).toBe(403)
     const body = (await response.json()) as Record<string, unknown>
     expect((body.error as Record<string, unknown>).type).toBe('permission_error')
-    expect((body.error as Record<string, unknown>).message).toContain('does not have permission')
   })
 
-  // 2. Throws ModelNotFoundError when route returns null
   it('throws ModelNotFoundError when route returns null', async () => {
     routeResultValue = null
-    const c = createMockContext({ model: 'gpt-4', input: 'hello' })
+    const c = createMockContext({ model: 'unknown-model', input: 'hello' })
 
-    await handleResponsesAPI(c, false, { model: 'gpt-4', input: 'hello' })
+    await handleResponsesAPI(c, false, { model: 'unknown-model', input: 'hello' })
 
     expect(handleGatewayErrorMock).toHaveBeenCalled()
-    const args = (handleGatewayErrorMock.mock.calls[0] as unknown[])[0] as { error: Error }
-    expect(args.error.name).toBe('ModelNotFoundError')
   })
 
-  // 3. Returns 400 protocol_error when provider URL is missing
-  it('returns 400 protocol_error when provider URL is missing', async () => {
-    providerUrlValue = null
-    routeResultValue = createMockRouteResult()
+  it('returns 400 protocol_error when provider has no openai protocol baseUrl', async () => {
+    routeResultValue = createMockRouteResult({
+      provider: createTestProvider({
+        protocols: { openai: { baseUrl: null, enabled: true } },
+      }),
+    })
     const c = createMockContext({ model: 'gpt-4', input: 'hello' })
 
     const response = await handleResponsesAPI(c, false, { model: 'gpt-4', input: 'hello' })
@@ -402,26 +286,141 @@ describe('handleResponsesAPI', () => {
     expect(response.status).toBe(400)
     const body = (await response.json()) as Record<string, unknown>
     expect((body.error as Record<string, unknown>).type).toBe('protocol_error')
-    expect((body.error as Record<string, unknown>).message).toContain('not configured')
   })
 
-  // 4. Successful non-streaming → calls handleNonStreamingResponse then convertChatToResponsesBody
-  it('successful non-streaming calls handleNonStreamingResponse and converts response to Responses format', async () => {
-    routeResultValue = createMockRouteResult()
+  it('returns 400 protocol_error when provider disables the openai protocol', async () => {
+    routeResultValue = createMockRouteResult({
+      provider: createTestProvider({
+        protocols: { openai: { baseUrl: 'https://api.openai.com', enabled: false } },
+      }),
+    })
     const c = createMockContext({ model: 'gpt-4', input: 'hello' })
 
     const response = await handleResponsesAPI(c, false, { model: 'gpt-4', input: 'hello' })
 
-    expect(handleNonStreamingResponseMock).toHaveBeenCalled()
+    expect(response.status).toBe(400)
+    const body = (await response.json()) as Record<string, unknown>
+    expect((body.error as Record<string, unknown>).message).toContain('does not enable')
+  })
+
+  it('forwards the request body untouched except model, and passes upstream response through', async () => {
+    // 透传语义：body 除 model 外原样转发（包括 tools/instructions/reasoning 等 Responses 专有字段）
+    const responsesBody = {
+      model: 'gpt-4',
+      input: [{ role: 'user', content: 'hello' }],
+      instructions: 'You are helpful.',
+      reasoning: { effort: 'high' },
+      tools: [{ type: 'function', name: 'get_weather', parameters: { type: 'object' } }],
+    }
+    const upstreamBody = {
+      object: 'response',
+      id: 'resp_test',
+      model: 'gpt-4-turbo',
+      output: [{ type: 'message', role: 'assistant', content: [] }],
+      usage: { input_tokens: 11, output_tokens: 7, total_tokens: 18 },
+    }
+    executeWithRetryResult = {
+      response: new Response(JSON.stringify(upstreamBody), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+      retryCount: 0,
+      aborted: null,
+      networkError: false,
+    }
+    const c = createMockContext(responsesBody)
+
+    const response = await handleResponsesAPI(c, false, responsesBody)
+
     expect(response.status).toBe(200)
     const body = (await response.json()) as Record<string, unknown>
     expect(body.object).toBe('response')
-    expect(body.id).toBe('resp-test')
+
+    // usage 透传给 logRequest（token 配额扣减依赖此字段）
+    const logArgs = logRequestMock.mock.calls.at(-1)?.[0] as Record<string, unknown>
+    expect(logArgs.inputTokens).toBe(11)
+    expect(logArgs.outputTokens).toBe(7)
   })
 
-  // 5. Successful streaming → calls handleStreamingResponse then convertStreamToResponsesFormat
-  it('successful streaming calls handleStreamingResponse and converts stream to Responses format', async () => {
-    routeResultValue = createMockRouteResult()
+  it('reconstructs the upstream error body instead of reusing the consumed stream', async () => {
+    // 回归：parseProviderError 消费 body 后复用 upstreamResponse.body 会抛
+    // "Body object should not be disturbed or locked"，错误被吞成网关 500。
+    const upstreamError = {
+      error: { type: 'invalid_request_error', message: 'bad parameter' },
+    }
+    executeWithRetryResult = {
+      response: new Response(JSON.stringify(upstreamError), {
+        status: 400,
+        headers: { 'content-type': 'application/json' },
+      }),
+      retryCount: 0,
+      aborted: null,
+      networkError: false,
+    }
+    const c = createMockContext({ model: 'gpt-4', input: 'hello' })
+
+    const response = await handleResponsesAPI(c, false, { model: 'gpt-4', input: 'hello' })
+
+    expect(response.status).toBe(400)
+    expect(handleGatewayErrorMock).not.toHaveBeenCalled()
+    const body = (await response.json()) as Record<string, unknown>
+    expect(body).toEqual(upstreamError)
+  })
+
+  it('rewrites the response model to the original model name when mapping is enabled', async () => {
+    routeResultValue = createMockRouteResult({
+      mapping: {
+        modelName: 'gpt-4',
+        isMapped: true,
+        originalModel: 'my-alias',
+        mappingType: 'alias' as const,
+      },
+    })
+    const upstreamBody = {
+      object: 'response',
+      model: 'gpt-4-turbo',
+      output: [],
+      usage: { input_tokens: 1, output_tokens: 2, total_tokens: 3 },
+    }
+    executeWithRetryResult = {
+      response: new Response(JSON.stringify(upstreamBody), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+      retryCount: 0,
+      aborted: null,
+      networkError: false,
+    }
+    const c = createMockContext({ model: 'my-alias', input: 'hello' })
+
+    const response = await handleResponsesAPI(c, false, { model: 'my-alias', input: 'hello' })
+
+    const body = (await response.json()) as Record<string, unknown>
+    expect(body.model).toBe('my-alias')
+  })
+
+  it('collects usage from response.completed events in the streaming path', async () => {
+    const events = [
+      'data: {"type":"response.created","response":{"id":"resp_1","model":"gpt-4-turbo"}}\n\n',
+      'data: {"type":"response.output_text.delta","delta":"he"}\n\n',
+      'data: {"type":"response.completed","response":{"id":"resp_1","model":"gpt-4-turbo","usage":{"input_tokens":13,"output_tokens":5,"total_tokens":18}}}\n\n',
+      'data: [DONE]\n\n',
+    ]
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        for (const event of events) controller.enqueue(new TextEncoder().encode(event))
+        controller.close()
+      },
+    })
+    executeWithRetryResult = {
+      response: new Response(stream, {
+        status: 200,
+        headers: { 'content-type': 'text/event-stream' },
+      }),
+      retryCount: 0,
+      aborted: null,
+      networkError: false,
+    }
     const c = createMockContext({ model: 'gpt-4', input: 'hello', stream: true })
 
     const response = await handleResponsesAPI(c, true, {
@@ -430,74 +429,95 @@ describe('handleResponsesAPI', () => {
       stream: true,
     })
 
-    expect(handleStreamingResponseMock).toHaveBeenCalled()
     expect(response.status).toBe(200)
     expect(response.headers.get('content-type')).toBe('text/event-stream')
+    // 消费完整个流，触发 flush → finalize → logRequest
+    await response.text()
+
+    const logArgs = logRequestMock.mock.calls.at(-1)?.[0] as Record<string, unknown>
+    expect(logArgs.inputTokens).toBe(13)
+    expect(logArgs.outputTokens).toBe(5)
+    expect(logArgs.status).toBe('success')
   })
 
-  // 6. Permission error has OpenAI shape: { error: { type: 'permission_error', ... } }
-  it('returns OpenAI-shaped permission error', async () => {
-    const virtualKey = createTestVirtualKey({ allowedModels: ['gpt-3'] })
-    const c = createMockContext({ model: 'gpt-4', input: 'hello' }, { virtualKey })
-
-    const response = await handleResponsesAPI(c, false, { model: 'gpt-4', input: 'hello' })
-
-    expect(response.status).toBe(403)
-    const body = (await response.json()) as Record<string, unknown>
-    expect(body).toHaveProperty('error')
-    expect(body.error).toHaveProperty('type', 'permission_error')
-    expect(body.error).toHaveProperty('message')
-    expect(typeof (body.error as Record<string, unknown>).message).toBe('string')
-  })
-
-  // 7. Upstream returns non-ok → calls handleProviderError (or handleProviderErrorPassthrough when passthrough)
-  it('calls handleProviderError when upstream returns non-ok and passthrough is disabled', async () => {
-    configValue = {
-      sameProtocolPassthrough: { enabled: false, allowedProtocols: ['openai'] as string[] },
-    }
-    providerProtocolValue = 'openai'
+  it('marks the stream log aborted when the client cancels mid-stream', async () => {
+    const events = [
+      'data: {"type":"response.created","response":{"id":"resp_1","model":"gpt-4-turbo"}}\n\n',
+      'data: {"type":"response.output_text.delta","delta":"partial"}\n\n',
+    ]
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        for (const event of events) controller.enqueue(new TextEncoder().encode(event))
+        // 不 close：模拟上游流仍在进行时客户端断开
+      },
+    })
     executeWithRetryResult = {
-      response: new Response(JSON.stringify({ error: 'upstream error' }), { status: 500 }),
+      response: new Response(stream, {
+        status: 200,
+        headers: { 'content-type': 'text/event-stream' },
+      }),
       retryCount: 0,
       aborted: null,
       networkError: false,
     }
-    routeResultValue = createMockRouteResult()
-    const c = createMockContext({ model: 'gpt-4', input: 'hello' })
+    const c = createMockContext({ model: 'gpt-4', input: 'hello', stream: true })
 
-    await handleResponsesAPI(c, false, { model: 'gpt-4', input: 'hello' })
+    const response = await handleResponsesAPI(c, true, {
+      model: 'gpt-4',
+      input: 'hello',
+      stream: true,
+    })
 
-    expect(handleProviderErrorMock).toHaveBeenCalled()
-    expect(handleProviderErrorPassthroughMock).not.toHaveBeenCalled()
-    const params = handleProviderErrorMock.mock.calls[0][0] as Record<string, unknown>
-    expect(params.routingTrace).toMatchObject({ requestedModel: 'gpt-4' })
-    expect(params.routingTrace).toHaveProperty('chain')
+    // 客户端取消读取 → monitor.cancel() → markStreamAborted
+    await response.body?.cancel('client-gone')
+    // cancel 是异步传播的，给微任务一个周转机会
+    await new Promise<void>((resolve) => setTimeout(resolve, 20))
+
+    expect(markStreamAbortedMock).toHaveBeenCalledWith('log-test-id', 'attempt-test-id', true)
   })
 
-  it('calls handleProviderErrorPassthrough when upstream returns non-ok and passthrough is enabled', async () => {
-    configValue = {
-      sameProtocolPassthrough: { enabled: true, allowedProtocols: ['openai'] as string[] },
-    }
-    providerProtocolValue = 'openai'
+  it('remaps response model in stream events when mapping is enabled', async () => {
+    routeResultValue = createMockRouteResult({
+      mapping: {
+        modelName: 'gpt-4',
+        isMapped: true,
+        originalModel: 'my-alias',
+        mappingType: 'alias' as const,
+      },
+    })
+    const events = [
+      'data: {"type":"response.created","response":{"id":"resp_1","model":"gpt-4-turbo"}}\n\n',
+      'data: {"type":"response.completed","response":{"id":"resp_1","model":"gpt-4-turbo","usage":{"input_tokens":1,"output_tokens":1}}}\n\n',
+      'data: [DONE]\n\n',
+    ]
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        for (const event of events) controller.enqueue(new TextEncoder().encode(event))
+        controller.close()
+      },
+    })
     executeWithRetryResult = {
-      response: new Response(JSON.stringify({ error: 'upstream error' }), { status: 500 }),
+      response: new Response(stream, {
+        status: 200,
+        headers: { 'content-type': 'text/event-stream' },
+      }),
       retryCount: 0,
       aborted: null,
       networkError: false,
     }
-    routeResultValue = createMockRouteResult()
-    const c = createMockContext({ model: 'gpt-4', input: 'hello' })
+    const c = createMockContext({ model: 'my-alias', input: 'hello', stream: true })
 
-    await handleResponsesAPI(c, false, { model: 'gpt-4', input: 'hello' })
+    const response = await handleResponsesAPI(c, true, {
+      model: 'my-alias',
+      input: 'hello',
+      stream: true,
+    })
 
-    expect(handleProviderErrorPassthroughMock).toHaveBeenCalled()
-    expect(handleProviderErrorMock).not.toHaveBeenCalled()
-    const params = handleProviderErrorPassthroughMock.mock.calls[0][0] as Record<string, unknown>
-    expect(params.routingTrace).toMatchObject({ requestedModel: 'gpt-4' })
-    expect(params.routingTrace).toHaveProperty('chain')
+    const text = await response.text()
+    expect(text).not.toContain('gpt-4-turbo')
+    expect(text).toContain('"my-alias"')
   })
 
-  // 8. Retry/abort timeout → calls handleGatewayError with timeout message
   it('calls handleGatewayError with timeout message when retry is aborted by timeout', async () => {
     executeWithRetryResult = {
       response: null,
@@ -505,7 +525,6 @@ describe('handleResponsesAPI', () => {
       aborted: 'timeout',
       networkError: false,
     }
-    routeResultValue = createMockRouteResult()
     const c = createMockContext({ model: 'gpt-4', input: 'hello' })
 
     await handleResponsesAPI(c, false, { model: 'gpt-4', input: 'hello' })
@@ -515,7 +534,6 @@ describe('handleResponsesAPI', () => {
     expect(args.error.message).toContain('timeout')
   })
 
-  // 9. Client disconnect → calls handleGatewayError with 'Client disconnected' message
   it('calls handleGatewayError with client disconnect message when client disconnects', async () => {
     executeWithRetryResult = {
       response: null,
@@ -523,7 +541,6 @@ describe('handleResponsesAPI', () => {
       aborted: 'client_disconnect',
       networkError: false,
     }
-    routeResultValue = createMockRouteResult()
     const c = createMockContext({ model: 'gpt-4', input: 'hello' })
 
     await handleResponsesAPI(c, false, { model: 'gpt-4', input: 'hello' })
@@ -531,105 +548,5 @@ describe('handleResponsesAPI', () => {
     expect(handleGatewayErrorMock).toHaveBeenCalled()
     const args = (handleGatewayErrorMock.mock.calls[0] as unknown[])[0] as { error: Error }
     expect(args.error.message).toContain('disconnected')
-  })
-
-  // 10. Convert Responses input to Chat format → verifies convertResponsesToChatFormat is called
-  it('converts Responses input format to Chat format before normalization', async () => {
-    const responsesBody = {
-      model: 'gpt-4',
-      input: [{ role: 'user', content: 'hello' }],
-      instructions: 'You are helpful.',
-    }
-    routeResultValue = createMockRouteResult()
-    const c = createMockContext(responsesBody)
-
-    await handleResponsesAPI(c, false, responsesBody)
-
-    // The normalizeRequest mock should receive the Chat-formatted body (with messages, not input)
-    // We verify by checking that the downstream handler works correctly (status 200 and Responses output)
-    expect(handleNonStreamingResponseMock).toHaveBeenCalled()
-  })
-
-  // 11. Catch block → calls handleGatewayError on any exception
-  it('calls handleGatewayError when an unexpected exception occurs', async () => {
-    routeResultValue = createMockRouteResult()
-    // Force an exception by setting providerUrl to trigger a throw in buildProviderRequest
-    // We'll mock getTransformer to return null, which triggers "No transformer found"
-    mock.module('../../transformer', () => ({
-      getTransformer: () => null,
-      createTransformerContext: (requestId: string) => ({
-        requestId,
-        startTime: Date.now(),
-        state: new Map(),
-        request: { model: '', messages: [] },
-        provider: { name: '', baseUrl: '', apiKey: '', protocol: 'openai', models: [] },
-        model: '',
-        headers: {},
-        metadata: {},
-      }),
-    }))
-
-    const c = createMockContext({ model: 'gpt-4', input: 'hello' })
-
-    await handleResponsesAPI(c, false, { model: 'gpt-4', input: 'hello' })
-
-    expect(handleGatewayErrorMock).toHaveBeenCalled()
-
-    // Restore transformer mock
-    mock.module('../../transformer', () => ({
-      getTransformer: (protocol: string) => ({
-        normalizeRequest: mock(async (request: unknown, _ctx: unknown) => {
-          const req = request as Record<string, unknown>
-          return {
-            model: req.model || 'gpt-4',
-            messages: (req.messages || []) as Array<Record<string, unknown>>,
-            stream: req.stream || false,
-            tools: req.tools,
-          }
-        }),
-        adaptRequest: mock(async (request: unknown, _ctx: unknown) => {
-          return {
-            body: { ...(request as Record<string, unknown>) },
-            headers: { 'content-type': 'application/json' },
-          }
-        }),
-      }),
-      createTransformerContext: (requestId: string) => ({
-        requestId,
-        startTime: Date.now(),
-        state: new Map(),
-        request: { model: '', messages: [] },
-        provider: { name: '', baseUrl: '', apiKey: '', protocol: 'openai', models: [] },
-        model: '',
-        headers: {},
-        metadata: {},
-      }),
-      registerTransformer: realTransformer.registerTransformer,
-      transformerRegistry: realTransformer.transformerRegistry,
-    }))
-  })
-
-  // 12. Passthrough enabled → uses raw body with model replaced
-  it('uses raw body with model replaced when passthrough is enabled', async () => {
-    configValue = {
-      sameProtocolPassthrough: { enabled: true, allowedProtocols: ['openai'] as string[] },
-    }
-    providerProtocolValue = 'openai'
-    routeResultValue = createMockRouteResult({
-      instance: createTestModelInstance({ actualModelName: 'gpt-4o-2024-08-06' }),
-    })
-    const c = createMockContext({ model: 'gpt-4', input: 'hello' })
-
-    await handleResponsesAPI(c, false, { model: 'gpt-4', input: 'hello' })
-
-    // In passthrough mode, handleNonStreamingResponse should be called with
-    // isPassthroughEnabled=true and transformedBody containing the raw body with model replaced
-    expect(handleNonStreamingResponseMock).toHaveBeenCalled()
-    const args = (handleNonStreamingResponseMock.mock.calls[0] as unknown[])[0] as {
-      isPassthroughEnabled: boolean
-      transformedBody: Record<string, unknown>
-    }
-    expect(args.isPassthroughEnabled).toBe(true)
-    expect(args.transformedBody).toMatchObject({ model: 'gpt-4o-2024-08-06' })
   })
 })

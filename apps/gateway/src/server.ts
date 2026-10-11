@@ -22,7 +22,7 @@ import { startSnapshotJob } from './features/metrics/snapshot-job'
 
 const logger = rootLogger.child({ module: 'server' })
 
-const PORT = parseInt(process.env.PORT || '3000', 10)
+const PORT = parseInt(process.env.PORT || '43173', 10)
 
 // ─── x-tinker SDK Setup ──────────────────────────────────────
 const X_TINKER_URL = process.env.X_TINKER_URL || ''

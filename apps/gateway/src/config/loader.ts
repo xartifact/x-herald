@@ -10,7 +10,7 @@ const logger = rootLogger.child({ module: 'config' })
 export function loadConfig(): GatewayConfig {
   return {
     server: {
-      port: parseInt(process.env.PORT || '3000'),
+      port: parseInt(process.env.PORT || '43173'),
       host: process.env.HOST || '0.0.0.0',
       cors: {
         enabled: process.env.CORS_ENABLED !== 'false',

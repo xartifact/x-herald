@@ -520,6 +520,23 @@ describe('executeFailoverIteration', () => {
       expect(params.handleProviderError).toHaveBeenCalledWith(response, params.rawBody)
     })
 
+    it('returns unsupported reasoning-effort 400 without trying another candidate', async () => {
+      const response = mockResponse(400, {
+        error: {
+          message:
+            "Unsupported value: 'reasoning_effort' does not support 'max' with this model. Supported values are: 'none', 'low', 'medium', 'high', and 'xhigh'.",
+        },
+      })
+      mockRetryResult({ response, retryCount: 0, aborted: null, networkError: false })
+      const params = createParams({ isLastCandidate: false })
+
+      const result = await executeFailoverIteration(params)
+
+      expect(result.type).toBe('error')
+      expect(params.onRecordFailure).not.toHaveBeenCalled()
+      expect(params.handleProviderError).toHaveBeenCalledWith(response, params.rawBody)
+    })
+
     it('does not failover when isLastCandidate is true', async () => {
       const response = mockResponse(429, { error: 'rate limited' })
       mockRetryResult({

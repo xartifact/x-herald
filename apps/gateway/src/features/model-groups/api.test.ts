@@ -90,6 +90,27 @@ describe('model-groups API', () => {
     await teardownCrudTest()
   })
 
+  it('preserves custom instance pricing on unrelated edits and clears it with null', async () => {
+    const created = await authPost(ctx, '/api/model-groups/instances', {
+      providerId,
+      name: uniqueName('priced-instance'),
+      actualModelName: 'model',
+      costPer1kTokens: { input: 2, output: 8 },
+    })
+    const { body } = await parseJson<ModelInstance>(created)
+    const path = `/api/model-groups/instances/${body.data.id}`
+    const renamed = await parseJson<ModelInstance>(
+      await authPut(ctx, path, { name: uniqueName('renamed') }),
+    )
+    expect(renamed.status).toBe(200)
+    expect(renamed.body.data.costPer1kTokens).toEqual({ input: 2, output: 8 })
+    const cleared = await parseJson<ModelInstance>(
+      await authPut(ctx, path, { costPer1kTokens: null }),
+    )
+    expect(cleared.status).toBe(200)
+    expect(cleared.body.data.costPer1kTokens).toBeNull()
+  })
+
   it('GET /api/model-groups without auth returns 401', async () => {
     const res = await unauthGet(ctx, '/api/model-groups')
     expect(res.status).toBe(401)

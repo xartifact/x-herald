@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-xartifact-palette="iris">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -77,13 +77,19 @@
       // Theme init — apply persisted/system theme before first paint to avoid flash
       ;(function () {
         try {
-          var stored = localStorage.getItem('theme')
-          var dark = stored
-            ? stored === 'dark'
-            : window.matchMedia('(prefers-color-scheme: dark)').matches
-          if (dark) document.documentElement.classList.add('dark')
+          const stored = localStorage.getItem('theme')
+          const dark =
+            stored === 'dark' ||
+            (stored !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+          document.documentElement.classList.toggle('dark', dark)
+          const palette = localStorage.getItem('xartifact.palette')
+          if (['iris', 'ocean', 'jade', 'clay'].includes(palette))
+            document.documentElement.dataset.xartifactPalette = palette
         } catch (e) {
-          /* localStorage unavailable — fall back to system-only */
+          document.documentElement.classList.toggle(
+            'dark',
+            window.matchMedia('(prefers-color-scheme: dark)').matches,
+          )
         }
       })()
     </script>

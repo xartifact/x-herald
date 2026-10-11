@@ -1,4 +1,6 @@
 @import 'tailwindcss' source(none);
+@import '../../../../packages/ui/src/shared/styles/xartifact-tokens.css';
+@import './management.css';
 
 @source "../../../../packages/ui/src/**/*.tsx";
 @source "../../**/*.tsx";

@@ -1,22 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
-import { useForm } from 'react-hook-form'
-import { Loader2, Plus, Search } from 'lucide-react'
-
-import {
-  useModelGroups,
-  useModelInstances,
-  useCreateModelGroup,
-  useUpdateModelGroup,
-  useDeleteModelGroup,
-  useCreateModelInstance,
-  useAttachInstancesToGroup,
-  useDetachInstanceFromGroup,
-  useUpdateModelInstance,
-  useDeleteModelInstance,
-  useToggleModelInstance,
-  useReorderInstances,
-} from '@xartifact/x-herald-ui'
-import { useProviders } from '@xartifact/x-herald-ui'
+import { Loader2, Plus, Search, Layers } from 'lucide-react'
 import {
   Button,
   Card,
@@ -30,289 +12,49 @@ import {
   PageHeader,
   UngroupedInstancesSection,
 } from '@xartifact/x-herald-ui'
-
-import type { ModelGroup, ModelInstance } from '@xartifact/x-herald-shared'
+import { useGroupManagement } from '../../../components/use-group-management'
 
 export function ModelGroupsPage() {
-  const [searchQuery, setSearchQuery] = useState('')
-  const [expandedGroup, setExpandedGroup] = useState<string | null>(null)
-
-  const [editingGroupId, setEditingGroupId] = useState<string | null>(null)
-  const [groupDialogOpen, setGroupDialogOpen] = useState(false)
-
-  const [editingInstanceId, setEditingInstanceId] = useState<string | null>(null)
-  const [instanceDialogOpen, setInstanceDialogOpen] = useState(false)
-
-  // "从现有实例添加"的目标组
-  const [pickingGroupId, setPickingGroupId] = useState<string | null>(null)
-
-  const { data: groups = [], isLoading: groupsLoading } = useModelGroups()
-  const { data: rawInstances = [], isLoading: instancesLoading } = useModelInstances()
-  const { data: providers = [] } = useProviders()
-  const instances = rawInstances as ModelInstance[]
-
-  const createGroup = useCreateModelGroup()
-  const updateGroup = useUpdateModelGroup()
-  const deleteGroup = useDeleteModelGroup()
-
-  const createInstance = useCreateModelInstance()
-  const attachInstances = useAttachInstancesToGroup()
-  const detachInstance = useDetachInstanceFromGroup()
-  const updateInstance = useUpdateModelInstance()
-  const deleteInstance = useDeleteModelInstance()
-  const toggleInstance = useToggleModelInstance()
-  const reorderInstances = useReorderInstances()
-
-  const filteredGroups = useMemo(
-    () =>
-      groups.filter(
-        (group) =>
-          group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (group.displayName?.toLowerCase() || '').includes(searchQuery.toLowerCase()),
-      ),
-    [groups, searchQuery],
-  )
-
-  const instancesByGroup = useMemo(() => {
-    const map = new Map<string, ModelInstance[]>()
-    for (const instance of instances) {
-      for (const gid of instance.groupIds ?? []) {
-        const list = map.get(gid) || []
-        list.push(instance)
-        map.set(gid, list)
-      }
-    }
-    for (const [gid, list] of map) {
-      list.sort((a, b) => (a.groupPriorities?.[gid] ?? 0) - (b.groupPriorities?.[gid] ?? 0))
-    }
-    return map
-  }, [instances])
-  const allGroupedIds = useMemo(() => {
-    const ids = new Set<string>()
-    for (const [, list] of instancesByGroup) {
-      for (const inst of list) ids.add(inst.id)
-    }
-    return ids
-  }, [instancesByGroup])
-
-  const ungroupedInstances = useMemo(
-    () =>
-      (instances as ModelInstance[])
-        .filter((inst) => !allGroupedIds.has(inst.id))
-        .sort((a, b) => (a.createdAt ?? '').localeCompare(b.createdAt ?? '')),
-    [instances, allGroupedIds],
-  )
-
-  const groupForm = useForm({
-    defaultValues: {
-      name: '',
-      aliases: '',
-      displayName: '',
-      description: '',
-      category: 'chat',
-      capabilities: {
-        streaming: true,
-        functionCalling: false,
-        vision: false,
-        jsonMode: false,
-        maxTokens: 4096,
-        contextWindow: 8192,
-      },
-      routingStrategy: 'smart',
-      fallbackEnabled: true,
-    },
-  })
-
-  const instanceForm = useForm({
-    defaultValues: {
-      providerId: '',
-      name: '',
-      actualModelName: '',
-      description: '',
-      weight: 100,
-      groupIds: [] as string[],
-      costPer1kTokens: { _enabled: false },
-      config: { capabilityOverrides: {} },
-    },
-  })
-
-  const getProviderName = (providerId: string) => {
-    return providers.find((p) => p.id === providerId)?.name || '未知供应商'
-  }
-
-  const handleAddGroup = () => {
-    setEditingGroupId(null)
-    groupForm.reset()
-    setGroupDialogOpen(true)
-  }
-
-  const handleEditGroup = (group: ModelGroup) => {
-    setEditingGroupId(group.id)
-    groupForm.reset({
-      name: group.name,
-      aliases: group.aliases?.join(', ') || '',
-      displayName: group.displayName,
-      description: group.description || '',
-      category: (group.category as any) || 'chat',
-      capabilities: group.capabilities || {
-        streaming: true,
-        functionCalling: false,
-        vision: false,
-        jsonMode: false,
-        maxTokens: 4096,
-        contextWindow: 8192,
-      },
-      routingStrategy: group.routingConfig?.strategy ?? 'smart',
-      fallbackEnabled: group.routingConfig?.fallbackEnabled ?? true,
-    })
-    setGroupDialogOpen(true)
-  }
-
-  const handleDeleteGroup = async (id: string, name: string) => {
-    if (!confirm(`确定要删除模型组 "${name}" 吗？\n\n此操作不可撤销。`)) return
-    await deleteGroup.mutateAsync(id)
-  }
-
-  const onGroupSubmit = async (data: Record<string, any>) => {
-    const aliases = data.aliases
-      ? data.aliases
-          .split(',')
-          .map((s: string) => s.trim())
-          .filter(Boolean)
-      : []
-    const payload = {
-      name: data.name,
-      aliases,
-      displayName: data.displayName,
-      description: data.description,
-      category: data.category,
-      capabilities: data.capabilities,
-      routingConfig: {
-        strategy: data.routingStrategy,
-        fallbackEnabled: data.fallbackEnabled,
-      },
-    }
-    if (editingGroupId) {
-      await updateGroup.mutateAsync({ id: editingGroupId, data: payload })
-    } else {
-      await createGroup.mutateAsync(payload)
-    }
-    setGroupDialogOpen(false)
-    setEditingGroupId(null)
-    groupForm.reset()
-  }
-
-  // 卡片内"从现有实例添加"→ 打开 picker；全局"新建实例"按钮 → 打开创建表单
-  const pickingGroup = groups.find((g) => g.id === pickingGroupId) ?? null
-
-  const handleAddInstance = () => {
-    instanceForm.reset({
-      providerId: '',
-      name: '',
-      actualModelName: '',
-      description: '',
-      weight: 100,
-      groupIds: [],
-      config: { capabilityOverrides: {} },
-    })
-    setInstanceDialogOpen(true)
-  }
-
-  const handleEditInstance = (instance: ModelInstance) => {
-    setEditingInstanceId(instance.id)
-    instanceForm.reset({
-      providerId: instance.providerId,
-      name: instance.name,
-      actualModelName: instance.actualModelName,
-      description: instance.description || '',
-      weight: instance.weight,
-      groupIds: instance.groupIds ?? [],
-      costPer1kTokens: {
-        ...((instance.costPer1kTokens ?? {}) as Record<string, unknown>),
-        _enabled: !!instance.costPer1kTokens,
-      },
-      config: instance.config as any,
-    })
-    setInstanceDialogOpen(true)
-  }
-
-  const handleDeleteInstance = async (instance: ModelInstance) => {
-    if (!confirm(`确定要删除模型实例 "${instance.name}" 吗？\n\n该实例将从其所有模型组中移除。`))
-      return
-    await deleteInstance.mutateAsync({ id: instance.id })
-  }
-
-  const handleToggleInstance = (instance: ModelInstance) => {
-    toggleInstance.mutate({ id: instance.id })
-  }
-
-  const handleReorderInstances = useCallback(
-    (groupId: string, orderedIds: string[]) => {
-      reorderInstances.mutate({ groupId, instanceIds: orderedIds })
-    },
-    [reorderInstances],
-  )
-
-  const onInstanceSubmit = async (data: Record<string, any>) => {
-    // 剥离 _enabled 开关字段，只在 costPer1kTokens._enabled 为 true 时发送
-    const costRaw = data.costPer1kTokens as Record<string, unknown> | undefined
-    const costEnabled = costRaw?._enabled === true
-    const { _enabled, ...costData } = costRaw ?? {}
-
-    // 清理 capabilityOverrides 中的 undefined 值（避免覆盖组级配置为 undefined）
-    const config = data.config as Record<string, unknown> | undefined
-    if (config?.capabilityOverrides) {
-      const overrides = config.capabilityOverrides as Record<string, unknown>
-      Object.keys(overrides).forEach((k) => {
-        if (overrides[k] === undefined) delete overrides[k]
-      })
-    }
-
-    const payload = {
-      providerId: data.providerId,
-      name: data.name,
-      actualModelName: data.actualModelName,
-      description: data.description,
-      weight: data.weight,
-      groupIds: data.groupIds ?? [],
-      costPer1kTokens: costEnabled ? (costData as any) : undefined,
-      config: data.config,
-    }
-    if (editingInstanceId) {
-      await updateInstance.mutateAsync({ id: editingInstanceId, data: payload })
-    } else {
-      await createInstance.mutateAsync(payload)
-    }
-    setInstanceDialogOpen(false)
-    setEditingInstanceId(null)
-    instanceForm.reset()
-  }
-
+  const state = useGroupManagement()
   return (
     <div className="space-y-6">
       <PageHeader title="模型组管理" description="管理模型组和模型实例配置" />
 
-      <div className="flex items-center gap-2">
+      <div className="resource-toolbar flex items-center gap-2">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="搜索模型组..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={state.searchQuery}
+            onChange={(e) => state.setSearchQuery(e.target.value)}
             className="pl-8"
           />
         </div>
-        <Button variant="outline" onClick={handleAddInstance}>
+        <Button variant="outline" onClick={state.handleAddInstance}>
           <Plus className="mr-2 h-4 w-4" />
           新建实例
         </Button>
-        <Button onClick={handleAddGroup}>
+        <Button onClick={state.handleAddGroup}>
           <Plus className="mr-2 h-4 w-4" />
           添加模型组
         </Button>
       </div>
 
-      {groupsLoading || instancesLoading ? (
+      {state.groupsError || state.instancesError ? (
+        <div role="alert" className="rounded-xl border p-8 text-center">
+          无法加载模型资源。
+          <Button
+            variant="outline"
+            className="ml-3"
+            onClick={() => {
+              void state.refetchGroups()
+              void state.refetchInstances()
+            }}
+          >
+            重试
+          </Button>
+        </div>
+      ) : state.groupsLoading || state.instancesLoading ? (
         <Card>
           <CardContent className="py-12">
             <div className="text-center text-muted-foreground flex items-center justify-center gap-2">
@@ -321,64 +63,58 @@ export function ModelGroupsPage() {
             </div>
           </CardContent>
         </Card>
-      ) : filteredGroups.length === 0 ? (
-        <EmptyState
-          searchQuery={searchQuery}
-          action={
-            !searchQuery ? (
-              <Button onClick={handleAddGroup} variant="outline">
+      ) : state.filteredGroups.length === 0 ? (
+        state.searchQuery ? (
+          <EmptyState searchQuery={state.searchQuery} />
+        ) : state.ungroupedInstances.length > 0 ? null : (
+          <EmptyState
+            action={
+              <Button onClick={state.handleAddGroup} variant="outline">
                 <Plus className="mr-2 h-4 w-4" />
                 添加第一个模型组
               </Button>
-            ) : undefined
-          }
-        />
-      ) : (
-        <div className="space-y-4">
-          {filteredGroups.map((group) => (
-            <ModelGroupCard
-              key={group.id}
-              group={group}
-              instances={instancesByGroup.get(group.id) || []}
-              isExpanded={expandedGroup === group.id}
-              onToggleExpand={() => setExpandedGroup(expandedGroup === group.id ? null : group.id)}
-              onEdit={() => handleEditGroup(group)}
-              onDelete={() => handleDeleteGroup(group.id, group.name)}
-              onAddInstance={() => setPickingGroupId(group.id)}
-              onEditInstance={handleEditInstance}
-              onDeleteInstance={handleDeleteInstance}
-              onToggleInstance={handleToggleInstance}
-              onReorderInstances={(orderedIds) => handleReorderInstances(group.id, orderedIds)}
-              onDetachInstance={(instance) =>
-                detachInstance.mutate({ groupId: group.id, instanceId: instance.id })
-              }
-              getProviderName={getProviderName}
-            />
-          ))}
-          <UngroupedInstancesSection
-            instances={ungroupedInstances}
-            groups={groups}
-            getProviderName={getProviderName}
+            }
           />
-        </div>
+        )
+      ) : (
+        <GroupWorkspace state={state} />
       )}
 
+      {!state.searchQuery &&
+        !state.groupsLoading &&
+        !state.instancesLoading &&
+        !state.groupsError &&
+        !state.instancesError && (
+          <UngroupedInstancesSection
+            instances={state.ungroupedInstances}
+            groups={state.groups}
+            getProviderName={state.getProviderName}
+          />
+        )}
+      <ManagementDialogs state={state} />
+    </div>
+  )
+}
+
+function ManagementDialogs({ state }: { state: ReturnType<typeof useGroupManagement> }) {
+  return (
+    <>
       <InstancePickerDialog
-        open={pickingGroupId !== null}
+        key={state.pickingGroupId ?? 'closed'}
+        open={state.pickingGroupId !== null}
         onOpenChange={(open) => {
-          if (!open) setPickingGroupId(null)
+          if (!open) state.setPickingGroupId(null)
         }}
-        group={pickingGroup}
-        instances={instances}
-        providers={providers}
-        isPending={attachInstances.isPending}
+        group={state.pickingGroup}
+        instances={state.instances}
+        providers={state.providers}
+        isPending={state.attachInstances.isPending}
         onConfirm={(instanceIds) => {
-          if (pickingGroupId) {
-            attachInstances.mutate(
-              { groupId: pickingGroupId, instanceIds },
+          if (state.pickingGroupId) {
+            state.attachInstances.mutate(
+              { groupId: state.pickingGroupId, instanceIds },
               {
-                onSuccess: () => setPickingGroupId(null),
-                onError: () => setPickingGroupId(null),
+                onSuccess: () => state.setPickingGroupId(null),
               },
             )
           }
@@ -386,23 +122,86 @@ export function ModelGroupsPage() {
       />
 
       <ModelGroupForm
-        open={groupDialogOpen}
-        onOpenChange={setGroupDialogOpen}
-        form={groupForm as any}
-        editingId={editingGroupId}
-        isPending={createGroup.isPending || updateGroup.isPending}
-        onSubmit={onGroupSubmit}
+        open={state.groupDialogOpen}
+        onOpenChange={state.setGroupDialogOpen}
+        form={state.groupForm as any}
+        editingId={state.editingGroupId}
+        isPending={state.groupSubmitPending}
+        onSubmit={state.onGroupSubmit as any}
       />
       <ModelInstanceForm
-        open={instanceDialogOpen}
-        onOpenChange={setInstanceDialogOpen}
-        form={instanceForm as any}
-        editingId={editingInstanceId}
-        isPending={createInstance.isPending || updateInstance.isPending}
-        providers={providers}
-        groups={groups}
-        onSubmit={onInstanceSubmit}
+        key={`${state.editingInstanceId ?? 'new'}-${state.instanceDialogOpen}`}
+        open={state.instanceDialogOpen}
+        onOpenChange={state.setInstanceDialogOpen}
+        form={state.instanceForm as any}
+        editingId={state.editingInstanceId}
+        isPending={state.instanceSubmitPending}
+        providers={state.providers}
+        groups={state.groups}
+        onSubmit={state.onInstanceSubmit as any}
       />
+    </>
+  )
+}
+
+function GroupWorkspace({ state }: { state: ReturnType<typeof useGroupManagement> }) {
+  return (
+    <div className="resource-workspace">
+      <aside className="resource-master" aria-label="选择模型组">
+        <p className="px-2 pb-2 text-xs text-muted-foreground">
+          模型组 · {state.filteredGroups.length}
+        </p>
+        <div className="resource-items">
+          {state.filteredGroups.map((group) => (
+            <button
+              key={group.id}
+              type="button"
+              className="resource-item"
+              aria-pressed={state.selectedGroup?.id === group.id}
+              onClick={() => state.setExpandedGroup(group.id)}
+            >
+              <span className="resource-icon">
+                <Layers className="h-4 w-4" />
+              </span>
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-medium">
+                  {group.displayName || group.name}
+                </span>
+                <span className="block truncate text-xs text-muted-foreground">
+                  {state.instancesByGroup.get(group.id)?.length ?? 0} 个实例 · {group.name}
+                </span>
+              </span>
+            </button>
+          ))}
+        </div>
+      </aside>
+      <div className="resource-detail">
+        {state.selectedGroup && (
+          <ModelGroupCard
+            key={state.selectedGroup.id}
+            group={state.selectedGroup}
+            instances={state.instancesByGroup.get(state.selectedGroup.id) || []}
+            onEdit={() => state.handleEditGroup(state.selectedGroup!)}
+            onDelete={() =>
+              state.handleDeleteGroup(state.selectedGroup!.id, state.selectedGroup!.name)
+            }
+            onAddInstance={() => state.setPickingGroupId(state.selectedGroup!.id)}
+            onEditInstance={state.handleEditInstance}
+            onDeleteInstance={state.handleDeleteInstance}
+            onToggleInstance={state.handleToggleInstance}
+            onReorderInstances={(orderedIds) =>
+              state.handleReorderInstances(state.selectedGroup!.id, orderedIds)
+            }
+            onDetachInstance={(instance) =>
+              state.detachInstance.mutate({
+                groupId: state.selectedGroup!.id,
+                instanceId: instance.id,
+              })
+            }
+            getProviderName={state.getProviderName}
+          />
+        )}
+      </div>
     </div>
   )
 }

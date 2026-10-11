@@ -69,7 +69,7 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': process.env.GATEWAY_API_PROXY || 'http://localhost:3000',
+      '/api': process.env.GATEWAY_API_PROXY || 'http://localhost:43173',
     },
   },
   build: {

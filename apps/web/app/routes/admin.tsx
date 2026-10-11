@@ -2,6 +2,7 @@ import { Outlet } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import AdminNav from '../components/AdminNav'
+import { AdminSidebar } from '../components/admin-sidebar'
 
 export function AdminLayout() {
   const [token] = useState(() => localStorage.getItem('admin_token'))
@@ -41,9 +42,10 @@ export function AdminLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="admin-shell min-h-screen">
+      <AdminSidebar />
       <AdminNav />
-      <main className="container mx-auto py-6 px-4">
+      <main className="admin-main min-w-0">
         <Outlet />
       </main>
     </div>

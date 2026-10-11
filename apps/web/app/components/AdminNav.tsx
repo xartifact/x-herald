@@ -1,3 +1,4 @@
+import { useRouterState } from '@tanstack/react-router'
 import React from 'react'
 import { LogOut, Pencil, Plus, Trash2, Layers } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
@@ -132,12 +133,16 @@ function WorkspaceSwitcher() {
 }
 
 export default function AdminNav() {
-  const pathname = typeof window !== 'undefined' ? window.location.pathname : ''
+  const pathname = useRouterState({ select: (state) => state.location.pathname })
 
   const currentLabel = allNavItems.find(
     (item) =>
       pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href + '/')),
   )?.label
+
+  React.useEffect(() => {
+    document.title = currentLabel ? `x-herald · ${currentLabel}` : 'x-herald'
+  }, [currentLabel])
 
   return (
     <nav className="admin-topbar border-b bg-background">

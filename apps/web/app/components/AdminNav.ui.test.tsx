@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import React from 'react'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 
+const routerState = vi.hoisted(() => ({ pathname: '/admin' }))
 vi.mock('next-themes', () => ({
   useTheme: () => ({ setTheme: vi.fn() }),
 }))
@@ -15,7 +16,10 @@ vi.mock('@xartifact/x-herald-shared', async (importOriginal) => ({
   BUILD_REF: 'v0.1.1',
 }))
 
-vi.mock('./admin-nav-config', () => ({ allNavItems: [] }))
+vi.mock('@tanstack/react-router', () => ({
+  useRouterState: (options: { select: (state: { location: { pathname: string } }) => string }) =>
+    options.select({ location: { pathname: routerState.pathname } }),
+}))
 vi.mock('./nav-desktop-dropdowns', () => ({ NavDesktopDropdowns: () => null }))
 vi.mock('./nav-mobile-section', () => ({
   NavMobileMenu: () => null,
@@ -35,6 +39,7 @@ import AdminNav from './AdminNav'
 const localStorageValues = new Map<string, string>()
 
 beforeEach(() => {
+  routerState.pathname = '/admin'
   localStorageValues.clear()
   vi.stubGlobal('localStorage', {
     getItem: (key: string) => localStorageValues.get(key) ?? null,
@@ -56,6 +61,24 @@ describe('AdminNav build identity', () => {
     expect(screen.getByText('deadbee')).toBeTruthy()
     expect(screen.getByText('@v0.1.1')).toBeTruthy()
     expect(screen.getByTitle('x-herald 0.1.1 (commit deadbee, ref v0.1.1)')).toBeTruthy()
+  })
+  it('updates the visible page label and document title when the route changes', () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const { rerender } = render(
+      <QueryClientProvider client={queryClient}>
+        <AdminNav />
+      </QueryClientProvider>,
+    )
+
+    routerState.pathname = '/admin/providers'
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <AdminNav />
+      </QueryClientProvider>,
+    )
+
+    expect(screen.getByText('供应商')).toBeTruthy()
+    expect(document.title).toBe('x-herald · 供应商')
   })
 
   it('switches workspace and refreshes active SPA queries without leaving the current route', async () => {

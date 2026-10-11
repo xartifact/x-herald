@@ -10,6 +10,7 @@ import {
   type Node,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
+import { useTheme } from 'next-themes'
 
 import type { AccessModelRouteOverview } from '@xartifact/x-herald-shared'
 
@@ -191,6 +192,8 @@ interface RouteOverviewCanvasProps {
 }
 
 export function RouteOverviewCanvas({ data }: RouteOverviewCanvasProps) {
+  const { resolvedTheme } = useTheme()
+  const colorMode = resolvedTheme === 'dark' ? 'dark' : 'light'
   const { nodes, edges } = useMemo(() => buildOverviewGraph(data), [data])
 
   return (
@@ -205,11 +208,22 @@ export function RouteOverviewCanvas({ data }: RouteOverviewCanvasProps) {
         nodesConnectable={false}
         elementsSelectable
         deleteKeyCode={null}
+        colorMode={colorMode}
         className="bg-muted"
       >
         <Controls />
-        <MiniMap pannable zoomable className="rounded-lg border shadow-sm" />
-        <Background variant={BackgroundVariant.Dots} gap={16} size={1} />
+        <MiniMap
+          pannable
+          zoomable
+          className="rounded-lg border shadow-sm"
+          nodeColor="hsl(var(--muted))"
+        />
+        <Background
+          variant={BackgroundVariant.Dots}
+          gap={16}
+          size={1}
+          color="hsl(var(--muted-foreground))"
+        />
       </ReactFlow>
     </div>
   )

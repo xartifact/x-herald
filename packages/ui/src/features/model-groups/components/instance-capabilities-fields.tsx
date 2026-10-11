@@ -8,7 +8,13 @@ import {
   FormLabel,
 } from '../../../shared/components/ui/form'
 import { Input } from '../../../shared/components/ui/input'
-import { Switch } from '../../../shared/components/ui/switch'
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '../../../shared/components/ui/select'
 
 interface InstanceCapabilitiesFieldsProps {
   form: UseFormReturn<Record<string, unknown>>
@@ -34,54 +40,42 @@ export function InstanceCapabilitiesFields({ form }: InstanceCapabilitiesFieldsP
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <FormField
-          control={form.control}
-          name="config.capabilityOverrides.streaming"
-          render={({ field }) => (
-            <FormItem className="flex items-center justify-between rounded-lg border p-3">
-              <FormLabel className="mb-0">流式输出</FormLabel>
-              <FormControl>
-                <Switch checked={!!field.value} onCheckedChange={field.onChange} />
-              </FormControl>
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="config.capabilityOverrides.functionCalling"
-          render={({ field }) => (
-            <FormItem className="flex items-center justify-between rounded-lg border p-3">
-              <FormLabel className="mb-0">函数调用</FormLabel>
-              <FormControl>
-                <Switch checked={!!field.value} onCheckedChange={field.onChange} />
-              </FormControl>
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="config.capabilityOverrides.vision"
-          render={({ field }) => (
-            <FormItem className="flex items-center justify-between rounded-lg border p-3">
-              <FormLabel className="mb-0">视觉能力</FormLabel>
-              <FormControl>
-                <Switch checked={!!field.value} onCheckedChange={field.onChange} />
-              </FormControl>
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="config.capabilityOverrides.jsonMode"
-          render={({ field }) => (
-            <FormItem className="flex items-center justify-between rounded-lg border p-3">
-              <FormLabel className="mb-0">JSON 模式</FormLabel>
-              <FormControl>
-                <Switch checked={!!field.value} onCheckedChange={field.onChange} />
-              </FormControl>
-            </FormItem>
-          )}
-        />
+        {[
+          ['streaming', '流式输出'],
+          ['functionCalling', '函数调用'],
+          ['vision', '视觉能力'],
+          ['jsonMode', 'JSON 模式'],
+        ].map(([key, label]) => (
+          <FormField
+            key={key}
+            control={form.control}
+            name={`config.capabilityOverrides.${key}`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{label}</FormLabel>
+                <Select
+                  value={
+                    field.value === undefined ? 'inherit' : field.value ? 'enabled' : 'disabled'
+                  }
+                  onValueChange={(value) =>
+                    field.onChange(value === 'inherit' ? undefined : value === 'enabled')
+                  }
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="inherit">继承模型组</SelectItem>
+                    <SelectItem value="enabled">启用</SelectItem>
+                    <SelectItem value="disabled">禁用</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormItem>
+            )}
+          />
+        ))}
       </div>
 
       <div className="grid grid-cols-2 gap-4">

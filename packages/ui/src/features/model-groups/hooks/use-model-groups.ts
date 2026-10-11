@@ -185,16 +185,19 @@ export function useReorderInstances() {
       if (!response.success) throw new Error(response.error || '更新组内顺序失败')
     },
     // 乐观更新：拖拽即时生效；失败回滚，成功由 invalidate 以服务端顺序兜底
-    onMutate: async ({ instanceIds }) => {
+    onMutate: async ({ groupId, instanceIds }) => {
       await queryClient.cancelQueries({ queryKey: modelGroupKeys.instances() })
       const previous = queryClient.getQueryData<ModelInstance[]>(modelGroupKeys.instances())
       queryClient.setQueryData<ModelInstance[]>(modelGroupKeys.instances(), (old) => {
         if (!old) return old
         const rank = new Map(instanceIds.map((id, i) => [id, i]))
-        return old.toSorted(
-          (a, b) =>
-            (rank.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
-            (rank.get(b.id) ?? Number.MAX_SAFE_INTEGER),
+        return old.map((instance) =>
+          rank.has(instance.id)
+            ? {
+                ...instance,
+                groupPriorities: { ...instance.groupPriorities, [groupId]: rank.get(instance.id)! },
+              }
+            : instance,
         )
       })
       return { previous }
@@ -219,7 +222,7 @@ export interface CreateInstanceData {
   actualModelName: string
   description?: string
   weight?: number
-  costPer1kTokens?: InstanceCost
+  costPer1kTokens?: InstanceCost | null
   config?: ModelInstance['config']
 }
 

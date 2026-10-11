@@ -14,7 +14,7 @@ import {
   CommandItem,
   CommandList,
 } from './ui/command'
-import { Popover, PopoverContent, PopoverTrigger } from './ui/popover'
+import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from './ui/popover'
 
 export interface MultiSelectOption {
   value: string
@@ -72,55 +72,86 @@ export function MultiSelect({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          aria-expanded={open}
-          aria-haspopup="listbox"
-          disabled={disabled}
-          className={cn('h-auto min-h-9 w-full justify-between px-2 font-normal', className)}
-        >
-          {selectedOptions.length === 0 ? (
-            <span className="text-muted-foreground">{placeholder}</span>
-          ) : (
-            <span className="flex flex-wrap items-center gap-1 py-1 text-left">
-              {visible.map((option) => (
-                <Badge
-                  key={option.value}
-                  variant="secondary"
-                  className="max-w-[160px] whitespace-nowrap pr-1 text-xs font-normal"
-                >
-                  <span className="truncate">{option.label}</span>
-                  {!disabled && (
-                    <button
-                      type="button"
-                      className="ml-0.5 rounded-full outline-none hover:bg-muted"
-                      onPointerDown={(e) => e.stopPropagation()}
-                      onMouseDown={(e) => e.stopPropagation()}
-                      onClick={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        toggle(option.value)
-                      }}
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  )}
-                </Badge>
-              ))}
-              {overflowCount > 0 && (
-                <Badge variant="secondary" className="whitespace-nowrap px-2 text-xs font-normal">
-                  +{overflowCount}
-                </Badge>
-              )}
-            </span>
+      <PopoverAnchor asChild>
+        <div
+          className={cn(
+            'block min-h-9 w-full rounded-md border border-input bg-background',
+            className,
           )}
-          <ChevronsUpDown className="ml-1 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
+        >
+          <div className="flex min-h-9 w-full flex-wrap items-center gap-1 px-2 py-1">
+            {selectedOptions.length === 0 ? (
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  aria-label={placeholder}
+                  aria-expanded={open}
+                  aria-haspopup="listbox"
+                  disabled={disabled}
+                  className="h-8 min-w-0 flex-1 justify-start px-0 text-muted-foreground hover:bg-transparent hover:text-muted-foreground"
+                >
+                  {placeholder}
+                  <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+            ) : (
+              <span className="flex flex-1 flex-wrap items-center gap-1 text-left">
+                {visible.map((option) => (
+                  <span
+                    key={option.value}
+                    className="inline-flex max-w-[160px] items-center whitespace-nowrap rounded-md border border-transparent bg-secondary px-2 py-0.5 text-xs font-normal text-secondary-foreground"
+                  >
+                    <span className="truncate">{option.label}</span>
+                    {!disabled && (
+                      <button
+                        type="button"
+                        aria-label={`移除 ${option.label}`}
+                        className="ml-0.5 rounded-full outline-none hover:bg-muted"
+                        onPointerDown={(event) => event.stopPropagation()}
+                        onMouseDown={(event) => event.stopPropagation()}
+                        onClick={(event) => {
+                          event.preventDefault()
+                          event.stopPropagation()
+                          toggle(option.value)
+                        }}
+                        onKeyDown={(event) => event.stopPropagation()}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
+                  </span>
+                ))}
+                {overflowCount > 0 && (
+                  <Badge variant="secondary" className="whitespace-nowrap px-2 text-xs font-normal">
+                    +{overflowCount}
+                  </Badge>
+                )}
+              </span>
+            )}
+            {selectedOptions.length > 0 && (
+              <span className="flex items-center justify-end">
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    aria-label="打开选项"
+                    aria-expanded={open}
+                    aria-haspopup="listbox"
+                    disabled={disabled}
+                    className="h-8 w-8 shrink-0 p-0"
+                  >
+                    <ChevronsUpDown className="h-4 w-4 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+              </span>
+            )}
+          </div>
+        </div>
+      </PopoverAnchor>
       <PopoverContent
-        className="max-h-[320px] overflow-hidden w-[--radix-popover-trigger-width] p-0"
+        className="max-h-[320px] overflow-hidden p-0"
+        style={{ width: 'var(--radix-popper-anchor-width)' }}
         align="start"
       >
         <Command

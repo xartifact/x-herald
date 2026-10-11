@@ -1,0 +1,177 @@
+/* xartifact Design System v0.1 — opt-in, framework-independent semantic tokens.
+ * Apply data-xartifact-palette="iris|ocean|jade|clay" to <html>.
+ * Use .dark for the resolved appearance (next-themes supports system changes).
+ * data-xartifact-mode overrides appearance only for embedded comparison samples.
+ * Import after the application's existing theme. No selectors affect opt-out apps.
+ */
+[data-xartifact-palette] {
+  --xa-canvas: #f7f8fb;
+  --xa-surface: #ffffff;
+  --xa-subtle: #f3f4f8;
+  --xa-raised: #ffffff;
+  --xa-hover: #ebeef4;
+  --xa-text: #252a38;
+  --xa-secondary: #515c70;
+  --xa-muted: #657086;
+  --xa-border: #dce1ea;
+  --xa-control-border: #8791a4;
+  --xa-success: #237451;
+  --xa-success-soft: #eaf5ee;
+  --xa-warning: #925c13;
+  --xa-warning-soft: #fff4df;
+  --xa-danger: #bb3646;
+  --xa-danger-soft: #fff0f1;
+  --xa-info: #3267ab;
+  --xa-info-soft: #edf4ff;
+  --xa-on-brand: #ffffff;
+  --xa-brand: #6250b8;
+  --xa-brand-hover: #53409f;
+  --xa-brand-soft: #eeebfa;
+  --xa-brand-border: #afa2db;
+  --xa-overlay: #10172a52;
+  --xa-shadow: 0 3px 12px #15203b08;
+  --xa-shadow-raised: 0 18px 60px #15203b26;
+  --xa-font-sans:
+    Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei',
+    sans-serif;
+  --xa-font-mono: 'SFMono-Regular', Consolas, monospace;
+  --xa-text-xs: 12px;
+  --xa-text-sm: 13px;
+  --xa-text-base: 14px;
+  --xa-text-lg: 18px;
+  --xa-text-xl: 24px;
+  --xa-text-display: 32px;
+  --xa-space-1: 4px;
+  --xa-space-2: 8px;
+  --xa-space-3: 12px;
+  --xa-space-4: 16px;
+  --xa-space-6: 24px;
+  --xa-space-8: 32px;
+  --xa-radius-sm: 6px;
+  --xa-radius-md: 8px;
+  --xa-radius-lg: 12px;
+  --xa-control-height: 36px;
+  --xa-motion-fast: 150ms;
+  --xa-motion-normal: 200ms;
+  /* Adapter for this repository's HSL-based shadcn components. */
+  --background: 0 0% 100%;
+  --foreground: 224 20% 18%;
+  --card: var(--background);
+  --card-foreground: var(--foreground);
+  --popover: var(--background);
+  --popover-foreground: var(--foreground);
+  --primary: 250 42% 52%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 226 26% 96%;
+  --secondary-foreground: 219 16% 38%;
+  --muted: var(--secondary);
+  --muted-foreground: 220 14% 44%;
+  --accent: 252 60% 95%;
+  --accent-foreground: var(--primary);
+  --border: 219 25% 89%;
+  --input: 220 14% 59%;
+  --ring: var(--primary);
+  --destructive: 353 55% 47%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  color-scheme: light;
+}
+[data-xartifact-palette].dark,
+[data-xartifact-palette][data-xartifact-mode='dark'] {
+  --xa-canvas: #101318;
+  --xa-surface: #191d25;
+  --xa-subtle: #141820;
+  --xa-raised: #222833;
+  --xa-hover: #292f3c;
+  --xa-text: #e9edf5;
+  --xa-secondary: #b6c0d0;
+  --xa-muted: #96a3b9;
+  --xa-border: #333c4d;
+  --xa-control-border: #68768c;
+  --xa-success: #79d2a8;
+  --xa-success-soft: #1a332b;
+  --xa-warning: #edc17b;
+  --xa-warning-soft: #372d20;
+  --xa-danger: #ff9ca8;
+  --xa-danger-soft: #3e252e;
+  --xa-info: #8ebfff;
+  --xa-info-soft: #1f3048;
+  --xa-on-brand: #171322;
+  --xa-brand: #b5a6f5;
+  --xa-brand-hover: #c9bdfb;
+  --xa-brand-soft: #2a2541;
+  --xa-brand-border: #716396;
+  --xa-overlay: #03060db3;
+  --xa-shadow: 0 3px 12px #0000001a;
+  --xa-shadow-raised: 0 18px 60px #00000066;
+  --background: 220 19% 12%;
+  --foreground: 220 38% 94%;
+  --primary: 251 80% 81%;
+  --primary-foreground: 256 28% 10%;
+  --secondary: 220 20% 17%;
+  --secondary-foreground: 219 23% 77%;
+  --muted-foreground: 218 20% 66%;
+  --accent: 251 27% 20%;
+  --border: 219 20% 25%;
+  --input: 218 15% 48%;
+  --destructive: 353 100% 81%;
+  --destructive-foreground: 256 28% 10%;
+  color-scheme: dark;
+}
+[data-xartifact-palette='ocean'] {
+  --xa-brand: #2365b5;
+  --xa-brand-hover: #1b5196;
+  --xa-brand-soft: #e9f1fc;
+  --xa-brand-border: #96b9e6;
+  --primary: 213 68% 42%;
+  --accent: 216 76% 95%;
+}
+[data-xartifact-palette='ocean'].dark,
+[data-xartifact-palette='ocean'][data-xartifact-mode='dark'] {
+  --xa-brand: #8bbdff;
+  --xa-brand-hover: #acd0ff;
+  --xa-brand-soft: #1f3048;
+  --xa-brand-border: #536f95;
+  --primary: 214 100% 77%;
+  --accent: 215 40% 20%;
+}
+[data-xartifact-palette='jade'] {
+  --xa-brand: #217364;
+  --xa-brand-hover: #185e51;
+  --xa-brand-soft: #e5f3ed;
+  --xa-brand-border: #8cbbac;
+  --primary: 169 55% 29%;
+  --accent: 154 37% 93%;
+}
+[data-xartifact-palette='jade'].dark,
+[data-xartifact-palette='jade'][data-xartifact-mode='dark'] {
+  --xa-brand: #7dd4bb;
+  --xa-brand-hover: #a0e4d1;
+  --xa-brand-soft: #1a332e;
+  --xa-brand-border: #4e8275;
+  --primary: 162 50% 66%;
+  --accent: 168 32% 15%;
+}
+[data-xartifact-palette='clay'] {
+  --xa-brand: #a34d31;
+  --xa-brand-hover: #883d27;
+  --xa-brand-soft: #faece5;
+  --xa-brand-border: #d2a390;
+  --primary: 15 54% 42%;
+  --accent: 20 68% 94%;
+}
+[data-xartifact-palette='clay'].dark,
+[data-xartifact-palette='clay'][data-xartifact-mode='dark'] {
+  --xa-brand: #e8ad90;
+  --xa-brand-hover: #f3c4ab;
+  --xa-brand-soft: #3b2b26;
+  --xa-brand-border: #926957;
+  --primary: 20 66% 74%;
+  --accent: 14 22% 19%;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-xartifact-palette] {
+    --xa-motion-fast: 0ms;
+    --xa-motion-normal: 0ms;
+  }
+}

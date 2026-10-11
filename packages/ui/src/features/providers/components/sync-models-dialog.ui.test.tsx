@@ -1,12 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { SyncModelsDialog } from './sync-models-dialog'
+
+const { sync } = vi.hoisted(() => ({ sync: vi.fn() }))
 
 // Mock 数据 hooks：让组件可离线渲染（React Query 内部结构不在此验证）。
 // toGroupMultiSelectOptions 不 mock：走真实实现，验证"绑定模型组"多选真实可用。
 vi.mock('../hooks/use-providers', () => ({
   useProviderModels: vi.fn(),
-  useSyncProviderModels: () => ({ isPending: false, mutateAsync: vi.fn(), mutate: vi.fn() }),
+  useSyncProviderModels: () => ({ isPending: false, mutateAsync: sync, mutate: vi.fn() }),
 }))
 vi.mock('../../model-groups', async () => {
   const actual = await vi.importActual<typeof import('../../model-groups')>('../../model-groups')
@@ -24,6 +26,7 @@ const mockedUseModelGroups = vi.mocked(useModelGroups)
 
 describe('SyncModelsDialog', () => {
   beforeEach(() => {
+    sync.mockReset().mockResolvedValue({})
     mockedUseProviderModels.mockReset()
     mockedUseModelGroups.mockReturnValue({ data: [] } as never)
   })
@@ -122,5 +125,35 @@ describe('SyncModelsDialog', () => {
     // 触发器正常挂载且未崩溃（此前该分支被永久 mock 为空数组，从未被执行过）。
     expect(screen.getByText('绑定模型组：')).toBeInTheDocument()
     expect(screen.getByText('不绑定（可多选）')).toBeInTheDocument()
+  })
+  it('submits hidden selected models and preserves selection after failure', async () => {
+    mockedUseProviderModels.mockReturnValue({
+      data: {
+        data: [
+          { id: 'alpha', name: 'alpha' },
+          { id: 'beta', name: 'beta' },
+        ],
+      },
+      isLoading: false,
+      refetch: vi.fn(),
+    } as never)
+    const close = vi.fn()
+    sync.mockRejectedValueOnce(new Error('offline'))
+    render(<SyncModelsDialog providerId="p1" providerName="Test" open onOpenChange={close} />)
+    fireEvent.click(screen.getByRole('checkbox', { name: '选择 alpha' }))
+    fireEvent.change(screen.getByPlaceholderText('搜索模型名称 / ID...'), {
+      target: { value: 'beta' },
+    })
+    fireEvent.click(screen.getByRole('checkbox', { name: '选择当前结果中的全部模型' }))
+    fireEvent.click(screen.getByRole('button', { name: '同步 2 个模型' }))
+    await waitFor(() => expect(sync).toHaveBeenCalledTimes(1))
+    expect(sync.mock.calls[0][0].models.map((model: { id: string }) => model.id)).toEqual([
+      'alpha',
+      'beta',
+    ])
+    expect(close).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: '同步 2 个模型' })).toBeEnabled()
+    fireEvent.click(screen.getByRole('button', { name: '同步 2 个模型' }))
+    await waitFor(() => expect(close).toHaveBeenCalledWith(false))
   })
 })

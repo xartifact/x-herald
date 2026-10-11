@@ -60,6 +60,7 @@ export function InstancePickerDialog({
   }, [group, instances, search, providerById])
 
   const handleOpenChange = (next: boolean) => {
+    if (isPending) return
     if (!next) {
       setSelected(new Set())
       setSearch('')
@@ -79,8 +80,6 @@ export function InstancePickerDialog({
   const confirm = () => {
     if (selected.size === 0 || !group) return
     onConfirm([...selected])
-    setSelected(new Set())
-    setSearch('')
   }
 
   return (

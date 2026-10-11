@@ -1,4 +1,11 @@
 import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '../../../shared/components/ui/dropdown-menu'
+import {
   DndContext,
   KeyboardSensor,
   PointerSensor,
@@ -15,7 +22,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { GripVertical, Pencil, Trash2, Unlink } from 'lucide-react'
+import { GripVertical, Pencil, Trash2, Unlink, MoreHorizontal } from 'lucide-react'
 
 import { StatusToggle } from '../../../shared/components/status-toggle'
 import { InstanceAiChat } from '../../ai-assist'
@@ -129,28 +136,38 @@ function SortableRow({
         <div className="flex justify-end gap-1">
           <InstanceAiChat instanceId={instance.id} instanceName={instance.name} />
           <InstanceTestButton instanceId={instance.id} instanceName={instance.name} />
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(instance)}>
-            <Pencil className="h-3.5 w-3.5" />
-          </Button>
-          {groupId && onDetach && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-muted-foreground hover:text-destructive"
-              title="移出本组（不删除实例）"
-              onClick={() => onDetach(groupId, instance)}
-            >
-              <Unlink className="h-3.5 w-3.5" />
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={() => onDelete(instance)}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                aria-label={`管理 ${instance.name}`}
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={() => onEdit(instance)}>
+                <Pencil className="mr-2 h-4 w-4" />
+                编辑实例
+              </DropdownMenuItem>
+              {groupId && onDetach && (
+                <DropdownMenuItem onSelect={() => onDetach(groupId, instance)}>
+                  <Unlink className="mr-2 h-4 w-4" />
+                  移出本组
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onSelect={() => onDelete(instance)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                从所有组删除实例
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </TableCell>
     </TableRow>
@@ -188,7 +205,7 @@ export function ModelInstanceTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-12">#</TableHead>
+            <TableHead className="w-[68px]">#</TableHead>
             <TableHead>实例名称</TableHead>
             <TableHead>供应商</TableHead>
             <TableHead>实际模型</TableHead>

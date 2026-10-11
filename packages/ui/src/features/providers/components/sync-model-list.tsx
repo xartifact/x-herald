@@ -59,6 +59,8 @@ function CapabilityBadges({ caps }: { caps?: ProviderModelInfo['capabilities'] }
 
 export function SyncModelList({ models, isLoading, onRefetch, selection }: SyncModelListProps) {
   const unsyncedModels = models.filter((m) => !m.synced)
+  const allUnsyncedSelected =
+    unsyncedModels.length > 0 && unsyncedModels.every((model) => selection.selected.has(model.id))
 
   if (isLoading) {
     return (
@@ -87,14 +89,13 @@ export function SyncModelList({ models, isLoading, onRefetch, selection }: SyncM
         <TableRow>
           <TableHead className="w-10">
             <Checkbox
-              checked={
-                unsyncedModels.length > 0 && selection.selected.size === unsyncedModels.length
-              }
-              onCheckedChange={selection.onSelectAll}
+              checked={allUnsyncedSelected}
+              aria-label="选择当前结果中的全部模型"
+              onCheckedChange={(checked) => selection.onSelectAll(checked === true)}
               disabled={unsyncedModels.length === 0}
             />
           </TableHead>
-          <TableHead>模型名称</TableHead>
+          <TableHead className="min-w-0">模型名称</TableHead>
           <TableHead className="w-32">上下文窗口</TableHead>
           <TableHead className="w-32">计费 (输入/输出)</TableHead>
           <TableHead className="w-40">能力</TableHead>
@@ -106,16 +107,19 @@ export function SyncModelList({ models, isLoading, onRefetch, selection }: SyncM
           <TableRow key={model.id}>
             <TableCell>
               <Checkbox
+                aria-label={`选择 ${model.name}`}
                 checked={selection.selected.has(model.id)}
                 onCheckedChange={() => selection.onToggle(model.id)}
                 disabled={model.synced}
               />
             </TableCell>
-            <TableCell>
-              <div className="flex items-center whitespace-nowrap min-w-0">
-                <code className="text-sm truncate">{model.id}</code>
+            <TableCell className="max-w-[320px]">
+              <div className="flex min-w-0 items-center overflow-hidden whitespace-nowrap">
+                <code className="min-w-0 truncate text-sm">{model.id}</code>
                 {model.name !== model.id && (
-                  <span className="ml-2 text-xs text-muted-foreground truncate">{model.name}</span>
+                  <span className="ml-2 min-w-0 truncate text-xs text-muted-foreground">
+                    {model.name}
+                  </span>
                 )}
               </div>
               {model.description && (

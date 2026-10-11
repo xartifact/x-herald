@@ -1,4 +1,4 @@
-import { Eye, EyeOff, Plus } from 'lucide-react'
+import { Eye, EyeOff, Loader2, Plus } from 'lucide-react'
 
 import { formatDate } from '@xartifact/x-herald-shared'
 import type { ModelInstance } from '@xartifact/x-herald-shared'
@@ -20,6 +20,9 @@ interface InstanceHandlers {
 interface ProviderCardBodyProps {
   provider: Provider
   instances: ModelInstance[]
+  instancesLoading: boolean
+  instancesError: unknown
+  refetchInstances: () => void
   showApiKey: boolean
   onToggleShowApiKey: () => void
   instanceHandlers: InstanceHandlers
@@ -28,18 +31,21 @@ interface ProviderCardBodyProps {
 export function ProviderCardBody({
   provider,
   instances,
+  instancesLoading,
+  instancesError,
+  refetchInstances,
   showApiKey,
   onToggleShowApiKey,
   instanceHandlers,
 }: ProviderCardBodyProps) {
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-4 text-sm">
+      <div className="flex flex-wrap items-center gap-4 text-sm">
         <div className="flex items-center gap-2">
           <span className="text-muted-foreground">API Key:</span>
           {provider.apiKey ? (
             <>
-              <code className="text-xs text-muted-foreground">
+              <code className="break-all text-xs text-muted-foreground">
                 {showApiKey ? provider.apiKey : '•'.repeat(Math.min(provider.apiKey.length, 20))}
               </code>
               <Button
@@ -71,13 +77,35 @@ export function ProviderCardBody({
             添加实例
           </Button>
         </div>
-        <ProviderInstanceTable
-          instances={instances}
-          getGroupName={instanceHandlers.getGroupName}
-          onEdit={instanceHandlers.onEdit}
-          onDelete={instanceHandlers.onDelete}
-          onToggle={instanceHandlers.onToggle}
-        />
+        {instancesError ? (
+          <div
+            role="alert"
+            className="flex items-center justify-center gap-3 py-6 text-sm text-muted-foreground"
+          >
+            <span>无法加载实例。</span>
+            <Button size="sm" variant="outline" onClick={refetchInstances}>
+              重试
+            </Button>
+          </div>
+        ) : instancesLoading ? (
+          <div
+            role="status"
+            className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground"
+          >
+            <Loader2 className="h-4 w-4 animate-spin" />
+            加载实例中...
+          </div>
+        ) : (
+          <div className="resource-table overflow-x-auto">
+            <ProviderInstanceTable
+              instances={instances}
+              getGroupName={instanceHandlers.getGroupName}
+              onEdit={instanceHandlers.onEdit}
+              onDelete={instanceHandlers.onDelete}
+              onToggle={instanceHandlers.onToggle}
+            />
+          </div>
+        )}
       </div>
     </div>
   )

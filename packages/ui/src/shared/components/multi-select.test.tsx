@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MultiSelect, type MultiSelectOption } from './multi-select'
 
 /**
@@ -8,6 +9,91 @@ import { MultiSelect, type MultiSelectOption } from './multi-select'
  * 否则鼠标滚轮/键盘无法滚动超长列表。
  * 注：jsdom 无真实布局，scrollHeight/clientHeight 不可用，改用 className 断言。
  */
+describe('MultiSelect selected value controls', () => {
+  it('keeps remove buttons separate and keyboard-accessible without toggling the popover', async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(
+      <MultiSelect
+        options={[{ value: 'one', label: 'First option' }]}
+        selected={['one']}
+        onChange={onChange}
+      />,
+    )
+
+    const trigger = screen.getByRole('button', { name: '打开选项' })
+    const remove = screen.getByRole('button', { name: '移除 First option' })
+    expect(document.querySelector('button button')).toBeNull()
+    expect(trigger.getAttribute('aria-expanded')).toBe('false')
+
+    await user.click(remove)
+    expect(onChange).toHaveBeenLastCalledWith([])
+    expect(trigger.getAttribute('aria-expanded')).toBe('false')
+
+    remove.focus()
+    await user.keyboard('{Enter}')
+    expect(onChange).toHaveBeenLastCalledWith([])
+    expect(trigger.getAttribute('aria-expanded')).toBe('false')
+
+    onChange.mockClear()
+
+    remove.focus()
+    await user.keyboard(' ')
+    expect(onChange).toHaveBeenLastCalledWith([])
+    expect(trigger.getAttribute('aria-expanded')).toBe('false')
+
+    await user.click(trigger)
+    expect(trigger.getAttribute('aria-expanded')).toBe('true')
+  })
+
+  it('opens from the empty placeholder and does not open when disabled', async () => {
+    const user = userEvent.setup()
+    const { rerender } = render(
+      <MultiSelect options={[]} selected={[]} onChange={vi.fn()} placeholder="Choose items" />,
+    )
+
+    const placeholderTrigger = screen.getByRole('button', { name: 'Choose items' })
+    await user.click(screen.getByText('Choose items'))
+    expect(placeholderTrigger.getAttribute('aria-expanded')).toBe('true')
+
+    rerender(
+      <MultiSelect
+        options={[]}
+        selected={[]}
+        onChange={vi.fn()}
+        placeholder="Choose items"
+        disabled
+      />,
+    )
+    const disabledTrigger = screen.getByRole('button', { name: 'Choose items' })
+    expect((disabledTrigger as HTMLButtonElement).disabled).toBe(true)
+    await user.click(disabledTrigger)
+    expect(disabledTrigger.getAttribute('aria-expanded')).toBe('true')
+  })
+
+  it('applies custom classes to the control', () => {
+    const { container } = render(
+      <MultiSelect options={[]} selected={[]} onChange={vi.fn()} className="custom-control" />,
+    )
+    expect(container.querySelector('.custom-control')).not.toBeNull()
+  })
+
+  it('does not render remove controls or open when disabled', () => {
+    render(
+      <MultiSelect
+        options={[{ value: 'one', label: 'First option' }]}
+        selected={['one']}
+        onChange={vi.fn()}
+        disabled
+      />,
+    )
+
+    expect(screen.queryByRole('button', { name: '移除 First option' })).toBeNull()
+    const trigger = screen.getByRole('button', { name: '打开选项' })
+    expect((trigger as HTMLButtonElement).disabled).toBe(true)
+  })
+})
+
 describe('MultiSelect scrolling', () => {
   const options: MultiSelectOption[] = Array.from({ length: 30 }, (_, i) => ({
     value: `group-${i}`,

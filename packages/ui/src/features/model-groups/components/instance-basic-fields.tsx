@@ -88,7 +88,7 @@ export function InstanceBasicFields({ form, providers, groups = [] }: InstanceBa
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4 items-start">
         <FormField
           control={form.control}
           name="weight"
@@ -100,13 +100,17 @@ export function InstanceBasicFields({ form, providers, groups = [] }: InstanceBa
                   type="number"
                   min={0}
                   {...field}
-                  onChange={(e) => field.onChange(parseInt(e.target.value))}
+                  onChange={(e) =>
+                    field.onChange(e.target.value === '' ? undefined : Number(e.target.value))
+                  }
                 />
               </FormControl>
               <FormDescription>用于加权路由</FormDescription>
+              <FormMessage />
             </FormItem>
           )}
         />
+        <div aria-hidden="true" />
       </div>
 
       {groupOptions.length > 0 && (

@@ -7,6 +7,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
+  FormMessage,
 } from '../../../shared/components/ui/form'
 import { Input } from '../../../shared/components/ui/input'
 import { Button } from '../../../shared/components/ui/button'
@@ -95,6 +96,7 @@ export function InstanceCostFields({ form }: InstanceCostFieldsProps) {
                     />
                   </FormControl>
                   <FormDescription>每 1K input tokens</FormDescription>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -115,6 +117,7 @@ export function InstanceCostFields({ form }: InstanceCostFieldsProps) {
                     />
                   </FormControl>
                   <FormDescription>每 1K output tokens</FormDescription>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -174,7 +177,7 @@ export function InstanceCostFields({ form }: InstanceCostFieldsProps) {
           {/* 阶梯定价 */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <FormLabel className="text-sm">阶梯定价</FormLabel>
+              <h5 className="text-sm font-medium">阶梯定价</h5>
               <Button type="button" variant="outline" size="sm" onClick={addTier}>
                 <Plus className="mr-1 h-3 w-3" />
                 添加阶梯

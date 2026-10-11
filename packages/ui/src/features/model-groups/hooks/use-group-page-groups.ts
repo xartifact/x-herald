@@ -1,3 +1,5 @@
+import { zodResolver } from '@hookform/resolvers/zod'
+import { groupFormSchema } from './management-form-schema'
 import { useState } from 'react'
 
 import { useForm } from 'react-hook-form'
@@ -15,12 +17,18 @@ export function useGroupPageGroups() {
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null)
   const [groupDialogOpen, setGroupDialogOpen] = useState(false)
 
-  const { data: groups = [], isLoading: groupsLoading } = useModelGroups()
+  const {
+    data: groups = [],
+    isLoading: groupsLoading,
+    error: groupsError,
+    refetch: refetchGroups,
+  } = useModelGroups()
   const createGroup = useCreateModelGroup()
   const updateGroup = useUpdateModelGroup()
   const deleteGroup = useDeleteModelGroup()
 
   const groupForm = useForm<GroupFormData>({
+    resolver: zodResolver(groupFormSchema),
     defaultValues: {
       name: '',
       aliases: '',
@@ -35,7 +43,7 @@ export function useGroupPageGroups() {
         maxTokens: 4096,
         contextWindow: 8192,
       },
-      routingStrategy: 'smart',
+      routingStrategy: 'priority',
       fallbackEnabled: true,
     },
   })
@@ -55,7 +63,7 @@ export function useGroupPageGroups() {
       description: group.description || '',
       category: group.category as GroupFormData['category'],
       capabilities: group.capabilities,
-      routingStrategy: group.routingConfig?.strategy ?? 'smart',
+      routingStrategy: group.routingConfig?.strategy ?? 'priority',
       fallbackEnabled: group.routingConfig?.fallbackEnabled ?? true,
     })
     setGroupDialogOpen(true)
@@ -85,21 +93,31 @@ export function useGroupPageGroups() {
       description: data.description,
       category: data.category,
       capabilities: data.capabilities,
-      routingConfig: { strategy: data.routingStrategy, fallbackEnabled: data.fallbackEnabled },
+      routingConfig: {
+        ...groups.find((group) => group.id === editingGroupId)?.routingConfig,
+        strategy: data.routingStrategy,
+        fallbackEnabled: data.fallbackEnabled,
+      },
     }
-    if (editingGroupId) {
-      await updateGroup.mutateAsync({ id: editingGroupId, data: payload })
-    } else {
-      await createGroup.mutateAsync(payload)
+    try {
+      if (editingGroupId) {
+        await updateGroup.mutateAsync({ id: editingGroupId, data: payload })
+      } else {
+        await createGroup.mutateAsync(payload)
+      }
+      setGroupDialogOpen(false)
+      setEditingGroupId(null)
+      groupForm.reset()
+    } catch {
+      // Mutation shows the error; retain the edited values.
     }
-    setGroupDialogOpen(false)
-    setEditingGroupId(null)
-    groupForm.reset()
   }
 
   return {
     groups,
     groupsLoading,
+    groupsError,
+    refetchGroups,
     editingGroupId,
     groupDialogOpen,
     setGroupDialogOpen,

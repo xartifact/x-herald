@@ -43,9 +43,9 @@ export function SyncModelsDialog({
   const [selectedGroups, setSelectedGroups] = useState<Set<string>>(new Set())
   const [searchQuery, setSearchQuery] = useState('')
 
-  const { data: modelsData, isLoading, refetch } = useProviderModels(providerId, open)
+  const { data: modelsData, isLoading, refetch, error } = useProviderModels(providerId, open)
   const models = modelsData?.data ?? EMPTY_MODELS
-  const fetchError: string | null = modelsData?.fetchError ?? null
+  const fetchError: string | null = modelsData?.fetchError ?? error?.message ?? null
   const hasError = !!fetchError && models.length === 0
   const { data: groups = [] } = useModelGroups()
   const syncModels = useSyncProviderModels()
@@ -69,7 +69,7 @@ export function SyncModelsDialog({
       setSelectedGroups(new Set())
       setSearchQuery('')
     }
-  }, [open])
+  }, [open, providerId])
 
   const handleToggle = (modelId: string) => {
     setSelectedModels((prev) => {
@@ -81,9 +81,14 @@ export function SyncModelsDialog({
   }
 
   const handleSelectAll = (checked: boolean) => {
-    setSelectedModels(
-      checked ? new Set(filteredModels.filter((m) => !m.synced).map((m) => m.id)) : new Set(),
-    )
+    setSelectedModels((previous) => {
+      const next = new Set(previous)
+      for (const model of filteredModels.filter((m) => !m.synced)) {
+        if (checked) next.add(model.id)
+        else next.delete(model.id)
+      }
+      return next
+    })
   }
 
   const handleGroupChange = (values: string[]) => {
@@ -91,25 +96,34 @@ export function SyncModelsDialog({
   }
 
   const handleSync = async () => {
-    const toSync = filteredModels.filter((m) => selectedModels.has(m.id))
-    await syncModels.mutateAsync({
-      providerId,
-      models: toSync.map((m) => ({
-        id: m.id,
-        name: m.name,
-        description: m.description,
-        contextWindow: m.contextWindow,
-        maxOutputTokens: m.maxOutputTokens,
-        cost: m.cost,
-        capabilities: m.capabilities,
-      })),
-      groupIds: [...selectedGroups],
-    })
-    onOpenChange(false)
+    const toSync = models.filter((m) => !m.synced && selectedModels.has(m.id))
+    try {
+      await syncModels.mutateAsync({
+        providerId,
+        models: toSync.map((m) => ({
+          id: m.id,
+          name: m.name,
+          description: m.description,
+          contextWindow: m.contextWindow,
+          maxOutputTokens: m.maxOutputTokens,
+          cost: m.cost,
+          capabilities: m.capabilities,
+        })),
+        groupIds: [...selectedGroups],
+      })
+      onOpenChange(false)
+    } catch {
+      // The mutation reports the error; keep the selection available for retry.
+    }
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!syncModels.isPending) onOpenChange(next)
+      }}
+    >
       <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>同步模型 - {providerName}</DialogTitle>
@@ -165,7 +179,11 @@ export function SyncModelsDialog({
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              variant="outline"
+              disabled={syncModels.isPending}
+              onClick={() => onOpenChange(false)}
+            >
               取消
             </Button>
             <Button

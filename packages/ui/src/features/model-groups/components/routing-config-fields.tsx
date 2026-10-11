@@ -16,7 +16,7 @@ import {
 } from '../../../shared/components/ui/select'
 import { Switch } from '../../../shared/components/ui/switch'
 
-const ROUTING_STRATEGIES = [
+export const ROUTING_STRATEGIES = [
   {
     value: 'priority',
     label: '优先级',

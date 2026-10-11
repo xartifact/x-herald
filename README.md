@@ -161,6 +161,9 @@ cp .env.example .env     # 配置环境变量（可选）
 bun run dev
 ```
 
+默认开发端口：网关 `43173`（可通过 `PORT` 覆盖），前端 `5173`（被占用时 Vite 自动选择后续端口）。Vite `/api` 代理默认指向 `http://localhost:43173`，可通过 `GATEWAY_API_PROXY` 覆盖。
+
+
 ### 质量检查
 
 ```bash

@@ -1,3 +1,4 @@
+import { useId } from 'react'
 import { Trash2 } from 'lucide-react'
 import { UseFormReturn } from 'react-hook-form'
 
@@ -25,6 +26,10 @@ interface MappingRuleRowProps {
 }
 
 export function MappingRuleRow({ index, form, canRemove, onRemove }: MappingRuleRowProps) {
+  const id = useId()
+  const fromListId = `from-types-${id}`
+  const toListId = `to-types-${id}`
+
   return (
     <Card>
       <CardContent className="pt-4">
@@ -34,11 +39,11 @@ export function MappingRuleRow({ index, form, canRemove, onRemove }: MappingRule
             <Input
               {...form.register(`mappings.${index}.from`)}
               placeholder="例如: adaptive"
-              list="from-types"
+              list={fromListId}
             />
-            <datalist id="from-types">
-              {PREDEFINED_TYPES.map((t) => (
-                <option key={t.value} value={t.value} />
+            <datalist id={fromListId}>
+              {PREDEFINED_TYPES.map((type) => (
+                <option key={type.value} value={type.value} />
               ))}
             </datalist>
           </div>
@@ -48,11 +53,11 @@ export function MappingRuleRow({ index, form, canRemove, onRemove }: MappingRule
             <Input
               {...form.register(`mappings.${index}.to`)}
               placeholder="例如: enabled"
-              list="to-types"
+              list={toListId}
             />
-            <datalist id="to-types">
-              {PREDEFINED_TYPES.map((t) => (
-                <option key={t.value} value={t.value} />
+            <datalist id={toListId}>
+              {PREDEFINED_TYPES.map((type) => (
+                <option key={type.value} value={type.value} />
               ))}
             </datalist>
           </div>

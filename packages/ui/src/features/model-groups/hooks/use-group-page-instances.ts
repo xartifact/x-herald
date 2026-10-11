@@ -1,5 +1,8 @@
+import { zodResolver } from '@hookform/resolvers/zod'
+import { instanceFormSchema } from './management-form-schema'
 import { useState, useMemo, useCallback } from 'react'
 
+import { instanceToForm, instanceFormToPayload } from './instance-form-data'
 import { useForm } from 'react-hook-form'
 
 import type { InstanceFormData } from '@xartifact/x-herald-ui'
@@ -21,7 +24,12 @@ export function useGroupPageInstances() {
   const [editingInstanceId, setEditingInstanceId] = useState<string | null>(null)
   const [instanceDialogOpen, setInstanceDialogOpen] = useState(false)
 
-  const { data: rawInstances = [], isLoading: instancesLoading } = useModelInstances()
+  const {
+    data: rawInstances = [],
+    isLoading: instancesLoading,
+    error: instancesError,
+    refetch: refetchInstances,
+  } = useModelInstances()
   const instances = rawInstances as ExtendedModelInstance[]
   const createInstance = useCreateModelInstance()
   const updateInstance = useUpdateModelInstance()
@@ -30,15 +38,8 @@ export function useGroupPageInstances() {
   const reorderInstances = useReorderInstances()
 
   const instanceForm = useForm<InstanceFormData>({
-    defaultValues: {
-      providerId: '',
-      name: '',
-      actualModelName: '',
-      description: '',
-      weight: 100,
-      groupIds: [],
-      config: undefined,
-    },
+    resolver: zodResolver(instanceFormSchema),
+    defaultValues: instanceToForm(),
   })
 
   const instancesByGroup = useMemo(() => {
@@ -69,28 +70,13 @@ export function useGroupPageInstances() {
 
   const handleAddInstance = () => {
     setEditingInstanceId(null)
-    instanceForm.reset({
-      providerId: '',
-      name: '',
-      actualModelName: '',
-      description: '',
-      weight: 100,
-      groupIds: [],
-    })
+    instanceForm.reset(instanceToForm())
     setInstanceDialogOpen(true)
   }
 
   const handleEditInstance = (instance: ModelInstance) => {
     setEditingInstanceId(instance.id)
-    instanceForm.reset({
-      providerId: instance.providerId,
-      name: instance.name,
-      actualModelName: instance.actualModelName,
-      description: instance.description || '',
-      weight: instance.weight,
-      groupIds: instance.groupIds ?? [],
-      config: instance.config || undefined,
-    })
+    instanceForm.reset(instanceToForm(instance))
     setInstanceDialogOpen(true)
   }
 
@@ -111,28 +97,26 @@ export function useGroupPageInstances() {
   )
 
   const onInstanceSubmit = async (data: InstanceFormData) => {
-    const payload = {
-      providerId: data.providerId,
-      name: data.name,
-      actualModelName: data.actualModelName,
-      description: data.description,
-      weight: data.weight,
-      groupIds: data.groupIds ?? [],
-      config: data.config,
+    const payload = instanceFormToPayload(data)
+    try {
+      if (editingInstanceId) {
+        await updateInstance.mutateAsync({ id: editingInstanceId, data: payload })
+      } else {
+        await createInstance.mutateAsync(payload)
+      }
+      setInstanceDialogOpen(false)
+      setEditingInstanceId(null)
+      instanceForm.reset()
+    } catch {
+      // Mutation shows the error; leave the form open for retry.
     }
-    if (editingInstanceId) {
-      await updateInstance.mutateAsync({ id: editingInstanceId, data: payload })
-    } else {
-      await createInstance.mutateAsync(payload)
-    }
-    setInstanceDialogOpen(false)
-    setEditingInstanceId(null)
-    instanceForm.reset()
   }
 
   return {
     instances,
     instancesLoading,
+    instancesError,
+    refetchInstances,
     instancesByGroup,
     ungroupedInstances,
     editingInstanceId,

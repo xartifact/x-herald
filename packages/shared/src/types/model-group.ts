@@ -42,6 +42,7 @@ export interface GroupFormData {
 }
 
 export interface InstanceFormData {
+  costPer1kTokens?: InstanceCost & { _enabled: boolean }
   providerId: string
   name: string
   actualModelName: string

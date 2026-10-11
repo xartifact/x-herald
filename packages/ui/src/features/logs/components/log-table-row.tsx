@@ -33,10 +33,10 @@ interface ModelCellProps {
 
 function ModelCell({ log, isPending, isSuccess, isCancelled }: ModelCellProps) {
   return (
-    <div className="space-y-0.5">
-      <div className="flex items-center gap-1.5 flex-wrap">
+    <div className="w-full min-w-0 space-y-0.5">
+      <div className="flex min-w-0 flex-wrap items-center gap-1.5">
         <span
-          className="font-medium text-sm truncate"
+          className="min-w-0 truncate font-medium text-sm"
           title={log.originalModelName ?? log.modelName}
         >
           {log.originalModelName ?? log.modelName}
@@ -91,7 +91,10 @@ function ModelCell({ log, isPending, isSuccess, isCancelled }: ModelCellProps) {
         )}
       </div>
       {(log.responseModelName || log.providerName) && (
-        <div className="text-xs text-muted-foreground truncate max-w-[240px]">
+        <div
+          className="w-full max-w-full truncate text-xs text-muted-foreground"
+          title={log.providerName ?? log.responseModelName ?? ''}
+        >
           {log.providerName && <span>{log.providerName}</span>}
           {log.responseModelName &&
             log.responseModelName !== (log.originalModelName ?? log.modelName) && (
@@ -105,7 +108,7 @@ function ModelCell({ log, isPending, isSuccess, isCancelled }: ModelCellProps) {
       {log.errorMessage && (
         <div
           className={cn(
-            'text-xs truncate max-w-[280px]',
+            'w-full max-w-full truncate text-xs',
             isCancelled ? 'text-muted-foreground' : 'text-destructive',
           )}
           title={log.errorMessage}
@@ -191,7 +194,10 @@ export function LogTableRow({
         </div>
       </TableCell>
       <TableCell>
-        <span className="text-sm font-mono truncate" title={log.virtualKeyName || '-'}>
+        <span
+          className="block max-w-full truncate text-sm font-mono"
+          title={log.virtualKeyName || '-'}
+        >
           {log.virtualKeyName || '-'}
         </span>
       </TableCell>
@@ -207,10 +213,10 @@ export function LogTableRow({
       <TableCell>
         {log.requestPath ? (
           <span
-            className="text-xs font-mono text-muted-foreground truncate max-w-[120px] block"
+            className="block max-w-full truncate text-xs font-mono text-muted-foreground"
             title={log.requestPath}
           >
-            {log.requestPath.length > 20 ? log.requestPath.slice(0, 20) + '...' : log.requestPath}
+            {log.requestPath}
           </span>
         ) : (
           <span className="text-xs text-muted-foreground">-</span>

@@ -13,6 +13,7 @@ import {
   handleProviderError as callProviderError,
   handleProviderErrorPassthrough as callProviderPassthrough,
 } from '../../services/error-handler'
+import { routingContextFromCandidate } from '../../services/routing-context'
 import { shouldFilterHeader } from '../../services/headers'
 import { logEventBus } from '../../services/log-event-bus'
 import { logStartAsync, markLogAsFailed } from '../../services/log-service'
@@ -326,7 +327,7 @@ export class ChatCompletionCandidateExecutor {
   }
 
   async gatewayError(errorOrCode: string | Error, fallbackMessage?: string): Promise<Response> {
-    const { c, req, config } = this
+    const { c, req, config, candidate } = this
     const error =
       errorOrCode instanceof Error ? errorOrCode : new Error(fallbackMessage ?? errorOrCode)
     return callGatewayError({
@@ -347,6 +348,7 @@ export class ChatCompletionCandidateExecutor {
       targetProtocol: config.targetProtocol,
       logId: this.logId,
       retryCount: config.retryCount,
+      routingContext: routingContextFromCandidate(candidate),
     })
   }
 

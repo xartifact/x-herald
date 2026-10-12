@@ -10,6 +10,7 @@ import {
   handleGatewayError as callGatewayError,
   handleProviderErrorPassthrough as callProviderPassthrough,
 } from '../../services/error-handler'
+import { routingContextFromCandidate } from '../../services/routing-context'
 import { shouldFilterHeader } from '../../services/headers'
 import { logEventBus } from '../../services/log-event-bus'
 import { logStartAsync, markLogAsFailed } from '../../services/log-service'
@@ -200,6 +201,7 @@ export class PassthroughCandidateExecutor {
       targetProtocol: this.config.targetProtocol,
       logId: this.logId,
       retryCount: this.config.retryCount,
+      routingContext: routingContextFromCandidate(this.candidate),
     })
   }
 

@@ -126,10 +126,13 @@ async function logFailure(
     targetProtocol,
     retryCount,
   } = params
+  const rc = params.routingContext
   await logRequest({
     virtualKey,
-    modelName: opts.requestedModel,
-    originalModelName: opts.requestedModel,
+    modelName: rc?.modelName ?? opts.requestedModel,
+    originalModelName: rc?.originalModelName ?? opts.requestedModel,
+    providerId: rc?.providerId,
+    providerName: rc?.providerName,
     status: 'failure',
     responseTimeMs: opts.responseTimeMs,
     requestHeaders,
@@ -145,7 +148,17 @@ async function logFailure(
     incomingProtocol,
     targetProtocol,
     retryCount,
-    routingTrace: opts.routeChain ? { routeChain: opts.routeChain } : undefined,
+    routingTrace: opts.routeChain
+      ? { routeChain: opts.routeChain }
+      : rc
+        ? {
+            instanceId: rc.instanceId,
+            actualModelName: rc.actualModelName,
+            modelGroupId: rc.modelGroupId,
+            modelGroupName: rc.modelGroupName,
+            strategy: rc.strategy,
+          }
+        : undefined,
   })
 }
 

@@ -13,6 +13,7 @@ import {
   handleProviderError as callProviderError,
   handleProviderErrorPassthrough as callProviderPassthrough,
 } from '../../services/error-handler'
+import { routingContextFromCandidate } from '../../services/routing-context'
 import { shouldFilterHeader } from '../../services/headers'
 import { logEventBus } from '../../services/log-event-bus'
 import { logStartAsync, markLogAsFailed } from '../../services/log-service'
@@ -373,6 +374,7 @@ export class AnthropicMessagesExecutor {
       targetProtocol: config.targetProtocol,
       logId: this.logId,
       retryCount: config.retryCount,
+      routingContext: routingContextFromCandidate(this.candidate),
     })
   }
 

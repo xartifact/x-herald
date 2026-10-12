@@ -71,7 +71,7 @@ export interface LogMetadata {
     actualModelName?: string
     strategy?: string
     responseModelName?: string
-    disconnectKind?: 'complete_then_hangup' | 'mid_stream_cancel'
+    disconnectKind?: 'complete_then_hangup' | 'mid_stream_cancel' | 'no_data_received'
   }
 
   [key: string]: unknown

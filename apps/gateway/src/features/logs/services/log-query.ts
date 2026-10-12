@@ -73,7 +73,7 @@ const LIST_SELECT = {
     string | null
   >`coalesce(${requestLogs.metadata}->'routing'->>'responseModelName', ${requestLogs.metadata}->'routing'->>'actualModelName')`,
   disconnectKind: sql<
-    'complete_then_hangup' | 'mid_stream_cancel' | null
+    'complete_then_hangup' | 'mid_stream_cancel' | 'no_data_received' | null
   >`(${requestLogs.metadata}->'routing'->>'disconnectKind')`,
 }
 

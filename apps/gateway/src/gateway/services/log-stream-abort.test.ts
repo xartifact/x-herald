@@ -125,6 +125,33 @@ describe('markStreamAborted — 客户端主动取消 vs 真正断连的状态�
     expect(lastRequestLogsSet?.totalTokens).toBe(140)
   })
 
+  it('abort 收尾修正初始行占位：statusCode 499 + 真实耗时 + streaming 标记', async () => {
+    lastRequestLogsSet = undefined
+    lastRequestAttemptsSet = undefined
+
+    await markStreamAborted('log-8', 'attempt-8', false, {
+      isStreaming: true,
+      responseTimeMs: 10226,
+    })
+
+    expect(lastRequestLogsSet?.statusCode).toBe(499)
+    expect(lastRequestLogsSet?.responseTimeMs).toBe(10226)
+    expect(lastRequestLogsSet?.streaming).toBe('true')
+    expect(lastRequestAttemptsSet?.statusCode).toBe(499)
+    expect(lastRequestAttemptsSet?.durationMs).toBe(10226)
+  })
+
+  it('零数据断开（hadPartialData=false）：failure + 断开细分元数据写入', async () => {
+    lastRequestLogsSet = undefined
+
+    await markStreamAborted('log-9', 'attempt-9', false, {})
+
+    // metadata 深合并 SQL 始终写入（disconnectKind 按 hadPartialData 三值推导）；
+    // 三值文案断言由 errorMessage 分支覆盖，drizzle sql 对象内部不在此重复断言
+    expect(lastRequestLogsSet?.metadata).toBeDefined()
+    expect(lastRequestLogsSet?.statusCode).toBe(499)
+  })
+
   it('temp- 前缀的 logId 直接跳过，不写库', async () => {
     lastRequestLogsSet = undefined
 

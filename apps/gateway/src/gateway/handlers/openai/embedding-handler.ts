@@ -194,6 +194,8 @@ export async function handleEmbeddingRequest(
             if (executor.logId) {
               await markStreamAborted(executor.logId, executor.attemptId ?? '', false, {
                 forceCancelled: true,
+                isStreaming: false,
+                responseTimeMs: Date.now() - startTime,
               })
             }
             return new Response(null, { status: 499 })

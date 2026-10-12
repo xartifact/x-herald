@@ -110,6 +110,7 @@ export class PassthroughCandidateExecutor {
 
     const { logId, attemptId } = logStartAsync({
       virtualKey: this.req.virtualKey,
+      streaming: false,
       modelName: mapping.modelName,
       originalModelName: mapping.originalModel,
       mappingType: mapping.mappingType,

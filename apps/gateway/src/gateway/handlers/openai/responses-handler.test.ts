@@ -591,8 +591,11 @@ describe('handleResponsesAPI', () => {
     // 客户端已断开：不再走 handleGatewayError（曾产生 500/internal_error 误分类）
     expect(handleGatewayErrorMock).not.toHaveBeenCalled()
     expect(response.status).toBe(499)
-    expect(markStreamAbortedMock).toHaveBeenCalledWith('log-test-id', 'attempt-test-id', false, {
-      forceCancelled: true,
-    })
+    expect(markStreamAbortedMock).toHaveBeenCalledWith(
+      'log-test-id',
+      'attempt-test-id',
+      false,
+      expect.objectContaining({ forceCancelled: true, isStreaming: false }),
+    )
   })
 })

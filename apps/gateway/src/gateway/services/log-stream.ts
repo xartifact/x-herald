@@ -44,6 +44,8 @@ export interface StreamLogParams {
   mappingType?: 'virtual' | 'exact' | 'alias' | 'fallback' | null
   isMapped?: boolean
   providerId: string
+  /** 请求形态（body.stream===true）：初始行如实记录 streaming 列，abort 收尾不再依赖调用方修正 */
+  streaming?: boolean
   providerName: string
   requestHeaders: Record<string, string>
   requestBody: unknown
@@ -123,7 +125,7 @@ export function buildLogInsertValues(params: StreamLogParams & { isStream: boole
     status: 'pending' as const,
     streamStatus,
     isComplete: false,
-    statusCode: 200,
+    statusCode: null,
     responseTimeMs: 0,
     inputTokens: 0,
     outputTokens: 0,
@@ -291,8 +293,8 @@ export function logStartAsync(params: StreamLogParams): LogStartResult {
   const logId = crypto.randomUUID()
   const attemptId = crypto.randomUUID()
 
-  createStreamLogById({ ...params, isStream: false }, logId, attemptId).catch((err) =>
-    logger.error({ err, logId }, '[Log] 异步初始日志写入失败'),
+  createStreamLogById({ ...params, isStream: params.streaming ?? false }, logId, attemptId).catch(
+    (err) => logger.error({ err, logId }, '[Log] 异步初始日志写入失败'),
   )
 
   import('../../features/logs/services/client-model-recorder')
@@ -566,6 +568,12 @@ export async function markStreamAborted(
     usage?: { inputTokens: number; outputTokens: number }
     responseModelName?: string | null
     terminalSeen?: boolean
+    /** 请求形态：修正初始行的 streaming 占位（responses 路径无 upgradeToStreamLog 兜底） */
+    isStreaming?: boolean
+    /** 客户端断开的网关侧状态码语义；不传默认 499 */
+    statusCode?: number
+    /** 请求耗时（Date.now()-startTime），修正初始行 responseTimeMs=0 占位 */
+    responseTimeMs?: number
   },
 ): Promise<void> {
   if (!logId || logId.startsWith('temp-')) {
@@ -584,6 +592,12 @@ export async function markStreamAborted(
   const usage = opts?.usage
   const inputTokens = usage?.inputTokens ?? 0
   const outputTokens = usage?.outputTokens ?? 0
+  // 断开细分：终止事件已见（完整送达）| 有数据中途取消 | 零数据断开（上游慢/无输出信号）
+  const disconnectKind = opts?.terminalSeen
+    ? 'complete_then_hangup'
+    : hadPartialData
+      ? 'mid_stream_cancel'
+      : 'no_data_received'
   try {
     const db = getDatabase()
     await db.transaction(async (trx) => {
@@ -596,34 +610,41 @@ export async function markStreamAborted(
             isComplete: true,
             errorMessage,
             errorType: 'client_disconnect',
+            // 客户端断开的网关侧语义码；同时修正初始行 statusCode=200 占位
+            statusCode: opts?.statusCode ?? 499,
+            ...(opts?.responseTimeMs !== undefined && { responseTimeMs: opts.responseTimeMs }),
+            ...(opts?.isStreaming !== undefined && {
+              streaming: opts.isStreaming ? 'true' : 'false',
+            }),
             ...(usage && {
               inputTokens,
               outputTokens,
               totalTokens: inputTokens + outputTokens,
             }),
-            ...((opts?.responseModelName || opts?.terminalSeen !== undefined) && {
-              metadata: sql`${requestLogs.metadata} || jsonb_build_object('routing', coalesce(${requestLogs.metadata}->'routing', '{}'::jsonb) || jsonb_build_object(${sql.join(
-                [
-                  ...(opts.responseModelName
-                    ? [sql`'responseModelName'`, sql`${opts.responseModelName}::text`]
-                    : []),
-                  ...(opts.terminalSeen !== undefined
-                    ? [
-                        sql`'disconnectKind'`,
-                        sql`${opts.terminalSeen ? 'complete_then_hangup' : 'mid_stream_cancel'}::text`,
-                      ]
-                    : []),
-                ],
-                sql`, `,
-              )}))`,
-            }),
+            metadata: sql`${requestLogs.metadata} || jsonb_build_object('routing', coalesce(${requestLogs.metadata}->'routing', '{}'::jsonb) || jsonb_build_object(${sql.join(
+              [
+                sql`'disconnectKind'`,
+                sql`${disconnectKind}::text`,
+                ...(opts?.responseModelName
+                  ? [sql`'responseModelName'`, sql`${opts.responseModelName}::text`]
+                  : []),
+              ],
+              sql`, `,
+            )}))`,
             lastUpdatedAt: new Date(),
           })
           .where(eq(requestLogs.id, logId)),
       )
       if (attemptId && !attemptId.startsWith('temp-')) {
         await withDbTimeout(
-          trx.update(requestAttempts).set({ status }).where(eq(requestAttempts.id, attemptId)),
+          trx
+            .update(requestAttempts)
+            .set({
+              status,
+              statusCode: opts?.statusCode ?? 499,
+              ...(opts?.responseTimeMs !== undefined && { durationMs: opts.responseTimeMs }),
+            })
+            .where(eq(requestAttempts.id, attemptId)),
         )
       }
     })

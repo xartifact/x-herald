@@ -252,6 +252,7 @@ export class AnthropicMessagesExecutor {
     const { targetProtocol, requestGroupId, candidateIndex, routeChain } = this.config
     return {
       virtualKey,
+      streaming: this.req.isStreaming,
       modelName: mapping.modelName,
       originalModelName: mapping.originalModel,
       mappingType: mapping.mappingType,

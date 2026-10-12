@@ -244,6 +244,8 @@ export async function handleAnthropicMessages(
             if (executor.logId) {
               await markStreamAborted(executor.logId, executor.attemptId ?? '', false, {
                 forceCancelled: true,
+                isStreaming,
+                responseTimeMs: Date.now() - startTime,
               })
               logEventBus.emitLog({
                 event: 'aborted',

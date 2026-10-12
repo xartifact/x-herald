@@ -410,6 +410,8 @@ export async function handleStreamingResponse(params: ResponseHandlerParams): Pr
           usage: { inputTokens: usage.inputTokens, outputTokens: usage.outputTokens },
           responseModelName: providerCollector.getProviderModel(),
           terminalSeen: completeThenHangup,
+          isStreaming: true,
+          responseTimeMs: elapsedMs,
         })
         logEventBus.emitLog({ event: 'aborted', workspaceId: params.virtualKey.workspaceId, logId })
       },

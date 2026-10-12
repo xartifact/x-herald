@@ -338,6 +338,7 @@ export async function handleResponsesAPI(
         conversationId,
         virtualKey,
       }),
+      streaming: isStreaming,
       requestGroupId,
       candidateIndex: 0,
     }))
@@ -403,7 +404,11 @@ export async function handleResponsesAPI(
         // 客户端断开（TTFB 阶段）：记为 cancelled，不计入失败率（与其他 handler 对齐）
         logger.info({ requestId, logId }, 'Client disconnected, marking as cancelled')
         if (logId) {
-          await markStreamAborted(logId, attemptId ?? '', false, { forceCancelled: true })
+          await markStreamAborted(logId, attemptId ?? '', false, {
+            forceCancelled: true,
+            isStreaming,
+            responseTimeMs: Date.now() - startTime,
+          })
           logEventBus.emitLog({
             event: 'aborted',
             workspaceId: virtualKey.workspaceId,
@@ -654,6 +659,8 @@ export async function handleResponsesAPI(
               usage: { inputTokens: usage.inputTokens, outputTokens: usage.outputTokens },
               responseModelName: collector.getProviderModel(),
               terminalSeen: collector.hasFinished(),
+              isStreaming: true,
+              responseTimeMs: Date.now() - startTime,
             })
           }
           logger.info({ logId, attemptId, reason }, 'Responses stream cancelled by client')

@@ -413,6 +413,8 @@ describe('handleOpenAIChatCompletion', () => {
     expect(mockHandleGatewayError).not.toHaveBeenCalled()
     expect(mockMarkStreamAborted).toHaveBeenCalledWith('log-1', 'attempt-1', false, {
       forceCancelled: true,
+      isStreaming: true,
+      responseTimeMs: expect.any(Number),
     })
   })
 

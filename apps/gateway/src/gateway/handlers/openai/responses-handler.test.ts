@@ -473,7 +473,12 @@ describe('handleResponsesAPI', () => {
     // cancel 是异步传播的，给微任务一个周转机会
     await new Promise<void>((resolve) => setTimeout(resolve, 20))
 
-    expect(markStreamAbortedMock).toHaveBeenCalledWith('log-test-id', 'attempt-test-id', true)
+    expect(markStreamAbortedMock).toHaveBeenCalledWith(
+      'log-test-id',
+      'attempt-test-id',
+      false,
+      expect.objectContaining({ usage: expect.anything() }),
+    )
   })
 
   it('remaps response model in stream events when mapping is enabled', async () => {
@@ -534,7 +539,7 @@ describe('handleResponsesAPI', () => {
     expect(args.error.message).toContain('timeout')
   })
 
-  it('calls handleGatewayError with client disconnect message when client disconnects', async () => {
+  it('marks the log cancelled (not 500) when the client disconnects before TTFB', async () => {
     executeWithRetryResult = {
       response: null,
       retryCount: 0,
@@ -543,10 +548,13 @@ describe('handleResponsesAPI', () => {
     }
     const c = createMockContext({ model: 'gpt-4', input: 'hello' })
 
-    await handleResponsesAPI(c, false, { model: 'gpt-4', input: 'hello' })
+    const response = await handleResponsesAPI(c, false, { model: 'gpt-4', input: 'hello' })
 
-    expect(handleGatewayErrorMock).toHaveBeenCalled()
-    const args = (handleGatewayErrorMock.mock.calls[0] as unknown[])[0] as { error: Error }
-    expect(args.error.message).toContain('disconnected')
+    // 客户端已断开：不再走 handleGatewayError（曾产生 500/internal_error 误分类）
+    expect(handleGatewayErrorMock).not.toHaveBeenCalled()
+    expect(response.status).toBe(499)
+    expect(markStreamAbortedMock).toHaveBeenCalledWith('log-test-id', 'attempt-test-id', false, {
+      forceCancelled: true,
+    })
   })
 })

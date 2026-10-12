@@ -45,8 +45,22 @@ export interface GatewayErrorParams {
   providerRequestHeaders?: Record<string, string>
   logId?: string
   retryCount?: number
+  /** 路由上下文（instance/provider/mapping），让 fallback 分支日志与正常请求对齐展示实际模型 */
+  routingContext?: RoutingContext
 }
 export type { GatewayErrorParams as ErrorHandlerParams }
+
+export interface RoutingContext {
+  providerId?: string
+  providerName?: string
+  modelName?: string
+  originalModelName?: string
+  actualModelName?: string
+  instanceId?: string
+  modelGroupId?: string
+  modelGroupName?: string
+  strategy?: string
+}
 
 export interface ProviderErrorParams {
   c: Context
@@ -110,7 +124,6 @@ async function logFailure(
     isStreaming,
     incomingProtocol,
     targetProtocol,
-    logId,
     retryCount,
   } = params
   await logRequest({
@@ -231,7 +244,10 @@ export async function handleGatewayError(params: GatewayErrorParams): Promise<Re
   const detailedErrorMessage = extractDetailedErrorMessage(error)
   await logRequest({
     virtualKey: params.virtualKey,
-    modelName: requestedModel,
+    modelName: params.routingContext?.modelName ?? requestedModel,
+    originalModelName: params.routingContext?.originalModelName ?? requestedModel,
+    providerId: params.routingContext?.providerId,
+    providerName: params.routingContext?.providerName,
     status: 'failure',
     statusCode: 500,
     responseTimeMs,
@@ -250,6 +266,15 @@ export async function handleGatewayError(params: GatewayErrorParams): Promise<Re
     targetProtocol: params.targetProtocol,
     logId: params.logId,
     retryCount: params.retryCount,
+    routingTrace: params.routingContext
+      ? {
+          instanceId: params.routingContext.instanceId,
+          actualModelName: params.routingContext.actualModelName,
+          modelGroupId: params.routingContext.modelGroupId,
+          modelGroupName: params.routingContext.modelGroupName,
+          strategy: params.routingContext.strategy,
+        }
+      : undefined,
   })
 
   return c.json({ error: { type: 'internal_error', message: detailedErrorMessage } }, 500)

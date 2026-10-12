@@ -58,7 +58,7 @@ export interface LogRequestParams {
   isMapped?: boolean
   providerId?: string
   providerName?: string
-  status: 'success' | 'failure' | 'pending'
+  status: 'success' | 'failure' | 'cancelled' | 'pending'
   statusCode?: number
   responseTimeMs: number
   inputTokens?: number
@@ -242,7 +242,7 @@ function buildLogInsertValues(
     toolCallsCount,
     retryCount: params.retryCount ?? 0,
     conversationId: params.conversationId,
-    streamStatus: 'completed',
+    streamStatus: params.status === 'failure' ? 'failed' : 'completed',
     isComplete: true,
     createdAt: new Date(),
     streamStartedAt: params.streaming ? new Date(Date.now() - params.responseTimeMs) : new Date(),
@@ -290,8 +290,7 @@ export async function logRequest(params: LogRequestParams): Promise<void> {
             errorMessage: params.errorMessage,
             errorType,
             isComplete: true,
-            streamStatus: 'completed',
-            streamCompletedAt: new Date(),
+            streamStatus: params.status === 'failure' ? 'failed' : 'completed',
             lastUpdatedAt: new Date(),
             metadata: metadata as AnyRecord,
             toolCallsCount,

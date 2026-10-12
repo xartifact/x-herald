@@ -1,10 +1,11 @@
-import { eq } from '@xartifact/x-herald-db'
+import { eq, sql } from '@xartifact/x-herald-db'
 
 import { IS_PRODUCTION } from '../../config/env'
 import type { DbClient } from '../../db/client'
 import { getDatabase } from '../../db/client'
 import logger from '../../lib/logger'
 import { deriveRequestCategory } from './content-extractor'
+import { costService } from '../../features/costs/service'
 
 // ─── x-tinker reporter (lazily initialized) ─────────────────
 let xTinkerReporter: import('@xartifact/x-tinker-sdk').ErrorReporter | null = null
@@ -540,7 +541,7 @@ export async function markStreamFailed(
 }
 
 /**
- * 流被中止时的日志落库。
+ * 流被中止时的日志落库（单次原子收尾，调用方不得再并发调用 logRequest/finalizeStreamLog）。
  *
  * @param hadPartialData 是否已收到过数据：
  *   true：客户端已经拿到部分/完整内容后主动挂断（如 OMP 类 agent 解析出完整
@@ -548,12 +549,24 @@ export async function markStreamFailed(
  *   false：还没收到任何数据就断开，更像真实网络故障，保留 `failure`。
  * @param opts.forceCancelled TTFB 阶段客户端断开（client signal abort）视为主动取消，
  *   强制记为 `cancelled`，且不向 x-tinker 上报失败。
+ * @param opts.usage 已采集的 usage（断开前流中提取），随收尾一次性入账。
+ * @param opts.responseModelName Provider 响应中的实际模型名（断开前已采集），深合并进
+ *   metadata.routing 供查询展示；不覆盖已有的 routeChain / actualModelName 等字段。
+ * @param opts.terminalSeen 客户端挂断前已见到流的终止事件（finish_reason /
+ *   response.completed）：内容已完整送达，errorMessage 标记
+ *   `Client disconnected after complete response`，metadata.routing.disconnectKind
+ *   = 'complete_then_hangup' 供 UI 区分降噪；仍未收到任何数据的断连保持 failure 上报。
  */
 export async function markStreamAborted(
   logId: string,
   attemptId: string,
   hadPartialData: boolean,
-  opts?: { forceCancelled?: boolean },
+  opts?: {
+    forceCancelled?: boolean
+    usage?: { inputTokens: number; outputTokens: number }
+    responseModelName?: string | null
+    terminalSeen?: boolean
+  },
 ): Promise<void> {
   if (!logId || logId.startsWith('temp-')) {
     logger.warn({ logId }, 'Skipping abort mark for temporary log ID')
@@ -563,9 +576,14 @@ export async function markStreamAborted(
   const status = cancelled ? 'cancelled' : 'failure'
   const errorMessage = opts?.forceCancelled
     ? 'Client cancelled request'
-    : hadPartialData
-      ? 'Client disconnected after receiving data'
-      : 'Client disconnected'
+    : opts?.terminalSeen
+      ? 'Client disconnected after complete response'
+      : hadPartialData
+        ? 'Client disconnected after receiving data'
+        : 'Client disconnected'
+  const usage = opts?.usage
+  const inputTokens = usage?.inputTokens ?? 0
+  const outputTokens = usage?.outputTokens ?? 0
   try {
     const db = getDatabase()
     await db.transaction(async (trx) => {
@@ -578,6 +596,27 @@ export async function markStreamAborted(
             isComplete: true,
             errorMessage,
             errorType: 'client_disconnect',
+            ...(usage && {
+              inputTokens,
+              outputTokens,
+              totalTokens: inputTokens + outputTokens,
+            }),
+            ...((opts?.responseModelName || opts?.terminalSeen !== undefined) && {
+              metadata: sql`${requestLogs.metadata} || jsonb_build_object('routing', coalesce(${requestLogs.metadata}->'routing', '{}'::jsonb) || jsonb_build_object(${sql.join(
+                [
+                  ...(opts.responseModelName
+                    ? [sql`'responseModelName'`, sql`${opts.responseModelName}::text`]
+                    : []),
+                  ...(opts.terminalSeen !== undefined
+                    ? [
+                        sql`'disconnectKind'`,
+                        sql`${opts.terminalSeen ? 'complete_then_hangup' : 'mid_stream_cancel'}::text`,
+                      ]
+                    : []),
+                ],
+                sql`, `,
+              )}))`,
+            }),
             lastUpdatedAt: new Date(),
           })
           .where(eq(requestLogs.id, logId)),
@@ -602,11 +641,56 @@ export async function markStreamAborted(
         errorMessage,
       })
     }
+
+    // usage 已入账则同步计成本（原 cancel 路径经 logRequest 收尾时由其记录，收敛后由本函数承担）
+    if (usage && usage.inputTokens + usage.outputTokens > 0) {
+      await recordAbortedStreamCost(logId, inputTokens, outputTokens)
+    }
   } catch (error) {
     logger.warn({ error, logId }, 'Failed to mark stream as aborted')
   }
 }
 
+/**
+ * 断连流收尾的成本入账：从已落库的日志行取密钥/模型/服务商上下文。
+ * 失败仅告警（成本记录非关键路径，与 recordCost 内部容错一致）。
+ */
+async function recordAbortedStreamCost(
+  logId: string,
+  inputTokens: number,
+  outputTokens: number,
+): Promise<void> {
+  try {
+    const db = getDatabase()
+    const rows = await withDbTimeout(
+      db
+        .select({
+          workspaceId: requestLogs.workspaceId,
+          virtualKeyId: requestLogs.virtualKeyId,
+          virtualKeyName: requestLogs.virtualKeyName,
+          modelName: requestLogs.modelName,
+          providerName: requestLogs.providerName,
+        })
+        .from(requestLogs)
+        .where(eq(requestLogs.id, logId))
+        .limit(1),
+    )
+    const row = rows[0]
+    if (!row?.providerName) return
+    await costService.recordCost({
+      requestLogId: logId,
+      workspaceId: row.workspaceId ?? undefined,
+      keyId: row.virtualKeyId ?? undefined,
+      keyName: row.virtualKeyName ?? undefined,
+      modelName: row.modelName ?? undefined,
+      providerName: row.providerName,
+      inputTokens,
+      outputTokens,
+    })
+  } catch (error) {
+    logger.warn({ error, logId }, 'Failed to record cost for aborted stream')
+  }
+}
 export async function markAttemptFailed(params: {
   logId: string
   attemptId: string

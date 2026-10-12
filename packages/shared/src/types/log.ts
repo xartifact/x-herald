@@ -39,6 +39,7 @@ export interface LogListItem {
     maxTokens?: number
   } | null
   responseModelName?: string | null
+  disconnectKind?: 'complete_then_hangup' | 'mid_stream_cancel' | null
 }
 
 export interface LogMetadata {
@@ -112,6 +113,8 @@ export interface LogMetadata {
     actualModelName?: string
     strategy?: string
     responseModelName?: string
+    /** 客户端断开细分：complete_then_hangup（内容完整送达后挂断）| mid_stream_cancel（中途取消） */
+    disconnectKind?: 'complete_then_hangup' | 'mid_stream_cancel'
   }
   [key: string]: unknown
 }

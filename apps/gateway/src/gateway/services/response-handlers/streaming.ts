@@ -377,10 +377,15 @@ export async function handleStreamingResponse(params: ResponseHandlerParams): Pr
       'abort',
       async () => {
         const elapsedMs = Date.now() - startTime
-        // 未收到任何 chunk 就断开：更像连接从未真正建立/网络中断；
-        // 已收到 chunk 后断开：更像客户端主动挂断（取消/切换轮次），流本身是健康的。
         const hadPartialData = chunkEmitCount > 0
-        const likelyCause = hadPartialData ? 'client_cancelled_mid_stream' : 'no_data_received'
+        // 终止事件已见（finish_reason/usage 终末 chunk）→ 内容完整送达后的提前挂断，
+        // agent 客户端固有行为；未见 → 中途取消或连接异常。
+        const completeThenHangup = clientCollector.hasFinished()
+        const likelyCause = completeThenHangup
+          ? 'complete_then_hangup'
+          : hadPartialData
+            ? 'client_cancelled_mid_stream'
+            : 'no_data_received'
         logger.info(
           { logId, chunkEmitCount, elapsedMs, likelyCause },
           'Client disconnected, finalizing stream log',
@@ -397,8 +402,15 @@ export async function handleStreamingResponse(params: ResponseHandlerParams): Pr
           })
           return
         }
-        await finalizeLog('failure')
-        await markStreamAborted(logId, attemptId, hadPartialData)
+        isLogFinalized = true
+        const usage = clientCollector.getUsage()
+        // 单写者收尾：不再先 finalizeLog('failure') 再被 markStreamAborted 覆盖，
+        // 消除实时订阅者看到 failure 闪现 + 双写竞态。
+        await markStreamAborted(logId, attemptId, hadPartialData, {
+          usage: { inputTokens: usage.inputTokens, outputTokens: usage.outputTokens },
+          responseModelName: providerCollector.getProviderModel(),
+          terminalSeen: completeThenHangup,
+        })
         logEventBus.emitLog({ event: 'aborted', workspaceId: params.virtualKey.workspaceId, logId })
       },
       { once: true },

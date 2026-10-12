@@ -174,6 +174,9 @@ export class StreamResponseCollector {
   // 保留原有字段
   private hasToolCalls = false
   private finishReason: string | null = null
+  // 已见到流的终止事件（finish_reason / stop_reason / response.completed）：
+  // 客户端此后的断开属于「完整送达后提前挂断」，内容与 usage 均已完整。
+  private sawTerminalEvent = false
 
   /**
    * 处理一个 SSE 事件
@@ -256,8 +259,13 @@ export class StreamResponseCollector {
       // 记录结束原因
       if (json.choices?.[0]?.finish_reason) {
         this.finishReason = json.choices[0].finish_reason
+        this.sawTerminalEvent = true
       } else if (json.delta?.stop_reason) {
         this.finishReason = json.delta.stop_reason
+        this.sawTerminalEvent = true
+      } else if (json.type === 'response.completed') {
+        // Responses API 的终止事件
+        this.sawTerminalEvent = true
       }
     } catch {
       // 解析失败，忽略
@@ -399,6 +407,11 @@ export class StreamResponseCollector {
 
   getProviderModel(): string | null {
     return this.providerModel
+  }
+
+  /** 是否已见到流的终止事件（finish_reason / stop_reason / response.completed） */
+  hasFinished(): boolean {
+    return this.sawTerminalEvent
   }
 }
 

@@ -56,7 +56,13 @@ function ModelCell({ log, isPending, isSuccess, isCancelled }: ModelCellProps) {
             isPending && 'border-warning text-warning',
           )}
         >
-          {isPending ? '请求中' : isCancelled ? '客户端取消' : log.statusCode || log.status}
+          {isPending
+            ? '请求中'
+            : isCancelled
+              ? log.disconnectKind === 'complete_then_hangup'
+                ? '完整后挂断'
+                : '客户端取消'
+              : log.statusCode || log.status}
         </Badge>
         {log.requestCategory &&
           log.requestCategory !== 'other' &&

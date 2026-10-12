@@ -7,9 +7,9 @@ import type { providers } from '@xartifact/x-herald-db'
 
 import { accessModelRouter } from '../../services/access-model-router'
 import { identifyClient, resolveClientIp } from '../../services/client-identifier'
-import { handleGatewayError } from '../../services/error-handler'
+import { handleGatewayError, type RoutingContext } from '../../services/error-handler'
 import { shouldFilterHeader } from '../../services/headers'
-import { logRequest, logStartAsync } from '../../services/log-service'
+import { logRequest, logStartAsync, type LogRequestParams } from '../../services/log-service'
 import type { ModelMappingResult } from '../../services/model-mapping'
 import {
   buildRouteChainSnapshot,
@@ -19,6 +19,7 @@ import { ModelNotFoundError } from '../../services/model-group-router'
 import type { RouteResult } from '../../services/router-selector'
 import { extractProviderResponseHeaders, parseProviderError } from '../../services/error-classifier'
 import { markStreamAborted } from '../../services/log-stream'
+import { logEventBus } from '../../services/log-event-bus'
 import {
   StreamResponseCollector,
   createModelRemapStream,
@@ -169,6 +170,7 @@ export async function handleResponsesAPI(
   let attemptId: string | undefined
   const requestGroupId = crypto.randomUUID()
   let retryCount = 0
+  let routingContextParams: RoutingContext | undefined
 
   try {
     const responsesBody = preprocessedBody ?? ((await c.req.json()) as Record<string, unknown>)
@@ -229,8 +231,35 @@ export async function handleResponsesAPI(
           }
         : undefined,
     )
-
     const { instance, provider, group, decision, mapping } = routeResult
+    // 完整路由上下文：logStart 与后续所有 logRequest 收尾共用，
+    // 保证 actualModelName / instanceId 等不被 { routeChain } 精简版覆盖丢失
+    const routingTraceContext = {
+      matchedRuleId: routeResult.matchedRule?.id,
+      matchedRuleName: routeResult.matchedRule?.name,
+      matchedRulePriority: routeResult.matchedRule?.priority,
+      modelGroupId: group.id,
+      modelGroupName: group.name,
+      instanceId: instance.id,
+      actualModelName: instance.actualModelName,
+      strategy: decision.strategy,
+      instanceCost: instance.costPer1kTokens,
+      routeChain,
+    }
+
+    // handleGatewayError fallback 分支的路由上下文：对齐正常日志的模型/服务商展示
+    routingContextParams = {
+      providerId: provider.id,
+      providerName: provider.name,
+      modelName: mapping.modelName,
+      originalModelName: mapping.originalModel,
+      actualModelName: instance.actualModelName,
+      instanceId: instance.id,
+      modelGroupId: group.id,
+      modelGroupName: group.name,
+      strategy: decision.strategy,
+    }
+
     logger.debug(
       {
         requestId,
@@ -370,13 +399,24 @@ export async function handleResponsesAPI(
       const { response: rawResponse, retryCount: finalRetryCount } = retryResult
       retryCount = finalRetryCount
 
-      if (retryResult.aborted || !rawResponse) {
+      if (retryResult.aborted === 'client_disconnect') {
+        // 客户端断开（TTFB 阶段）：记为 cancelled，不计入失败率（与其他 handler 对齐）
+        logger.info({ requestId, logId }, 'Client disconnected, marking as cancelled')
+        if (logId) {
+          await markStreamAborted(logId, attemptId ?? '', false, { forceCancelled: true })
+          logEventBus.emitLog({
+            event: 'aborted',
+            workspaceId: virtualKey.workspaceId,
+            logId,
+          })
+        }
+        return new Response(null, { status: 499 })
+      }
+      if (retryResult.aborted === 'timeout' || !rawResponse) {
         const abortMessage =
-          retryResult.aborted === 'client_disconnect'
-            ? 'Client disconnected'
-            : retryResult.aborted === 'timeout'
-              ? `Request TTFB timeout after ${Math.round(ttfbTimeout / 1000)}s (limit=${ttfbTimeout}ms, totalBudget=${totalLimit}ms)`
-              : 'Client disconnected'
+          retryResult.aborted === 'timeout'
+            ? `Request TTFB timeout after ${Math.round(ttfbTimeout / 1000)}s (limit=${ttfbTimeout}ms, totalBudget=${totalLimit}ms)`
+            : 'Client disconnected'
         return handleGatewayError({
           error: new Error(abortMessage),
           c,
@@ -393,6 +433,7 @@ export async function handleResponsesAPI(
           transformedBody,
           logId,
           retryCount,
+          routingContext: routingContextParams,
         })
       }
       response = rawResponse
@@ -445,7 +486,7 @@ export async function handleResponsesAPI(
         logId,
         attemptId,
         retryCount,
-        routingTrace: { routeChain },
+        routingTrace: routingTraceContext,
       })
       // parseProviderError 已消费 body（内部 response.text()），直接复用
       // upstreamResponse.body 会抛 "Body object should not be disturbed or locked"，
@@ -479,6 +520,7 @@ export async function handleResponsesAPI(
       logId?: string
       attemptId?: string
       retryCount: number
+      routingTrace: NonNullable<LogRequestParams['routingTrace']>
       routeChain: RouteChainSnapshot
     }): Response {
       const {
@@ -503,7 +545,7 @@ export async function handleResponsesAPI(
         logId,
         attemptId,
         retryCount,
-        routeChain,
+        routingTrace: routingTraceContext,
       } = params
 
       // 采集 usage（response.completed 事件）、thinking/content 分块与 provider 模型名。
@@ -549,7 +591,10 @@ export async function handleResponsesAPI(
           retryCount,
           providerTtfbMs: providerTtfbTime > 0 ? providerTtfbTime - (startTime + 1) : undefined,
           streamDurationMs: now - Math.max(providerTtfbTime, startTime + 1),
-          routingTrace: { routeChain },
+          routingTrace: {
+            ...routingTraceContext,
+            responseModelName: collector.getProviderModel() ?? undefined,
+          },
         })
       }
 
@@ -585,12 +630,19 @@ export async function handleResponsesAPI(
           finalize('success', upstreamResponse.status)
         },
         cancel(reason: unknown) {
-          // 客户端断开：把 logStartAsync 创建的日志行收尾为 aborted，
-          // 否则永远悬挂 incomplete；已收到的 usage 照常入账。
+          // 客户端断开：单写者收尾，避免 finalize('failure') 与 markStreamAborted
+          // 并发写库互相覆盖（此前 66 条 provider_error 漂移记录的来源）。
+          // usage/responseModelName 已由 collector 采集，随收尾一次性入账。
           clearTimeout(streamIdleTimer)
-          finalize('failure', 499)
-          if (logId && attemptId && !logId.startsWith('temp-')) {
-            void markStreamAborted(logId, attemptId, true)
+          const usage = collector.getUsage()
+          const sawChunks =
+            usage.inputTokens > 0 || usage.outputTokens > 0 || collector.hasFinished()
+          if (logId && !logId.startsWith('temp-')) {
+            void markStreamAborted(logId, attemptId ?? '', sawChunks, {
+              usage: { inputTokens: usage.inputTokens, outputTokens: usage.outputTokens },
+              responseModelName: collector.getProviderModel(),
+              terminalSeen: collector.hasFinished(),
+            })
           }
           logger.info({ logId, attemptId, reason }, 'Responses stream cancelled by client')
         },
@@ -643,6 +695,7 @@ export async function handleResponsesAPI(
         logId,
         attemptId,
         retryCount,
+        routingTrace: routingTraceContext,
         routeChain,
       })
     }
@@ -692,7 +745,12 @@ export async function handleResponsesAPI(
       logId,
       attemptId,
       retryCount,
-      routingTrace: { routeChain },
+      routingTrace: {
+        ...routingTraceContext,
+        responseModelName: (providerResponseBody as Record<string, unknown> | null)?.model as
+          | string
+          | undefined,
+      },
     })
     // 模型映射启用时，响应体里的 model 是 provider 内部模型名；
     // 回写 originalModelName 保持对客户端透明（与 chat 路径 non-streaming.ts 一致）。
@@ -734,6 +792,7 @@ export async function handleResponsesAPI(
       transformedBody,
       logId,
       retryCount,
+      routingContext: routingContextParams,
     })
   }
 }

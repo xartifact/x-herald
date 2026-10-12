@@ -51,7 +51,10 @@ export function MetadataBasicSections({
             <InfoRow label="模型组" value={log.metadata.routing.modelGroupName} />
           )}
           {log.metadata.routing.actualModelName && (
-            <InfoRow label="实际模型" value={log.metadata.routing.actualModelName} mono />
+            <InfoRow label="路由实例模型" value={log.metadata.routing.actualModelName} mono />
+          )}
+          {log.metadata.routing.responseModelName && (
+            <InfoRow label="实际模型" value={log.metadata.routing.responseModelName} mono />
           )}
           {log.metadata.routing.strategy && (
             <InfoRow label="决策策略" value={log.metadata.routing.strategy} mono />

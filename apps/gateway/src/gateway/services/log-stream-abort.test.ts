@@ -103,6 +103,28 @@ describe('markStreamAborted — 客户端主动取消 vs 真正断连的状态�
     expect(lastRequestLogsSet?.errorMessage).toBe('Client cancelled request')
   })
 
+  it('terminalSeen=true（终止事件已见后挂断）：cancelled + 完整送达文案', async () => {
+    lastRequestLogsSet = undefined
+
+    await markStreamAborted('log-6', 'attempt-6', true, { terminalSeen: true })
+
+    expect(lastRequestLogsSet?.status).toBe('cancelled')
+    expect(lastRequestLogsSet?.errorMessage).toBe('Client disconnected after complete response')
+  })
+
+  it('terminalSeen + usage：tokens 随收尾一次性入账', async () => {
+    lastRequestLogsSet = undefined
+
+    await markStreamAborted('log-7', 'attempt-7', true, {
+      terminalSeen: true,
+      usage: { inputTokens: 100, outputTokens: 40 },
+    })
+
+    expect(lastRequestLogsSet?.inputTokens).toBe(100)
+    expect(lastRequestLogsSet?.outputTokens).toBe(40)
+    expect(lastRequestLogsSet?.totalTokens).toBe(140)
+  })
+
   it('temp- 前缀的 logId 直接跳过，不写库', async () => {
     lastRequestLogsSet = undefined
 

@@ -67,7 +67,14 @@ const LIST_SELECT = {
   thinking: sql<NonNullable<LogMetadata['request']>['thinking'] | null>`(
     ${requestLogs.metadata}->'request'->'thinking'
   )`,
-  responseModelName: sql<string | null>`(${requestLogs.metadata}->'routing'->>'responseModelName')`,
+  // 实际模型：优先 Provider 响应中的模型名（responseModelName）；
+  // 无上游响应（TTFB 断开/网络错误）时回退路由决策实例的 actualModelName
+  responseModelName: sql<
+    string | null
+  >`coalesce(${requestLogs.metadata}->'routing'->>'responseModelName', ${requestLogs.metadata}->'routing'->>'actualModelName')`,
+  disconnectKind: sql<
+    'complete_then_hangup' | 'mid_stream_cancel' | null
+  >`(${requestLogs.metadata}->'routing'->>'disconnectKind')`,
 }
 
 function buildDateConditions(range: DateRange) {

@@ -523,6 +523,44 @@ describe('handleResponsesAPI', () => {
     expect(text).toContain('"my-alias"')
   })
 
+  it('records response body summary for completed responses streams (detail view content)', async () => {
+    const events = [
+      'data: {"type":"response.created","response":{"id":"resp_1","model":"gpt-4-turbo"}}\n\n',
+      'data: {"type":"response.completed","response":{"id":"resp_1","model":"gpt-4-turbo","usage":{"input_tokens":1,"output_tokens":1}}}\n\n',
+      'data: [DONE]\n\n',
+    ]
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        for (const event of events) controller.enqueue(new TextEncoder().encode(event))
+        controller.close()
+      },
+    })
+    executeWithRetryResult = {
+      response: new Response(stream, {
+        status: 200,
+        headers: { 'content-type': 'text/event-stream' },
+      }),
+      retryCount: 0,
+      aborted: null,
+      networkError: false,
+    }
+    const c = createMockContext({ model: 'gpt-4', input: 'hello', stream: true })
+
+    const response = await handleResponsesAPI(c, true, {
+      model: 'gpt-4',
+      input: 'hello',
+      stream: true,
+    })
+    await response.text() // 读完流触发 flush/finalize
+
+    // finalize 的 logRequest 必须带 response body 摘要（此前恒空 → 详情页 Response 空）
+    expect(logRequestMock).toHaveBeenCalled()
+    const call = logRequestMock.mock.calls.at(-1)?.[0] as {
+      responseBody?: { streamContent?: { allChunks?: unknown[] } }
+    }
+    expect(call.responseBody?.streamContent?.allChunks?.length).toBeGreaterThan(0)
+  })
+
   it('calls handleGatewayError with timeout message when retry is aborted by timeout', async () => {
     executeWithRetryResult = {
       response: null,

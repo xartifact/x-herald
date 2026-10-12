@@ -591,6 +591,18 @@ export async function handleResponsesAPI(
           retryCount,
           providerTtfbMs: providerTtfbTime > 0 ? providerTtfbTime - (startTime + 1) : undefined,
           streamDurationMs: now - Math.max(providerTtfbTime, startTime + 1),
+          // 详情页 Response 内容与 chat 路径对齐：collector 摘要 + 完整流内容。
+          // 此前完全不传，responses 流式日志的 response_body 恒空（UI 显示空）。
+          providerResponseBody: {
+            ...(collector.getSummary('responses') as Record<string, unknown>),
+            streamContent: collector.getFullContent(),
+            streamProgress: collector.getProgress(),
+          },
+          responseBody: {
+            ...(collector.getSummary('responses') as Record<string, unknown>),
+            streamContent: collector.getFullContent(),
+            streamProgress: collector.getProgress(),
+          },
           routingTrace: {
             ...routingTraceContext,
             responseModelName: collector.getProviderModel() ?? undefined,

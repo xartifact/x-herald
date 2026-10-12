@@ -34,12 +34,14 @@ Client (OpenAI / Anthropic / Responses / JEV SDK)
 
 | Capability | Status |
 | --- | --- |
-| OpenAI ⇄ Anthropic bidirectional protocol conversion | ✅ |
+| OpenAI ⇄ Anthropic bidirectional protocol conversion | 🔄 |
 | OpenAI Responses API (`/api/v1/responses`) native proxy + usage extraction | ✅ |
 | Same-protocol passthrough (zero transformation overhead) | ✅ |
-| Streaming (SSE) bidirectional conversion, thinking-block support | ✅ |
+| Streaming (SSE) bidirectional conversion, thinking-block support | 🔄 |
 | JEV System One transparent proxy (typed decisions, not chat) | ✅ |
 | Embeddings with dimension enforcement (matryoshka truncation) | ✅ |
+
+> 🔄 — implemented and tested (unit + end-to-end against mock upstream), not yet exercised by production cross-protocol traffic.
 
 ### Routing
 

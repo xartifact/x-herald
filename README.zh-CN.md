@@ -34,12 +34,14 @@ x-herald 是一个**透明代理**网关（第一原则：请求按原协议透�
 
 | 特性                                                             | 状态 |
 | ---------------------------------------------------------------- | ---- |
-| OpenAI ⇄ Anthropic 双向协议转换                                  | ✅   |
+| OpenAI ⇄ Anthropic 双向协议转换                                  | 🔄   |
 | OpenAI Responses API（`/api/v1/responses`）原生代理 + usage 提取 | ✅   |
 | 同协议透传（零转换开销）                                         | ✅   |
-| 流式（SSE）双向转换，thinking 块支持                             | ✅   |
+| 流式（SSE）双向转换，thinking 块支持                             | 🔄   |
 | JEV System One 透明代理（类型化决策，非 Chat）                   | ✅   |
 | Embeddings 维度强制（matryoshka 截断）                           | ✅   |
+
+> 🔄 — 已实现并有测试覆盖（mock 上游端到端），尚无生产跨协议流量验证。
 
 ### 路由
 

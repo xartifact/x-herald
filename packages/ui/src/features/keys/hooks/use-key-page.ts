@@ -78,7 +78,7 @@ export function useKeyPage() {
       rateLimitRpd: data.rateLimitRpd || null,
       tokenLimitDaily: data.tokenLimitDaily || null,
       enabled: data.enabled,
-      expiresAt: data.expiresAt || null,
+      expiresAt: data.expiresAt ? new Date(`${data.expiresAt}T23:59:59.999`).toISOString() : null,
     }
 
     if (editingKeyId) {

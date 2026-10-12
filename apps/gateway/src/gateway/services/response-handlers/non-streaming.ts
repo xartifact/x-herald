@@ -145,9 +145,16 @@ async function handlePassthrough(
   // 纯增量：仅当请求体含 dimensions 且响应含 data[].embedding 时生效，chat 等其余路径不受影响。
   const alignedData = enforceEmbeddingDimensions(providerResponseData, params.rawBody)
   const responseBody = alignedData ?? providerResponseData
+  // 透传路径此前不传 usage（embedding 等非流式响应必带 usage），导致每条请求
+  // 都落入估算分支并刷「No usage information」告警。从透传响应体直接提取。
+  const passthroughUsage = providerResponseData?.usage as
+    | { prompt_tokens?: number; completion_tokens?: number }
+    | undefined
   await logRequest({
     ...buildBaseLogParams(params, responseTimeMs, providerResponseHeaders, mergedHeaders),
     streaming: false,
+    inputTokens: passthroughUsage?.prompt_tokens,
+    outputTokens: passthroughUsage?.completion_tokens,
     providerResponseBody: providerResponseData,
     responseBody,
     providerResponseDiff: computeJsonDiff(responseBody, providerResponseData),

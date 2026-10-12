@@ -16,23 +16,17 @@ import {
   useCostByKey,
   useCostByProvider,
   useCostByModel,
+  toCostQueryParams,
 } from '@xartifact/x-herald-ui'
 import { CostDateFilter, CostSummaryCards, CostBreakdownTable } from '@xartifact/x-herald-ui'
 import type { DateRangeFilter } from '@xartifact/x-herald-ui'
-
-function buildQueryParams(filter: DateRangeFilter): { startDate?: string; endDate?: string } {
-  const params: { startDate?: string; endDate?: string } = {}
-  if (filter.startDate) params.startDate = filter.startDate
-  if (filter.endDate) params.endDate = filter.endDate
-  return params
-}
 
 export function CostsPage() {
   const [filter, setFilter] = useState<DateRangeFilter>({
     preset: '7d',
   })
 
-  const queryParams = useMemo(() => buildQueryParams(filter), [filter])
+  const queryParams = useMemo(() => toCostQueryParams(filter), [filter])
 
   const { data: summaryData, refetch: refetchSummary } = useCostSummary(queryParams)
   const {

@@ -185,7 +185,13 @@ function buildLogData(params: LogRequestParams): LogData {
   const toolCallsCount = metadata.toolCalls?.tools?.length || 0
   let inputTokens = params.inputTokens || 0
   let outputTokens = params.outputTokens || 0
+  // 非推理请求（模型列表、探测等无 token 语义的端点）providerName 为空：
+  // 不是「上游漏发 usage」，跳过告警与估算，避免无意义的 WARN 刷屏。
   if (!inputTokens && !outputTokens) {
+    if (!params.providerName) {
+      metadata.performance = { ...metadata.performance, usageEstimated: false }
+      return { metadata, inputTokens, outputTokens, toolCallsCount }
+    }
     logger.warn(
       { modelName: params.modelName, provider: params.providerName },
       'No usage information from provider, using estimation',

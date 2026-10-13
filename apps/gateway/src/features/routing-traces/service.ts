@@ -27,8 +27,8 @@ export interface RoutingTraceFilters {
   modelName?: string
   /** 命中规则 ID */
   matchedRuleId?: string
-  /** outcome: success / rejected / all_failed / pending（请求仍在进行中，尚无终态） */
-  outcome?: 'success' | 'rejected' | 'all_failed' | 'pending'
+  /** outcome: success / rejected / all_failed / cancelled（客户端取消，不算失败） / pending（请求仍在进行中，尚无终态） */
+  outcome?: 'success' | 'rejected' | 'all_failed' | 'cancelled' | 'pending'
   /** 是否包含跨 provider 降级（routeChain 含 backup step） */
   hasFailover?: boolean
   virtualKeyId?: string
@@ -93,6 +93,8 @@ export async function listRoutingTraces(filters: RoutingTraceFilters) {
         sql`(${requestLogs.metadata}->'routing'->'routeChain'->>'outcome') IS DISTINCT FROM 'rejected'`,
       )!,
     )
+  } else if (filters.outcome === 'cancelled') {
+    conds.push(eq(requestLogs.status, 'cancelled'))
   } else if (filters.outcome === 'pending') {
     // pending：请求仍在进行中（流式请求异步落库的中间态），尚无终态，不能算作失败
     conds.push(eq(requestLogs.status, 'pending'))
@@ -179,9 +181,12 @@ interface RouteChainShape {
 }
 
 /**
- * request_logs.status 只有 success/failure/pending 三种；rejected vs all_failed
+ * request_logs.status 有 success/failure/cancelled/pending 四种；rejected vs all_failed
  * 这层更细的语义存在 routeChain.outcome 里（见 routing-trace-recorder.ts），
  * 不能直接把 status 强转成 RoutingTraceSummary 的 outcome 类型。
+ *
+ * status='cancelled'（客户端主动取消/断开，见 log-stream.ts markStreamAborted）必须单独
+ * 判为 'cancelled'：它不是上游或路由故障，与 request_logs 的统计口径一致，不计入失败。
  *
  * status='pending' 必须单独判为 'pending'，不能落进 all_failed 兜底——流式请求
  * 落库是"先插入 pending 行、结束时再更新"的两段式（见 log-stream.ts），客户端
@@ -191,9 +196,10 @@ interface RouteChainShape {
 function deriveOutcome(
   status: string,
   storedOutcome?: 'rejected' | 'all_failed',
-): 'success' | 'rejected' | 'all_failed' | 'pending' {
+): 'success' | 'rejected' | 'all_failed' | 'cancelled' | 'pending' {
   if (status === 'success') return 'success'
   if (status === 'pending') return 'pending'
+  if (status === 'cancelled') return 'cancelled'
   return storedOutcome ?? 'all_failed'
 }
 

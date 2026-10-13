@@ -310,7 +310,7 @@ describe('RoutingTraceDetailView trace availability', () => {
 describe('RoutingTraceDetailView cancelled attempts', () => {
   it('shows client cancellation separately from an upstream failure', () => {
     const trace = makeTrace({
-      outcome: 'all_failed',
+      outcome: 'cancelled',
       chain: [
         {
           ...makeTrace().chain[0]!,
@@ -329,7 +329,9 @@ describe('RoutingTraceDetailView cancelled attempts', () => {
     render(<RoutingTraceDetailView trace={trace} />)
 
     expect(screen.getByText('客户端取消')).toBeInTheDocument()
+    expect(screen.getByText('请求已取消')).toBeInTheDocument()
     expect(screen.getByText('客户端已取消或连接中断，未完成后续请求处理')).toBeInTheDocument()
+    expect(screen.queryByText('请求失败')).not.toBeInTheDocument()
   })
 })
 

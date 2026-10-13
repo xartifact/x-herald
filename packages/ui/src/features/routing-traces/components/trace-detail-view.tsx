@@ -505,9 +505,6 @@ function DecisionCard({ step }: { step: ChainStepLike }) {
 export function RoutingTraceDetailView({ trace }: RoutingTraceDetailViewProps) {
   const totalCandidates = trace.chain.flatMap((s) => s.candidates).length
   const attempted = trace.chain.flatMap((s) => s.candidates).filter((c) => c.matched).length
-  const hasCancelledCandidate = trace.chain.some((step) =>
-    step.candidates.some((candidate) => candidate.status === 'cancelled'),
-  )
 
   return (
     <div className="space-y-1">
@@ -694,6 +691,39 @@ export function RoutingTraceDetailView({ trace }: RoutingTraceDetailViewProps) {
           </>
         )}
 
+        {/* 客户端主动取消/断开：不是失败，与日志页 cancelled 口径一致 */}
+        {trace.outcome === 'cancelled' && (
+          <>
+            <TimelineConnector />
+            <Card className="border-l-4 border-l-warning bg-warning/10">
+              <CardContent className="py-3 px-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <Ban className="h-4 w-4 text-warning" />
+                    <div>
+                      <div className="text-sm font-medium">请求已取消</div>
+                      <div className="text-xs text-muted-foreground">
+                        客户端已取消或连接中断，未完成后续请求处理
+                      </div>
+                      {trace.errorMessage && (
+                        <div className="text-xs text-muted-foreground mt-1 break-words">
+                          {trace.errorMessage}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-mono font-medium">
+                      {formatDuration(trace.totalDurationMs)}
+                    </div>
+                    <div className="text-xs text-muted-foreground">总耗时</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
+
         {/* 无可用实例 / 全部候选失败 */}
         {trace.outcome === 'all_failed' && (
           <>
@@ -706,17 +736,10 @@ export function RoutingTraceDetailView({ trace }: RoutingTraceDetailViewProps) {
                     <div>
                       <div className="text-sm font-medium">请求失败</div>
                       <div className="text-xs text-muted-foreground">
-                        {hasCancelledCandidate
-                          ? '客户端已取消或连接中断，未完成后续请求处理'
-                          : totalCandidates > 0
-                            ? `尝试 ${attempted}/${totalCandidates} 个候选后全部失败`
-                            : (trace.errorMessage ?? '路由未产出任何候选实例')}
+                        {totalCandidates > 0
+                          ? `尝试 ${attempted}/${totalCandidates} 个候选后全部失败`
+                          : (trace.errorMessage ?? '路由未产出任何候选实例')}
                       </div>
-                      {hasCancelledCandidate && trace.errorMessage && (
-                        <div className="text-xs text-muted-foreground mt-1 break-words">
-                          {trace.errorMessage}
-                        </div>
-                      )}
                     </div>
                   </div>
                   <div className="text-right">

@@ -23,6 +23,8 @@ const OUTCOME_CONFIG = {
   success: { label: '成功', variant: 'default' as const, color: 'text-success' },
   rejected: { label: '拒绝', variant: 'destructive' as const, color: 'text-destructive' },
   all_failed: { label: '全部失败', variant: 'secondary' as const, color: 'text-warning' },
+  // 客户端主动取消/断开：不是失败，不计入失败率
+  cancelled: { label: '已取消', variant: 'outline' as const, color: 'text-muted-foreground' },
   // 请求仍在进行中（流式落库的中间态，尚无终态）——不能和 all_failed 混为一谈
   pending: { label: '进行中', variant: 'outline' as const, color: 'text-muted-foreground' },
 } as const

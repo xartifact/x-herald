@@ -23,9 +23,9 @@ const PAGE_SIZE = 20
 export function RoutingTracesPage() {
   const navigate = useNavigate()
   const [modelName, setModelName] = useState('')
-  const [outcome, setOutcome] = useState<'all' | 'success' | 'rejected' | 'all_failed' | 'pending'>(
-    'all',
-  )
+  const [outcome, setOutcome] = useState<
+    'all' | 'success' | 'rejected' | 'all_failed' | 'cancelled' | 'pending'
+  >('all')
   const [hasFailover, setHasFailover] = useState(false)
   // cursorStack 模式与 /admin/logs 一致：page 1 = []，page N = [...priorCursors, currentCursor]
   const [cursorStack, setCursorStack] = useState<string[]>([])
@@ -96,6 +96,7 @@ export function RoutingTracesPage() {
               <SelectItem value="success">成功</SelectItem>
               <SelectItem value="rejected">拒绝</SelectItem>
               <SelectItem value="all_failed">全部失败</SelectItem>
+              <SelectItem value="cancelled">已取消</SelectItem>
               <SelectItem value="pending">进行中</SelectItem>
             </SelectContent>
           </Select>

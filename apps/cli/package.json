@@ -1,14 +1,22 @@
 {
   "name": "@xartifact/x-herald-cli",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "bin": {
     "x-herald": "./src/index.ts"
   },
+  "files": [
+    "src",
+    "skills",
+    "scripts",
+    "README.md"
+  ],
   "type": "module",
   "main": "./src/index.ts",
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "bun test src/",
+    "gen:commands": "bun run scripts/gen-command-index.ts"
   },
   "dependencies": {
     "@clack/prompts": "^1.5.1",

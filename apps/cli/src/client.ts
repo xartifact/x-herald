@@ -1,5 +1,8 @@
 export interface GatewayClientOptions {
   baseUrl?: string
+  /** Admin JWT for /api/* routes. */
+  token?: string
+  /** Virtual key for /api/v1 proxy routes. */
   apiKey?: string
 }
 
@@ -7,7 +10,8 @@ export interface Provider {
   id: string
   name: string
   protocols: Record<string, { baseUrl: string; enabled: boolean }>
-  apiKey: string
+  apiKey: string | null
+  capabilities?: Record<string, unknown>
   enabled: boolean
 }
 
@@ -42,7 +46,6 @@ export interface ModelInstance {
   description?: string
   config?: Record<string, unknown> | null
   weight?: number
-  priority?: number
   costPer1kTokens?: unknown
   enabled?: boolean
 }
@@ -53,43 +56,92 @@ export interface ModelInstanceUpdate {
   actualModelName?: string
   description?: string
   weight?: number
-  priority?: number
   costPer1kTokens?: unknown
   config?: Record<string, unknown> | null
   groupIds?: string[]
   groupId?: string | null
 }
 
+export interface RawRequestOptions {
+  method: string
+  body?: string
+  accept?: string
+  /** Return the body as text instead of parsing JSON (exports, SSE). */
+  asText?: boolean
+}
+
+export interface RawResponse {
+  status: number
+  json: unknown
+  text: string
+  headers: Headers
+}
+
+/** Error carrying the server's status and error code, so callers can act on 404 vs 401. */
+export class GatewayError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly code?: string,
+  ) {
+    super(message)
+    this.name = 'GatewayError'
+  }
+}
+
 export class GatewayClient {
   private baseUrl: string
+  private token: string
   private apiKey: string
 
   constructor(options: GatewayClientOptions = {}) {
-    this.baseUrl = options.baseUrl || process.env.X_HERALD_URL || 'http://localhost:3000'
+    this.baseUrl = (options.baseUrl || process.env.X_HERALD_URL || 'http://localhost:3000').replace(
+      /\/+$/,
+      '',
+    )
+    this.token = options.token || process.env.X_HERALD_TOKEN || ''
     this.apiKey = options.apiKey || process.env.X_HERALD_API_KEY || ''
   }
 
-  private async request<T>(path: string, options: RequestInit = {}): Promise<T> {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...((options.headers as Record<string, string>) || {}),
-    }
-    if (this.apiKey) headers['Authorization'] = `Bearer ${this.apiKey}`
-    const res = await fetch(`${this.baseUrl}${path}`, { ...options, headers })
+  /**
+   * Issue an arbitrary admin request and return the raw response.
+   *
+   * Auth precedence is token first, then virtual key: admin routes accept only the
+   * JWT, while /api/v1 accepts only the key, and sending both confuses the proxies
+   * in between.
+   */
+  async requestRaw(url: string, options: RawRequestOptions): Promise<RawResponse> {
+    const headers: Record<string, string> = {}
+    if (options.accept) headers.Accept = options.accept
+    if (options.body !== undefined) headers['Content-Type'] = 'application/json'
+    const bearer = this.token || this.apiKey
+    if (bearer) headers.Authorization = `Bearer ${bearer}`
+    const res = await fetch(url, { method: options.method, headers, body: options.body })
+    const text = await res.text()
     if (!res.ok) {
-      const body = await res.text()
-      throw new Error(`API error ${res.status}: ${body}`)
+      throw new GatewayError(describeFailure(res.status, text), res.status, errorCode(text))
     }
-    const json = (await res.json()) as Record<string, unknown>
-    // Handle { success: true, data: ... } wrapper
-    if (json && typeof json === 'object' && 'success' in json && 'data' in json) {
-      return json.data as T
-    }
-    return json as T
+    if (options.asText) return { status: res.status, json: null, text, headers: res.headers }
+    return { status: res.status, json: parseJsonOrText(text), text, headers: res.headers }
   }
 
-  async login(password: string): Promise<{ token: string }> {
+  private async request<T>(path: string, options: RequestInit = {}): Promise<T> {
+    const res = await this.requestRaw(`${this.baseUrl}${path}`, {
+      method: options.method ?? 'GET',
+      body: typeof options.body === 'string' ? options.body : undefined,
+    })
+    if (res.json && typeof res.json === 'object' && 'success' in res.json && 'data' in res.json) {
+      return res.json.data as T
+    }
+    return res.json as T
+  }
+
+  async login(password: string): Promise<{ token: string; expiresIn?: number }> {
     return this.request('/api/auth/login', { method: 'POST', body: JSON.stringify({ password }) })
+  }
+
+  async whoami(): Promise<{ role: string; iat: number; exp: number }> {
+    return this.request('/api/auth/me')
   }
 
   async listProviders(): Promise<Provider[]> {
@@ -129,4 +181,37 @@ export class GatewayClient {
       body: JSON.stringify(data),
     })
   }
+}
+
+function parseJsonOrText(text: string): unknown {
+  if (text.length === 0) return null
+  try {
+    return JSON.parse(text)
+  } catch {
+    return text
+  }
+}
+
+function errorCode(text: string): string | undefined {
+  const parsed = parseJsonOrText(text)
+  if (parsed && typeof parsed === 'object' && 'code' in parsed && typeof parsed.code === 'string') {
+    return parsed.code
+  }
+  return undefined
+}
+
+/** Turn a failed response into one actionable line, keeping the server's own message. */
+function describeFailure(status: number, text: string): string {
+  const parsed = parseJsonOrText(text)
+  const detail =
+    parsed && typeof parsed === 'object' && 'error' in parsed && typeof parsed.error === 'string'
+      ? parsed.error
+      : text.slice(0, 500)
+  const hint =
+    status === 401
+      ? ' (run `x-herald login` or pass --token)'
+      : status === 403
+        ? ' (forbidden: check token role or workspace)'
+        : ''
+  return `HTTP ${status}: ${detail || 'request failed'}${hint}`
 }

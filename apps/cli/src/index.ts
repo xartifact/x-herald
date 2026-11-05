@@ -1,385 +1,187 @@
 #!/usr/bin/env bun
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
-import { join } from 'path'
-import { homedir } from 'os'
 import { Command } from 'commander'
-import * as p from '@clack/prompts'
-import { GatewayClient } from './client'
+
+import { GatewayClient, GatewayError } from './client'
+import { clearCliToken, configPath, loadCliConfig, saveCliConfig } from './config'
+import { runConfigureWizard } from './configure'
+import { resolveCredentials } from './credentials'
+import { executeSpec, unwrap } from './executor'
+import { printResult, report } from './output'
+import { SPEC_COMMANDS } from './spec-commands'
+import { MOUNTS } from './executor'
+import { registerSpecCommands } from './spec'
+import type { InvocationDeps } from './spec'
 
 const program = new Command()
 
 program
   .name('x-herald')
-  .description('x-herald management CLI')
-  .version('0.1.0')
-  .option('-u, --url <url>', 'API base URL', process.env.X_HERALD_URL || 'http://localhost:3000')
-  .option('-k, --api-key <key>', 'API key', process.env.X_HERALD_API_KEY)
+  .description(
+    [
+      'x-herald 网关管理 CLI（覆盖全部管理端点）。',
+      '认证三级回退：--token > $X_HERALD_TOKEN > `x-herald auth login` 落盘的 token。',
+      '输出默认 JSON（适合 agent 与 jq）；`--format table` 仅供人看。',
+    ].join('\n'),
+  )
+  .version('0.2.0')
+  .option('-u, --url <url>', 'API base URL（默认 $X_HERALD_URL 或 http://localhost:3000）')
+  .option('-t, --token <token>', '管理员 JWT（默认 $X_HERALD_TOKEN 或配置文件）')
+  .option('-k, --api-key <key>', '虚拟密钥，仅用于 /api/v1（默认 $X_HERALD_API_KEY）')
+  .option('-f, --format <format>', 'json | table | raw（默认 json）')
+  .option('--dry-run', '只打印将发出的请求，不执行')
 
-// Providers
-const providers = program.command('providers').description('Manage providers')
+function credentials() {
+  const opts = program.opts()
+  return resolveCredentials({ flagUrl: opts.url, flagToken: opts.token, flagApiKey: opts.apiKey })
+}
 
-providers
-  .command('list')
-  .description('List all providers')
+function format(): 'json' | 'table' | 'raw' {
+  const value = program.opts().format
+  return value === 'table' || value === 'raw' ? value : 'json'
+}
+
+const deps: InvocationDeps = {
+  baseUrl: () => credentials().baseUrl,
+  token: () => credentials().token,
+  dryRun: () => Boolean(program.opts().dryRun),
+  print: (data) => printResult(data, { format: format() }),
+}
+
+// ── auth: login persists a token; the spec table's raw login is skipped ─────
+const auth = program.command('auth').description('管理员登录与身份')
+
+auth
+  .command('login')
+  .description('用管理员密码换取 JWT 并落盘（~/.config/x-herald/config.json，权限 0600）')
+  .option('-p, --password <password>', '管理员密码（省略则读 $X_HERALD_ADMIN_PASSWORD）')
+  .option('--no-save', '只打印 token，不写文件')
+  .action(async (opts: { password?: string; save: boolean }) => {
+    const password = opts.password ?? process.env.X_HERALD_ADMIN_PASSWORD
+    if (!password) throw new Error('缺少密码：用 --password 或 $X_HERALD_ADMIN_PASSWORD')
+    const creds = credentials()
+    const result = await new GatewayClient({ baseUrl: creds.baseUrl }).login(password)
+    if (!opts.save) {
+      process.stdout.write(result.token + '\n')
+      return
+    }
+    const expiresAt = result.expiresIn
+      ? Math.floor(Date.now() / 1000) + result.expiresIn
+      : undefined
+    saveCliConfig({ url: creds.baseUrl, token: result.token, expiresAt })
+    report(`已登录 ${creds.baseUrl}；token 保存到 ${configPath()}（权限 0600）`)
+  })
+
+auth
+  .command('whoami')
+  .description('显示当前凭据来源与身份（不打印 token 本身）')
   .action(async () => {
-    const client = new GatewayClient({ baseUrl: program.opts().url, apiKey: program.opts().apiKey })
-    const data = await client.listProviders()
-    console.table(
-      data.map((p) => ({
-        ID: p.id,
-        Name: p.name,
-        Protocol: Object.keys(p.protocols).join(', '),
-        Enabled: p.enabled,
-      })),
+    const creds = credentials()
+    const stored = loadCliConfig()
+    const identity = creds.token
+      ? await new GatewayClient({ baseUrl: creds.baseUrl, token: creds.token }).whoami()
+      : null
+    printResult(
+      {
+        url: creds.baseUrl,
+        tokenSource: creds.tokenSource ?? 'none',
+        hasApiKey: Boolean(creds.apiKey),
+        storedUrl: stored.url ?? null,
+        expiresAt: stored.expiresAt ? new Date(stored.expiresAt * 1000).toISOString() : null,
+        identity,
+      },
+      { format: format() },
     )
   })
 
-providers
-  .command('get <id>')
-  .description('Get provider details')
-  .action(async (id: string) => {
-    const client = new GatewayClient({ baseUrl: program.opts().url, apiKey: program.opts().apiKey })
-    const data = await client.getProvider(id)
-    console.log(JSON.stringify(data, null, 2))
+auth
+  .command('logout')
+  .description('删除本地保存的 token')
+  .action(() => {
+    clearCliToken()
+    report(`已清除 ${configPath()} 中的 token`)
   })
 
-providers
-  .command('delete <id>')
-  .description('Delete a provider')
-  .action(async (id: string) => {
-    const client = new GatewayClient({ baseUrl: program.opts().url, apiKey: program.opts().apiKey })
-    await client.deleteProvider(id)
-    console.log(`Provider ${id} deleted`)
+// ── every other admin endpoint, generated from the spec table ───────────────
+registerSpecCommands(
+  program,
+  SPEC_COMMANDS.filter((spec) => spec.group !== 'auth'),
+  MOUNTS,
+  deps,
+  executeSpec,
+)
+
+// ── escape hatch for endpoints added after this release ─────────────────────
+program
+  .command('api <method> <path>')
+  .description('直接调用任意端点，如 `api GET /api/providers`（覆盖未来新增端点）')
+  .option('-b, --body <json>', 'JSON 请求体')
+  .option('--query <k=v>', '查询参数，可重复', collect, [])
+  .action(async (method: string, path: string, opts: { body?: string; query: string[] }) => {
+    const creds = credentials()
+    const url = new URL(path.startsWith('/') ? path : `/${path}`, creds.baseUrl)
+    for (const pair of opts.query) {
+      const [key, ...rest] = pair.split('=')
+      url.searchParams.set(key, rest.join('='))
+    }
+    const upper = method.toUpperCase()
+    const payload =
+      upper === 'GET' || upper === 'DELETE'
+        ? undefined
+        : JSON.stringify(safeJson(opts.body ?? '{}'))
+    if (program.opts().dryRun) {
+      printResult(
+        { method: upper, url: url.toString(), body: payload ? JSON.parse(payload) : undefined },
+        { format: 'json' },
+      )
+      return
+    }
+    const result = await new GatewayClient({
+      baseUrl: creds.baseUrl,
+      token: creds.token,
+    }).requestRaw(url.toString(), { method: upper, body: payload })
+    printResult(unwrap(result.json), { format: format() })
   })
 
-// Models
-const modelsCmd = program.command('models').description('List models')
-modelsCmd
-  .command('list')
-  .description('List all model groups')
-  .action(async () => {
-    const client = new GatewayClient({ baseUrl: program.opts().url, apiKey: program.opts().apiKey })
-    const data = await client.listModelGroups()
-    console.table(data.map((g) => ({ ID: g.id, Name: g.name, Enabled: g.enabled })))
-  })
-
-// Model instances config (read-modify-write via admin API)
-const instances = program.command('instances').description('Manage model instances config')
-
-function getClient() {
-  return new GatewayClient({ baseUrl: program.opts().url, apiKey: program.opts().apiKey })
+function collect(value: string, previous: string[]): string[] {
+  return [...previous, value]
 }
 
-async function findInstance(idOrName: string) {
-  const client = getClient()
-  const instances = await client.listInstances()
-  const found = instances.find(
-    (i) => i.id === idOrName || i.name === idOrName || i.actualModelName === idOrName,
-  )
-  if (!found) throw new Error(`No model instance found for "${idOrName}"`)
-  return found
-}
-
-function parseJsonValue(value: string): unknown {
+function safeJson(value: string): unknown {
   try {
     return JSON.parse(value)
   } catch {
-    throw new Error(`Value is not valid JSON: ${value}`)
+    return value
   }
 }
 
-instances
-  .command('list')
-  .description('List all model instances')
-  .action(async () => {
-    const data = await getClient().listInstances()
-    console.table(
-      data.map((i) => ({
-        ID: i.id,
-        Name: i.name,
-        'Actual Model': i.actualModelName ?? '',
-        Provider: i.providerName ?? '',
-        Enabled: i.enabled,
-      })),
-    )
-  })
-
-instances
-  .command('config <idOrName>')
-  .description('Show the full config of a model instance (JSON)')
-  .action(async (idOrName: string) => {
-    const inst = await findInstance(idOrName)
-    console.log(JSON.stringify(inst.config ?? {}, null, 2))
-  })
-
-instances
-  .command('config-get <idOrName> <key>')
-  .description('Show a single config key of a model instance')
-  .action(async (idOrName: string, key: string) => {
-    const inst = await findInstance(idOrName)
-    const val = inst.config?.[key]
-    if (val === undefined) {
-      console.log(`(key "${key}" is not set)`)
-      return
-    }
-    console.log(JSON.stringify(val, null, 2))
-  })
-
-instances
-  .command('config-set <idOrName> <key> <json>')
-  .description('Set a config key (read-modify-write merge); <json> is e.g. {"developer":"system"}')
-  .action(async (idOrName: string, key: string, json: string) => {
-    const inst = await findInstance(idOrName)
-    const value = parseJsonValue(json)
-    const config = { ...(inst.config ?? {}), [key]: value }
-    await getClient().updateInstance(inst.id, { config })
-    console.log(`config.${key} set on ${inst.name} (id ${inst.id})`)
-  })
-
-instances
-  .command('config-unset <idOrName> <key>')
-  .description('Remove a config key from a model instance (merge; undefined removes)')
-  .action(async (idOrName: string, key: string) => {
-    const inst = await findInstance(idOrName)
-    const config = { ...(inst.config ?? {}) }
-    delete config[key]
-    await getClient().updateInstance(inst.id, { config })
-    console.log(`config.${key} removed from ${inst.name} (id ${inst.id})`)
-  })
-
-// Keys
-const keys = program.command('keys').description('Manage API keys')
-
-keys
-  .command('list')
-  .description('List all keys')
-  .action(async () => {
-    const client = new GatewayClient({ baseUrl: program.opts().url, apiKey: program.opts().apiKey })
-    const data = await client.listKeys()
-    console.table(data.map((k) => ({ ID: k.id, Name: k.name, Enabled: k.enabled })))
-  })
-
-keys
-  .command('create <name>')
-  .description('Create a new key')
-  .action(async (name: string) => {
-    const client = new GatewayClient({ baseUrl: program.opts().url, apiKey: program.opts().apiKey })
-    const data = await client.createKey({ name })
-    console.log(`Key created: ${data.id}`)
-    console.log(`Key value: ${data.key}`)
-  })
-
-keys
-  .command('delete <id>')
-  .description('Delete a key')
-  .action(async (id: string) => {
-    const client = new GatewayClient({ baseUrl: program.opts().url, apiKey: program.opts().apiKey })
-    await client.deleteKey(id)
-    console.log(`Key ${id} deleted`)
-  })
-
-// Health
+// ── top-level health shortcut, kept because it is the one command operators type blind ──
 program
-  .command('health')
-  .description('Check gateway health')
+  .command('ping')
+  .description('健康检查（等价 `x-herald health health`）')
   .action(async () => {
-    const client = new GatewayClient({ baseUrl: program.opts().url, apiKey: program.opts().apiKey })
-    const status = await client.getHealth()
-    console.log(`Status: ${status.status}`)
-    if (Array.isArray(status.status)) {
-      console.table(
-        status.status.map((c: { name: string; status: string; message?: string }) => ({
-          Name: c.name,
-          Status: c.status,
-          Message: c.message || '',
-        })),
-      )
-    }
+    const creds = credentials()
+    const result = await new GatewayClient({
+      baseUrl: creds.baseUrl,
+      token: creds.token,
+    }).requestRaw(`${creds.baseUrl}/api/health`, { method: 'GET' })
+    printResult(unwrap(result.json, 'envelope'), { format: format() })
   })
 
-// Configure
-const configure = program.command('configure').description('配置 AI 工具使用 x-herald')
-
-configure.action(async () => {
-  p.intro('x-herald 配置向导')
-
-  // 选择工具
-  const tool = await p.select({
-    message: '选择要配置的工具:',
-    options: [
-      { value: 'opencode', label: 'OpenCode', hint: '生成 opencode.json' },
-      { value: 'claude-code', label: 'Claude Code', hint: '生成 ~/.claude/settings.json' },
-      { value: 'pi', label: 'Pi', hint: '生成 ~/.pi/agent/models.json' },
-      { value: 'codex', label: 'Codex', hint: '生成环境变量配置' },
-      { value: 'all', label: '全部', hint: '配置所有工具' },
-    ],
+// ── configure ───────────────────────────────────────────────────────────────
+program
+  .command('configure')
+  .description('配置 AI 编码工具（OpenCode / Claude Code / Pi / Codex）使用本网关')
+  .action(async () => {
+    await runConfigureWizard(credentials().baseUrl)
   })
-  if (p.isCancel(tool)) return p.cancel('已取消')
 
-  // 获取网关地址
-  const url = await p.text({
-    message: '网关地址:',
-    defaultValue: program.opts().url || 'http://localhost:3000',
-  })
-  if (p.isCancel(url)) return p.cancel('已取消')
-
-  // 获取 API Key
-  const apiKey = await p.password({
-    message: '虚拟密钥 (留空跳过):',
-    mask: '*',
-  })
-  if (p.isCancel(apiKey)) return p.cancel('已取消')
-
-  // 获取模型列表
-  const s = p.spinner()
-  s.start('获取网关模型列表...')
-  let models: string[] = []
-  try {
-    const res = await fetch(`${url}/api/v1/models`, {
-      headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {},
-    })
-    const data = (await res.json()) as
-      | { data?: Array<{ id?: string; name?: string }>; id?: string; name?: string }
-      | Array<{ id?: string; name?: string }>
-    const list =
-      data && typeof data === 'object' && 'data' in data && Array.isArray(data.data)
-        ? data.data
-        : Array.isArray(data)
-          ? data
-          : []
-    models = list
-      .map((m: { id?: string; name?: string }) => m.id || m.name || String(m))
-      .filter(Boolean)
-    s.stop(`获取到 ${models.length} 个模型`)
-  } catch {
-    s.stop('无法获取模型列表，将使用空模型列表')
+try {
+  await program.parseAsync(process.argv)
+} catch (error) {
+  if (error instanceof GatewayError && error.status === 401) {
+    report(`${error.message}\n提示：先运行 \`x-herald auth login\`。`)
+  } else {
+    report(error instanceof Error ? error.message : String(error))
   }
-
-  // 执行配置
-  const tools = tool === 'all' ? ['opencode', 'claude-code', 'pi', 'codex'] : [tool as string]
-
-  for (const t of tools) {
-    await configureTool(t, url as string, apiKey as string, models)
-  }
-
-  p.outro('配置完成!')
-})
-
-async function configureTool(tool: string, url: string, apiKey: string, models: string[]) {
-  switch (tool) {
-    case 'opencode':
-      await configureOpenCode(url, apiKey, models)
-      break
-    case 'claude-code':
-      await configureClaudeCode(url, apiKey)
-      break
-    case 'pi':
-      await configurePi(url, apiKey, models)
-      break
-    case 'codex':
-      await configureCodex(url, apiKey)
-      break
-  }
+  process.exit(1)
 }
-
-async function configureOpenCode(url: string, apiKey: string, models: string[]) {
-  const config = {
-    $schema: 'https://opencode.ai/config.json',
-    provider: {
-      'x-herald': {
-        npm: '@ai-sdk/openai-compatible',
-        name: 'x-herald',
-        options: {
-          baseURL: `${url}/api/v1`,
-          ...(apiKey ? { apiKey } : {}),
-        },
-        models: Object.fromEntries(models.map((m) => [m, { name: m }])),
-      },
-    },
-  }
-
-  const configPath = join(process.cwd(), 'opencode.json')
-  if (existsSync(configPath)) {
-    const overwrite = await p.confirm({ message: 'opencode.json 已存在，是否覆盖?' })
-    if (!overwrite) {
-      p.log.info('跳过 opencode.json')
-      return
-    }
-  }
-
-  writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n')
-  p.log.success('opencode.json 已生成')
-}
-
-async function configureClaudeCode(url: string, apiKey: string) {
-  const settingsDir = join(homedir(), '.claude')
-  const settingsPath = join(settingsDir, 'settings.json')
-
-  let existing: Record<string, unknown> = {}
-  if (existsSync(settingsPath)) {
-    try {
-      existing = JSON.parse(readFileSync(settingsPath, 'utf-8'))
-    } catch {
-      // ignore parse errors
-    }
-  }
-
-  const merged = {
-    ...existing,
-    env: {
-      ...((existing.env as Record<string, string>) || {}),
-      ANTHROPIC_BASE_URL: url,
-      ...(apiKey ? { ANTHROPIC_API_KEY: apiKey } : {}),
-    },
-  }
-
-  if (!existsSync(settingsDir)) mkdirSync(settingsDir, { recursive: true })
-  writeFileSync(settingsPath, JSON.stringify(merged, null, 2) + '\n')
-  p.log.success(`~/.claude/settings.json 已${existsSync(settingsPath) ? '更新' : '生成'}`)
-}
-
-async function configurePi(url: string, apiKey: string, models: string[]) {
-  const configDir = join(homedir(), '.pi', 'agent')
-  const configPath = join(configDir, 'models.json')
-
-  let existing: Record<string, unknown> = { providers: {} }
-  if (existsSync(configPath)) {
-    try {
-      existing = JSON.parse(readFileSync(configPath, 'utf-8'))
-    } catch {
-      // ignore parse errors
-    }
-  }
-
-  const providersRecord = (existing.providers as Record<string, unknown>) || {}
-  providersRecord['x-herald'] = {
-    baseUrl: url,
-    api: 'anthropic-messages',
-    ...(apiKey ? { apiKey } : {}),
-    models: models.map((m) => ({ id: m, name: m })),
-  }
-  existing.providers = providersRecord
-
-  if (!existsSync(configDir)) mkdirSync(configDir, { recursive: true })
-  writeFileSync(configPath, JSON.stringify(existing, null, 2) + '\n')
-  p.log.success(`~/.pi/agent/models.json 已${existsSync(configPath) ? '更新' : '生成'}`)
-}
-
-async function configureCodex(url: string, apiKey: string) {
-  const envContent = [
-    '# x-herald 配置 (添加到 ~/.zshrc 或 ~/.bashrc)',
-    `export OPENAI_API_BASE="${url}/api/v1"`,
-    apiKey ? `export OPENAI_API_KEY="${apiKey}"` : '# export OPENAI_API_KEY="sk-your-key"',
-    '',
-  ].join('\n')
-
-  p.log.info('Codex 配置（请添加到 shell profile）:')
-  console.log(envContent)
-
-  // 也写入一个 .env 文件
-  const envPath = join(process.cwd(), '.env.x-herald')
-  writeFileSync(envPath, envContent)
-  p.log.success('.env.x-herald 已生成')
-}
-
-program.parse()

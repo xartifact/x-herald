@@ -1,6 +1,6 @@
 import { describe, expect, it, mock, afterEach } from 'bun:test'
 
-import { GatewayClient } from './client'
+import { GatewayClient, GatewayError } from './client'
 
 // Save the real fetch, stub it per-test to avoid network.
 const realFetch = globalThis.fetch
@@ -47,7 +47,7 @@ describe('GatewayClient', () => {
       )
     })
 
-    const client = new GatewayClient({ baseUrl: 'http://gw', apiKey: 'tok' })
+    const client = new GatewayClient({ baseUrl: 'http://gw', token: 'tok' })
     const instances = await client.listInstances()
     expect(instances).toHaveLength(1)
     expect(instances[0]?.id).toBe('i1')
@@ -69,7 +69,7 @@ describe('GatewayClient', () => {
       )
     })
 
-    const client = new GatewayClient({ baseUrl: 'http://gw', apiKey: 'tok' })
+    const client = new GatewayClient({ baseUrl: 'http://gw', token: 'tok' })
     const updated = await client.updateInstance('id9', {
       config: { roleMapping: { developer: 'system' } },
     })
@@ -86,8 +86,9 @@ describe('GatewayClient', () => {
       await client.login('wrong')
       expect.unreachable('should have thrown')
     } catch (e) {
-      expect(e).toBeInstanceOf(Error)
+      expect(e).toBeInstanceOf(GatewayError)
       expect((e as Error).message).toContain('401')
+      expect((e as GatewayError).status).toBe(401)
     }
   })
 })

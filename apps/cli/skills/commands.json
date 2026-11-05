@@ -1,0 +1,2053 @@
+{
+  "version": 1,
+  "generatedFrom": "src/spec-commands.ts",
+  "commands": [
+    {
+      "command": "x-herald providers list",
+      "method": "GET",
+      "path": "/api/providers",
+      "description": "列出所有供应商",
+      "args": [],
+      "options": []
+    },
+    {
+      "command": "x-herald providers get <id>",
+      "method": "GET",
+      "path": "/api/providers/:id",
+      "description": "查看供应商详情",
+      "args": ["id"],
+      "options": []
+    },
+    {
+      "command": "x-herald providers create",
+      "method": "POST",
+      "path": "/api/providers",
+      "description": "创建供应商（协议配置必填）",
+      "args": [],
+      "options": [
+        {
+          "flag": "--name",
+          "in": "body",
+          "takesValue": true,
+          "desc": "供应商名称"
+        },
+        {
+          "flag": "--protocols",
+          "in": "body",
+          "takesValue": true,
+          "desc": "协议配置，如 {\"openai\":{\"baseUrl\":\"...\",\"enabled\":true}} (JSON)"
+        },
+        {
+          "flag": "--api-key",
+          "in": "body",
+          "takesValue": true,
+          "desc": "上游密钥"
+        },
+        {
+          "flag": "--capabilities",
+          "in": "body",
+          "takesValue": true,
+          "desc": "供应商级能力（稀疏 JSON） (JSON)"
+        },
+        {
+          "flag": "--enabled",
+          "in": "body",
+          "takesValue": true,
+          "desc": "true/false，默认 true"
+        }
+      ]
+    },
+    {
+      "command": "x-herald providers update <id>",
+      "method": "PUT",
+      "path": "/api/providers/:id",
+      "description": "更新供应商（仅传要改的字段）",
+      "args": ["id"],
+      "options": [
+        {
+          "flag": "--name",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--protocols",
+          "in": "body",
+          "takesValue": true,
+          "desc": "JSON"
+        },
+        {
+          "flag": "--api-key",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--capabilities",
+          "in": "body",
+          "takesValue": true,
+          "desc": "整体替换；清除某能力即省略该键 (JSON)"
+        },
+        {
+          "flag": "--enabled",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        }
+      ]
+    },
+    {
+      "command": "x-herald providers delete <id>",
+      "method": "DELETE",
+      "path": "/api/providers/:id",
+      "description": "软删除供应商",
+      "args": ["id"],
+      "options": []
+    },
+    {
+      "command": "x-herald providers toggle <id>",
+      "method": "PATCH",
+      "path": "/api/providers/:id/toggle",
+      "description": "启用/停用供应商",
+      "args": ["id"],
+      "options": []
+    },
+    {
+      "command": "x-herald providers models <id>",
+      "method": "GET",
+      "path": "/api/providers/:id/models",
+      "description": "拉取上游 /models 列表（不落库）",
+      "args": ["id"],
+      "options": []
+    },
+    {
+      "command": "x-herald providers sync-models <id>",
+      "method": "POST",
+      "path": "/api/providers/:id/sync-models",
+      "description": "把上游模型同步为模型实例",
+      "args": ["id"],
+      "options": [
+        {
+          "flag": "--models",
+          "in": "body",
+          "takesValue": true,
+          "desc": "模型数组 [{id,name,cost,capabilities,...}] (JSON)"
+        },
+        {
+          "flag": "--group-ids",
+          "in": "body",
+          "takesValue": true,
+          "desc": "同步后挂载到的模型组 ID 数组 (JSON)"
+        }
+      ]
+    },
+    {
+      "command": "x-herald providers thinking-mappings <id>",
+      "method": "GET",
+      "path": "/api/providers/:id/thinking-type-mappings",
+      "description": "查看 thinking 类型映射",
+      "args": ["id"],
+      "options": []
+    },
+    {
+      "command": "x-herald providers set-thinking-mappings <id>",
+      "method": "PUT",
+      "path": "/api/providers/:id/thinking-type-mappings",
+      "description": "更新 thinking 类型映射",
+      "args": ["id"],
+      "options": [
+        {
+          "flag": "--mappings",
+          "in": "body",
+          "takesValue": true,
+          "desc": "[{from,to}] (JSON)"
+        },
+        {
+          "flag": "--synthetic-thinking",
+          "in": "body",
+          "takesValue": true,
+          "desc": "strip | inject"
+        }
+      ]
+    },
+    {
+      "command": "x-herald groups list",
+      "method": "GET",
+      "path": "/api/model-groups",
+      "description": "列出模型组",
+      "args": [],
+      "options": []
+    },
+    {
+      "command": "x-herald groups instances",
+      "method": "GET",
+      "path": "/api/model-groups/instances",
+      "description": "列出全部模型实例（含所属组）",
+      "args": [],
+      "options": []
+    },
+    {
+      "command": "x-herald groups get <id>",
+      "method": "GET",
+      "path": "/api/model-groups/:id",
+      "description": "模型组详情（含实例与供应商）",
+      "args": ["id"],
+      "options": []
+    },
+    {
+      "command": "x-herald groups create",
+      "method": "POST",
+      "path": "/api/model-groups",
+      "description": "创建模型组（capabilities 稀疏，缺省=不覆盖供应商）",
+      "args": [],
+      "options": [
+        {
+          "flag": "--name",
+          "in": "body",
+          "takesValue": true,
+          "desc": "组名，客户端可见"
+        },
+        {
+          "flag": "--display-name",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--description",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--category",
+          "in": "body",
+          "takesValue": true,
+          "desc": "chat | embedding | image | audio | system_one"
+        },
+        {
+          "flag": "--capabilities",
+          "in": "body",
+          "takesValue": true,
+          "desc": "稀疏能力 JSON，如 {\"streaming\":true} (JSON)"
+        },
+        {
+          "flag": "--supported-protocols",
+          "in": "body",
+          "takesValue": true,
+          "desc": "协议数组，如 [\"openai\"] (JSON)"
+        },
+        {
+          "flag": "--routing-config",
+          "in": "body",
+          "takesValue": true,
+          "desc": "{strategy,fallbackEnabled} (JSON)"
+        },
+        {
+          "flag": "--metadata",
+          "in": "body",
+          "takesValue": true,
+          "desc": "JSON"
+        }
+      ]
+    },
+    {
+      "command": "x-herald groups update <id>",
+      "method": "PUT",
+      "path": "/api/model-groups/:id",
+      "description": "更新模型组",
+      "args": ["id"],
+      "options": [
+        {
+          "flag": "--name",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--display-name",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--description",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--category",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--capabilities",
+          "in": "body",
+          "takesValue": true,
+          "desc": "JSON"
+        },
+        {
+          "flag": "--supported-protocols",
+          "in": "body",
+          "takesValue": true,
+          "desc": "JSON"
+        },
+        {
+          "flag": "--routing-config",
+          "in": "body",
+          "takesValue": true,
+          "desc": "JSON"
+        },
+        {
+          "flag": "--metadata",
+          "in": "body",
+          "takesValue": true,
+          "desc": "JSON"
+        }
+      ]
+    },
+    {
+      "command": "x-herald groups delete <id>",
+      "method": "DELETE",
+      "path": "/api/model-groups/:id",
+      "description": "软删除模型组",
+      "args": ["id"],
+      "options": []
+    },
+    {
+      "command": "x-herald groups toggle <id>",
+      "method": "PATCH",
+      "path": "/api/model-groups/:id/toggle",
+      "description": "启用/停用模型组",
+      "args": ["id"],
+      "options": []
+    },
+    {
+      "command": "x-herald groups attach <groupId>",
+      "method": "POST",
+      "path": "/api/model-groups/groups/:groupId/instances",
+      "description": "批量把已有实例挂载到组",
+      "args": ["groupId"],
+      "options": [
+        {
+          "flag": "--instance-ids",
+          "in": "body",
+          "takesValue": true,
+          "desc": "实例 ID 数组 (JSON)"
+        }
+      ]
+    },
+    {
+      "command": "x-herald groups detach <groupId> <instanceId>",
+      "method": "DELETE",
+      "path": "/api/model-groups/groups/:groupId/instances/:instanceId",
+      "description": "把实例移出组",
+      "args": ["groupId", "instanceId"],
+      "options": []
+    },
+    {
+      "command": "x-herald groups reorder <groupId>",
+      "method": "PUT",
+      "path": "/api/model-groups/groups/:groupId/instances/reorder",
+      "description": "设置组内实例顺序（数组顺序即优先级）",
+      "args": ["groupId"],
+      "options": [
+        {
+          "flag": "--instance-ids",
+          "in": "body",
+          "takesValue": true,
+          "desc": "实例 ID 数组 (JSON)"
+        }
+      ]
+    },
+    {
+      "command": "x-herald instances create",
+      "method": "POST",
+      "path": "/api/model-groups/instances",
+      "description": "创建模型实例",
+      "args": [],
+      "options": [
+        {
+          "flag": "--provider-id",
+          "in": "body",
+          "takesValue": true,
+          "desc": "供应商 ID"
+        },
+        {
+          "flag": "--name",
+          "in": "body",
+          "takesValue": true,
+          "desc": "实例名称"
+        },
+        {
+          "flag": "--actual-model-name",
+          "in": "body",
+          "takesValue": true,
+          "desc": "上游真实模型名"
+        },
+        {
+          "flag": "--model-type",
+          "in": "body",
+          "takesValue": true,
+          "desc": "text_generation | embedding | image_generation | adjudication | ..."
+        },
+        {
+          "flag": "--protocol",
+          "in": "body",
+          "takesValue": true,
+          "desc": "openai | anthropic | gemini | jev（留空=按客户端协议自动）"
+        },
+        {
+          "flag": "--description",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--weight",
+          "in": "body",
+          "takesValue": true,
+          "desc": "加权路由权重，默认 100"
+        },
+        {
+          "flag": "--cost-per1k-tokens",
+          "in": "body",
+          "takesValue": true,
+          "desc": "{input,output} (JSON)"
+        },
+        {
+          "flag": "--config",
+          "in": "body",
+          "takesValue": true,
+          "desc": "实例配置（capabilityOverrides / retryConfig / timeoutConfig ...） (JSON)"
+        },
+        {
+          "flag": "--group-ids",
+          "in": "body",
+          "takesValue": true,
+          "desc": "要加入的模型组 ID 数组 (JSON)"
+        }
+      ]
+    },
+    {
+      "command": "x-herald instances update <id>",
+      "method": "PUT",
+      "path": "/api/model-groups/instances/:id",
+      "description": "更新模型实例（未传字段保持不变）",
+      "args": ["id"],
+      "options": [
+        {
+          "flag": "--name",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--actual-model-name",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--model-type",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--protocol",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--description",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--weight",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--cost-per1k-tokens",
+          "in": "body",
+          "takesValue": true,
+          "desc": "JSON"
+        },
+        {
+          "flag": "--config",
+          "in": "body",
+          "takesValue": true,
+          "desc": "JSON"
+        },
+        {
+          "flag": "--group-ids",
+          "in": "body",
+          "takesValue": true,
+          "desc": "JSON"
+        }
+      ]
+    },
+    {
+      "command": "x-herald instances delete <id>",
+      "method": "DELETE",
+      "path": "/api/model-groups/instances/:id",
+      "description": "删除模型实例",
+      "args": ["id"],
+      "options": []
+    },
+    {
+      "command": "x-herald instances toggle <id>",
+      "method": "PATCH",
+      "path": "/api/model-groups/instances/:id/toggle",
+      "description": "启用/停用实例",
+      "args": ["id"],
+      "options": []
+    },
+    {
+      "command": "x-herald instances set-groups <id>",
+      "method": "PUT",
+      "path": "/api/model-groups/instances/:id/groups",
+      "description": "整体替换实例所属模型组",
+      "args": ["id"],
+      "options": [
+        {
+          "flag": "--group-ids",
+          "in": "body",
+          "takesValue": true,
+          "desc": "模型组 ID 数组 (JSON)"
+        }
+      ]
+    },
+    {
+      "command": "x-herald instances assign <id>",
+      "method": "PATCH",
+      "path": "/api/model-groups/instances/:id/assign",
+      "description": "把实例设为某组的主组（null 表示移出）",
+      "args": ["id"],
+      "options": [
+        {
+          "flag": "--group-id",
+          "in": "body",
+          "takesValue": true,
+          "desc": "模型组 ID 或 null"
+        }
+      ]
+    },
+    {
+      "command": "x-herald instances test <id>",
+      "method": "POST",
+      "path": "/api/model-groups/instances/:id/test",
+      "description": "测试实例连通性与延迟",
+      "args": ["id"],
+      "options": []
+    },
+    {
+      "command": "x-herald keys list",
+      "method": "GET",
+      "path": "/api/keys",
+      "description": "列出虚拟密钥（分页）",
+      "args": [],
+      "options": [
+        {
+          "flag": "--page",
+          "in": "query",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--page-size",
+          "in": "query",
+          "takesValue": true,
+          "desc": "默认 50，上限 200"
+        },
+        {
+          "flag": "--search",
+          "in": "query",
+          "takesValue": true,
+          "desc": null
+        }
+      ]
+    },
+    {
+      "command": "x-herald keys get <id>",
+      "method": "GET",
+      "path": "/api/keys/:id",
+      "description": "密钥详情",
+      "args": ["id"],
+      "options": []
+    },
+    {
+      "command": "x-herald keys create",
+      "method": "POST",
+      "path": "/api/keys",
+      "description": "创建虚拟密钥（明文 key 只在创建响应中出现）",
+      "args": [],
+      "options": [
+        {
+          "flag": "--name",
+          "in": "body",
+          "takesValue": true,
+          "desc": "必填"
+        },
+        {
+          "flag": "--allowed-models",
+          "in": "body",
+          "takesValue": true,
+          "desc": "允许的模型名数组 (JSON)"
+        },
+        {
+          "flag": "--rate-limit-rpm",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--rate-limit-rpd",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--token-limit-daily",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--expires-at",
+          "in": "body",
+          "takesValue": true,
+          "desc": "ISO 时间"
+        },
+        {
+          "flag": "--enabled",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        }
+      ]
+    },
+    {
+      "command": "x-herald keys update <id>",
+      "method": "PUT",
+      "path": "/api/keys/:id",
+      "description": "更新密钥",
+      "args": ["id"],
+      "options": [
+        {
+          "flag": "--name",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--allowed-models",
+          "in": "body",
+          "takesValue": true,
+          "desc": "JSON"
+        },
+        {
+          "flag": "--rate-limit-rpm",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--rate-limit-rpd",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--token-limit-daily",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--expires-at",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--enabled",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        }
+      ]
+    },
+    {
+      "command": "x-herald keys delete <id>",
+      "method": "DELETE",
+      "path": "/api/keys/:id",
+      "description": "删除密钥",
+      "args": ["id"],
+      "options": []
+    },
+    {
+      "command": "x-herald keys usage <id>",
+      "method": "GET",
+      "path": "/api/keys/:id/usage",
+      "description": "密钥用量与限额余量",
+      "args": ["id"],
+      "options": []
+    },
+    {
+      "command": "x-herald keys reset <id>",
+      "method": "POST",
+      "path": "/api/keys/:id/reset",
+      "description": "重置密钥（轮换明文）",
+      "args": ["id"],
+      "options": []
+    },
+    {
+      "command": "x-herald keys reset-usage <id>",
+      "method": "POST",
+      "path": "/api/keys/:id/reset-usage",
+      "description": "清零用量计数（RPM/RPD/token）",
+      "args": ["id"],
+      "options": []
+    },
+    {
+      "command": "x-herald logs list",
+      "method": "GET",
+      "path": "/api/logs",
+      "description": "检索请求日志",
+      "args": [],
+      "options": [
+        {
+          "flag": "--page-size",
+          "in": "query",
+          "takesValue": true,
+          "desc": "每页数量"
+        },
+        {
+          "flag": "--cursor",
+          "in": "query",
+          "takesValue": true,
+          "desc": "游标（上一页返回的 nextCursor）"
+        },
+        {
+          "flag": "--virtual-key-id",
+          "in": "query",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--model-name",
+          "in": "query",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--status",
+          "in": "query",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--request-category",
+          "in": "query",
+          "takesValue": true,
+          "desc": "embedding | chat_text | chat_image | chat_video | chat_audio | other"
+        },
+        {
+          "flag": "--start-date",
+          "in": "query",
+          "takesValue": true,
+          "desc": "ISO 8601 起始时间（含）"
+        },
+        {
+          "flag": "--end-date",
+          "in": "query",
+          "takesValue": true,
+          "desc": "ISO 8601 结束时间（含）"
+        },
+        {
+          "flag": "--client-type",
+          "in": "query",
+          "takesValue": true,
+          "desc": null
+        }
+      ]
+    },
+    {
+      "command": "x-herald logs get <id>",
+      "method": "GET",
+      "path": "/api/logs/:id",
+      "description": "单条日志详情",
+      "args": ["id"],
+      "options": []
+    },
+    {
+      "command": "x-herald logs delete <id>",
+      "method": "DELETE",
+      "path": "/api/logs/:id",
+      "description": "删除单条日志",
+      "args": ["id"],
+      "options": []
+    },
+    {
+      "command": "x-herald logs conversation <conversationId>",
+      "method": "GET",
+      "path": "/api/logs/conversation/:conversationId",
+      "description": "一次会话的完整链路",
+      "args": ["conversationId"],
+      "options": []
+    },
+    {
+      "command": "x-herald logs client-models",
+      "method": "GET",
+      "path": "/api/logs/client-models",
+      "description": "客户端请求的模型名统计",
+      "args": [],
+      "options": [
+        {
+          "flag": "--start-date",
+          "in": "query",
+          "takesValue": true,
+          "desc": "ISO 8601 起始时间（含）"
+        },
+        {
+          "flag": "--end-date",
+          "in": "query",
+          "takesValue": true,
+          "desc": "ISO 8601 结束时间（含）"
+        }
+      ]
+    },
+    {
+      "command": "x-herald logs intents",
+      "method": "GET",
+      "path": "/api/logs/intents",
+      "description": "意图识别日志",
+      "args": [],
+      "options": [
+        {
+          "flag": "--page-size",
+          "in": "query",
+          "takesValue": true,
+          "desc": "每页数量"
+        },
+        {
+          "flag": "--cursor",
+          "in": "query",
+          "takesValue": true,
+          "desc": "游标（上一页返回的 nextCursor）"
+        },
+        {
+          "flag": "--virtual-key-id",
+          "in": "query",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--access-model-id",
+          "in": "query",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--intent-name",
+          "in": "query",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--intent-source",
+          "in": "query",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--start-date",
+          "in": "query",
+          "takesValue": true,
+          "desc": "ISO 8601 起始时间（含）"
+        },
+        {
+          "flag": "--end-date",
+          "in": "query",
+          "takesValue": true,
+          "desc": "ISO 8601 结束时间（含）"
+        }
+      ]
+    },
+    {
+      "command": "x-herald logs intent-stats",
+      "method": "GET",
+      "path": "/api/logs/intents/stats",
+      "description": "意图识别统计",
+      "args": [],
+      "options": [
+        {
+          "flag": "--start-date",
+          "in": "query",
+          "takesValue": true,
+          "desc": "ISO 8601 起始时间（含）"
+        },
+        {
+          "flag": "--end-date",
+          "in": "query",
+          "takesValue": true,
+          "desc": "ISO 8601 结束时间（含）"
+        },
+        {
+          "flag": "--virtual-key-id",
+          "in": "query",
+          "takesValue": true,
+          "desc": null
+        }
+      ]
+    },
+    {
+      "command": "x-herald logs stats-overview",
+      "method": "GET",
+      "path": "/api/logs/stats/overview",
+      "description": "总览统计（请求量/成功率/延迟）",
+      "args": [],
+      "options": [
+        {
+          "flag": "--start-date",
+          "in": "query",
+          "takesValue": true,
+          "desc": "ISO 8601 起始时间（含）"
+        },
+        {
+          "flag": "--end-date",
+          "in": "query",
+          "takesValue": true,
+          "desc": "ISO 8601 结束时间（含）"
+        }
+      ]
+    },
+    {
+      "command": "x-herald logs stats-storage",
+      "method": "GET",
+      "path": "/api/logs/stats/storage",
+      "description": "日志存储占用",
+      "args": [],
+      "options": []
+    },
+    {
+      "command": "x-herald logs stats-keys",
+      "method": "GET",
+      "path": "/api/logs/stats/keys",
+      "description": "按密钥统计",
+      "args": [],
+      "options": [
+        {
+          "flag": "--period",
+          "in": "query",
+          "takesValue": true,
+          "desc": "all | 7d | 30d ..."
+        },
+        {
+          "flag": "--tz",
+          "in": "query",
+          "takesValue": true,
+          "desc": "IANA 时区，决定\"今天\""
+        }
+      ]
+    },
+    {
+      "command": "x-herald logs stats-providers",
+      "method": "GET",
+      "path": "/api/logs/stats/providers",
+      "description": "按供应商统计",
+      "args": [],
+      "options": [
+        {
+          "flag": "--start-date",
+          "in": "query",
+          "takesValue": true,
+          "desc": "ISO 8601 起始时间（含）"
+        },
+        {
+          "flag": "--end-date",
+          "in": "query",
+          "takesValue": true,
+          "desc": "ISO 8601 结束时间（含）"
+        }
+      ]
+    },
+    {
+      "command": "x-herald logs cleanup",
+      "method": "POST",
+      "path": "/api/logs/cleanup",
+      "description": "按保留天数清理日志",
+      "args": [],
+      "options": [
+        {
+          "flag": "--retention-days",
+          "in": "body",
+          "takesValue": true,
+          "desc": "默认 30"
+        }
+      ]
+    },
+    {
+      "command": "x-herald logs analyze <id>",
+      "method": "POST",
+      "path": "/api/logs/:id/analyze",
+      "description": "对单条日志做 AI 分析（SSE 流，输出原文）",
+      "args": ["id"],
+      "options": [
+        {
+          "flag": "--indices",
+          "in": "body",
+          "takesValue": true,
+          "desc": "要分析的 prompt 段落下标数组 (JSON)"
+        },
+        {
+          "flag": "--mode",
+          "in": "body",
+          "takesValue": true,
+          "desc": "full | system | user"
+        }
+      ]
+    },
+    {
+      "command": "x-herald logs live",
+      "method": "GET",
+      "path": "/api/logs/live",
+      "description": "实时日志流（SSE，输出原文，Ctrl-C 结束）",
+      "args": [],
+      "options": []
+    },
+    {
+      "command": "x-herald logs cancel-live <logId>",
+      "method": "POST",
+      "path": "/api/logs/live/:logId/cancel",
+      "description": "取消进行中的流式请求",
+      "args": ["logId"],
+      "options": []
+    },
+    {
+      "command": "x-herald metrics instances",
+      "method": "GET",
+      "path": "/api/metrics/instances",
+      "description": "实例指标（成功率/TTFB/异常）",
+      "args": [],
+      "options": []
+    },
+    {
+      "command": "x-herald metrics timeseries <instanceId>",
+      "method": "GET",
+      "path": "/api/metrics/instances/:instanceId/timeseries",
+      "description": "单实例时间序列",
+      "args": ["instanceId"],
+      "options": [
+        {
+          "flag": "--period",
+          "in": "query",
+          "takesValue": true,
+          "desc": "默认 6h"
+        }
+      ]
+    },
+    {
+      "command": "x-herald metrics providers",
+      "method": "GET",
+      "path": "/api/metrics/providers/quality",
+      "description": "供应商质量排名（24h）",
+      "args": [],
+      "options": []
+    },
+    {
+      "command": "x-herald metrics summary",
+      "method": "GET",
+      "path": "/api/metrics/summary",
+      "description": "指标总览",
+      "args": [],
+      "options": []
+    },
+    {
+      "command": "x-herald metrics anomalies",
+      "method": "GET",
+      "path": "/api/metrics/anomalies",
+      "description": "异常事件列表",
+      "args": [],
+      "options": [
+        {
+          "flag": "--unresolved",
+          "in": "query",
+          "takesValue": true,
+          "desc": "true 只看未解决"
+        }
+      ]
+    },
+    {
+      "command": "x-herald metrics detect",
+      "method": "POST",
+      "path": "/api/metrics/anomalies/detect",
+      "description": "立即运行异常检测",
+      "args": [],
+      "options": []
+    },
+    {
+      "command": "x-herald metrics resolve <id>",
+      "method": "PATCH",
+      "path": "/api/metrics/anomalies/:id/resolve",
+      "description": "标记异常已解决",
+      "args": ["id"],
+      "options": []
+    },
+    {
+      "command": "x-herald costs summary",
+      "method": "GET",
+      "path": "/api/costs/summary",
+      "description": "成本汇总",
+      "args": [],
+      "options": [
+        {
+          "flag": "--start-date",
+          "in": "query",
+          "takesValue": true,
+          "desc": "ISO 8601 起始时间（含）"
+        },
+        {
+          "flag": "--end-date",
+          "in": "query",
+          "takesValue": true,
+          "desc": "ISO 8601 结束时间（含）"
+        },
+        {
+          "flag": "--key-id",
+          "in": "query",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--provider-name",
+          "in": "query",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--model-name",
+          "in": "query",
+          "takesValue": true,
+          "desc": null
+        }
+      ]
+    },
+    {
+      "command": "x-herald costs by-key",
+      "method": "GET",
+      "path": "/api/costs/by-key",
+      "description": "按密钥的成本",
+      "args": [],
+      "options": [
+        {
+          "flag": "--start-date",
+          "in": "query",
+          "takesValue": true,
+          "desc": "ISO 8601 起始时间（含）"
+        },
+        {
+          "flag": "--end-date",
+          "in": "query",
+          "takesValue": true,
+          "desc": "ISO 8601 结束时间（含）"
+        }
+      ]
+    },
+    {
+      "command": "x-herald costs by-provider",
+      "method": "GET",
+      "path": "/api/costs/by-provider",
+      "description": "按供应商的成本",
+      "args": [],
+      "options": [
+        {
+          "flag": "--start-date",
+          "in": "query",
+          "takesValue": true,
+          "desc": "ISO 8601 起始时间（含）"
+        },
+        {
+          "flag": "--end-date",
+          "in": "query",
+          "takesValue": true,
+          "desc": "ISO 8601 结束时间（含）"
+        }
+      ]
+    },
+    {
+      "command": "x-herald costs by-model",
+      "method": "GET",
+      "path": "/api/costs/by-model",
+      "description": "按模型的成本",
+      "args": [],
+      "options": [
+        {
+          "flag": "--start-date",
+          "in": "query",
+          "takesValue": true,
+          "desc": "ISO 8601 起始时间（含）"
+        },
+        {
+          "flag": "--end-date",
+          "in": "query",
+          "takesValue": true,
+          "desc": "ISO 8601 结束时间（含）"
+        }
+      ]
+    },
+    {
+      "command": "x-herald costs pricing",
+      "method": "GET",
+      "path": "/api/costs/pricing",
+      "description": "查看定价表",
+      "args": [],
+      "options": []
+    },
+    {
+      "command": "x-herald costs set-pricing",
+      "method": "PUT",
+      "path": "/api/costs/pricing",
+      "description": "设置供应商定价（USD / 1k tokens）",
+      "args": [],
+      "options": [
+        {
+          "flag": "--provider",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--input-per1k",
+          "in": "body",
+          "takesValue": true,
+          "desc": "每 1k 输入 tokens 单价"
+        },
+        {
+          "flag": "--output-per1k",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        }
+      ]
+    },
+    {
+      "command": "x-herald cb stats",
+      "method": "GET",
+      "path": "/api/circuit-breaker/stats",
+      "description": "熔断统计",
+      "args": [],
+      "options": [
+        {
+          "flag": "--tz",
+          "in": "query",
+          "takesValue": true,
+          "desc": "IANA 时区"
+        }
+      ]
+    },
+    {
+      "command": "x-herald cb events",
+      "method": "GET",
+      "path": "/api/circuit-breaker/events",
+      "description": "熔断事件",
+      "args": [],
+      "options": [
+        {
+          "flag": "--limit",
+          "in": "query",
+          "takesValue": true,
+          "desc": "默认 50，上限 200"
+        },
+        {
+          "flag": "--offset",
+          "in": "query",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--instance-id",
+          "in": "query",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--event",
+          "in": "query",
+          "takesValue": true,
+          "desc": "opened | half_open | closed"
+        }
+      ]
+    },
+    {
+      "command": "x-herald cb states",
+      "method": "GET",
+      "path": "/api/circuit-breaker/realtime-states",
+      "description": "实时熔断状态（内存）",
+      "args": [],
+      "options": []
+    },
+    {
+      "command": "x-herald cb reset <instanceId>",
+      "method": "POST",
+      "path": "/api/circuit-breaker/:instanceId/reset",
+      "description": "手动恢复实例（关闭熔断）",
+      "args": ["instanceId"],
+      "options": []
+    },
+    {
+      "command": "x-herald cb trip <instanceId>",
+      "method": "POST",
+      "path": "/api/circuit-breaker/:instanceId/trip",
+      "description": "手动强制熔断实例",
+      "args": ["instanceId"],
+      "options": [
+        {
+          "flag": "--meta",
+          "in": "body",
+          "takesValue": true,
+          "desc": "附加信息，写入事件 (JSON)"
+        }
+      ]
+    },
+    {
+      "command": "x-herald access list",
+      "method": "GET",
+      "path": "/api/access-models",
+      "description": "列出接入模型",
+      "args": [],
+      "options": []
+    },
+    {
+      "command": "x-herald access get <id>",
+      "method": "GET",
+      "path": "/api/access-models/:id",
+      "description": "接入模型详情",
+      "args": ["id"],
+      "options": []
+    },
+    {
+      "command": "x-herald access create",
+      "method": "POST",
+      "path": "/api/access-models",
+      "description": "创建接入模型",
+      "args": [],
+      "options": [
+        {
+          "flag": "--name",
+          "in": "body",
+          "takesValue": true,
+          "desc": "客户端请求的模型名"
+        },
+        {
+          "flag": "--display-name",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--description",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--capabilities",
+          "in": "body",
+          "takesValue": true,
+          "desc": "能力 JSON (JSON)"
+        },
+        {
+          "flag": "--enabled",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        }
+      ]
+    },
+    {
+      "command": "x-herald access update <id>",
+      "method": "PUT",
+      "path": "/api/access-models/:id",
+      "description": "更新接入模型",
+      "args": ["id"],
+      "options": [
+        {
+          "flag": "--name",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--display-name",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--description",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--capabilities",
+          "in": "body",
+          "takesValue": true,
+          "desc": "JSON"
+        },
+        {
+          "flag": "--enabled",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        }
+      ]
+    },
+    {
+      "command": "x-herald access delete <id>",
+      "method": "DELETE",
+      "path": "/api/access-models/:id",
+      "description": "删除接入模型",
+      "args": ["id"],
+      "options": []
+    },
+    {
+      "command": "x-herald access toggle <id>",
+      "method": "PATCH",
+      "path": "/api/access-models/:id/toggle",
+      "description": "启用/停用接入模型",
+      "args": ["id"],
+      "options": []
+    },
+    {
+      "command": "x-herald rules list <accessModelId>",
+      "method": "GET",
+      "path": "/api/access-models/:accessModelId/route-rules",
+      "description": "列出接入模型的路由版本",
+      "args": ["accessModelId"],
+      "options": []
+    },
+    {
+      "command": "x-herald rules get <accessModelId> <id>",
+      "method": "GET",
+      "path": "/api/access-models/:accessModelId/route-rules/:id",
+      "description": "路由版本详情",
+      "args": ["accessModelId", "id"],
+      "options": []
+    },
+    {
+      "command": "x-herald rules save <accessModelId>",
+      "method": "POST",
+      "path": "/api/access-models/:accessModelId/route-rules",
+      "description": "保存新路由草稿（图）",
+      "args": ["accessModelId"],
+      "options": [
+        {
+          "flag": "--graph",
+          "in": "body",
+          "takesValue": true,
+          "desc": "节点/边图 (JSON)"
+        },
+        {
+          "flag": "--name",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--description",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        }
+      ]
+    },
+    {
+      "command": "x-herald rules activate <accessModelId> <id>",
+      "method": "PATCH",
+      "path": "/api/access-models/:accessModelId/route-rules/:id/activate",
+      "description": "激活版本（重建内存匹配器）",
+      "args": ["accessModelId", "id"],
+      "options": []
+    },
+    {
+      "command": "x-herald rules delete <accessModelId> <id>",
+      "method": "DELETE",
+      "path": "/api/access-models/:accessModelId/route-rules/:id",
+      "description": "删除路由版本",
+      "args": ["accessModelId", "id"],
+      "options": []
+    },
+    {
+      "command": "x-herald rules rebuild <accessModelId>",
+      "method": "POST",
+      "path": "/api/access-models/:accessModelId/route-rules/rebuild",
+      "description": "强制重建路由匹配器缓存",
+      "args": ["accessModelId"],
+      "options": []
+    },
+    {
+      "command": "x-herald overview show",
+      "method": "GET",
+      "path": "/api/route-overview",
+      "description": "全局路由俯瞰图",
+      "args": [],
+      "options": []
+    },
+    {
+      "command": "x-herald traces list",
+      "method": "GET",
+      "path": "/api/routing-traces",
+      "description": "路由追踪列表",
+      "args": [],
+      "options": [
+        {
+          "flag": "--model-name",
+          "in": "query",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--matched-rule-id",
+          "in": "query",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--outcome",
+          "in": "query",
+          "takesValue": true,
+          "desc": "success | rejected | all_failed | cancelled | pending"
+        },
+        {
+          "flag": "--virtual-key-id",
+          "in": "query",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--start-date",
+          "in": "query",
+          "takesValue": true,
+          "desc": "ISO 8601 起始时间（含）"
+        },
+        {
+          "flag": "--end-date",
+          "in": "query",
+          "takesValue": true,
+          "desc": "ISO 8601 结束时间（含）"
+        },
+        {
+          "flag": "--has-failover",
+          "in": "query",
+          "takesValue": true,
+          "desc": "true 只看触发降级的"
+        },
+        {
+          "flag": "--page-size",
+          "in": "query",
+          "takesValue": true,
+          "desc": "默认 20"
+        },
+        {
+          "flag": "--cursor",
+          "in": "query",
+          "takesValue": true,
+          "desc": null
+        }
+      ]
+    },
+    {
+      "command": "x-herald traces get <logId>",
+      "method": "GET",
+      "path": "/api/routing-traces/:logId",
+      "description": "单次请求的路由决策链",
+      "args": ["logId"],
+      "options": []
+    },
+    {
+      "command": "x-herald potential list",
+      "method": "GET",
+      "path": "/api/potential-models",
+      "description": "潜在模型列表",
+      "args": [],
+      "options": [
+        {
+          "flag": "--action",
+          "in": "query",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--enabled",
+          "in": "query",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--min-count",
+          "in": "query",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--page",
+          "in": "query",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--page-size",
+          "in": "query",
+          "takesValue": true,
+          "desc": null
+        }
+      ]
+    },
+    {
+      "command": "x-herald potential get <id>",
+      "method": "GET",
+      "path": "/api/potential-models/:id",
+      "description": "潜在模型详情",
+      "args": ["id"],
+      "options": []
+    },
+    {
+      "command": "x-herald potential update <id>",
+      "method": "PUT",
+      "path": "/api/potential-models/:id",
+      "description": "更新潜在模型的处理策略",
+      "args": ["id"],
+      "options": [
+        {
+          "flag": "--action",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--target-access-model-id",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--enabled",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--note",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        }
+      ]
+    },
+    {
+      "command": "x-herald potential delete <id>",
+      "method": "DELETE",
+      "path": "/api/potential-models/:id",
+      "description": "删除潜在模型记录",
+      "args": ["id"],
+      "options": []
+    },
+    {
+      "command": "x-herald potential convert <id>",
+      "method": "POST",
+      "path": "/api/potential-models/:id/convert",
+      "description": "转成接入模型",
+      "args": ["id"],
+      "options": [
+        {
+          "flag": "--display-name",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--description",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--enabled",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--group-id",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        }
+      ]
+    },
+    {
+      "command": "x-herald settings get",
+      "method": "GET",
+      "path": "/api/settings",
+      "description": "查看系统设置",
+      "args": [],
+      "options": []
+    },
+    {
+      "command": "x-herald settings update",
+      "method": "PUT",
+      "path": "/api/settings",
+      "description": "更新系统设置（熔断参数、TTFB 超时、AI 模型组）",
+      "args": [],
+      "options": [
+        {
+          "flag": "--ai-model-group-id",
+          "in": "body",
+          "takesValue": true,
+          "desc": "AI 功能使用的模型组 ID，null 清除"
+        },
+        {
+          "flag": "--circuit-breaker",
+          "in": "body",
+          "takesValue": true,
+          "desc": "{failureThreshold,openDurationMs,...} (JSON)"
+        },
+        {
+          "flag": "--ttfb-timeout",
+          "in": "body",
+          "takesValue": true,
+          "desc": "TTFB 超时配置 (JSON)"
+        }
+      ]
+    },
+    {
+      "command": "x-herald settings classifier-prompt",
+      "method": "GET",
+      "path": "/api/settings/classifier-prompt",
+      "description": "查看意图分类器提示词",
+      "args": [],
+      "options": []
+    },
+    {
+      "command": "x-herald settings set-classifier-prompt",
+      "method": "PUT",
+      "path": "/api/settings/classifier-prompt",
+      "description": "更新意图分类器提示词",
+      "args": [],
+      "options": [
+        {
+          "flag": "--content",
+          "in": "body",
+          "takesValue": true,
+          "desc": "提示词正文"
+        },
+        {
+          "flag": "--updated-by",
+          "in": "body",
+          "takesValue": true,
+          "desc": "操作者标识"
+        }
+      ]
+    },
+    {
+      "command": "x-herald workspaces list",
+      "method": "GET",
+      "path": "/api/workspaces",
+      "description": "列出工作区",
+      "args": [],
+      "options": []
+    },
+    {
+      "command": "x-herald workspaces create",
+      "method": "POST",
+      "path": "/api/workspaces",
+      "description": "创建工作区",
+      "args": [],
+      "options": [
+        {
+          "flag": "--name",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        }
+      ]
+    },
+    {
+      "command": "x-herald workspaces update <id>",
+      "method": "PUT",
+      "path": "/api/workspaces/:id",
+      "description": "重命名工作区",
+      "args": ["id"],
+      "options": [
+        {
+          "flag": "--name",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        }
+      ]
+    },
+    {
+      "command": "x-herald workspaces delete <id>",
+      "method": "DELETE",
+      "path": "/api/workspaces/:id",
+      "description": "删除工作区",
+      "args": ["id"],
+      "options": []
+    },
+    {
+      "command": "x-herald config export",
+      "method": "GET",
+      "path": "/api/config/export",
+      "description": "导出全部配置（JSON 原文，可 > file.json）",
+      "args": [],
+      "options": []
+    },
+    {
+      "command": "x-herald config import",
+      "method": "POST",
+      "path": "/api/config/import",
+      "description": "导入配置（请求体即导出文件内容）",
+      "args": [],
+      "options": [
+        {
+          "flag": "--file",
+          "in": "body",
+          "takesValue": true,
+          "desc": "导出 JSON 路径（- 表示 stdin）"
+        }
+      ]
+    },
+    {
+      "command": "x-herald ai diagnose",
+      "method": "POST",
+      "path": "/api/ai/diagnose",
+      "description": "诊断某个请求日志",
+      "args": [],
+      "options": [
+        {
+          "flag": "--log-id",
+          "in": "body",
+          "takesValue": true,
+          "desc": "请求日志 ID"
+        }
+      ]
+    },
+    {
+      "command": "x-herald ai diagnose-stream",
+      "method": "POST",
+      "path": "/api/ai/diagnose/stream",
+      "description": "诊断（SSE 流式输出）",
+      "args": [],
+      "options": [
+        {
+          "flag": "--log-id",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        }
+      ]
+    },
+    {
+      "command": "x-herald ai apply-fix",
+      "method": "POST",
+      "path": "/api/ai/apply-fix",
+      "description": "应用诊断给出的配置修复",
+      "args": [],
+      "options": [
+        {
+          "flag": "--instance-id",
+          "in": "body",
+          "takesValue": true,
+          "desc": "JSON"
+        },
+        {
+          "flag": "--config",
+          "in": "body",
+          "takesValue": true,
+          "desc": "JSON"
+        }
+      ]
+    },
+    {
+      "command": "x-herald ai patterns",
+      "method": "GET",
+      "path": "/api/ai/patterns",
+      "description": "已知错误模式库",
+      "args": [],
+      "options": []
+    },
+    {
+      "command": "x-herald ai run",
+      "method": "POST",
+      "path": "/api/ai/agent/run",
+      "description": "运行 AI 助手（prompt + 可选 skill）",
+      "args": [],
+      "options": [
+        {
+          "flag": "--prompt",
+          "in": "body",
+          "takesValue": true,
+          "desc": "指令"
+        },
+        {
+          "flag": "--skill",
+          "in": "body",
+          "takesValue": true,
+          "desc": "error-diagnosis | config-generation"
+        },
+        {
+          "flag": "--tools",
+          "in": "body",
+          "takesValue": true,
+          "desc": "限定可用工具 (JSON)"
+        }
+      ]
+    },
+    {
+      "command": "x-herald ai instance-agent <id>",
+      "method": "POST",
+      "path": "/api/ai/agent/instance/:id",
+      "description": "对某实例运行配置助手",
+      "args": ["id"],
+      "options": [
+        {
+          "flag": "--messages",
+          "in": "body",
+          "takesValue": true,
+          "desc": "{role,content} 数组 (JSON)"
+        },
+        {
+          "flag": "--skill",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        }
+      ]
+    },
+    {
+      "command": "x-herald ai undo <id>",
+      "method": "POST",
+      "path": "/api/ai/agent/instance/:id/undo",
+      "description": "回滚实例配置到执行前",
+      "args": ["id"],
+      "options": [
+        {
+          "flag": "--previous-config",
+          "in": "body",
+          "takesValue": true,
+          "desc": "上一次配置快照 (JSON)"
+        }
+      ]
+    },
+    {
+      "command": "x-herald ai agent-diagnose",
+      "method": "POST",
+      "path": "/api/ai/agent/diagnose",
+      "description": "按日志 ID 运行诊断 agent",
+      "args": [],
+      "options": [
+        {
+          "flag": "--log-id",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        }
+      ]
+    },
+    {
+      "command": "x-herald ai generate-config",
+      "method": "POST",
+      "path": "/api/ai/agent/generate-config",
+      "description": "按自然语言生成实例配置",
+      "args": [],
+      "options": [
+        {
+          "flag": "--instance-id",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        },
+        {
+          "flag": "--description",
+          "in": "body",
+          "takesValue": true,
+          "desc": "需求描述"
+        }
+      ]
+    },
+    {
+      "command": "x-herald auth me",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "description": "当前 token 的身份",
+      "args": [],
+      "options": []
+    },
+    {
+      "command": "x-herald auth login",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "description": "用管理员密码换取 JWT（一般不直接用，用 x-herald login）",
+      "args": [],
+      "options": [
+        {
+          "flag": "--password",
+          "in": "body",
+          "takesValue": true,
+          "desc": null
+        }
+      ]
+    },
+    {
+      "command": "x-herald auth logout",
+      "method": "POST",
+      "path": "/api/auth/logout",
+      "description": "登出（客户端删除 token 即可）",
+      "args": [],
+      "options": []
+    },
+    {
+      "command": "x-herald health health",
+      "method": "GET",
+      "path": "/api/health",
+      "description": "健康检查（含数据库连通性）",
+      "args": [],
+      "options": []
+    },
+    {
+      "command": "x-herald health live",
+      "method": "GET",
+      "path": "/api/health/live",
+      "description": "存活探针",
+      "args": [],
+      "options": []
+    },
+    {
+      "command": "x-herald health ready",
+      "method": "GET",
+      "path": "/api/health/ready",
+      "description": "就绪探针",
+      "args": [],
+      "options": []
+    },
+    {
+      "command": "x-herald console live",
+      "method": "GET",
+      "path": "/api/console-logs/live",
+      "description": "实时控制台日志（SSE，Ctrl-C 结束）",
+      "args": [],
+      "options": []
+    }
+  ]
+}

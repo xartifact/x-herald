@@ -11,6 +11,9 @@ bun run check
 echo "==> CI script regression tests"
 bun test scripts/ci.test.ts
 
+echo "==> CI contract tests (docs, workflow, hooks stay aligned)"
+bun test scripts/ci-contract.test.ts
+
 echo "==> UI tests"
 bun run test:ui
 

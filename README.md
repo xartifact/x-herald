@@ -148,6 +148,20 @@ bun run test:ui         # UI component tests (Vitest)
 bun run test:e2e:ui     # Playwright E2E
 ```
 
+### Operator CLI
+
+`x-herald` ships as a single self-contained binary with the operator skill embedded — no checkout, no Bun install, no `node_modules` on the target machine.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/xartifact/x-herald/main/scripts/install-cli.sh | sh
+x-herald skill install     # write the operator skill into installed agent runtimes
+x-herald auth login
+```
+
+Supported: macOS/Linux (arm64, x64) and Windows x64. The installer verifies `SHA256SUMS` and refuses unverified artifacts; set `X_HERALD_CLI_BASE_URL` to a mirror for offline/internal installs and `X_HERALD_CLI_BIN_DIR` to change the install directory.
+
+Release pipeline: tag `cli-v*` matching `apps/cli/package.json` → `.github/workflows/cli-release.yml`. Local builds: `./scripts/build-cli.sh [target]` → `dist/cli/`.
+
 ### Environment variables
 
 | Variable | Description | Default |

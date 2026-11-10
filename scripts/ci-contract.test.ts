@@ -24,6 +24,10 @@ const prePush = read('.vite-hooks/pre-push')
 const commitMsg = read('scripts/commit-msg.mjs')
 const skill = read('.claude/skills/xartifact-ci/SKILL.md')
 
+const cliRelease = read('.github/workflows/cli-release.yml')
+const installCli = read('scripts/install-cli.sh')
+const buildCli = read('scripts/build-cli.sh')
+
 describe('ci.sh contract', () => {
   const stages = [...ciScript.matchAll(/^echo "==> (.+)"$/gm)].map((m) => m[1])
   expect(stages).toEqual([
@@ -34,6 +38,7 @@ describe('ci.sh contract', () => {
     'ai-agent tests',
     'agent-extensions tests',
     'backend tests',
+    'CLI tests',
   ])
 
   it('reads bun status through PIPESTATUS, not tee', () => {
@@ -150,6 +155,53 @@ describe('skill document', () => {
     // unconditionally; both were wrong and are now guarded here.
     expect(skill).not.toMatch(/E2E（continue-on-error）/)
     expect(skill).not.toMatch(/if \[ \$test_status -eq 99 \]; then exit 0/)
+  })
+})
+
+describe('CLI release chain', () => {
+  it('publishes on its own tag prefix, never on the image tags', () => {
+    // Sharing `v*` with docker-build.yml would tie an operator tool release to a
+    // server deployment; sharing the workflow would gate it on the gateway suite.
+    const config = Bun.YAML.parse(cliRelease) as { on: { push: { tags: string[] } } }
+    expect(config.on.push.tags).toEqual(['cli-v*'])
+    // Assert on execution, not prose: the workflow's header comment explains why
+    // the gate is not reused, and that explanation must stay legal.
+    expect(cliRelease).not.toMatch(/^\s*run:.*scripts\/ci\.sh/m)
+  })
+
+  it('refuses to publish when the tag disagrees with the package version', () => {
+    expect(cliRelease).toContain('apps/cli/package.json')
+    expect(cliRelease).toMatch(/!= package\.json version/)
+  })
+
+  it('verifies the embedded skill against the built binary, not the source tree', () => {
+    // Static imports are the only thing the binary carries; if embedding breaks,
+    // the source tree still looks fine and only the artifact is wrong.
+    expect(cliRelease).toMatch(/x-herald-linux-x64 skill show commands\.json/)
+    expect(cliRelease).toMatch(/skill install --dir/)
+  })
+
+  it('builds every platform build-cli.sh declares', () => {
+    const targets = [...buildCli.matchAll(/^ {2}(bun-[a-z0-9-]+)$/gm)].map((m) => m[1])
+    const shipped = new Set(targets.map((target) => target.replace(/^bun-/, '')))
+    // One asset per `uname` combination the installer can produce.
+    for (const platform of ['darwin-arm64', 'darwin-x64', 'linux-x64', 'linux-arm64']) {
+      expect(shipped.has(platform)).toBe(true)
+    }
+    expect(buildCli).toContain('SHA256SUMS')
+  })
+
+  it('never installs an unverified binary', () => {
+    // Download-and-run without a checksum is the failure mode that makes an
+    // internal mirror dangerous.
+    expect(installCli).toContain('SHA256SUMS')
+    expect(installCli).toMatch(/拒绝安装未校验的二进制/)
+    expect(installCli).toMatch(/SHA256 不匹配/)
+  })
+
+  it('supports an internal mirror and custom install directory', () => {
+    expect(installCli).toContain('X_HERALD_CLI_BASE_URL')
+    expect(installCli).toContain('X_HERALD_CLI_BIN_DIR')
   })
 })
 

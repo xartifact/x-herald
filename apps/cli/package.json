@@ -7,16 +7,15 @@
   },
   "files": [
     "src",
-    "skills",
-    "scripts",
-    "README.md"
+    "skills"
   ],
   "type": "module",
   "main": "./src/index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "bun test src/",
-    "gen:commands": "bun run scripts/gen-command-index.ts"
+    "gen:commands": "bun run scripts/gen-command-index.ts",
+    "build:binaries": "../../scripts/build-cli.sh"
   },
   "dependencies": {
     "@clack/prompts": "^1.5.1",

@@ -1,14 +1,17 @@
 #!/usr/bin/env bun
+import { writeFileSync } from 'node:fs'
+
 import { Command } from 'commander'
 
 import { GatewayClient, GatewayError } from './client'
 import { clearCliToken, configPath, loadCliConfig, saveCliConfig } from './config'
 import { runConfigureWizard } from './configure'
 import { resolveCredentials } from './credentials'
-import { executeSpec, unwrap } from './executor'
+import { COMMAND_INDEX_JSON, SKILL_DOCS } from './embedded-skills'
+import { MOUNTS, executeSpec, unwrap } from './executor'
 import { printResult, report } from './output'
+import { installSkill } from './skill-install'
 import { SPEC_COMMANDS } from './spec-commands'
-import { MOUNTS } from './executor'
 import { registerSpecCommands } from './spec'
 import type { InvocationDeps } from './spec'
 
@@ -153,6 +156,61 @@ function safeJson(value: string): unknown {
     return value
   }
 }
+
+// ── skill: ship the operator guide with the binary, no checkout required ──────
+const skill = program
+  .command('skill')
+  .description('内嵌运维技能：打印或安装到已存在的 agent 技能目录')
+
+skill
+  .command('install')
+  .description('把内嵌技能写入 agent 的用户级 skills 目录（默认只写已存在的 runtime）')
+  .option(
+    '--runtime <id>',
+    '只装指定 runtime，可重复（claude | codex | agents | pi | omp | opencode）',
+    collect,
+    [],
+  )
+  .option('--all', '写入所有 runtime，目录不存在也创建', false)
+  .option('--dir <path>', '装到指定目录（覆盖 runtime 解析）')
+  // `--dry-run` is declared on the program, not here: a subcommand flag with the same
+  // name is silently satisfied by the parent's parser, so the local default always won.
+  // commander passes the Command instance as the final action argument, never a bare
+  // options object; `this.opts()` is the same source `spec.ts` reads from.
+  .action(function (this: Command) {
+    const { runtime, all, dir } = this.opts<{
+      runtime: string[]
+      all: boolean
+      dir?: string
+    }>()
+    const code = installSkill({
+      runtimes: runtime,
+      all,
+      dir,
+      dryRun: Boolean(program.opts().dryRun),
+    })
+    if (code !== 0) process.exit(code)
+  })
+
+skill
+  .command('show [file]')
+  .description('打印内嵌技能内容（默认 SKILL.md；可选 commands.json 等）')
+  .option('--out <path>', '写入文件而不是打印到 stdout')
+  .action(function (this: Command, file: string | undefined) {
+    const name = file ?? 'SKILL.md'
+    const content = name === 'commands.json' ? COMMAND_INDEX_JSON : SKILL_DOCS[name]
+    if (content === undefined) {
+      const known = [...Object.keys(SKILL_DOCS), 'commands.json'].join(' | ')
+      throw new Error(`未知文件: ${name}（可选 ${known}）`)
+    }
+    const { out } = this.opts<{ out?: string }>()
+    if (out) {
+      writeFileSync(out, content)
+      report(`已写入 ${out}`)
+      return
+    }
+    process.stdout.write(content)
+  })
 
 // ── top-level health shortcut, kept because it is the one command operators type blind ──
 program

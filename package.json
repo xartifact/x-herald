@@ -24,7 +24,9 @@
     "test:ui:watch": "cd packages/ui && bunx vitest",
     "test:e2e:ui": "cd apps/web && bunx playwright test --ui",
     "ci": "./scripts/ci.sh",
-    "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules"
+    "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules",
+    "cli:build": "./scripts/build-cli.sh",
+    "cli:test": "cd apps/cli && bun test src/ && bun run typecheck"
   },
   "dependencies": {
     "@radix-ui/react-scroll-area": "^1.2.10",

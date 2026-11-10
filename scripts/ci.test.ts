@@ -15,6 +15,7 @@ describe('CI failure propagation', () => {
         'test scripts/ci-contract.test.ts') stage=contract ;;
         'run test:ui') stage=ui ;;
         *) case "$PWD" in
+          */apps/cli) stage=cli ;;
           */apps/gateway) stage=backend ;;
           */packages/agent-extensions) stage=extensions ;;
           */packages/ai-agent) stage=agent ;;
@@ -43,7 +44,16 @@ describe('CI failure propagation', () => {
     expect(result.stdout).toContain('executed:backend')
   })
 
-  for (const stage of ['check', 'scripts', 'contract', 'ui', 'agent', 'extensions', 'backend']) {
+  for (const stage of [
+    'check',
+    'scripts',
+    'contract',
+    'ui',
+    'agent',
+    'extensions',
+    'backend',
+    'cli',
+  ]) {
     it(`fails when ${stage} fails`, () => {
       const result = run(stage)
       expect(result.status).toBe(1)

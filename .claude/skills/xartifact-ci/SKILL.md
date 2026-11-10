@@ -1,6 +1,6 @@
 ---
 name: xartifact-ci
-description: "x-herald 的 CI 与发布约定，逐条对应可执行源码，并由 scripts/ci-contract.test.ts 锁定。涵盖：ci.sh 7 段质量门与失败传播、bun test --isolate 的必需理由与退出码 99 的窄豁免、commit-msg / pre-commit / pre-push 三段钩子分工、Conventional Commits 机器校验规则、四段式 GitHub Actions（test→build→deploy→notify）、多架构镜像与 latest/alpha/semver tag 策略、容器内健康检查与版本断言。凡是修改 CI、质量门、发布流程、Docker 部署，或排查「该失败却通过 / 该通过却失败」时使用。"
+description: "x-herald 的 CI 与发布约定，逐条对应可执行源码，并由 scripts/ci-contract.test.ts 锁定。涵盖：ci.sh 8 段质量门与失败传播、bun test --isolate 的必需理由与退出码 99 的窄豁免、commit-msg / pre-commit / pre-push 三段钩子分工、Conventional Commits 机器校验规则、四段式 GitHub Actions（test→build→deploy→notify）、多架构镜像与 latest/alpha/semver tag 策略、容器内健康检查与版本断言。凡是修改 CI、质量门、发布流程、Docker 部署，或排查「该失败却通过 / 该通过却失败」时使用。"
 ---
 
 # x-herald CI 与发布约定
@@ -11,7 +11,7 @@ description: "x-herald 的 CI 与发布约定，逐条对应可执行源码，�
 
 ## 一、质量门：`scripts/ci.sh`
 
-本地与 CI 复用同一脚本（`bun run ci`），杜绝"本地过、CI 挂"。`set -euo pipefail`，7 段串行：
+本地与 CI 复用同一脚本（`bun run ci`），杜绝"本地过、CI 挂"。`set -euo pipefail`，8 段串行：
 
 | # | 阶段 | 命令 |
 |---|---|---|
@@ -22,6 +22,7 @@ description: "x-herald 的 CI 与发布约定，逐条对应可执行源码，�
 | 5 | ai-agent | `bun test` |
 | 6 | agent-extensions | `bun test` |
 | 7 | backend | `bun test --isolate` |
+| 8 | CLI | `bun test src/`（apps/cli） |
 
 ### `--isolate` 是正确性要求，不是加速开关
 
@@ -101,6 +102,19 @@ flowchart LR
 
 不按分支名发 tag：镜像会无限堆积，部署侧也没有稳定引用名。
 
+### 独立发布链：CLI 二进制（`cli-release.yml`）
+
+CLI 不随镜像发布，触发条件与镜像刻意分开：`cli-v*` tag（版本须等于 `apps/cli/package.json`）→ 5 平台自包含二进制 + `SHA256SUMS`，挂在 GitHub Release 上。
+
+不复用 `ci.sh`：CLI 是叶子包，若用网关全套测试卡住 CLI 发布，一次 CLI 修复会排在与它无关的失败后面。workflow 自己跑 `apps/cli` 的 typecheck 与测试（该测试也已是 `ci.sh` 第 8 段）。
+
+两条断言防产物静默降级：
+
+1. tag 版本必须等于 `apps/cli/package.json` 的 version，否则二进制 `--version` 与实际不符 —— 与镜像的版本断言同一类失效。
+2. 构建后用产物自身验证技能已内嵌：`skill show commands.json | jq -e '.commands|length>90'`，再 `skill install --dir` 断言文件落盘。技能是静态导入，一旦不再内嵌，二进制会静默失去全部文档。
+
+安装脚本 `scripts/install-cli.sh` 在缺少 `SHA256SUMS` 或校验不符时**必须失败**，不允许"下载即安装"。
+
 ## 五、部署：健康检查 + 版本断言
 
 `docker pull` → `docker-compose up -d` 之后两道验证：
@@ -123,13 +137,13 @@ flowchart LR
 
 ## 六、用测试钉死 CI
 
-`scripts/ci.test.ts` 与 `scripts/ci-contract.test.ts` 是元层。前者验证失败传播、99 不被吞、发布门顺序、版本三跳；后者验证本文描述的 7 段结构、无 `continue-on-error`、notify 不共用部署 runner、钩子分工、提交信息规则，并禁止本文出现已知的错误说法。
+`scripts/ci.test.ts` 与 `scripts/ci-contract.test.ts` 是元层。前者验证失败传播、99 不被吞、发布门顺序、版本三跳；后者验证本文描述的 8 段结构、无 `continue-on-error`、notify 不共用部署 runner、钩子分工、提交信息规则，并禁止本文出现已知的错误说法。
 
 新增 CI 约束的正确顺序：**先写断言，再改配置，最后改本文**。
 
 ## 七、复刻检查单
 
-1. `ci.sh`：7 段顺序 + `set -euo pipefail` + `PIPESTATUS` + 窄豁免 99
+1. `ci.sh`：8 段顺序 + `set -euo pipefail` + `PIPESTATUS` + 窄豁免 99
 2. 后端测试含 `--isolate`（顺序无关性要求）
 3. 钩子三段分工；pre-commit 只 lint-staged；pre-push 是 check + 核心子集
 4. `commit-msg.mjs`：类型白名单 + 72 字符 + 小写 + 无末尾句号

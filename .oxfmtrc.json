@@ -3,6 +3,7 @@
   "singleQuote": true,
   "printWidth": 100,
   "ignorePatterns": [
+    "apps/cli/skills/**",
     "node_modules/**",
     "dist/**",
     "build/**",

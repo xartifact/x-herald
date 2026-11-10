@@ -49,3 +49,7 @@ rm -f "$BACKEND_LOG"
 if [ "$BACKEND_STATUS" -ne 0 ]; then
   exit "$BACKEND_STATUS"
 fi
+
+echo "==> CLI tests"
+cd "$PROJECT_ROOT/apps/cli"
+bun test src/ --reporter=dots

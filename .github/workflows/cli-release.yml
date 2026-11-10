@@ -1,0 +1,94 @@
+name: CLI Release
+
+# Publishes the x-herald CLI as self-contained binaries attached to a GitHub
+# Release. A `cli-v*` tag is the only trigger: the gateway image release is
+# driven by `v*` tags in docker-build.yml, and conflating the two would couple
+# an operator tool to a server deployment.
+#
+# Deliberately does NOT reuse ./scripts/ci.sh: the CLI is a leaf package with its
+# own typecheck and tests, and gating a release on the gateway suite would make a
+# CLI hotfix wait on unrelated failures. Both still run in docker-build.yml.
+
+on:
+  push:
+    tags:
+      - 'cli-v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g. 0.2.1); must match apps/cli/package.json'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      # A tag that disagrees with the manifest ships a binary reporting the wrong
+      # version — the exact failure mode the gateway's build-identity guard exists
+      # to catch. Refuse to build instead.
+      - name: Assert tag matches apps/cli/package.json
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#cli-v}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG_VERSION="${{ github.event.inputs.version }}"
+          fi
+          PKG_VERSION="$(jq -r .version apps/cli/package.json)"
+          echo "tag=$TAG_VERSION package=$PKG_VERSION"
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "✗ tag version $TAG_VERSION != package.json version $PKG_VERSION"
+            exit 1
+          fi
+          echo "VERSION=$TAG_VERSION" >> "$GITHUB_ENV"
+
+      - name: Typecheck and test the CLI
+        run: |
+          cd apps/cli
+          bun run typecheck
+          bun test src/
+
+      - name: Build binaries
+        run: ./scripts/build-cli.sh
+
+      - name: Verify the operator skill is embedded
+        run: |
+          # The skill is a static import; if it ever stops being embedded the
+          # binary silently loses its documentation, so assert on the artifact.
+          ./dist/cli/x-herald-linux-x64 skill show commands.json | jq -e '.commands | length > 90'
+          ./dist/cli/x-herald-linux-x64 skill install --dir /tmp/skill-check
+          test -f /tmp/skill-check/SKILL.md
+          test -f /tmp/skill-check/troubleshooting.md
+
+      - name: Checksum manifest covers every artifact
+        run: |
+          cd dist/cli
+          EXPECTED=$(ls x-herald-* | grep -v SHA256SUMS | wc -l | tr -d ' ')
+          LISTED=$(wc -l < SHA256SUMS | tr -d ' ')
+          echo "artifacts=$EXPECTED listed=$LISTED"
+          test "$EXPECTED" = "$LISTED"
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "cli-v$VERSION" dist/cli/x-herald-* dist/cli/SHA256SUMS \
+            --title "x-herald CLI v$VERSION" \
+            --notes "Self-contained CLI binaries (skill embedded). Install:
+
+          \`\`\`sh
+          curl -fsSL https://raw.githubusercontent.com/xartifact/x-herald/main/scripts/install-cli.sh | sh
+          \`\`\`
+
+          Then \`x-herald skill install\` to give your agent the operator guide."

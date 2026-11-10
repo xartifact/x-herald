@@ -1,7 +1,29 @@
+---
+name: x-herald-cli
+description: "用 x-herald CLI 运维/诊断 x-herald LLM 网关：供应商与模型实例、模型组与路由规则、虚拟密钥、请求日志与指标、路由追踪与熔断、成本核算、配置导入导出，以及 thinking 模式 400（roleMapping / patchMissingReasoningContent）等实例配置修复。当需要在不访问数据库的前提下查询或改动网关配置、排查请求失败/路由异常/成本异常时使用。认证三级回退、默认 JSON 输出与 --dry-run 契约也在此。"
+---
+
 # x-herald CLI 运维
 
 用 `x-herald` CLI 运维 x-herald LLM 网关。本目录面向**通用编码/运维 Agent**（Claude Code、Codex、OpenCode、Pi 等），
 不依赖任何特定客户端约定：所有结论都能用列出的命令复现。
+
+## 安装（无需 clone 仓库）
+
+发布物是单文件二进制，内嵌本技能的全部文件。目标机只需要一条命令：
+
+```bash
+# 从 GitHub Release 安装（自动选平台、校验 SHA256、装到 ~/.local/bin）
+curl -fsSL https://raw.githubusercontent.com/xartifact/x-herald/main/scripts/install-cli.sh | sh
+
+# 或者已有二进制时：把技能写进已存在的 agent 目录（claude/codex/agents/pi/omp/opencode）
+x-herald skill install
+```
+
+`skill install` 默认只写已存在的 runtime 目录；`--all` 全部创建，`--runtime <id>` 指定单个，`--dir <path>` 落到自定义目录，
+`--dry-run` 只打印目标。`x-herald skill show [file]` 打印内嵌原文（默认 `SKILL.md`，也可 `commands.json`）。
+
+镜像/离线：`X_HERALD_CLI_BASE_URL=<前缀> sh install-cli.sh` 从内网镜像取同名文件，`X_HERALD_CLI_BIN_DIR` 改安装目录。
 
 ## 先决条件
 

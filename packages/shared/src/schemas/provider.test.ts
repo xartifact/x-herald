@@ -80,13 +80,41 @@ describe('PROTOCOL_OPTIONS', () => {
       'anthropic',
       'gemini',
       'jev',
+      'asr',
+      'tts',
     ])
   })
 
-  it('has label and defaultUrl for each option', () => {
+  it('has a label for each option', () => {
     for (const option of PROTOCOL_OPTIONS) {
       expect(option.label).toBeTruthy()
-      expect(option.defaultUrl).toMatch(/^https:\/\//)
+    }
+  })
+
+  it('gives hosted protocols an https default and audio protocols a default endpoint', () => {
+    for (const option of PROTOCOL_OPTIONS) {
+      const isAudio = option.value === 'asr' || option.value === 'tts'
+      if (isAudio) {
+        // 音频上游是自建/自有契约，没有公共默认地址，只有默认端点路径
+        expect(option.defaultUrl).toBe('')
+        expect('defaultEndpoint' in option && option.defaultEndpoint).toMatch(/^\/v1\/audio\//)
+      } else {
+        expect(option.defaultUrl).toMatch(/^https:\/\//)
+      }
+    }
+  })
+
+  it('accepts an asr/tts protocol with an endpoint override', () => {
+    const result = providerSchema.safeParse({
+      name: 'Local Whisper',
+      enabled: true,
+      protocols: {
+        asr: { enabled: true, baseUrl: 'http://x99:8080', endpoint: '/inference' },
+      },
+    })
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.protocols.asr?.endpoint).toBe('/inference')
     }
   })
 })

@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Form } from '../../../shared/components/ui/form'
 import { ProviderFormDialog } from './provider-form-dialog'
-import { providerSchema, PROTOCOL_OPTIONS } from '../provider-form-schema'
+import { providerSchema, PROTOCOL_OPTIONS } from '@xartifact/x-herald-shared'
 import type { ProviderFormData } from './provider-form-types'
 
 function TestWrapper({

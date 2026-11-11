@@ -6,7 +6,7 @@ import userEvent from '@testing-library/user-event'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ProviderProtocolFields } from './provider-protocol-fields'
-import { providerSchema, PROTOCOL_OPTIONS } from '../provider-form-schema'
+import { providerSchema, PROTOCOL_OPTIONS } from '@xartifact/x-herald-shared'
 import { Form } from '../../../shared/components/ui/form'
 import type { ProviderFormData } from './provider-form-types'
 

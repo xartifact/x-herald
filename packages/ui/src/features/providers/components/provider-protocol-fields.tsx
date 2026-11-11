@@ -13,7 +13,7 @@ import { Switch } from '../../../shared/components/ui/switch'
 
 import type { ProtocolOption, ProviderFormData } from './provider-form-types'
 
-type ProtocolKey = 'openai' | 'anthropic' | 'gemini' | 'jev'
+type ProtocolKey = 'openai' | 'anthropic' | 'gemini' | 'jev' | 'asr' | 'tts'
 
 interface ProviderProtocolFieldsProps {
   form: UseFormReturn<ProviderFormData>
@@ -39,6 +39,12 @@ export function ProviderProtocolFields({ form, protocolOptions }: ProviderProtoc
         const baseUrlField = `protocols.${key}.baseUrl` as `protocols.${ProtocolKey}.baseUrl`
         const toolSchemaSanitizationField =
           `protocols.${key}.toolSchemaSanitization` as `protocols.${ProtocolKey}.toolSchemaSanitization`
+        const endpointField = `protocols.${key}.endpoint` as `protocols.${ProtocolKey}.endpoint`
+        // 音频协议（asr/tts）用自有端点路径；其余协议走固定协议端点，不展示该输入
+        const supportsEndpoint = protocol.defaultEndpoint !== undefined
+        // 音频协议没有公共默认地址：给一个形状提示，避免空白输入框无从下手
+        const baseUrlPlaceholder =
+          protocol.defaultUrl || (supportsEndpoint ? 'http://x99:8080' : '')
 
         return (
           <div key={protocol.value} className="border rounded-lg p-4 space-y-3">
@@ -65,7 +71,7 @@ export function ProviderProtocolFields({ form, protocolOptions }: ProviderProtoc
                     <FormLabel>API 地址</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder={protocol.defaultUrl}
+                        placeholder={baseUrlPlaceholder}
                         value={field.value || ''}
                         onChange={field.onChange}
                         onBlur={field.onBlur}
@@ -77,7 +83,31 @@ export function ProviderProtocolFields({ form, protocolOptions }: ProviderProtoc
                 )}
               />
             )}
-            {config?.enabled && (
+            {config?.enabled && supportsEndpoint && (
+              <FormField
+                control={form.control}
+                name={endpointField}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>上游端点</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder={protocol.defaultEndpoint}
+                        value={(field.value as string) || ''}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        ref={field.ref}
+                      />
+                    </FormControl>
+                    <p className="text-sm text-muted-foreground">
+                      上游自有契约的路径（如 whisper-server 的 /inference）；留空使用默认值
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+            {config?.enabled && !supportsEndpoint && (
               <FormField
                 control={form.control}
                 name={toolSchemaSanitizationField}

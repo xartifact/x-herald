@@ -1,6 +1,8 @@
 import { Hono } from 'hono'
 import { stream, streamSSE } from 'hono/streaming'
 
+import type { RequestCategory } from '@xartifact/x-herald-shared'
+
 import { rootLogger } from '../../lib'
 import { logEventBus } from '../../gateway/services/log-event-bus'
 import type { LiveStreamEvent } from '../../gateway/services/log-event-bus'
@@ -92,14 +94,7 @@ logsRoutes.get('/', async (c) => {
       virtualKeyId: q.virtualKeyId,
       modelName: q.modelName,
       status: q.status,
-      requestCategory: q.requestCategory as
-        | 'embedding'
-        | 'chat_text'
-        | 'chat_image'
-        | 'chat_video'
-        | 'chat_audio'
-        | 'other'
-        | undefined,
+      requestCategory: q.requestCategory as RequestCategory | undefined,
       startDate: q.startDate,
       endDate: q.endDate,
       clientType: q.clientType,

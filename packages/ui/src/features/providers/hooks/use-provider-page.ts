@@ -43,6 +43,8 @@ export function useProviderPage() {
         anthropic: { enabled: false, baseUrl: 'https://api.anthropic.com/v1' },
         gemini: { enabled: false, baseUrl: 'https://generativelanguage.googleapis.com/v1' },
         jev: { enabled: false, baseUrl: 'https://api.typesafe.ai' },
+        asr: { enabled: false, baseUrl: '', endpoint: '/v1/audio/transcriptions' },
+        tts: { enabled: false, baseUrl: '', endpoint: '/v1/audio/speech' },
       },
     },
   })
@@ -62,6 +64,7 @@ export function useProviderPage() {
         enabledProtocols[key as ProtocolType] = {
           baseUrl: value.baseUrl,
           enabled: true,
+          ...(value.endpoint && { endpoint: value.endpoint }),
           ...(value.toolSchemaSanitization && { toolSchemaSanitization: true }),
         }
       }
@@ -118,6 +121,20 @@ export function useProviderPage() {
               baseUrl: provider.protocols.jev.baseUrl,
             }
           : { enabled: false, baseUrl: 'https://api.typesafe.ai' },
+        asr: provider.protocols.asr
+          ? {
+              enabled: true,
+              baseUrl: provider.protocols.asr.baseUrl,
+              endpoint: provider.protocols.asr.endpoint,
+            }
+          : { enabled: false, baseUrl: '', endpoint: '/v1/audio/transcriptions' },
+        tts: provider.protocols.tts
+          ? {
+              enabled: true,
+              baseUrl: provider.protocols.tts.baseUrl,
+              endpoint: provider.protocols.tts.endpoint,
+            }
+          : { enabled: false, baseUrl: '', endpoint: '/v1/audio/speech' },
       },
     })
     setShowFormApiKey(false)
@@ -147,6 +164,8 @@ export function useProviderPage() {
         anthropic: { enabled: false, baseUrl: 'https://api.anthropic.com/v1' },
         gemini: { enabled: false, baseUrl: 'https://generativelanguage.googleapis.com/v1' },
         jev: { enabled: false, baseUrl: 'https://api.typesafe.ai' },
+        asr: { enabled: false, baseUrl: '', endpoint: '/v1/audio/transcriptions' },
+        tts: { enabled: false, baseUrl: '', endpoint: '/v1/audio/speech' },
       },
     })
     setDialogOpen(true)

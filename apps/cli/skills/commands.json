@@ -223,7 +223,7 @@
           "flag": "--category",
           "in": "body",
           "takesValue": true,
-          "desc": "chat | embedding | image | audio | system_one"
+          "desc": "chat | embedding | image | audio | asr | tts | system_one"
         },
         {
           "flag": "--capabilities",
@@ -758,7 +758,7 @@
           "flag": "--request-category",
           "in": "query",
           "takesValue": true,
-          "desc": "embedding | chat_text | chat_image | chat_video | chat_audio | other"
+          "desc": "embedding | chat_text | chat_image | chat_video | chat_audio | asr | tts | other"
         },
         {
           "flag": "--start-date",

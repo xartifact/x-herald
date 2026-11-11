@@ -6,7 +6,7 @@ import { getDatabase } from '../../db/client'
 import logger from '../../lib/logger'
 import type { VirtualKey } from '@xartifact/x-herald-db'
 import { requestLogs, requestAttempts } from '@xartifact/x-herald-db'
-import type { FailoverReason } from '../../features/logs/db'
+import type { FailoverReason, LogMetadata } from '../../features/logs/db'
 import { costService } from '../../features/costs/service'
 import type { InstanceCost } from '@xartifact/x-herald-shared'
 
@@ -111,6 +111,8 @@ export interface LogRequestParams {
     /** 完整的路由链路（routeCandidates 成功或失败都会填入，由 query API 重组详情） */
     routeChain?: RouteChainSnapshot
   }
+  /** 音频请求观测（只记长度与时延，不记内容）；写入 metadata.audio */
+  audio?: LogMetadata['audio']
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -182,6 +184,7 @@ function buildLogData(params: LogRequestParams): LogData {
       ...params.routingTrace,
     }
   }
+  if (params.audio) metadata.audio = params.audio
   const toolCallsCount = metadata.toolCalls?.tools?.length || 0
   let inputTokens = params.inputTokens || 0
   let outputTokens = params.outputTokens || 0

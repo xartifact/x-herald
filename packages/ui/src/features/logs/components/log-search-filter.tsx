@@ -108,7 +108,9 @@ export function LogSearchFilter({
                 <SelectItem value="chat_text">Text</SelectItem>
                 <SelectItem value="chat_image">Image</SelectItem>
                 <SelectItem value="chat_video">Video</SelectItem>
-                <SelectItem value="chat_audio">Audio</SelectItem>
+                <SelectItem value="chat_audio">Audio (chat)</SelectItem>
+                <SelectItem value="asr">ASR</SelectItem>
+                <SelectItem value="tts">TTS</SelectItem>
                 <SelectItem value="other">Other</SelectItem>
               </SelectContent>
             </Select>

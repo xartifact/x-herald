@@ -115,7 +115,9 @@ export function GroupBasicFields({ form }: GroupBasicFieldsProps) {
                 <SelectItem value="chat">对话</SelectItem>
                 <SelectItem value="embedding">嵌入</SelectItem>
                 <SelectItem value="image">图像</SelectItem>
-                <SelectItem value="audio">音频</SelectItem>
+                <SelectItem value="audio">音频（多模态输入）</SelectItem>
+                <SelectItem value="asr">语音识别 (ASR)</SelectItem>
+                <SelectItem value="tts">语音合成 (TTS)</SelectItem>
                 <SelectItem value="system_one">JEV System One</SelectItem>
               </SelectContent>
             </Select>

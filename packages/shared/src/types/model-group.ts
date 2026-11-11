@@ -23,12 +23,30 @@ export interface ApiResponse<T> {
   message?: string
 }
 
+/**
+ * 模型组类别（唯一真实源）。
+ *
+ * `asr` / `tts` 必须与 `audio` 分开：转录与合成的上游契约、端点与计费口径都不同，
+ * 路由要能按类别区分（需求 §4.1 方案 A）。`audio` 保留表示「对话中带音频输入」的多模态模型。
+ */
+export const MODEL_GROUP_CATEGORIES = [
+  'chat',
+  'embedding',
+  'image',
+  'audio',
+  'asr',
+  'tts',
+  'system_one',
+] as const
+
+export type ModelGroupCategory = (typeof MODEL_GROUP_CATEGORIES)[number]
+
 export interface GroupFormData {
   name: string
   aliases: string
   displayName: string
   description: string
-  category: 'chat' | 'embedding' | 'image' | 'audio' | 'system_one'
+  category: ModelGroupCategory
   capabilities: {
     streaming: boolean
     functionCalling: boolean

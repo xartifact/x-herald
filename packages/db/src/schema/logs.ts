@@ -16,6 +16,8 @@ import { virtualKeys } from './keys'
 import { providers } from './providers'
 import { workspaces } from './workspaces'
 
+import type { RequestCategory } from '@xartifact/x-herald-shared'
+
 export const requestLogs = pgTable(
   'request_logs',
   {
@@ -62,7 +64,7 @@ export const requestLogs = pgTable(
     retryCount: integer('retry_count').default(0).notNull(),
     conversationId: uuid('conversation_id'),
     requestCategory: varchar('request_category', { length: 30 })
-      .$type<'embedding' | 'chat_text' | 'chat_image' | 'chat_video' | 'chat_audio' | 'other'>()
+      .$type<RequestCategory>()
       .default('other')
       .notNull(),
     streamStatus: varchar('stream_status', { length: 20 })

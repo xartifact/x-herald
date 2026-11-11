@@ -1,3 +1,5 @@
+import type { RequestCategory } from '@xartifact/x-herald-shared'
+
 import {
   and,
   asc,
@@ -35,7 +37,7 @@ interface LogsPageParams extends DateRange {
   virtualKeyId?: string
   modelName?: string
   status?: string
-  requestCategory?: 'embedding' | 'chat_text' | 'chat_image' | 'chat_video' | 'chat_audio' | 'other'
+  requestCategory?: RequestCategory
   clientType?: string
 }
 

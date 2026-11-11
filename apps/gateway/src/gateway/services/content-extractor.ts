@@ -1,3 +1,5 @@
+import type { RequestCategory as SharedRequestCategory } from '@xartifact/x-herald-shared'
+
 import type { LogMetadata } from '../../features/logs/db'
 
 import type { MetadataExtractionParams } from './metadata-extractor'
@@ -155,21 +157,20 @@ export function extractRequestFeatures(
 }
 
 /**
- * 模型请求类型（日志审计/筛选用）
+ * 模型请求类型（日志审计/筛选用）。与 shared 的 `RequestCategory` 同源，
+ * 避免网关与 UI 的筛选取值漂移。
  */
-export type RequestCategory =
-  | 'embedding'
-  | 'chat_text'
-  | 'chat_image'
-  | 'chat_video'
-  | 'chat_audio'
-  | 'other'
+export type RequestCategory = SharedRequestCategory
 
 /**
  * 从请求路径 + 请求体推导请求类型。
+ * - `/audio/transcriptions` → asr；`/audio/speech`（及 `/tts`）→ tts
  * - `/embeddings` 端点 → embedding
  * - chat 请求按消息内容类型细分 image / video / audio / text
  * - 无法识别（无消息、非标准体）→ other
+ *
+ * 音频端点先于 messages 判定：转录请求体是 multipart，没有 messages，
+ * 落到默认分支只会得到 `other`。
  */
 export function deriveRequestCategory(params: {
   requestPath?: string
@@ -177,6 +178,9 @@ export function deriveRequestCategory(params: {
   standardRequestBody?: unknown
 }): RequestCategory {
   const path = params.requestPath ?? ''
+  if (path.includes('/audio/transcriptions')) return 'asr'
+  if (path.includes('/audio/speech') || path.endsWith('/tts')) return 'tts'
+  if (path.includes('/audio/stream')) return 'asr'
   if (path.includes('/embeddings')) return 'embedding'
 
   const content = extractContentTypes(params.requestBody, params.standardRequestBody)

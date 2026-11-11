@@ -6,6 +6,8 @@ BigInt.prototype.toJSON = function () {
   return this.toString()
 }
 
+import { websocket } from 'hono/bun'
+
 import { captureUnhandledErrors, ErrorReporter } from '@xartifact/x-tinker-sdk'
 import type { ErrorReporterConfig } from '@xartifact/x-tinker-sdk'
 import {
@@ -69,6 +71,9 @@ async function main() {
   Bun.serve({
     port: PORT,
     fetch: app.fetch,
+    // `/v1/audio/stream` 的 WS 升级由 hono/bun 的 upgradeWebSocket 发起；
+    // Bun 要求服务端注册对应事件处理器，否则 upgrade 成功但收不到帧。
+    websocket,
     idleTimeout: 0,
   })
 

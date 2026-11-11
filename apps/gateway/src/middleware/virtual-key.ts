@@ -109,6 +109,11 @@ export async function virtualKeyMiddleware(c: Context, next: Next) {
       keyValue = authHeader.substring(7)
     } else if (apiKeyHeader) {
       keyValue = apiKeyHeader
+    } else if (c.req.path.endsWith('/audio/stream')) {
+      // 浏览器无法给 WebSocket 握手设置自定义头，`?key=` 是该协议的现实要求。
+      // 仅对 WS 音频端点开放查询参数鉴权，避免把密钥暴露在普通 HTTP 请求的 URL/日志里。
+      const queryKey = c.req.query('key')
+      if (queryKey) keyValue = queryKey
     }
 
     if (!keyValue) {

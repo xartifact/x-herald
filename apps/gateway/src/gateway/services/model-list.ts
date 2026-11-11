@@ -47,6 +47,12 @@ export interface AccessibleModel {
   reasoningOptions?: ModelReasoningOptions | null
   /** 透传路由目标实例 metadata.mediaInput（媒体输入约束，无实例配置时为 null） */
   mediaInput?: Record<string, unknown> | null
+  /**
+   * 该接入模型可路由到的模型组类别（去重）。
+   * `/v1/models` 用它发射 `capabilities.audio` / `capabilities.tts`：
+   * 客户端据此发现音频端点能用的模型，而不用猜模型名（需求 §6 #9）。
+   */
+  categories?: string[]
 }
 
 function normalizeTiers(raw: unknown): ModelCostTier[] | undefined {
@@ -346,6 +352,7 @@ export async function fetchAccessibleModels(virtualKey: VirtualKey): Promise<Acc
             .select({
               id: modelGroups.id,
               capabilities: modelGroups.capabilities,
+              category: modelGroups.category,
             })
             .from(modelGroups)
             .where(
@@ -357,7 +364,10 @@ export async function fetchAccessibleModels(virtualKey: VirtualKey): Promise<Acc
               ),
             )
         : []
-    const groupCapMap = new Map<string, { capabilities: ModelCapabilities } & ModelExtras>()
+    const groupCapMap = new Map<
+      string,
+      { capabilities: ModelCapabilities; category: string } & ModelExtras
+    >()
     for (const g of groupRows) {
       const raw = g.capabilities as Record<string, unknown> | null
       const capabilities = normalizeCapabilities(raw)
@@ -368,7 +378,7 @@ export async function fetchAccessibleModels(virtualKey: VirtualKey): Promise<Acc
         raw?.headers,
         raw?.thinking_level_map ?? raw?.thinkingLevelMap,
       )
-      groupCapMap.set(g.id, { capabilities, ...extras })
+      groupCapMap.set(g.id, { capabilities, category: g.category, ...extras })
     }
 
     // 批量取目标组启用实例的 metadata/config（上游真实能力，syncModels 已写入）
@@ -430,16 +440,21 @@ export async function fetchAccessibleModels(virtualKey: VirtualKey): Promise<Acc
     }
 
     // 按 amId 合并 capabilities（bool 取 OR，数值取 MAX）
-    const capMap = new Map<string, { capabilities: ModelCapabilities } & ModelExtras>()
+    const capMap = new Map<
+      string,
+      { capabilities: ModelCapabilities; categories: string[] } & ModelExtras
+    >()
     for (const [amId, gIds] of amToGroupIds) {
       let mergedCap: ModelCapabilities | null = null
       let mergedCost: ModelCost | null = null
       let mergedCompat: ModelCompat | null = null
       let mergedHeaders: ModelHeaders | null = null
       let mergedThinking: ModelThinkingLevelMap | null = null
+      const categories = new Set<string>()
       for (const gid of gIds) {
         const group = groupCapMap.get(gid)
         if (!group) continue
+        categories.add(group.category)
         if (!mergedCap) {
           mergedCap = { ...group.capabilities }
           mergedCost = group.cost ? { ...group.cost, tiers: [...(group.cost.tiers ?? [])] } : null
@@ -460,6 +475,7 @@ export async function fetchAccessibleModels(virtualKey: VirtualKey): Promise<Acc
       if (mergedCap) {
         capMap.set(amId, {
           capabilities: mergedCap,
+          categories: [...categories],
           cost: mergedCost,
           compat: mergedCompat,
           headers: mergedHeaders,
@@ -488,6 +504,7 @@ export async function fetchAccessibleModels(virtualKey: VirtualKey): Promise<Acc
           capabilities,
           mediaInput: real?.mediaInput ?? null,
           reasoningOptions: real?.reasoning ?? null,
+          categories: capMap.get(am.id)?.categories ?? [],
           ...extras,
         }
       }
@@ -501,6 +518,7 @@ export async function fetchAccessibleModels(virtualKey: VirtualKey): Promise<Acc
         capabilities,
         mediaInput: real?.mediaInput ?? null,
         reasoningOptions: real?.reasoning ?? null,
+        categories: inherited?.categories ?? [],
         cost: inherited?.cost ?? null,
         compat: inherited?.compat ?? null,
         headers: inherited?.headers ?? null,
@@ -515,6 +533,7 @@ export async function fetchAccessibleModels(virtualKey: VirtualKey): Promise<Acc
       displayName: modelGroups.displayName,
       createdAt: modelGroups.createdAt,
       capabilities: modelGroups.capabilities,
+      category: modelGroups.category,
     })
     .from(modelGroups)
     .where(
@@ -545,6 +564,7 @@ export async function fetchAccessibleModels(virtualKey: VirtualKey): Promise<Acc
         displayName: group.displayName,
         createdAt: group.createdAt,
         capabilities,
+        categories: [group.category],
         ...extras,
       }
     })

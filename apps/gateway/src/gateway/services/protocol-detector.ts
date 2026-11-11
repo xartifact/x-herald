@@ -101,11 +101,38 @@ export function getProviderUrl(
       | Record<string, { enabled?: boolean; baseUrl?: string }>
       | Partial<Record<string, { enabled?: boolean; baseUrl?: string }>>
   },
-  protocol: 'openai' | 'anthropic' | 'jev',
+  protocol: 'openai' | 'anthropic' | 'jev' | 'asr' | 'tts',
 ): string | null {
   const config = provider.protocols?.[protocol]
   if (!config?.enabled || !config.baseUrl) return null
   return config.baseUrl
+}
+
+/** 音频端点缺省值：上游未在 provider.protocols 里配置 endpoint 时使用 */
+export const DEFAULT_AUDIO_ENDPOINTS = {
+  asr: '/v1/audio/transcriptions',
+  tts: '/v1/audio/speech',
+} as const
+
+/**
+ * 解析音频上游端点。
+ *
+ * 音频上游多为自有 HTTP 契约（whisper-server 的 `/inference`、sherpa 的自定义路径），
+ * 因此 `endpoint` 优先；缺省时回落到 OpenAI 兼容路径。非音频协议忽略该字段。
+ */
+export function getAudioEndpoint(
+  provider: {
+    protocols?: Partial<Record<string, { endpoint?: string }>> | Record<string, unknown>
+  },
+  protocol: 'asr' | 'tts',
+): string {
+  const protocolConfig = provider.protocols?.[protocol]
+  const configured =
+    protocolConfig && typeof protocolConfig === 'object' && 'endpoint' in protocolConfig
+      ? protocolConfig.endpoint
+      : undefined
+  const endpoint = typeof configured === 'string' ? configured.trim() : ''
+  return endpoint || DEFAULT_AUDIO_ENDPOINTS[protocol]
 }
 
 /**
@@ -117,6 +144,10 @@ export function getEndpoint(protocol: string, _isStreaming: boolean): string {
       return '/v1/chat/completions'
     case 'anthropic':
       return '/v1/messages'
+    case 'asr':
+      return DEFAULT_AUDIO_ENDPOINTS.asr
+    case 'tts':
+      return DEFAULT_AUDIO_ENDPOINTS.tts
     default:
       return '/v1/chat/completions'
   }

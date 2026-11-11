@@ -26,6 +26,10 @@ export interface ModelCapabilitiesSchema {
   json_mode?: boolean
   /** 模型支持 extended thinking */
   reasoning: boolean
+  /** 支持音频输入（`/v1/audio/transcriptions` 或多模态对话） */
+  audio?: boolean
+  /** 支持语音合成（`/v1/audio/speech`） */
+  tts?: boolean
   /** 其它前向兼容的布尔能力（如 `web_search`、`code_interpreter`） */
   additionalCapabilities?: Record<string, boolean>
 }

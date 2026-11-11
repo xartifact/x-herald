@@ -93,6 +93,13 @@ export interface ProxyTestEnv {
     body: Record<string, unknown>,
     headers?: Record<string, string>,
   ): Response | Promise<Response>
+  /** POST /api/v1/audio/transcriptions (multipart) */
+  proxyTranscription(form: FormData, headers?: Record<string, string>): Response | Promise<Response>
+  /** POST /api/v1/audio/speech (JSON → binary audio) */
+  proxySpeech(
+    body: Record<string, unknown>,
+    headers?: Record<string, string>,
+  ): Response | Promise<Response>
 
   // ── Lifecycle ──────────────────────────────────────────────────────────────
 
@@ -254,6 +261,21 @@ export async function createProxyTestEnv(options: ProxyTestEnvOptions = {}): Pro
 
     proxySystemOne: (body: Record<string, unknown>, headers?: Record<string, string>) =>
       engine.app.request('/api/v1/systemone', {
+        method: 'POST',
+        headers: authHeaders(headers),
+        body: JSON.stringify(body),
+      }),
+
+    proxyTranscription: (form: FormData, headers?: Record<string, string>) =>
+      engine.app.request('/api/v1/audio/transcriptions', {
+        method: 'POST',
+        // 不设 content-type：由 fetch 生成含 boundary 的 multipart 头
+        headers: { Authorization: `Bearer ${vkString}`, ...headers },
+        body: form,
+      }),
+
+    proxySpeech: (body: Record<string, unknown>, headers?: Record<string, string>) =>
+      engine.app.request('/api/v1/audio/speech', {
         method: 'POST',
         headers: authHeaders(headers),
         body: JSON.stringify(body),

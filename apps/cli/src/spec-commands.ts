@@ -142,7 +142,7 @@ export const SPEC_COMMANDS: SpecCommand[] = [
       body('name', '组名，客户端可见'),
       body('display-name'),
       body('description'),
-      body('category', 'chat | embedding | image | audio | system_one'),
+      body('category', 'chat | embedding | image | audio | asr | tts | system_one'),
       bodyJson('capabilities', '稀疏能力 JSON，如 {"streaming":true}'),
       bodyJson('supported-protocols', '协议数组，如 ["openai"]'),
       bodyJson('routing-config', '{strategy,fallbackEnabled}'),
@@ -390,7 +390,7 @@ export const SPEC_COMMANDS: SpecCommand[] = [
       query('status'),
       query(
         'request-category',
-        'embedding | chat_text | chat_image | chat_video | chat_audio | other',
+        'embedding | chat_text | chat_image | chat_video | chat_audio | asr | tts | other',
       ),
       ...DATE_RANGE,
       query('client-type'),

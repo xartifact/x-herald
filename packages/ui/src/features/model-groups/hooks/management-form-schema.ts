@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { MODEL_GROUP_CATEGORIES } from '@xartifact/x-herald-shared'
 import type { GroupFormData, InstanceFormData } from '@xartifact/x-herald-shared'
 
 const price = z.number().finite().nonnegative('价格不能为负数')
@@ -31,7 +32,7 @@ export const groupFormSchema: z.ZodType<GroupFormData, GroupFormData> = z.object
   aliases: z.string(),
   displayName: z.string().trim().min(1, '请输入显示名称'),
   description: z.string(),
-  category: z.enum(['chat', 'embedding', 'image', 'audio', 'system_one']),
+  category: z.enum(MODEL_GROUP_CATEGORIES),
   capabilities: z
     .object({
       streaming: z.boolean(),

@@ -98,6 +98,32 @@ export interface LogMetadata {
     }
   }
 
+  /**
+   * 音频请求观测（需求 §5）。
+   *
+   * 只记长度与时延：**不得**存音频内容或完整转写文本（隐私）。
+   * `inputBytes` = 上传音频字节数；`outputBytes` = 返回音频字节数；
+   * `textChars` = TTS 输入字符数；`durationSeconds` = 上游报告的音频时长。
+   */
+  audio?: {
+    /** 上行音频字节数（ASR 上传） */
+    inputBytes?: number
+    /** 下行音频字节数（TTS 合成结果） */
+    outputBytes?: number
+    /** 音频时长（秒），上游给出时记录 */
+    durationSeconds?: number
+    /** 文本字符数（TTS 输入） */
+    textChars?: number
+    /** 客户端视角首字节延迟（ms） */
+    firstByteMs?: number
+    /** 上游耗时（ms）：请求发出到响应头到达 */
+    upstreamMs?: number
+    /** 客户端请求/接受的音频格式（wav / mp3 / pcm / webm …） */
+    format?: string
+    /** 上传文件名（不含内容） */
+    fileName?: string
+  }
+
   // 路由追踪
   routing?: {
     requestedModel: string // 客户端原始请求的模型名

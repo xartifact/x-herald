@@ -53,6 +53,8 @@ const CapabilitiesSchema = z
     vision: z.boolean(),
     json_mode: z.boolean().optional(),
     reasoning: z.boolean(),
+    audio: z.boolean().optional(),
+    tts: z.boolean().optional(),
   })
   .catchall(z.boolean())
 

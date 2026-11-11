@@ -132,6 +132,14 @@
         "reasoning": {
           "type": "boolean",
           "description": "Model supports extended thinking. Maps to pi's reasoning: true."
+        },
+        "audio": {
+          "type": "boolean",
+          "description": "Model accepts audio input via POST /v1/audio/transcriptions (or multimodal chat with input_audio)."
+        },
+        "tts": {
+          "type": "boolean",
+          "description": "Model performs text-to-speech via POST /v1/audio/speech."
         }
       }
     },

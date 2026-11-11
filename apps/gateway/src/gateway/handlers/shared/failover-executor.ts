@@ -28,7 +28,8 @@ import {
 export interface PreparedRequest {
   url: string
   headers: Record<string, string>
-  body: string | null
+  /** JSON 字符串，或二进制/表单载荷（音频上传/下载的原样透传；FormData 由 fetch 生成 boundary） */
+  body: string | Uint8Array | ArrayBuffer | Blob | FormData | null
   isPassthroughEnabled?: boolean
   targetProtocol?: string
 }
@@ -38,6 +39,8 @@ export interface MarkLogFailedParams {
   attemptId: string
   statusCode: number
   errorMessage: string
+  /** 失败归类（默认 provider_error）；音频端点用它区分 provider_error / upstream_timeout */
+  errorType?: string
   failoverReason?: FailoverReason
   retryCount: number
   responseTimeMs: number
@@ -95,6 +98,10 @@ export interface FailoverExecutorParams {
    * false = 还有后续候选时跳过失败落库（请求以最终成功尝试的单一行为准）。
    */
   logFailoverAttempts?: LogFailoverAttemptsPolicy
+  /**
+   * 成功响应允许非 JSON（音频端点）。缺省 false = 保持现有「2xx 必须 JSON」的严格校验。
+   */
+  expectsNonJsonResponse?: boolean
 }
 
 export interface FailoverResult {
@@ -303,7 +310,10 @@ export async function executeFailoverIteration(
 
   if (response.ok) {
     // Skip the JSON check on streaming: SSE replies are intentionally non-JSON.
-    if (!params.isStreaming && !isJsonContentType(response.headers.get('content-type'))) {
+    // 音频端点同样豁免：TTS 回二进制音频，ASR 的 verbose_json 之外也可能是纯文本。
+    // 只有调用方显式声明时才豁免（音频端点：TTS 回二进制、ASR 可能回纯文本）
+    const allowNonJson = params.isStreaming || params.expectsNonJsonResponse === true
+    if (!allowNonJson && !isJsonContentType(response.headers.get('content-type'))) {
       const ttfbDurationEarly = Date.now() - preprocessEndTime
       logger.warn(
         {

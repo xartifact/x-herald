@@ -6,6 +6,8 @@ import type { VirtualKey } from '@xartifact/x-herald-db'
 import { virtualKeyMiddleware } from '../middleware/virtual-key'
 import actuatorRoutes from './routes/actuator'
 import anthropicRoutes from './routes/anthropic'
+import audioRoutes from './routes/audio'
+import audioStreamRoutes from './routes/audio-stream'
 import embeddingRoutes from './routes/embedding'
 import jevRoutes from './routes/jev'
 import openaiRoutes from './routes/openai'
@@ -85,6 +87,13 @@ function toModelSchema(m: AccessibleModel): ModelSchema | null {
   if (caps?.streaming) entry.capabilities.streaming = true
   if (caps?.functionCalling) entry.capabilities.function_calling = true
   if (caps?.jsonMode) entry.capabilities.json_mode = true
+  // 音频能力位：类别决定「能用哪个端点」，能力位让客户端在模型列表里直接发现
+  // （需求 §6 #9）。`audio` = 对话请求带音频输入；`asr`/`tts` = 音频端点。
+  const categories = m.categories ?? []
+  if (categories.includes('audio') || categories.includes('asr')) {
+    entry.capabilities.audio = true
+  }
+  if (categories.includes('tts')) entry.capabilities.tts = true
   if (m.cost) entry.cost = m.cost
   if (m.compat) entry.compat = m.compat
   if (m.headers) entry.headers = m.headers
@@ -119,6 +128,8 @@ gatewayRoutes.route('/', openaiRoutes)
 gatewayRoutes.route('/', embeddingRoutes)
 gatewayRoutes.route('/', anthropicRoutes)
 gatewayRoutes.route('/', jevRoutes)
+gatewayRoutes.route('/', audioRoutes)
+gatewayRoutes.route('/', audioStreamRoutes)
 
 /**
  * GET /v1/models — 统一模型列表端点

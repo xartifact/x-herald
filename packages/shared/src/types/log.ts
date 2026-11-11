@@ -1,6 +1,24 @@
 import type { JsonDiff } from '../lib/json-diff'
 // Log viewer types — matches the API response shapes from apps/web/src/hooks/log-types.ts
 // These are application-layer types shared by engine API and UI components
+/**
+ * 请求日志分类（唯一真实源）。
+ *
+ * `asr` / `tts` 对应 `/v1/audio/transcriptions` 与 `/v1/audio/speech`；
+ * `chat_audio` 仍表示「对话请求里带了音频输入」。
+ */
+export const REQUEST_CATEGORIES = [
+  'embedding',
+  'chat_text',
+  'chat_image',
+  'chat_video',
+  'chat_audio',
+  'asr',
+  'tts',
+  'other',
+] as const
+
+export type RequestCategory = (typeof REQUEST_CATEGORIES)[number]
 
 export interface LogListItem {
   id: string
@@ -22,14 +40,7 @@ export interface LogListItem {
   errorType: string | null
   clientType: string | null
   requestPath: string | null
-  requestCategory:
-    | 'embedding'
-    | 'chat_text'
-    | 'chat_image'
-    | 'chat_video'
-    | 'chat_audio'
-    | 'other'
-    | null
+  requestCategory: RequestCategory | null
   createdAt: string
   isComplete: boolean
   thinkingMode?: boolean | null

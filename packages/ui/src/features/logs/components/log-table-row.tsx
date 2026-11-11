@@ -22,6 +22,8 @@ const CATEGORY_LABELS: Record<string, { label: string; className: string }> = {
   chat_image: { label: 'Image', className: 'bg-emerald-500/15 text-emerald-400' },
   chat_video: { label: 'Video', className: 'bg-amber-500/15 text-amber-400' },
   chat_audio: { label: 'Audio', className: 'bg-rose-500/15 text-rose-400' },
+  asr: { label: 'ASR', className: 'bg-fuchsia-500/15 text-fuchsia-400' },
+  tts: { label: 'TTS', className: 'bg-violet-500/15 text-violet-400' },
   other: { label: 'Other', className: 'bg-muted text-muted-foreground' },
 }
 interface ModelCellProps {

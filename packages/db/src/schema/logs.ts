@@ -63,6 +63,13 @@ export const requestLogs = pgTable(
     toolCallsCount: integer('tool_calls_count').default(0),
     retryCount: integer('retry_count').default(0).notNull(),
     conversationId: uuid('conversation_id'),
+    /**
+     * 任意会话标识（`x-conversation-id`、`x-session-id`、`prompt_cache_key` …）。
+     *
+     * 会话标识是客户端自由字符串，不是 UUID；写进 uuid 列会让整条日志 INSERT 失败
+     * （见迁移 0059）。读路径优先本列，回落 `conversationId` 以兼容旧数据。
+     */
+    conversationKey: varchar('conversation_key', { length: 255 }),
     requestCategory: varchar('request_category', { length: 30 })
       .$type<RequestCategory>()
       .default('other')
@@ -94,6 +101,7 @@ export const requestLogs = pgTable(
     streamingIdx: index('idx_request_logs_streaming').on(table.streaming),
     toolCallsCountIdx: index('idx_request_logs_tool_calls_count').on(table.toolCallsCount),
     conversationIdIdx: index('idx_request_logs_conversation_id').on(table.conversationId),
+    conversationKeyIdx: index('idx_request_logs_conversation_key').on(table.conversationKey),
     requestCategoryIdx: index('idx_request_logs_request_category').on(table.requestCategory),
     streamStatusIsCompleteIdx: index('idx_stream_status_complete').on(
       table.streamStatus,

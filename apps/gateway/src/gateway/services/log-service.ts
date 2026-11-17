@@ -11,7 +11,7 @@ import { costService } from '../../features/costs/service'
 import type { InstanceCost } from '@xartifact/x-herald-shared'
 
 import { extractMetadata } from './metadata-extractor'
-import { deriveRequestCategory } from './content-extractor'
+import { deriveRequestCategory, splitConversationId } from './content-extractor'
 import { rateLimitEngine } from './rate-limit-engine'
 import { estimateUsageFromContent } from './token-estimator'
 import type { RouteChainSnapshot } from './routing-trace-recorder'
@@ -250,7 +250,7 @@ function buildLogInsertValues(
     metadata,
     toolCallsCount,
     retryCount: params.retryCount ?? 0,
-    conversationId: params.conversationId,
+    ...splitConversationId(params.conversationId),
     streamStatus: params.status === 'failure' ? 'failed' : 'completed',
     isComplete: true,
     createdAt: new Date(),

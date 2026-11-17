@@ -195,3 +195,25 @@ export function deriveRequestCategory(params: {
     return 'chat_text'
   return 'other'
 }
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/**
+ * 拆分会话标识：能当 UUID 的写 `conversation_id`，其余（客户端自由字符串）
+ * 只写 `conversation_key`。
+ *
+ * 为什么必须分流：`conversation_id` 是 uuid 列，写入 `sess-abc123` 会让整条
+ * request_logs INSERT 抛错，连带 request_attempts 与 cost_records 一起丢失。
+ * 把值截断到列宽也是这里做的——超长标识不该让日志写入失败。
+ */
+export function splitConversationId(raw: string | undefined | null): {
+  conversationId?: string
+  conversationKey?: string
+} {
+  const value = typeof raw === 'string' ? raw.trim() : ''
+  if (!value) return {}
+  const key = value.slice(0, 255)
+  return UUID_RE.test(value)
+    ? { conversationId: value, conversationKey: key }
+    : { conversationKey: key }
+}

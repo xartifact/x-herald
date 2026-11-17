@@ -6,6 +6,7 @@ import type { VirtualKey } from '@xartifact/x-herald-db'
 import type { StandardRequest } from '@xartifact/x-herald-shared'
 
 import { accessModelRouter } from '../../services/access-model-router'
+import { resolveSessionIdentity } from '../../services/session-identity'
 import { buildRouteChainSnapshot } from '../../services/routing-trace-recorder'
 import { identifyClient, resolveClientIp } from '../../services/client-identifier'
 import { handleGatewayError } from '../../services/error-handler'
@@ -41,7 +42,7 @@ export async function handleAnthropicMessages(
   })
 
   const clientInfo = identifyClient(userAgent, clientRequestHeaders)
-  const conversationId = c.req.header('x-conversation-id') || undefined
+  let conversationId: string | undefined
   const incomingProtocol = 'anthropic' as const
   let retryCount = 0
 
@@ -50,6 +51,8 @@ export async function handleAnthropicMessages(
       model?: string
       [key: string]: unknown
     }
+
+    conversationId = resolveSessionIdentity({ headers: clientRequestHeaders, body: rawBody })?.key
 
     logger.info(
       { requestId, model: rawBody.model, protocol: incomingProtocol },

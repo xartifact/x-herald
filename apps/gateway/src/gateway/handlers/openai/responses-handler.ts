@@ -6,6 +6,7 @@ import type { ModelInstance } from '@xartifact/x-herald-db'
 import type { providers } from '@xartifact/x-herald-db'
 
 import { accessModelRouter } from '../../services/access-model-router'
+import { resolveSessionIdentity } from '../../services/session-identity'
 import { identifyClient, resolveClientIp } from '../../services/client-identifier'
 import { handleGatewayError, type RoutingContext } from '../../services/error-handler'
 import { shouldFilterHeader } from '../../services/headers'
@@ -162,7 +163,7 @@ export async function handleResponsesAPI(
 
   const clientInfo = identifyClient(userAgent, clientRequestHeaders)
   const clientType = clientInfo.type
-  const conversationId = c.req.header('x-conversation-id') || undefined
+  let conversationId: string | undefined
   let rawBody: { model?: string; [key: string]: unknown } | undefined
   let transformedBody: unknown
   let providerRequestHeaders: Record<string, string> | undefined
@@ -175,6 +176,10 @@ export async function handleResponsesAPI(
   try {
     const responsesBody = preprocessedBody ?? ((await c.req.json()) as Record<string, unknown>)
     rawBody = responsesBody as { model?: string; [key: string]: unknown }
+    conversationId = resolveSessionIdentity({
+      headers: clientRequestHeaders,
+      body: responsesBody,
+    })?.key
     logger.info(
       { requestId, model: rawBody.model, protocol: 'responses' },
       'Processing Responses API request',

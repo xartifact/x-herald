@@ -4,7 +4,7 @@ import { IS_PRODUCTION } from '../../config/env'
 import type { DbClient } from '../../db/client'
 import { getDatabase } from '../../db/client'
 import logger from '../../lib/logger'
-import { deriveRequestCategory } from './content-extractor'
+import { deriveRequestCategory, splitConversationId } from './content-extractor'
 import { costService } from '../../features/costs/service'
 
 // ─── x-tinker reporter (lazily initialized) ─────────────────
@@ -147,7 +147,7 @@ export function buildLogInsertValues(params: StreamLogParams & { isStream: boole
     streaming,
     incomingProtocol: params.incomingProtocol,
     targetProtocol: params.targetProtocol,
-    conversationId: params.conversationId,
+    ...splitConversationId(params.conversationId),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     metadata: metadata as any,
     createdAt: new Date(),

@@ -414,6 +414,13 @@
       "when": 1790783105000,
       "tag": "0058_workspace_isolation",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1791500000000,
+      "tag": "0059_request_logs_conversation_key",
+      "breakpoints": true
     }
   ]
 }

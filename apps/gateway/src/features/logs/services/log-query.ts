@@ -25,6 +25,13 @@ import { DEFAULT_WORKSPACE_ID } from '../../workspaces/context'
 
 import type { LogMetadata } from '../db'
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/** uuid 形状判定：决定能否安全地与 uuid 列比较（Postgres 会先强转字面量） */
+function isUuid(value: string): boolean {
+  return UUID_RE.test(value)
+}
+
 interface DateRange {
   startDate?: string
   endDate?: string
@@ -479,7 +486,19 @@ export async function getConversationTrace(
     })
     .from(requestLogs)
     .where(
-      and(eq(requestLogs.conversationId, conversationId), eq(requestLogs.workspaceId, workspaceId)),
+      and(
+        // 会话标识可以是任意字符串（客户端自由取值），因此优先匹配文本列。
+        // 旧行只有 uuid 列，需用 OR 兜住；但 `conversation_id = 'sess-abc'` 会让
+        // Postgres 在比较前把字面量强转成 uuid 并直接报错，所以只有标识真的是
+        // uuid 形状时才加这一支。
+        isUuid(conversationId)
+          ? or(
+              eq(requestLogs.conversationKey, conversationId),
+              eq(requestLogs.conversationId, conversationId),
+            )
+          : eq(requestLogs.conversationKey, conversationId),
+        eq(requestLogs.workspaceId, workspaceId),
+      ),
     )
     .orderBy(asc(requestLogs.createdAt))
 

@@ -6,6 +6,7 @@ import type { VirtualKey } from '@xartifact/x-herald-db'
 import type { StandardRequest } from '@xartifact/x-herald-shared'
 
 import { accessModelRouter } from '../../services/access-model-router'
+import { resolveSessionIdentity } from '../../services/session-identity'
 import { buildRouteChainSnapshot } from '../../services/routing-trace-recorder'
 import { identifyClient, resolveClientIp } from '../../services/client-identifier'
 import { handleGatewayError } from '../../services/error-handler'
@@ -41,7 +42,9 @@ export async function handleOpenAIChatCompletion(
   })
 
   const clientInfo = identifyClient(userAgent, clientRequestHeaders)
-  const conversationId = c.req.header('x-conversation-id') || undefined
+  // 会话标识在 body 可用后才解析（prompt_cache_key 与头部同属一等来源），
+  // 见 services/session-identity.ts
+  let conversationId: string | undefined
   const incomingProtocol = 'openai' as const
   let retryCount = 0
 
@@ -49,6 +52,8 @@ export async function handleOpenAIChatCompletion(
     const rawBody =
       (preprocessedBody as { model?: string; [key: string]: unknown }) ??
       ((await c.req.json()) as { model?: string; [key: string]: unknown })
+
+    conversationId = resolveSessionIdentity({ headers: clientRequestHeaders, body: rawBody })?.key
 
     logger.info(
       { requestId, model: rawBody.model, protocol: incomingProtocol },

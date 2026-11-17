@@ -15,6 +15,7 @@ import skill from '../skills/SKILL.md' with { type: 'text' }
 import changeAndRollback from '../skills/change-and-rollback.md' with { type: 'text' }
 import commandIndex from '../skills/commands.json'
 import costAudit from '../skills/cost-audit.md' with { type: 'text' }
+import providerOnboarding from '../skills/provider-onboarding.md' with { type: 'text' }
 import troubleshooting from '../skills/troubleshooting.md' with { type: 'text' }
 
 /** Directory name installed under each agent runtime's `skills/` root. */
@@ -25,6 +26,7 @@ export const SKILL_DOCS: Readonly<Record<string, string>> = {
   'SKILL.md': skill,
   'change-and-rollback.md': changeAndRollback,
   'cost-audit.md': costAudit,
+  'provider-onboarding.md': providerOnboarding,
   'troubleshooting.md': troubleshooting,
 }
 

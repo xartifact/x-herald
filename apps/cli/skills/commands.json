@@ -397,7 +397,7 @@
           "flag": "--protocol",
           "in": "body",
           "takesValue": true,
-          "desc": "openai | anthropic | gemini | jev（留空=按客户端协议自动）"
+          "desc": "openai | anthropic | gemini | jev | asr | tts（留空=按客户端协议自动）"
         },
         {
           "flag": "--description",

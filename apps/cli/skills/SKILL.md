@@ -108,6 +108,7 @@ x-herald config import --file-body "$(cat backup.json)"
 - 排障（5xx / 超时 / 全部候选失败）：[`troubleshooting.md`](./troubleshooting.md)
 - 变更与回滚（配置改动、发布前后检查）：[`change-and-rollback.md`](./change-and-rollback.md)
 - 成本巡检（异常花费、定价、用量核对）：[`cost-audit.md`](./cost-audit.md)
+- 接入新 Provider（协议判定、探测、连通性验证、回滚）：[`provider-onboarding.md`](./provider-onboarding.md)
 
 ## 安全边界
 

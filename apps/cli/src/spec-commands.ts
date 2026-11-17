@@ -222,7 +222,7 @@ export const SPEC_COMMANDS: SpecCommand[] = [
       body('name', '实例名称'),
       body('actual-model-name', '上游真实模型名'),
       body('model-type', 'text_generation | embedding | image_generation | adjudication | ...'),
-      body('protocol', 'openai | anthropic | gemini | jev（留空=按客户端协议自动）'),
+      body('protocol', 'openai | anthropic | gemini | jev | asr | tts（留空=按客户端协议自动）'),
       body('description'),
       body('weight', '加权路由权重，默认 100'),
       bodyJson('cost-per1k-tokens', '{input,output}'),

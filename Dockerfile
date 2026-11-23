@@ -23,9 +23,14 @@ COPY packages/db/package.json ./packages/db/
 COPY packages/shared/package.json ./packages/shared/
 COPY packages/ui/package.json ./packages/ui/
 COPY packages/ai-agent/package.json ./packages/ai-agent/
+# 每个 workspace 的清单都必须在这一层就位：少一个，`bun install` 看到的
+# workspace 集合就与锁文件不一致，会重新解析依赖（历史上导致同一依赖被解析成
+# 两份 peer 实例，类型不兼容）。
+COPY packages/agent-extensions/package.json ./packages/agent-extensions/
 COPY apps/cli/package.json ./apps/cli/
 
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/* && bun install --ignore-scripts
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/* \
+    && bun install --frozen-lockfile --ignore-scripts
 
 COPY . .
 

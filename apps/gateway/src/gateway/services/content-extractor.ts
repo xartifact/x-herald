@@ -55,7 +55,11 @@ export function extractContentTypes(
         for (const part of msg.content) {
           if (part.type === 'text' && !types.includes('text')) types.push('text')
           else if (part.type === 'image_url' && !types.includes('image')) types.push('image')
-          else if (part.type === 'video_url' && !types.includes('video')) types.push('video')
+          else if (
+            (part.type === 'video_url' || part.type === 'input_video') &&
+            !types.includes('video')
+          )
+            types.push('video')
           else if (
             (part.type === 'input_audio' || part.type === 'audio_url') &&
             !types.includes('audio')

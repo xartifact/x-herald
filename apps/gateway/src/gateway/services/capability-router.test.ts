@@ -40,6 +40,51 @@ describe('resolveCapabilityRoute', () => {
     expect(result.groupId).toBe('group-vision')
   })
 
+  it('treats input_video as video capability (llama.cpp shape)', async () => {
+    // Issue #5：llama.cpp 用 input_video 而不是 video_url；漏识别会让视频请求
+    // 走 default 分支被当成纯文本路由到 text 组
+    const req: StandardRequest = {
+      model: 'lfm3-omni',
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'input_video', input_video: { data: 'AAAA', format: 'mp4' } },
+            { type: 'text', text: '视频里有哪些字？' },
+          ] as never,
+        },
+      ],
+    }
+    const result = await resolveCapabilityRoute(req, { requestId: 'r-video' }, mockConfig)
+    expect(result.capabilities).toContain('video')
+    expect(result.groupId).toBe('group-video')
+  })
+
+  it('treats video_url and input_video identically', async () => {
+    const withUrl: StandardRequest = {
+      model: 'm',
+      messages: [
+        {
+          role: 'user',
+          content: [{ type: 'video_url', video_url: { url: 'https://x/v.mp4' } }] as never,
+        },
+      ],
+    }
+    const withInput: StandardRequest = {
+      model: 'm',
+      messages: [
+        {
+          role: 'user',
+          content: [{ type: 'input_video', input_video: { data: 'BBBB' } }] as never,
+        },
+      ],
+    }
+    const a = await resolveCapabilityRoute(withUrl, { requestId: 'a' }, mockConfig)
+    const b = await resolveCapabilityRoute(withInput, { requestId: 'b' }, mockConfig)
+    expect(a.groupId).toBe(b.groupId)
+    expect(a.capabilities).toEqual(b.capabilities)
+  })
+
   it('detects tool use capability', async () => {
     const req: StandardRequest = {
       model: 'gpt-4',

@@ -135,6 +135,10 @@ export interface ProviderModelInfo {
     vision?: boolean
     jsonMode?: boolean
     reasoning?: boolean
+    /** 接受音频输入（上游 `architecture.input_modalities` 含 audio） */
+    audio?: boolean
+    /** 接受视频输入（含 audio 时通常同时为真） */
+    video?: boolean
   }
   /**
    * 推理档位描述（OpenRouter 顶层 `reasoning` 形状）。

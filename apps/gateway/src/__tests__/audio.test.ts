@@ -328,6 +328,31 @@ describe('audio / speech', () => {
     expect(rest).toBe('-tail')
   })
 
+  it('serves the llama.cpp native /tts path with the same semantics', async () => {
+    // Issue #5：llama.cpp router 同时提供 /tts 与 /v1/audio/speech，入参语义相同
+    const audioBytes = new Uint8Array([0x52, 0x49, 0x46, 0x46, 0x01, 0x02])
+    env.upstream.setHandler(
+      () => new Response(audioBytes, { status: 200, headers: { 'Content-Type': 'audio/wav' } }),
+    )
+
+    const res = await env.app.request('/api/v1/tts', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${env.virtualKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ model: env.accessModelName, input: '你好', response_format: 'wav' }),
+    })
+
+    expect(res.status).toBe(200)
+    expect(res.headers.get('content-type')).toContain('audio/wav')
+    expect(new Uint8Array(await res.arrayBuffer())).toEqual(audioBytes)
+
+    // 上游收到的是实机模型名，且路径仍是配置的 TTS 端点
+    const upstreamRequest = env.upstream.lastRequest()
+    expect((upstreamRequest.body as { model: string }).model).toBe('kokoro-v1')
+  })
+
   it('returns 400 when input is missing', async () => {
     const res = await env.proxySpeech({ model: env.accessModelName })
     expect(res.status).toBe(400)

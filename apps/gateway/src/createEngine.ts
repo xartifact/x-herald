@@ -125,6 +125,11 @@ export async function createEngine(options: CreateEngineOptions = {}): Promise<E
   app.use('*', requestLogger)
   app.use('*', createCorsMiddleware(config))
 
+  // 5a. 请求体上限：多模态请求会带几十 MB 的 base64 媒体，无上限会让
+  //     `c.req.json()` 直接读爆内存并只回一个不具名的 500（见 Issue #5 P1-5）。
+  const { requestBodyLimit } = await import('./middleware/request-body-limit')
+  app.use('*', requestBodyLimit())
+
   // 5b. Prometheus HTTP middleware (QPS + duration) — mounted globally so it
   //     observes /api/v1, /api/* and /metrics scrapes alike.
   try {

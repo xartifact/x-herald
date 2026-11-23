@@ -7,11 +7,23 @@ import type { ToolDefinition } from '@xartifact/x-herald-shared'
 
 // ==================== 请求类型 ====================
 
+/** OpenAI 内容段：已知三种 + 任意前向兼容形状（其余字段原样透传） */
+export type OpenAIContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'image_url'; image_url: { url: string; detail?: 'auto' | 'low' | 'high' } }
+  | { type: 'input_audio'; input_audio: { data: string; format: string } }
+  | { type: 'video_url'; video_url: { url: string } }
+  | { type: 'input_video'; input_video: { data?: string; url?: string; format?: string } }
+  | { type: string; [key: string]: unknown }
+
 export interface OpenAIMessage {
   role: 'user' | 'assistant' | 'system' | 'tool'
-  content?:
-    | string
-    | Array<{ type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } }>
+  /**
+   * 多模态内容段。音频/视频 part 原样保留（不认识的字段也不丢弃）：
+   * llama.cpp 系上游用 `input_audio` / `input_video`，OpenAI 系用 `video_url`，
+   * 网关只透传，不替上游决定形状。
+   */
+  content?: string | OpenAIContentPart[]
   name?: string
   tool_calls?: Array<{
     id: string

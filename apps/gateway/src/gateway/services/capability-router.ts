@@ -54,7 +54,10 @@ function extractCapabilities(request: StandardRequest): string[] {
             case 'input_audio':
               caps.add('audio')
               break
+            // llama.cpp 系上游用 input_video 表达视频（与 video_url 等价）。
+            // 漏掉它会让视频请求走 default 分支被当成纯文本路由。
             case 'video_url':
+            case 'input_video':
               caps.add('video')
               break
           }

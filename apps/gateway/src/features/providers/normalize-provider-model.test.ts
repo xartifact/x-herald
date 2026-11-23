@@ -137,6 +137,34 @@ describe('normalizeProviderModel', () => {
     expect(result.capabilities?.vision).toBe(true)
   })
 
+  it('infers audio and video from architecture.input_modalities (llama.cpp router)', () => {
+    // Issue #5：llama.cpp router 的 lfm3-omni 声明 ["text","image","audio","video"]。
+    // 只解析 image 会让「按能力选模型」看不见音视频。
+    const result = normalizeProviderModel(
+      {
+        id: 'lfm3-omni',
+        architecture: { input_modalities: ['text', 'image', 'audio', 'video'] },
+      },
+      false,
+    )
+    expect(result.capabilities?.vision).toBe(true)
+    expect(result.capabilities?.audio).toBe(true)
+    expect(result.capabilities?.video).toBe(true)
+  })
+
+  it('does not claim audio/video when the upstream omits them', () => {
+    const result = normalizeProviderModel(
+      { id: 'minicpm-ocr', architecture: { input_modalities: ['text', 'image'] } },
+      false,
+    )
+    expect(result.capabilities?.vision).toBe(true)
+    // 上游列出了 input_modalities 但其中没有 audio/video → 明确为 false。
+    // 「未声明」(undefined) 只发生在上游完全不给该字段时，两者含义不同：
+    // false 是上游断言「我没有」，路由可以据此排除。
+    expect(result.capabilities?.audio).toBe(false)
+    expect(result.capabilities?.video).toBe(false)
+  })
+
   it('infers function_calling from supported_parameters containing "tools" (OpenRouter)', () => {
     const result = normalizeProviderModel(
       {

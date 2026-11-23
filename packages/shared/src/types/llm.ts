@@ -42,7 +42,39 @@ export interface VideoContent {
   cache_control?: CacheControl
 }
 
-export type MessageContent = TextContent | ImageContent | AudioContent | VideoContent
+/**
+ * llama.cpp 原生视频 part：`{"type":"input_video","input_video":{"data"|"url"}}`。
+ *
+ * 与 `video_url` 的区别只在形状（`data` 承载裸 base64，`url` 允许 `file://`）。
+ * 两者必须都在转换中保留：改写成另一种形状等于替上游做决定，而不同上游接受
+ * 的字段名并不一致（llama.cpp 认 input_video，OpenAI 系认 video_url）。
+ */
+export interface InputVideoContent {
+  type: 'input_video'
+  input_video: {
+    data?: string
+    url?: string
+    format?: string
+  }
+  cache_control?: CacheControl
+}
+
+export type MessageContent =
+  | TextContent
+  | ImageContent
+  | AudioContent
+  | VideoContent
+  | InputVideoContent
+
+/**
+ * 判断内容段是否为视频（两种上游形状等价）。
+ *
+ * 能力路由与内容统计都按「模态」思考，不关心具体 wire 形状；把等价判断收敛到
+ * 一个函数，避免每处各写一份 `||` 而在新增形状时漏改。
+ */
+export function isVideoContent(part: { type?: string }): boolean {
+  return part.type === 'video_url' || part.type === 'input_video'
+}
 
 export interface ToolCall {
   id: string

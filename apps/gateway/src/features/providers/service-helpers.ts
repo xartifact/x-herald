@@ -248,6 +248,15 @@ export function normalizeCapabilitiesRaw(
   const reasoning =
     pickBool(raw, CAPABILITY_ALIASES.reasoning) ??
     arrayHasValue(raw, 'supported_parameters', 'reasoning')
+  // 音频/视频模态：llama.cpp router 在 architecture.input_modalities 里如实声明
+  // （如 lfm3-omni 为 ["text","image","audio","video"]）。漏解析会让「按能力选模型」
+  // 看不到这两类模态，只能退回静态配置。
+  const audio =
+    arrayIncludes(raw, 'architecture.input_modalities', 'audio') ??
+    arrayIncludes(raw, 'input_modalities', 'audio')
+  const video =
+    arrayIncludes(raw, 'architecture.input_modalities', 'video') ??
+    arrayIncludes(raw, 'input_modalities', 'video')
 
   const result: ProviderModelInfo['capabilities'] = {}
   if (streaming != null) result.streaming = streaming
@@ -255,6 +264,8 @@ export function normalizeCapabilitiesRaw(
   if (vision != null) result.vision = vision
   if (jsonMode != null) result.jsonMode = jsonMode
   if (reasoning != null) result.reasoning = reasoning
+  if (audio != null) result.audio = audio
+  if (video != null) result.video = video
 
   return Object.keys(result).length > 0 ? result : undefined
 }

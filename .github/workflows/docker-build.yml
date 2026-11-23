@@ -32,8 +32,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
-      - run: bun install
+          # 固定版本：`latest` 会让依赖解析随上游发布漂移，同一份代码今天绿明天红。
+          # 升级 bun 应是一次显式提交，而不是 CI 的副作用。
+          bun-version: 1.4.2
+      # --frozen-lockfile：CI 只验证锁文件，不重新解析依赖。配合下面的
+      # `drizzle-orm` override，避免同一依赖被解析成两份 peer 实例
+      # （两份 `.SQL` 类型互不兼容，表现为 typecheck 报 SQL<unknown> 不可赋值）。
+      - run: bun install --frozen-lockfile
       - name: Quality + tests
         run: ./scripts/ci.sh
       - name: Coverage

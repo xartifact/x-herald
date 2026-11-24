@@ -47,6 +47,9 @@ x-herald skill install
 - 进度、警告、错误一律走 stderr，不污染 stdout。
 - 退出码：`0` 成功；`1` 失败（HTTP 错误、参数缺失、未认证）。错误信息形如
   `HTTP 401: Missing or invalid authorization header (run ...)`。
+- 版本更新提示只写 stderr，且**只在命令成功之后**出现：stdout 仍是纯 payload。
+  查询结果缓存 24 小时，无网络时静默跳过，因此不会拖慢命令。
+  自动化场景用 `--no-update-check` 或 `X_HERALD_NO_UPDATE_CHECK=1` 关闭。
 
 ## 命令地图
 

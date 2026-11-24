@@ -3,6 +3,7 @@ import { writeFileSync } from 'node:fs'
 
 import { Command } from 'commander'
 
+import pkg from '../package.json'
 import { GatewayClient, GatewayError } from './client'
 import { clearCliToken, configPath, loadCliConfig, saveCliConfig } from './config'
 import { runConfigureWizard } from './configure'
@@ -11,6 +12,14 @@ import { COMMAND_INDEX_JSON, SKILL_DOCS } from './embedded-skills'
 import { MOUNTS, executeSpec, unwrap } from './executor'
 import { printResult, report } from './output'
 import { installSkill } from './skill-install'
+import {
+  INTERNAL_REFRESH_COMMAND,
+  isCacheStale,
+  readCachedUpdate,
+  refreshCacheNow,
+  shouldSkipCheck,
+  spawnBackgroundRefresh,
+} from './update-check'
 import { SPEC_COMMANDS } from './spec-commands'
 import { registerSpecCommands } from './spec'
 import type { InvocationDeps } from './spec'
@@ -26,12 +35,15 @@ program
       '输出默认 JSON（适合 agent 与 jq）；`--format table` 仅供人看。',
     ].join('\n'),
   )
-  .version('0.2.0')
+  // 版本号只有 package.json 一个真相源：发布流水线断言 tag 与它一致，
+  // 这里若再硬编码一份，两边漂移时 `--version` 会如实报出错误版本。
+  .version(pkg.version)
   .option('-u, --url <url>', 'API base URL（默认 $X_HERALD_URL 或 http://localhost:3000）')
   .option('-t, --token <token>', '管理员 JWT（默认 $X_HERALD_TOKEN 或配置文件）')
   .option('-k, --api-key <key>', '虚拟密钥，仅用于 /api/v1（默认 $X_HERALD_API_KEY）')
   .option('-f, --format <format>', 'json | table | raw（默认 json）')
   .option('--dry-run', '只打印将发出的请求，不执行')
+  .option('--no-update-check', '跳过 GitHub Release 版本检查（也可用 X_HERALD_NO_UPDATE_CHECK=1）')
 
 function credentials() {
   const opts = program.opts()
@@ -233,8 +245,31 @@ program
     await runConfigureWizard(credentials().baseUrl)
   })
 
+/**
+ * 版本检查：在命令执行**之后**运行，且只写 stderr。
+ *
+ * 三个理由决定它不能放在前面：
+ *  - stdout 是机器契约（Agent 正在 `| jq`），提示混进去就破坏了解析；
+ *  - 网络慢时不该拖慢命令本身；
+ *  - 命令失败时也没必要再提示升级——先解决眼前的错误。
+ */
+function announceUpdateIfAny(): void {
+  if (shouldSkipCheck(program.opts().updateCheck === false)) return
+  // 只读缓存：命令路径上不发网络请求（实测网络 1.6s vs 读缓存 0.03s）
+  const info = readCachedUpdate(pkg.version)
+  if (info) report(`\n${info.hint}\n`)
+  // 缓存过期时交给脱离父进程的子进程刷新，本次调用立即返回
+  if (isCacheStale()) spawnBackgroundRefresh()
+}
+
 try {
+  // 后台刷新入口必须在解析前短路：它是本进程 spawn 出来的，不该出现在帮助里
+  if (process.argv[2] === INTERNAL_REFRESH_COMMAND) {
+    await refreshCacheNow()
+    process.exit(0)
+  }
   await program.parseAsync(process.argv)
+  announceUpdateIfAny()
 } catch (error) {
   if (error instanceof GatewayError && error.status === 401) {
     report(`${error.message}\n提示：先运行 \`x-herald auth login\`。`)

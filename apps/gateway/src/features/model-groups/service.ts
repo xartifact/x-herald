@@ -713,10 +713,17 @@ export async function testInstanceConnectivity(instanceId: string): Promise<Inst
 
     if (protocol === 'openai') {
       url = `${baseUrl.replace(/\/+$/, '')}/chat/completions`
+      // 与代理链路同一条规则：新模型（gpt-6.2 系）只接受
+      // `max_completion_tokens`，写死 `max_tokens` 会把健康实例判成故障。
+      const maxTokensField =
+        (instance.config as { maxTokensField?: string } | null)?.maxTokensField ===
+        'max_completion_tokens'
+          ? 'max_completion_tokens'
+          : 'max_tokens'
       body = {
         model,
         messages: [{ role: 'user', content: 'ping' }],
-        max_tokens: INSTANCE_TEST_MAX_TOKENS,
+        [maxTokensField]: INSTANCE_TEST_MAX_TOKENS,
         stream: false,
       }
       if (provider.apiKey) headers.authorization = `Bearer ${provider.apiKey}`

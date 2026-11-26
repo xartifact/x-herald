@@ -26,11 +26,24 @@ export async function adaptOpenAIRequest(
     transformedRequest = applyParameterTransforms(transformedRequest, paramTransforms, ctx)
   }
 
+  /**
+   * 输出长度参数名。
+   *
+   * `gpt-6.2` 系列（及部分新模型）只接受 `max_completion_tokens`，
+   * 发 `max_tokens` 会 400 `Unsupported parameter`。实例配置里用
+   * `maxTokensField` 声明（与 `/v1/models` 暴露给客户端的 `compat.max_tokens_field`
+   * 同名同义），缺省仍是 `max_tokens`，不影响既有实例。
+   */
+  const maxTokensField =
+    ctx.instanceConfig?.maxTokensField === 'max_completion_tokens'
+      ? 'max_completion_tokens'
+      : 'max_tokens'
+
   const openaiReq: OpenAIRequest = {
     model: transformedRequest.model,
     messages: convertToOpenAIMessages(transformedRequest.messages),
     temperature: transformedRequest.temperature,
-    max_tokens: transformedRequest.max_tokens,
+    [maxTokensField]: transformedRequest.max_tokens,
     top_p: transformedRequest.top_p,
     frequency_penalty: transformedRequest.frequency_penalty,
     presence_penalty: transformedRequest.presence_penalty,

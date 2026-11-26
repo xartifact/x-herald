@@ -5,6 +5,7 @@ import type { VirtualKey } from '@xartifact/x-herald-db'
 
 import { handleAnthropicMessages } from '../handlers/anthropic/messages-handler'
 import { resolveConnectTimeoutMs } from '../handlers/shared/constants'
+import { joinUrl } from '../handlers/shared/join-url'
 import { accessModelRouter } from '../services/access-model-router'
 import { identifyClient, resolveClientIp } from '../services/client-identifier'
 import { shouldFilterHeader } from '../services/headers'
@@ -98,8 +99,10 @@ anthropicRoutes.post('/messages/count_tokens', async (c) => {
     }
 
     // 3. 构建上游 Provider URL
-    const providerUrl = anthropicConfig.baseUrl.replace(/\/+$/, '')
-    const targetUrl = `${providerUrl}/v1/messages/count_tokens`
+    // baseUrl 由用户配置，常自带版本段（`https://api.x.com/v1`）。硬拼
+    // `/v1/messages/count_tokens` 会拼出 `/v1/v1/...` 并让上游返回 404，因此
+    // 复用 joinUrl 去重版本段，与 messages 主链路保持同一套拼接规则。
+    const targetUrl = joinUrl(anthropicConfig.baseUrl, '/v1/messages/count_tokens')
 
     // 4. 准备转发请求体（替换为实际模型名）
     const forwardedBody = {

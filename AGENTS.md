@@ -372,6 +372,7 @@ cp .env.example .env
 - `src/__tests__/proxy-cross-provider-failover.test.ts` — 跨服务商故障转移测试
 - `src/__tests__/proxy-intent.test.ts` — 意图路由测试
 - `src/__tests__/v1-models.test.ts` — /v1/models 端点测试
+- `src/__tests__/count-tokens.test.ts` — Anthropic count_tokens 上游路径拼接回归（baseUrl 自带 `/v1` 时不得拼出 `/v1/v1`）
 
 ### 测试基础设施
 
@@ -387,6 +388,9 @@ cp .env.example .env
 | `apps/gateway/src/test/transactional-context.ts`  | 事务上下文           |
 | `.claude/skills/writing-tests/SKILL.md`           | 测试编写规范         |
 | `.claude/skills/engineering-conventions/SKILL.md` | 工程编码规范         |
+| `.agents/skills/x-herald-gateway/SKILL.md`        | 客户端接入网关（base URL/密钥/模型口径，7 家客户端） |
+
+`.agents/skills/` 与 `.claude/skills/` 的同名技能必须逐字节一致，`scripts/ci-contract.test.ts` 会校验。
 
 
 ## AI 行为原则（INTJ 人格模拟）

@@ -12,6 +12,11 @@ describe('testInstanceConnectivity', () => {
   const providerId = crypto.randomUUID()
   const instanceId = crypto.randomUUID()
   const disabledInstanceId = crypto.randomUUID()
+  // 同一 bug 家族的第二处：Anthropic 连通性检查曾硬拼 `/v1/messages`，
+  // 上游 baseUrl 自带 /v1 时会打出 `/v1/v1/messages`，把健康实例判成故障。
+  // 该用例的 provider 只启用 anthropic，避免被 openai 分支优先选中。
+  const anthropicProviderId = crypto.randomUUID()
+  const anthropicInstanceId = crypto.randomUUID()
 
   beforeAll(async () => {
     await createTestEngine()
@@ -22,6 +27,13 @@ describe('testInstanceConnectivity', () => {
       name: 'Test Provider',
       apiKey: 'sk-test',
       protocols: { openai: { baseUrl: upstream.url, enabled: true } },
+      enabled: true,
+    })
+    await db.insert(providers).values({
+      id: anthropicProviderId,
+      name: 'Test Anthropic Provider',
+      apiKey: 'sk-test',
+      protocols: { anthropic: { baseUrl: `${upstream.url}/v1`, enabled: true } },
       enabled: true,
     })
     await db.insert(modelInstances).values([
@@ -38,6 +50,13 @@ describe('testInstanceConnectivity', () => {
         name: 'disabled-model',
         actualModelName: 'disabled-model',
         enabled: false,
+      },
+      {
+        id: anthropicInstanceId,
+        providerId: anthropicProviderId,
+        name: 'claude-3-5-sonnet',
+        actualModelName: 'claude-3-5-sonnet-20241022',
+        enabled: true,
       },
     ])
   })
@@ -76,5 +95,11 @@ describe('testInstanceConnectivity', () => {
     const r = await testInstanceConnectivity(disabledInstanceId)
     expect(r.ok).toBe(false)
     expect(r.message).toBe('实例已被禁用，无法测试')
+  })
+  it('anthropic baseUrl 自带 /v1 时只拼一次版本段', async () => {
+    upstream.setResponse(200, { content: [{ type: 'text', text: 'pong' }] })
+    const r = await testInstanceConnectivity(anthropicInstanceId)
+    expect(r.ok).toBe(true)
+    expect(new URL(upstream.lastRequest().url).pathname).toBe('/v1/messages')
   })
 })

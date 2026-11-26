@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 /**
@@ -75,9 +75,11 @@ describe('skill copies', () => {
   it('keeps the .claude and .agents copies identical', () => {
     // Two directories exist so different agent runtimes can discover the same
     // guidance; divergent copies silently give one runtime stale rules.
-    expect(read('.agents/skills/xartifact-ci/SKILL.md')).toBe(
-      read('.claude/skills/xartifact-ci/SKILL.md'),
-    )
+    for (const name of ['xartifact-ci', 'x-herald-gateway']) {
+      for (const file of readdirSync(resolve(root, '.agents/skills', name))) {
+        expect(read(`.agents/skills/${name}/${file}`)).toBe(read(`.claude/skills/${name}/${file}`))
+      }
+    }
   })
 })
 

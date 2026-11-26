@@ -5,6 +5,8 @@ import { getDatabase } from '../../db/client'
 import rootLogger from '../../lib/logger'
 import { providers } from '@xartifact/x-herald-db'
 
+import { joinUrl } from '../../gateway/handlers/shared/join-url'
+
 import {
   modelGroupMemberships,
   modelGroups,
@@ -719,7 +721,9 @@ export async function testInstanceConnectivity(instanceId: string): Promise<Inst
       }
       if (provider.apiKey) headers.authorization = `Bearer ${provider.apiKey}`
     } else {
-      url = `${baseUrl.replace(/\/+$/, '')}/v1/messages`
+      // 与代理链路同一规则：baseUrl 常自带 /v1，硬拼会得到 /v1/v1/messages，
+      // 让「连通性检查」把健康实例误判为故障。
+      url = joinUrl(baseUrl, '/v1/messages')
       body = {
         model,
         max_tokens: INSTANCE_TEST_MAX_TOKENS,

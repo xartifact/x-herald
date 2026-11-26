@@ -88,6 +88,11 @@ export interface ProxyTestEnv {
     body: Record<string, unknown>,
     headers?: Record<string, string>,
   ): Response | Promise<Response>
+  /** POST /api/v1/messages/count_tokens (Anthropic) */
+  proxyCountTokens(
+    body: Record<string, unknown>,
+    headers?: Record<string, string>,
+  ): Response | Promise<Response>
   /** POST /api/v1/systemone (JEV System One) */
   proxySystemOne(
     body: Record<string, unknown>,
@@ -254,6 +259,12 @@ export async function createProxyTestEnv(options: ProxyTestEnvOptions = {}): Pro
 
     proxyResponses: (body: Record<string, unknown>, headers?: Record<string, string>) =>
       engine.app.request('/api/v1/responses', {
+        method: 'POST',
+        headers: authHeaders(headers),
+        body: JSON.stringify(body),
+      }),
+    proxyCountTokens: (body: Record<string, unknown>, headers?: Record<string, string>) =>
+      engine.app.request('/api/v1/messages/count_tokens', {
         method: 'POST',
         headers: authHeaders(headers),
         body: JSON.stringify(body),

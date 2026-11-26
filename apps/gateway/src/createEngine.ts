@@ -1,5 +1,4 @@
 import { Hono } from 'hono'
-import { serveStatic } from 'hono/bun'
 import { existsSync } from 'fs'
 import { join } from 'path'
 
@@ -9,6 +8,8 @@ import { rootLogger } from './lib'
 import { createCorsMiddleware } from './middleware/cors'
 import { errorHandler } from './middleware/error'
 import { requestLogger } from './middleware/logger'
+import { withCollapsedPath } from './middleware/normalize-path'
+import { mountSpaFallback } from './middleware/spa'
 import { registerDefaultTransformers } from './gateway/transformer'
 
 import type { GatewayConfig } from './config'
@@ -260,11 +261,11 @@ export async function createEngine(options: CreateEngineOptions = {}): Promise<E
     })
   })
 
-  // 11. Serve SPA static files (TanStack Router build output)
+  // 11. Serve SPA static files (TanStack Router build output).
+  //     API 前缀被排除在外，理由见 `middleware/spa.ts`。
   const spaDistPath = join(process.cwd(), 'apps/web/dist')
   if (existsSync(spaDistPath)) {
-    app.use('/*', serveStatic({ root: './apps/web/dist' }))
-    app.use('/*', serveStatic({ root: './apps/web/dist', path: 'index.html' }))
+    mountSpaFallback(app, './apps/web/dist')
   }
 
   // 12. 404 handler
@@ -277,6 +278,35 @@ export async function createEngine(options: CreateEngineOptions = {}): Promise<E
       404,
     )
   })
+
+  // 13. 折叠重复的版本段（`/api/v1/v1/messages` → `/api/v1/messages`）。
+  //     客户端 base URL 口径不一，多写一层 `/v1` 时旧行为是落 SPA 返回
+  //     `200 text/html`，客户端只看到 `Unexpected token '<'`。
+  //     折叠幂等，重新 dispatch 不会递归；`Upgrade` 请求不改写
+  //     （Bun 的 `server.upgrade()` 只认原始 request，实测换新 Request 后握手失败）。
+  const dispatch = app.fetch.bind(app)
+  app.fetch = ((request: Request, ...rest: unknown[]) => {
+    const folded = withCollapsedPath(request)
+    return (dispatch as (...args: unknown[]) => Response | Promise<Response>)(
+      folded ?? request,
+      ...rest,
+    )
+  }) as typeof app.fetch
+  // `app.request` 是测试/内部调用入口：它自己构造 Request 后走 `this.fetch`，
+  // 因此必须同样先折叠，否则测试路径与真实入口行为不一致。
+  app.request = ((input: string | Request, requestInit?: RequestInit, ...rest: unknown[]) => {
+    const base =
+      input instanceof Request
+        ? input
+        : new Request(
+            /^https?:\/\//.test(String(input)) ? String(input) : `http://localhost${input}`,
+            requestInit,
+          )
+    return (app.fetch as (...args: unknown[]) => Response | Promise<Response>)(
+      withCollapsedPath(base) ?? base,
+      ...rest,
+    )
+  }) as typeof app.request
 
   logger.info({ port: config.server.port }, 'Engine created successfully')
 

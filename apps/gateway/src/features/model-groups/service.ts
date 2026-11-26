@@ -615,11 +615,23 @@ export async function toggleGroup(id: string, db?: Database, workspaceId = DEFAU
 }
 
 const INSTANCE_TEST_TIMEOUT_MS = 10_000
-const INSTANCE_TEST_MAX_TOKENS = 1
+
+/**
+ * 探针的输出预算。
+ *
+ * 曾经是 1：想用最小代价验证「能返回」。但推理模型（gpt-6.2 系）会把预算全花在
+ * 内部推理上，1 token 根本不够产出一个 token 的可见输出，上游直接 400
+ * `Could not finish the message because max_tokens ... was reached`——
+ * 健康的实例被自己的探针判成故障。
+ *
+ * 32 足够让任何模型产出首个 token 并正常结束；探针本来就只读第一个响应，
+ * 不消费完整输出，因此这点预算不会让检查变慢。
+ */
+const INSTANCE_TEST_MAX_TOKENS = 32
 
 /**
  * 测试模型实例的连通性与可用性：按实例所属 Provider 的协议（openai/anthropic）
- * 向 baseUrl 发送一个最小请求（max_tokens=1），返回连通性 + 延迟 + 响应片段。
+ * 向 baseUrl 发送一个最小请求，返回连通性 + 延迟 + 响应片段。
  *
  * 探测是只读的、不落库；不做协议转换（直接发对应协议的原始请求），用于管理员
  * 在实例清单上手动点击"测试"按钮确认该模型是否可达、可响应。
